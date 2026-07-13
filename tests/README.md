@@ -26,6 +26,11 @@ CI 会额外执行 coverage、Ruff 和 dry-run 评测。
 - `process_pending()` 对重复 message_id 的跳过逻辑。
 - `/ask` ReAct 工具选择、observation 传递和 semantic_search fallback。
 - 有界任务执行器的队列拒绝、ingest 执行和状态统计。
+- PendingDrainer 的 pending 重提交流程、inflight 跳过、batch size 和队列满停止。
+- DeliveryStore 的 reserve/sent/failed/unknown 幂等规则。
+- 任务级重试边界，确认 runner 失败不会整体重跑。
+- 同一 `space_id` ingest 串行、不同 `space_id` 可并行、压力提交受 worker/queue 限制。
+- TaskRegistry 的历史裁剪和累计计数保留。
 - 离线评测评分函数。
 
 ## Dry-run 评测
@@ -46,5 +51,11 @@ python eval/eval_query_react.py --dry-run
 - 总结内容质量人工/半自动评测。
 
 ## 当前结果
+
+最近一次单元测试：
+
+```text
+70 passed
+```
 
 最近一次真实 LLM / embedding 离线评测结果见 `docs/metrics/latest.json` 和 `eval/README.md`。

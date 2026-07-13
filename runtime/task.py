@@ -16,7 +16,7 @@ TASK_REJECTED = "rejected"
 
 
 def now_iso() -> str:
-    return datetime.now().astimezone().isoformat(timespec="seconds")
+    return datetime.now().astimezone().isoformat(timespec="milliseconds")
 
 
 @dataclass
@@ -31,6 +31,9 @@ class Task:
     started_at: str | None = None
     finished_at: str | None = None
     error: str | None = None
+    queue_wait_ms: int | None = None
+    execution_ms: int | None = None
+    total_duration_ms: int | None = None
 
 
 def create_task(

@@ -3,9 +3,10 @@
   "retrieval_pass_rate": 0.95,
   "query_pass_rate": 0.9,
   "summary_pass_rate": 1.0,
-  "p50_ingest_latency_ms": 0,
-  "p95_ingest_latency_ms": 0,
-  "p50_query_latency_ms": 0,
+  "p50_ingest_latency_ms": null,
+  "p95_ingest_latency_ms": null,
+  "p50_query_latency_ms": null,
+  "measurement_status": "not_measured",
   "pending_recovery_rate": 1.0,
   "duplicate_prevention_rate": 1.0,
   "known_failures": [

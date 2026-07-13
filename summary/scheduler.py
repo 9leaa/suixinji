@@ -9,6 +9,7 @@ from collections.abc import Callable
 from datetime import datetime
 
 from core.observability import log_event
+from runtime.delivery_store import auto_summary_key
 from runtime.executor import BoundedTaskExecutor
 from runtime.task import TASK_REJECTED
 from summary.subscription import (
@@ -87,6 +88,8 @@ def run_summary_scheduler_once(send_text: Callable[[str, str], bool], executor: 
                 range_key,
                 sub.chat_id,
                 on_success=on_success,
+                delivery_key=auto_summary_key(sub.space_id, range_key, today),
+                delivery_type="auto_summary",
             )
             if task.status != TASK_REJECTED:
                 count += 1

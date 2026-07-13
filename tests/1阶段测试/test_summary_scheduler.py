@@ -31,8 +31,8 @@ def test_run_scheduler_once_sends_due_subscription(monkeypatch):
     monkeypatch.setattr(scheduler, "mark_summary_sent", lambda space_id, day: marked.append((space_id, day)))
 
     class FakeExecutor:
-        def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None):
-            submitted.append((space_id, range_key, chat_id, message_id))
+        def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None, delivery_key=None, delivery_type=None):
+            submitted.append((space_id, range_key, chat_id, message_id, delivery_key, delivery_type))
             if on_success is not None:
                 on_success()
             return create_task("summary", space_id, {"range_key": range_key, "chat_id": chat_id})
@@ -40,8 +40,9 @@ def test_run_scheduler_once_sends_due_subscription(monkeypatch):
     count = scheduler.run_summary_scheduler_once(lambda chat_id, text: True, executor=FakeExecutor())
 
     assert count == 1
-    assert submitted == [("space1", "today", "chat1", None)]
-    assert marked == [("space1", datetime.now().astimezone().date().isoformat())]
+    today = datetime.now().astimezone().date().isoformat()
+    assert submitted == [("space1", "today", "chat1", None, f"auto_summary:space1:today:{today}", "auto_summary")]
+    assert marked == [("space1", today)]
 
 
 def test_run_scheduler_once_does_not_mark_when_task_is_rejected(monkeypatch):
@@ -52,7 +53,7 @@ def test_run_scheduler_once_does_not_mark_when_task_is_rejected(monkeypatch):
     monkeypatch.setattr(scheduler, "mark_summary_sent", lambda space_id, day: marked.append((space_id, day)))
 
     class FakeExecutor:
-        def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None):
+        def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None, delivery_key=None, delivery_type=None):
             task = create_task("summary", space_id, {"range_key": range_key, "chat_id": chat_id}, status="rejected")
             task.error = "task queue is full"
             return task

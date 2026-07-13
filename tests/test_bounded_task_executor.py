@@ -55,6 +55,7 @@ def test_executor_runs_ingest_and_updates_stats(monkeypatch):
         task = executor.submit_ingest(
             {"id": "r1", "space_id": "s1", "message_id": "m1"},
             "chat1",
+            notify_on_success=True,
         )
         executor.shutdown()
 

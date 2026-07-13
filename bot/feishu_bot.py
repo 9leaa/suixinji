@@ -34,6 +34,7 @@ from core.wal import (
 )
 from core.worker import process_pending
 from runtime.executor import get_task_executor
+from runtime.pending_drainer import PendingDrainer
 from runtime.task import TASK_REJECTED
 
 
@@ -269,6 +270,9 @@ def _format_system_status(space_id: str) -> str:
         f"- 成功任务：{task_stats['success']} 个",
         f"- 失败任务：{task_stats['failed']} 个",
         f"- 被拒绝任务：{task_stats['rejected']} 个",
+        f"- 队列容量：{task_stats['capacity']} 个",
+        f"- 剩余可提交槽位：{task_stats['remaining_slots']} 个",
+        f"- 最近保留任务：{task_stats['retained_tasks']} 个",
         f"- 最老排队等待：{task_stats['oldest_queued_wait_seconds']} 秒",
         f"- 最近 LLM 超时：{task_stats['last_llm_timeout_at'] or '暂无'}",
         f"- 自动总结：{auto_status}",
@@ -582,6 +586,8 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
     task = get_task_executor(safe_send_text).submit_ingest(
         record,
         chat_id,
+        notify_on_success=True,
+        source="feishu_realtime",
     )
     if task.status == TASK_REJECTED:
         safe_send_text(chat_id, "消息已保存到 WAL，当前任务较多，稍后会从 pending 记录继续处理。")
@@ -630,8 +636,10 @@ def start() -> None:
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
     )
 
-    recover_pending_records()
     executor = get_task_executor(safe_send_text)
+    pending_drainer = PendingDrainer(executor)
+    pending_drainer.drain_once()
+    pending_drainer.start()
     start_summary_scheduler(safe_send_text, executor=executor)
 
     ws_client = lark.ws.Client(
