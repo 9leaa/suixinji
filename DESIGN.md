@@ -116,6 +116,7 @@ rejected
 - 查询任务允许并行。
 - 同一 `space_id` 的 summary task 通过 summary lock 串行执行。
 - 执行器只调度和记录状态，不对完整业务 runner 做外层重试；LLM 和 embedding 依赖 OpenAI SDK timeout/max_retries。
+- Summary scheduler 对每个订阅进行异常隔离，并通过 `run_scheduler_tick_safely()` 保护后台循环；单个订阅或单次 tick 失败不会让调度线程永久退出。
 
 任务完成日志包含：
 

@@ -29,6 +29,7 @@ CI 会额外执行 coverage、Ruff 和 dry-run 评测。
 - PendingDrainer 的 pending 重提交流程、inflight 跳过、batch size 和队列满停止。
 - DeliveryStore 的租约、reserve/sent/failed/unknown 幂等规则和最大尝试次数。
 - 自动总结 delivery/subscription 对账，覆盖 sent 修复、unknown 跳过和 failed 重提交流程。
+- Summary scheduler 异常韧性，覆盖对账失败跳过当前订阅、下一轮恢复、一个订阅失败不影响其他订阅、tick 级异常保护。
 - 任务级重试边界，确认 runner 失败不会整体重跑。
 - 同一 `space_id` ingest 串行、不同 `space_id` 可并行、压力提交受 worker/queue 限制。
 - TaskRegistry 的历史裁剪和累计计数保留。
@@ -56,7 +57,7 @@ python eval/eval_query_react.py --dry-run
 最近一次单元测试：
 
 ```text
-78 passed
+83 passed
 ```
 
 最近一次真实 LLM / embedding 离线评测结果见 `docs/metrics/latest.json` 和 `eval/README.md`。

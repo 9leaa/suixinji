@@ -54,20 +54,20 @@ def run_summary_scheduler_once(send_text: Callable[[str, str], bool], executor: 
         trigger_start = time.perf_counter()
         ctx = {"space_id": sub.space_id}
         range_key = sub.range_key
-        if reconcile_auto_summary_delivery(sub.space_id, range_key, today):
-            continue
-
-        if not _is_due(sub, now):
-            continue
-
-        log_event(
-            "summary.auto.trigger",
-            status="start",
-            **ctx,
-            extra={"range_key": sub.range_key, "time": sub.time},
-        )
-
         try:
+            if reconcile_auto_summary_delivery(sub.space_id, range_key, today):
+                continue
+
+            if not _is_due(sub, now):
+                continue
+
+            log_event(
+                "summary.auto.trigger",
+                status="start",
+                **ctx,
+                extra={"range_key": range_key, "time": sub.time},
+            )
+
             if executor is None:
                 from runtime.executor import get_task_executor
 
@@ -116,16 +116,17 @@ def run_summary_scheduler_once(send_text: Callable[[str, str], bool], executor: 
                     extra={"range_key": range_key, "task_id": task.id},
                 )
         except Exception as exc:
-            LOGGER.exception("Failed to run auto summary: space_id=%s", sub.space_id)
+            LOGGER.exception("Failed to process summary subscription: space_id=%s", sub.space_id)
             log_event(
-                "summary.auto.trigger",
+                "summary.scheduler.subscription",
                 level="error",
                 status="failed",
                 duration_ms=int((time.perf_counter() - trigger_start) * 1000),
                 error=f"{type(exc).__name__}: {exc}",
-                **ctx,
-                extra={"range_key": range_key},
+                space_id=sub.space_id,
+                extra={"range_key": range_key, "time": sub.time},
             )
+            continue
 
     log_event(
         "summary.scheduler.tick",
@@ -134,6 +135,27 @@ def run_summary_scheduler_once(send_text: Callable[[str, str], bool], executor: 
         extra={"subscription_count": len(subscriptions), "sent_count": count},
     )
     return count
+
+
+def run_scheduler_tick_safely(
+    send_text: Callable[[str, str], bool],
+    executor: BoundedTaskExecutor | None = None,
+) -> None:
+    tick_started = time.perf_counter()
+    try:
+        run_summary_scheduler_once(send_text, executor=executor)
+    except Exception as exc:
+        LOGGER.exception("Summary scheduler tick failed")
+        try:
+            log_event(
+                "summary.scheduler.tick",
+                level="error",
+                status="failed",
+                duration_ms=int((time.perf_counter() - tick_started) * 1000),
+                error=f"{type(exc).__name__}: {exc}",
+            )
+        except Exception:
+            LOGGER.exception("Failed to write scheduler failure log")
 
 
 def start_summary_scheduler(
@@ -151,8 +173,10 @@ def start_summary_scheduler(
     def loop() -> None:
         LOGGER.info("P4 summary scheduler started")
         while True:
-            run_summary_scheduler_once(send_text, executor=executor)
-            time.sleep(interval_seconds)
+            try:
+                run_scheduler_tick_safely(send_text, executor=executor)
+            finally:
+                time.sleep(interval_seconds)
 
     thread = threading.Thread(target=loop, daemon=True)
     thread.start()
