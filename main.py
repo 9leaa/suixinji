@@ -1,4 +1,4 @@
-"""Application entry point for starting the Telegram bot and background worker."""
+"""Application entry point for local Suixinji ingestion."""
 
 
 from __future__ import annotations

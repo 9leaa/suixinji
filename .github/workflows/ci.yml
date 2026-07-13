@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Ruff
+        run: ruff check .
+
+      - name: Pytest
+        run: python -m pytest tests --cov=. --cov-report=term-missing
+
+      - name: Evaluation dry-run
+        run: |
+          python eval/eval_classification.py --dry-run
+          python eval/eval_retrieval.py --dry-run
+          python eval/eval_summary.py --dry-run
+          python eval/eval_query_react.py --dry-run

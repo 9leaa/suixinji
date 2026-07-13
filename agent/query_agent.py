@@ -8,15 +8,16 @@ from typing import Any
 
 from core.llm_client import complete_json, embed_text
 from core.observability import log_event, observe
+from core.settings import QUERY_MIN_SCORE, QUERY_TOP_K
 from core.taxonomy import is_valid_tag, is_valid_type, normalize_tag, normalize_type
 from storage.note_storage import load_index
 from storage.vector_store import search_related
 
 
-DEFAULT_QUERY_MIN_SCORE = 0.55
+DEFAULT_QUERY_MIN_SCORE = QUERY_MIN_SCORE
 
 
-REACT_SYSTEM_PROMPT = """
+REACT_SYSTEM_PROMPT = f"""
 你是“随心记 Agent”的查询助手。
 
 你可以使用工具查询用户的历史笔记，然后回答问题。
@@ -31,10 +32,10 @@ REACT_SYSTEM_PROMPT = """
 每一步只能输出 JSON object。
 
 如果需要调用工具，输出：
-{"thought":"为什么要调用这个工具","action":"semantic_search","args":{"query":"用户问题","top_k":5,"min_score":0.55}}
+{{"thought":"为什么要调用这个工具","action":"semantic_search","args":{{"query":"用户问题","top_k":{QUERY_TOP_K},"min_score":{QUERY_MIN_SCORE}}}}}
 
 如果已经有足够证据回答，输出：
-{"thought":"为什么可以回答","final_answer":"基于笔记的回答"}
+{{"thought":"为什么可以回答","final_answer":"基于笔记的回答"}}
 
 规则：
 - 如果用户明确说“type 是生活/学习/任务”等，调用 filter_notes，不要调用 semantic_search。
@@ -210,7 +211,7 @@ def by_tag(space_id: str, tag: str, limit: int = 10) -> list[dict[str, Any]]:
 def semantic_search(
     space_id: str,
     query: str,
-    top_k: int = 5,
+    top_k: int = QUERY_TOP_K,
     min_score: float = DEFAULT_QUERY_MIN_SCORE,
 ) -> list[dict[str, Any]]:
     query = query.strip()
@@ -359,7 +360,7 @@ def _execute_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
         return semantic_search(
             space_id,
             str(args.get("query", "")),
-            args.get("top_k", 5),
+            args.get("top_k", QUERY_TOP_K),
             args.get("min_score", DEFAULT_QUERY_MIN_SCORE),
         )
     if action == "get_note":
@@ -477,7 +478,7 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
                 action = "semantic_search"
                 args = {
                     "query": question,
-                    "top_k": 5,
+                    "top_k": QUERY_TOP_K,
                     "min_score": DEFAULT_QUERY_MIN_SCORE,
                 }
 

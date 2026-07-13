@@ -6,11 +6,10 @@ import json
 import logging
 import os
 import re
-import threading
-from dataclasses import asdict
 from typing import Any
-from agent.query_agent import answer_question, by_tag, by_type, filter_notes
-from summary.daily_summary import generate_summary,parse_summary_range
+
+from agent.query_agent import by_tag, by_type, filter_notes
+from summary.daily_summary import parse_summary_range
 from summary.scheduler import start_summary_scheduler
 from summary.subscription import (
     disable_summary_subscription,
@@ -28,13 +27,14 @@ from lark_oapi.api.im.v1 import (
 from core.feedback import save_feedback
 from core.observability import latest_success, log_event, recent_errors
 from core.wal import (
-    WalRecord,
     append_message_once,
     create_pending_record,
     list_wal_space_ids,
     load_pending_records,
 )
-from core.worker import process_pending, process_record
+from core.worker import process_pending
+from runtime.executor import get_task_executor
+from runtime.task import TASK_REJECTED
 
 
 load_dotenv()
@@ -176,97 +176,6 @@ def build_space_id(chat_type: str, chat_id: str | None, sender: dict[str, Any]) 
     raise ValueError("Cannot build space_id without chat_id or sender.open_id")
 
 
-def process_record_in_background(record: WalRecord, chat_id: str) -> None:
-    """Run the slow classifier/storage path outside the Feishu event callback."""
-    try:
-        process_record(asdict(record))
-        safe_send_text(chat_id, "已归档到随心记。")
-    except Exception:
-        LOGGER.exception("Failed to process Feishu message record: %s", record.id)
-        safe_send_text(chat_id, "消息已保存到 WAL，但后台整理失败。稍后可以重跑 pending 记录。")
-
-def answer_question_in_background(
-    space_id: str,
-    question: str,
-    chat_id: str,
-    message_id: str | None = None,
-) -> None:
-    """Run the query path outside the Feishu event callback."""
-    try:
-        answer = answer_question(space_id, question)
-        sent = safe_send_text(chat_id, answer)
-        if sent:
-            log_event(
-                "feishu.command.ask",
-                status="success",
-                space_id=space_id,
-                message_id=message_id,
-                extra={"question_len": len(question), "answer_len": len(answer)},
-            )
-        else:
-            log_event(
-                "feishu.command.ask",
-                level="error",
-                status="failed",
-                space_id=space_id,
-                message_id=message_id,
-                error="safe_send_text returned False",
-                extra={"question_len": len(question), "answer_len": len(answer)},
-            )
-    except Exception as exc:
-        LOGGER.exception("Failed to answer Feishu query: space_id=%s", space_id)
-        log_event(
-            "feishu.command.ask",
-            level="error",
-            status="failed",
-            space_id=space_id,
-            message_id=message_id,
-            error=f"{type(exc).__name__}: {exc}",
-            extra={"question_len": len(question)},
-        )
-        safe_send_text(chat_id, "查询失败了，但笔记数据还在。可以稍后再试一次。")
-
-def generate_summary_in_background(
-    space_id: str,
-    range_key: str,
-    chat_id: str,
-    message_id: str | None = None,
-) -> None:
-    """Run P4 summary generation outside the Feishu event callback."""
-    try:
-        result = generate_summary(space_id, range_key)
-        sent = safe_send_text(chat_id, result.markdown)
-        if sent:
-            log_event(
-                "feishu.command.summary",
-                status="success",
-                space_id=space_id,
-                message_id=message_id,
-                extra={"range_key": range_key, "markdown_len": len(result.markdown)},
-            )
-        else:
-            log_event(
-                "feishu.command.summary",
-                level="error",
-                status="failed",
-                space_id=space_id,
-                message_id=message_id,
-                error="safe_send_text returned False",
-                extra={"range_key": range_key, "markdown_len": len(result.markdown)},
-            )
-    except Exception as exc:
-        LOGGER.exception("Failed to generate summary: space_id=%s range_key=%s", space_id, range_key)
-        log_event(
-            "feishu.command.summary",
-            level="error",
-            status="failed",
-            space_id=space_id,
-            message_id=message_id,
-            error=f"{type(exc).__name__}: {exc}",
-            extra={"range_key": range_key},
-        )
-        safe_send_text(chat_id, "总结生成失败了，但笔记数据还在。可以稍后再试一次。")
-
 def _parse_limit(value: Any, default: int) -> int:
     try:
         return max(1, min(int(value), 100))
@@ -351,13 +260,21 @@ def _format_system_status(space_id: str) -> str:
         last_success_text = f"{last_success.get('ts')}｜{last_success.get('action')}"
 
     errors = recent_errors(limit=3)
+    task_stats = get_task_executor(safe_send_text).get_stats()
     lines = [
         "系统状态：",
         f"- 当前会话 pending：{pending_count} 条",
+        f"- 运行任务：{task_stats['running']} 个",
+        f"- 排队任务：{task_stats['queued']} 个",
+        f"- 成功任务：{task_stats['success']} 个",
+        f"- 失败任务：{task_stats['failed']} 个",
+        f"- 被拒绝任务：{task_stats['rejected']} 个",
+        f"- 最老排队等待：{task_stats['oldest_queued_wait_seconds']} 秒",
+        f"- 最近 LLM 超时：{task_stats['last_llm_timeout_at'] or '暂无'}",
         f"- 自动总结：{auto_status}",
         f"- 最近成功：{last_success_text}",
         f"- 最近错误：{len(errors)} 条",
-        f"- 日志目录：data/logs/",
+        "- 日志目录：data/logs/",
     ]
 
     for item in errors:
@@ -604,13 +521,14 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
             return
 
         safe_send_text(chat_id, "我来整理这段时间的随心记。")
-
-        thread = threading.Thread(
-            target=generate_summary_in_background,
-            args=(space_id, range_key, chat_id, message_id),
-            daemon=True,
+        task = get_task_executor(safe_send_text).submit_summary(
+            space_id,
+            range_key,
+            chat_id,
+            message_id,
         )
-        thread.start()
+        if task.status == TASK_REJECTED:
+            safe_send_text(chat_id, "当前任务较多，请稍后重试。")
         return
 
     if text.startswith("/ask"):
@@ -635,13 +553,14 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
             return
 
         safe_send_text(chat_id, "我去翻一下随心记。")
-
-        thread = threading.Thread(
-            target=answer_question_in_background,
-            args=(space_id, question, chat_id, message_id),
-            daemon=True,
+        task = get_task_executor(safe_send_text).submit_query(
+            space_id,
+            question,
+            chat_id,
+            message_id,
         )
-        thread.start()
+        if task.status == TASK_REJECTED:
+            safe_send_text(chat_id, "当前任务较多，请稍后重试。")
         return
 
     record = create_pending_record(
@@ -660,12 +579,12 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
         return
 
     safe_send_text(chat_id, "已收到，正在整理到随心记。")
-    thread = threading.Thread(
-        target=process_record_in_background,
-        args=(record, chat_id),
-        daemon=True,
+    task = get_task_executor(safe_send_text).submit_ingest(
+        record,
+        chat_id,
     )
-    thread.start()
+    if task.status == TASK_REJECTED:
+        safe_send_text(chat_id, "消息已保存到 WAL，当前任务较多，稍后会从 pending 记录继续处理。")
 
 
 def do_p2_im_message_receive_v1(data: P2ImMessageReceiveV1) -> None:
@@ -712,7 +631,8 @@ def start() -> None:
     )
 
     recover_pending_records()
-    start_summary_scheduler(safe_send_text)
+    executor = get_task_executor(safe_send_text)
+    start_summary_scheduler(safe_send_text, executor=executor)
 
     ws_client = lark.ws.Client(
         APP_ID,

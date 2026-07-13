@@ -13,8 +13,6 @@ from core.file_lock import locked_space, safe_space_id
 
 DATA_DIR = Path("data")
 NOTES_DIR = DATA_DIR / "notes"
-
-#TODOtype敏感，因为python有内置函数type
 @dataclass
 class NoteMetadata:
     """表示一条已分类笔记的完整元数据。
@@ -229,9 +227,6 @@ def append_index(meta: NoteMetadata) -> None:
         save_index(meta.space_id, items)
 
 
-#TODO save_note不是幂等的，如果 worker 崩溃后重跑同一条 pending 记录，可能会重复写入 markdown 和 index。
-#前面的 WAL 已经通过 message_id 防止重复接收，但这里还需要防止重复保存。
-#TODO markdown和index.json如果一个成功一个失败，则markdown有笔记，但index.json没记录
 def save_note(meta: NoteMetadata) -> None:
     """保存一条笔记到 markdown 文件和 index.json 索引。
 

@@ -52,8 +52,7 @@ class WalRecord:
     ts: str
     text: str
     status: str = "pending"
-    #peding表示数据刚进WAL还没被worker处理
-    #TODO还没有处理为processed的函数，状态不会改变
+    # pending 表示数据刚进 WAL，还没被 worker 处理。
 
 
 def wal_path(space_id: str) -> Path:
@@ -115,8 +114,6 @@ def append_record(record: WalRecord) -> None:
             f.write(json.dumps(asdict(record), ensure_ascii=False) + "\n")
 
 
-#TODO 不是严格的原子操作，当多个协程同时处理同一条消息时，可能都先判断消息不存在，然后都写入了
-#TODO 每次读取整个文件，如果某用户有几万条消息，性能会变坏， 后面可以用index.json或内存set来优化
 def load_records(space_id: str) -> list[dict[str, Any]]:
     """读取指定 space_id 下的所有 WAL 记录。
 
@@ -250,7 +247,6 @@ def load_pending_records(space_id: str) -> list[dict[str, Any]]:
     ]
 
 
-#TODO性能不好
 def mark_processed(space_id: str, record_id: str) -> None:
     """将指定 WAL 记录的状态标记为 processed。
 

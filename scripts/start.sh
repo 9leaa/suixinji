@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PYTHON="/usr/local/anaconda3/envs/zcj_hello/bin/python"
+PYTHON="${PYTHON:-python3}"
 PID_FILE="$ROOT/data/suixinji.pid"
 LOG_FILE="$ROOT/data/logs/runtime.log"
 

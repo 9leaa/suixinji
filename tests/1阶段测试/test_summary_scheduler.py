@@ -1,8 +1,7 @@
 from datetime import datetime, timezone, timedelta
-from types import SimpleNamespace
-
 from summary import scheduler
 from summary.subscription import SummarySubscription
+from runtime.task import create_task
 
 TZ = timezone(timedelta(hours=8))
 
@@ -25,37 +24,40 @@ def test_is_due_before_after_and_already_sent():
 
 def test_run_scheduler_once_sends_due_subscription(monkeypatch):
     sub = SummarySubscription(space_id="space1", chat_id="chat1", time="00:00")
-    sent_messages = []
     marked = []
+    submitted = []
 
     monkeypatch.setattr(scheduler, "list_enabled_summary_subscriptions", lambda: [sub])
-    monkeypatch.setattr(
-        scheduler,
-        "generate_summary",
-        lambda space_id, range_key: SimpleNamespace(markdown=f"summary for {space_id}/{range_key}"),
-    )
     monkeypatch.setattr(scheduler, "mark_summary_sent", lambda space_id, day: marked.append((space_id, day)))
 
-    count = scheduler.run_summary_scheduler_once(lambda chat_id, text: sent_messages.append((chat_id, text)) or True)
+    class FakeExecutor:
+        def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None):
+            submitted.append((space_id, range_key, chat_id, message_id))
+            if on_success is not None:
+                on_success()
+            return create_task("summary", space_id, {"range_key": range_key, "chat_id": chat_id})
+
+    count = scheduler.run_summary_scheduler_once(lambda chat_id, text: True, executor=FakeExecutor())
 
     assert count == 1
-    assert sent_messages == [("chat1", "summary for space1/today")]
+    assert submitted == [("space1", "today", "chat1", None)]
     assert marked == [("space1", datetime.now().astimezone().date().isoformat())]
 
 
-def test_run_scheduler_once_does_not_mark_when_send_fails(monkeypatch):
+def test_run_scheduler_once_does_not_mark_when_task_is_rejected(monkeypatch):
     sub = SummarySubscription(space_id="space1", chat_id="chat1", time="00:00")
     marked = []
 
     monkeypatch.setattr(scheduler, "list_enabled_summary_subscriptions", lambda: [sub])
-    monkeypatch.setattr(
-        scheduler,
-        "generate_summary",
-        lambda space_id, range_key: SimpleNamespace(markdown="summary"),
-    )
     monkeypatch.setattr(scheduler, "mark_summary_sent", lambda space_id, day: marked.append((space_id, day)))
 
-    count = scheduler.run_summary_scheduler_once(lambda chat_id, text: False)
+    class FakeExecutor:
+        def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None):
+            task = create_task("summary", space_id, {"range_key": range_key, "chat_id": chat_id}, status="rejected")
+            task.error = "task queue is full"
+            return task
+
+    count = scheduler.run_summary_scheduler_once(lambda chat_id, text: True, executor=FakeExecutor())
 
     assert count == 0
     assert marked == []

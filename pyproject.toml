@@ -1,0 +1,20 @@
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+exclude = ["data", "backups", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = ["E402", "E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.coverage.run]
+branch = true
+source = ["agent", "bot", "core", "eval", "runtime", "storage", "summary"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

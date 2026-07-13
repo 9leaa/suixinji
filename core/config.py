@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from dotenv import load_dotenv
 
+from core.settings import EMBEDDING_TIMEOUT_SECONDS, LLM_MAX_RETRIES, LLM_TIMEOUT_SECONDS
 
 load_dotenv()
 
@@ -30,6 +31,8 @@ class ChatConfig:
     api_key: str | None
     base_url: str | None
     model: str
+    timeout_seconds: int
+    max_retries: int
 
 @dataclass
 class EmbeddingConfig:
@@ -37,6 +40,8 @@ class EmbeddingConfig:
     base_url:str | None
     model:str
     dimension: int = 1024
+    timeout_seconds: int = 20
+    max_retries: int = 2
 
 
 def get_chat_config() -> ChatConfig:
@@ -56,6 +61,8 @@ def get_chat_config() -> ChatConfig:
         api_key=os.getenv("OPENAI_API_KEY") or None,
         base_url=os.getenv("OPENAI_BASE_URL") or None,
         model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        timeout_seconds=LLM_TIMEOUT_SECONDS,
+        max_retries=LLM_MAX_RETRIES,
     )
 
 def get_embedding_config() -> EmbeddingConfig:
@@ -63,5 +70,7 @@ def get_embedding_config() -> EmbeddingConfig:
         api_key=os.getenv("DASHSCOPE_API_KEY") or os.getenv("OPENAI_API_KEY") or None,
         base_url=os.getenv("EMBEDDING_BASE_URL") or os.getenv("OPENAI_BASE_URL") or None,
         model=os.getenv("EMBEDDING_MODEL", "text-embedding-v3"),
-        dimension = int(os.getenv("EMBEDDING_DIMENSION","1024"))
+        dimension=int(os.getenv("EMBEDDING_DIMENSION", "1024")),
+        timeout_seconds=EMBEDDING_TIMEOUT_SECONDS,
+        max_retries=LLM_MAX_RETRIES,
     )

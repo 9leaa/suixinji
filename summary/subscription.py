@@ -9,9 +9,11 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from core.settings import SUMMARY_DEFAULT_TIME
+
 DATA_DIR = Path("data")
 SUBSCRIPTIONS_PATH = DATA_DIR / "summary_subscriptions.json"
-DEFAULT_SUMMARY_TIME = "22:00"
+DEFAULT_SUMMARY_TIME = SUMMARY_DEFAULT_TIME
 _TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 _LOCK = threading.RLock()
 

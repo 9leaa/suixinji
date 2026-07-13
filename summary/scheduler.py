@@ -9,7 +9,8 @@ from collections.abc import Callable
 from datetime import datetime
 
 from core.observability import log_event
-from summary.daily_summary import generate_summary
+from runtime.executor import BoundedTaskExecutor
+from runtime.task import TASK_REJECTED
 from summary.subscription import (
     SummarySubscription,
     list_enabled_summary_subscriptions,
@@ -34,7 +35,7 @@ def _is_due(sub: SummarySubscription, now: datetime) -> bool:
     return now_minutes >= _minutes(sub.time)
 
 
-def run_summary_scheduler_once(send_text: Callable[[str, str], bool]) -> int:
+def run_summary_scheduler_once(send_text: Callable[[str, str], bool], executor: BoundedTaskExecutor | None = None) -> int:
     now = datetime.now().astimezone()
     today = now.date().isoformat()
     count = 0
@@ -53,6 +54,7 @@ def run_summary_scheduler_once(send_text: Callable[[str, str], bool]) -> int:
 
         trigger_start = time.perf_counter()
         ctx = {"space_id": sub.space_id}
+        range_key = sub.range_key
         log_event(
             "summary.auto.trigger",
             status="start",
@@ -61,58 +63,50 @@ def run_summary_scheduler_once(send_text: Callable[[str, str], bool]) -> int:
         )
 
         try:
-            result = generate_summary(sub.space_id, sub.range_key)
-            send_start = time.perf_counter()
-            try:
-                sent = send_text(sub.chat_id, result.markdown)
-            except Exception as exc:
-                log_event(
-                    "summary.auto.send",
-                    level="error",
-                    status="failed",
-                    duration_ms=int((time.perf_counter() - send_start) * 1000),
-                    error=f"{type(exc).__name__}: {exc}",
-                    **ctx,
-                    extra={"range_key": sub.range_key},
-                )
-                raise
+            if executor is None:
+                from runtime.executor import get_task_executor
 
-            if sent is not False:
+                executor = get_task_executor(send_text)
+
+            def on_success(
+                space_id: str = sub.space_id,
+                sent_date: str = today,
+                success_ctx: dict[str, str] = dict(ctx),
+                success_range_key: str = range_key,
+            ) -> None:
+                mark_summary_sent(space_id, sent_date)
                 log_event(
                     "summary.auto.send",
                     status="success",
-                    duration_ms=int((time.perf_counter() - send_start) * 1000),
-                    **ctx,
-                    extra={"range_key": sub.range_key, "markdown_len": len(result.markdown)},
+                    **success_ctx,
+                    extra={"range_key": success_range_key},
                 )
-                mark_summary_sent(sub.space_id, today)
+
+            task = executor.submit_summary(
+                sub.space_id,
+                range_key,
+                sub.chat_id,
+                on_success=on_success,
+            )
+            if task.status != TASK_REJECTED:
                 count += 1
                 log_event(
                     "summary.auto.trigger",
                     status="success",
                     duration_ms=int((time.perf_counter() - trigger_start) * 1000),
                     **ctx,
-                    extra={"range_key": sub.range_key},
+                    extra={"range_key": range_key, "task_id": task.id},
                 )
             else:
-                error = "send_text returned False"
-                log_event(
-                    "summary.auto.send",
-                    level="error",
-                    status="failed",
-                    duration_ms=int((time.perf_counter() - send_start) * 1000),
-                    error=error,
-                    **ctx,
-                    extra={"range_key": sub.range_key},
-                )
+                error = task.error or "summary task rejected"
                 log_event(
                     "summary.auto.trigger",
                     level="error",
-                    status="failed",
+                    status="rejected",
                     duration_ms=int((time.perf_counter() - trigger_start) * 1000),
                     error=error,
                     **ctx,
-                    extra={"range_key": sub.range_key},
+                    extra={"range_key": range_key, "task_id": task.id},
                 )
         except Exception as exc:
             LOGGER.exception("Failed to run auto summary: space_id=%s", sub.space_id)
@@ -123,7 +117,7 @@ def run_summary_scheduler_once(send_text: Callable[[str, str], bool]) -> int:
                 duration_ms=int((time.perf_counter() - trigger_start) * 1000),
                 error=f"{type(exc).__name__}: {exc}",
                 **ctx,
-                extra={"range_key": sub.range_key},
+                extra={"range_key": range_key},
             )
 
     log_event(
@@ -139,6 +133,7 @@ def start_summary_scheduler(
     send_text: Callable[[str, str], bool],
     *,
     interval_seconds: int = 60,
+    executor: BoundedTaskExecutor | None = None,
 ) -> None:
     global _started
     with _started_lock:
@@ -149,7 +144,7 @@ def start_summary_scheduler(
     def loop() -> None:
         LOGGER.info("P4 summary scheduler started")
         while True:
-            run_summary_scheduler_once(send_text)
+            run_summary_scheduler_once(send_text, executor=executor)
             time.sleep(interval_seconds)
 
     thread = threading.Thread(target=loop, daemon=True)

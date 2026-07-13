@@ -43,6 +43,12 @@ def build_openai_client(config: ChatConfig | EmbeddingConfig | None = None) -> O
     if config.base_url:
         kwargs["base_url"] = config.base_url
 
+    if config.timeout_seconds:
+        kwargs["timeout"] = config.timeout_seconds
+
+    if config.max_retries is not None:
+        kwargs["max_retries"] = config.max_retries
+
     return OpenAI(**kwargs)
 
 

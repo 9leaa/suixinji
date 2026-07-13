@@ -16,7 +16,6 @@ from core.taxonomy import (
 )
 
 
-# TODO type 这个字段名和 Python 内置函数同名，后续可以考虑改成 category。
 class NoteClassification(BaseModel):
     """表示 LLM 对一条笔记文本的结构化分类结果。
 

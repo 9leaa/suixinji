@@ -7,6 +7,7 @@ from typing import Any
 
 from core.classifier import classify_text
 from core.observability import observe
+from core.settings import RELATED_MIN_SCORE, RELATED_TOP_K
 from core.wal import load_pending_records, mark_processed
 from storage.note_storage import NoteMetadata, load_index, note_exists, save_note
 from core.llm_client import embed_text
@@ -116,9 +117,9 @@ def process_record(record: dict[str, Any]) -> None:
         related = search_related_note_ids(
             space_id,
             embedding,
-            top_k=3,
+            top_k=RELATED_TOP_K,
             exclude_note_id=record_id,
-            min_score=0.5,
+            min_score=RELATED_MIN_SCORE,
         )
 
         note = NoteMetadata(
