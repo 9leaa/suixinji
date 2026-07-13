@@ -1,0 +1,1 @@
+{"case_id":"java_to_python","messages":["我想学习 Java","我现在不想继续学习 Java，短期重点放在 Python Agent。","记得完善 README","完成 README"],"queries":[{"query":"我短期重点学什么","must_include":"Python"},{"query":"有什么待办","must_include":"README"},{"query":"README 状态","must_include":"完成"}]}

@@ -1,0 +1,4 @@
+{"case_id":"pref_java_python","text":"我现在不想继续学习 Java，短期重点放在 Python Agent。","should_store":true,"expected_types":["preference","semantic"],"must_include_any":["Java","Python","Agent"]}
+{"case_id":"task_readme","text":"记得完善随心记项目 README。","should_store":true,"expected_types":["task"],"must_include_any":["README"]}
+{"case_id":"low_value_hello","text":"你好","should_store":false,"expected_types":[]}
+{"case_id":"allergy_preference","text":"我苹果过敏","should_store":true,"expected_types":["preference"],"must_include_any":["苹果"]}

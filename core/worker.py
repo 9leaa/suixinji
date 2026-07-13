@@ -11,6 +11,7 @@ from core.settings import RELATED_MIN_SCORE, RELATED_TOP_K
 from core.wal import load_pending_records, mark_processed
 from storage.note_storage import NoteMetadata, load_index, note_exists, save_note
 from core.llm_client import embed_text
+from memory.service import process_note_memory
 from storage.vector_store import (
     VectorItem,
     add_vector_item,
@@ -154,6 +155,22 @@ def process_record(record: dict[str, Any]) -> None:
                         "ts": record["ts"],
                     },
                 ),
+            )
+
+        try:
+            with observe("worker.write_memory", extra={"note_id": record_id}, **ctx):
+                process_note_memory(note, classification={
+                    "title": classification.title,
+                    "tags": classification.tags,
+                    "type": classification.type,
+                    "summary": classification.summary,
+                })
+        except Exception:
+            LOGGER.exception(
+                "Memory processing failed after note was saved: space_id=%s message_id=%s record_id=%s",
+                space_id,
+                message_id,
+                record_id,
             )
 
         with observe("worker.mark_processed", **ctx):

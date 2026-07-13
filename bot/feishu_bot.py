@@ -33,6 +33,21 @@ from core.wal import (
     load_pending_records,
 )
 from core.worker import process_pending
+from memory.service import (
+    format_memory_conflicts,
+    format_memory_consolidate,
+    format_memory_correct,
+    format_memory_forget,
+    format_memory_list,
+    format_memory_purge,
+    format_memory_search,
+    format_memory_show,
+    format_memory_stats,
+    format_trace_id,
+    format_trace_latest,
+    format_trace_memory,
+)
+from memory.scheduler import start_memory_scheduler
 from runtime.delivery_store import recover_stale_reserved_deliveries
 from runtime.executor import get_task_executor
 from runtime.pending_drainer import PendingDrainer
@@ -377,6 +392,55 @@ def _handle_direct_query_command(space_id: str, text: str) -> str | None:
 
     return None
 
+
+def _handle_memory_command(space_id: str, text: str) -> str | None:
+    if not (text == "/memory" or text.startswith("/memory ")):
+        return None
+
+    raw = text.removeprefix("/memory").strip()
+    if not raw:
+        return "用法：/memory list｜show <id>｜search <内容>｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
+
+    parts = raw.split(maxsplit=2)
+    action = parts[0].lower()
+
+    if action == "list":
+        return format_memory_list(space_id)
+    if action == "show" and len(parts) >= 2:
+        return format_memory_show(parts[1])
+    if action == "search" and len(parts) >= 2:
+        query = raw.removeprefix("search").strip()
+        return format_memory_search(space_id, query)
+    if action == "forget" and len(parts) >= 2:
+        return format_memory_forget(parts[1])
+    if action == "purge" and len(parts) >= 2:
+        return format_memory_purge(parts[1])
+    if action == "correct" and len(parts) >= 3:
+        return format_memory_correct(parts[1], parts[2])
+    if action == "conflicts":
+        return format_memory_conflicts(space_id)
+    if action == "stats":
+        return format_memory_stats(space_id)
+    if action == "consolidate" and len(parts) >= 2:
+        return format_memory_consolidate(space_id, parts[1])
+
+    return "用法：/memory list｜show <id>｜search <内容>｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
+
+
+def _handle_trace_command(text: str) -> str | None:
+    if not (text == "/trace" or text.startswith("/trace ")):
+        return None
+
+    raw = text.removeprefix("/trace").strip()
+    if not raw or raw == "latest":
+        return format_trace_latest()
+    if raw.startswith("memory "):
+        memory_id = raw.removeprefix("memory").strip()
+        if not memory_id:
+            return "用法：/trace memory <memory_id>"
+        return format_trace_memory(memory_id)
+    return format_trace_id(raw)
+
 def handle_text_message(data: P2ImMessageReceiveV1) -> None:
     """Handle a Feishu im.message.receive_v1 event."""
     event = data.event
@@ -440,6 +504,16 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
     direct_query_reply = _handle_direct_query_command(space_id, text)
     if direct_query_reply is not None:
         safe_send_text(chat_id, direct_query_reply)
+        return
+
+    memory_reply = _handle_memory_command(space_id, text)
+    if memory_reply is not None:
+        safe_send_text(chat_id, memory_reply)
+        return
+
+    trace_reply = _handle_trace_command(text)
+    if trace_reply is not None:
+        safe_send_text(chat_id, trace_reply)
         return
 
     if text == "/status":
@@ -643,6 +717,7 @@ def start() -> None:
     pending_drainer.drain_once()
     pending_drainer.start()
     start_summary_scheduler(safe_send_text, executor=executor)
+    start_memory_scheduler()
 
     ws_client = lark.ws.Client(
         APP_ID,

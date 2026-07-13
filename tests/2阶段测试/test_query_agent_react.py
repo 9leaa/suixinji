@@ -53,7 +53,9 @@ def test_answer_question_runs_filter_tool_then_returns_final_answer(monkeypatch)
 
     answer = query_agent.answer_question(SPACE_ID, "我现在有哪些任务？", max_steps=2)
 
-    assert answer == "你现在有 1 个任务：测试任务。"
+    assert answer.startswith("你现在有 1 个任务：测试任务。")
+    assert "来源：" in answer
+    assert "note:task-1" in answer
     assert prompts[0]["observations"] == []
     assert prompts[1]["observations"][0]["tool"] == "filter_notes"
     assert prompts[1]["observations"][0]["result"][0]["id"] == "task-1"
@@ -78,7 +80,8 @@ def test_answer_question_defaults_to_semantic_search_when_llm_returns_no_action(
 
     answer = query_agent.answer_question(SPACE_ID, "上次说的总结功能是什么？", max_steps=1)
 
-    assert answer == "找到语义结果。"
+    assert answer.startswith("找到语义结果。")
+    assert "note:semantic-1" in answer
     assert calls == [(SPACE_ID, "上次说的总结功能是什么？", 5, query_agent.DEFAULT_QUERY_MIN_SCORE)]
 
 

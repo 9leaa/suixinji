@@ -10,6 +10,8 @@ from core.llm_client import complete_json, embed_text
 from core.observability import log_event, observe
 from core.settings import QUERY_MIN_SCORE, QUERY_TOP_K
 from core.taxonomy import is_valid_tag, is_valid_type, normalize_tag, normalize_type
+from memory.service import memory_search
+from memory.trace import add_step, finish_trace, start_trace
 from storage.note_storage import load_index
 from storage.vector_store import search_related
 
@@ -28,6 +30,7 @@ REACT_SYSTEM_PROMPT = f"""
 3. list_recent(days, limit): 查看最近若干天笔记。
 4. get_note(note_id): 按 id 读取一条完整笔记。
 5. follow_links(note_id, limit): 查看某条笔记 related 关联的笔记，包括它指向的笔记和指向它的笔记。
+6. memory_search(query, memory_type, limit): 查询长期记忆，适合用户事实、偏好、任务状态和长期背景。
 
 每一步只能输出 JSON object。
 
@@ -43,6 +46,7 @@ REACT_SYSTEM_PROMPT = f"""
 - 如果用户同时给出 type 和 tags，调用 filter_notes。
 - 用户没有明确 type/tags，或只是用自然语言描述想找的内容时，才调用 semantic_search。
 - 用户通常不知道 note_id。调用 follow_links 前，必须先通过 semantic_search、filter_notes 或 list_recent 找到候选 note_id。
+- 如果用户问长期偏好、习惯、当前任务状态或“我现在/我喜欢/我住在哪/我重点做什么”，优先调用 memory_search。
 - 如果用户问“和某条笔记相关的有哪些”，先 semantic_search 找候选 note_id，再 follow_links。
 - 回答只能基于 observations，不要编造。
 - 如果没有找到相关笔记，要明确说没找到。
@@ -105,12 +109,65 @@ def _coerce_bool(value: Any, default: bool = True) -> bool:
 
 def _safe_tool_args(action: str, args: dict[str, Any]) -> dict[str, Any]:
     safe: dict[str, Any] = {"tool": action}
-    for key in ("type", "note_type", "tags", "tag", "limit", "top_k", "min_score", "days", "note_id", "match_all_tags"):
+    for key in ("type", "note_type", "tags", "tag", "limit", "top_k", "min_score", "days", "note_id", "match_all_tags", "memory_type"):
         if key in args:
             safe[key] = args.get(key)
     if "query" in args:
         safe["query_len"] = len(str(args.get("query") or ""))
     return safe
+
+
+def _result_ids(result: Any) -> list[str]:
+    ids: list[str] = []
+    if isinstance(result, list):
+        for item in result:
+            if isinstance(item, dict) and item.get("id"):
+                ids.append(str(item["id"]))
+    elif isinstance(result, dict):
+        if result.get("id"):
+            ids.append(str(result["id"]))
+        for key in ("related", "candidates"):
+            for item in result.get(key, []) if isinstance(result.get(key), list) else []:
+                if isinstance(item, dict) and item.get("id"):
+                    ids.append(str(item["id"]))
+    return ids[:10]
+
+
+def _source_lines(observations: list[dict[str, Any]], limit: int = 5) -> list[str]:
+    lines: list[str] = []
+    seen: set[str] = set()
+    for observation in observations:
+        result = observation.get("result")
+        items: list[dict[str, Any]] = []
+        if isinstance(result, list):
+            items.extend(item for item in result if isinstance(item, dict))
+        elif isinstance(result, dict):
+            items.append(result)
+            items.extend(item for item in result.get("related", []) if isinstance(item, dict))
+            items.extend(item for item in result.get("candidates", []) if isinstance(item, dict))
+
+        for item in items:
+            item_id = str(item.get("id") or "")
+            if not item_id or item_id in seen:
+                continue
+            seen.add(item_id)
+            if item.get("memory_type"):
+                source_count = len(item.get("sources") or [])
+                lines.append(f"- memory:{item_id}｜{item.get('memory_type')}｜sources={source_count}")
+            else:
+                title = item.get("title") or item_id
+                time = item.get("time") or item.get("ts") or ""
+                lines.append(f"- note:{item_id}｜{title}｜{str(time)[:10]}")
+            if len(lines) >= limit:
+                return lines
+    return lines
+
+
+def _with_sources(answer: str, observations: list[dict[str, Any]]) -> str:
+    sources = _source_lines(observations)
+    if not sources:
+        return answer
+    return answer.rstrip() + "\n\n来源：\n" + "\n".join(sources)
 
 
 def _log_final_answer(
@@ -377,17 +434,32 @@ def _execute_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
             args.get("min_score", DEFAULT_QUERY_MIN_SCORE),
             args.get("limit", 5),
         )
+    if action == "memory_search":
+        return memory_search(
+            space_id,
+            str(args.get("query", "")),
+            memory_type=args.get("memory_type"),
+            limit=args.get("limit", 8),
+        )
 
     return {"error": f"unknown tool: {action}"}
 
 
-def _run_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
+def _run_tool(space_id: str, action: str, args: dict[str, Any], *, trace: dict[str, Any] | None = None) -> Any:
     with observe(
         "query.tool_call",
         space_id=space_id,
         extra=_safe_tool_args(action, args),
     ):
-        return _execute_tool(space_id, action, args)
+        result = _execute_tool(space_id, action, args)
+    step = "memory_search" if action == "memory_search" else "note_search"
+    add_step(
+        trace,
+        step,
+        input_summary=_safe_tool_args(action, args),
+        output_summary={"result_count": len(_result_ids(result)), "ids": _result_ids(result)},
+    )
+    return result
 
 
 def _fallback_answer(observations: list[dict[str, Any]]) -> str:
@@ -442,6 +514,8 @@ def _synthesize_answer(question: str, observations: list[dict[str, Any]]) -> str
 
 def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
     question = question.strip()
+    trace = start_trace("memory_query", space_id, query_len=len(question))
+    add_step(trace, "query_received", input_summary={"question_len": len(question), "max_steps": max_steps})
     with observe(
         "query.answer_question",
         space_id=space_id,
@@ -450,51 +524,93 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
         if not question:
             answer = "你想问什么？可以这样发：/ask 上次说的那件事是什么"
             _log_final_answer(space_id, answer, source="empty_question")
+            add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)}, reason="empty_question")
+            finish_trace(trace)
             return answer
 
         observations: list[dict[str, Any]] = []
 
-        for step in range(max_steps):
-            payload = {
-                "question": question,
-                "step": step + 1,
-                "observations": observations,
-            }
-
-            decision = complete_json(
-                system_prompt=REACT_SYSTEM_PROMPT,
-                user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
+        try:
+            add_step(
+                trace,
+                "query_routed",
+                output_summary={"tool": "memory_search", "safe_args": {"tool": "memory_search", "query_len": len(question), "limit": 5}},
+                reason="prefetch_active_memory",
             )
+            memory_prefetch = _run_tool(space_id, "memory_search", {"query": question, "limit": 5}, trace=trace)
+            if memory_prefetch:
+                observations.append(
+                    {
+                        "thought": "先召回最新 active 长期记忆。",
+                        "tool": "memory_search",
+                        "args": {"query_len": len(question), "limit": 5},
+                        "result": memory_prefetch,
+                    }
+                )
+                add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(memory_prefetch)})
 
-            final_answer = str(decision.get("final_answer") or "").strip()
-            if final_answer and observations:
-                _log_final_answer(space_id, final_answer, source="react_final", observations=observations)
-                return final_answer
-
-            action = decision.get("action")
-            args = decision.get("args") or {}
-
-            if not action:
-                action = "semantic_search"
-                args = {
-                    "query": question,
-                    "top_k": QUERY_TOP_K,
-                    "min_score": DEFAULT_QUERY_MIN_SCORE,
+            for step in range(max_steps):
+                payload = {
+                    "question": question,
+                    "step": step + 1,
+                    "observations": observations,
                 }
 
-            if not isinstance(args, dict):
-                args = {}
+                decision = complete_json(
+                    system_prompt=REACT_SYSTEM_PROMPT,
+                    user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
+                )
 
-            result = _run_tool(space_id, str(action), args)
-            observations.append(
-                {
-                    "thought": decision.get("thought"),
-                    "tool": action,
-                    "args": args,
-                    "result": result,
-                }
-            )
+                final_answer = str(decision.get("final_answer") or "").strip()
+                if final_answer and observations:
+                    answer = _with_sources(final_answer, observations)
+                    _log_final_answer(space_id, answer, source="react_final", observations=observations)
+                    add_step(trace, "answer_generated", output_summary={"answer_len": len(final_answer)}, reason="react_final")
+                    add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                    finish_trace(trace)
+                    return answer
 
-        answer = _synthesize_answer(question, observations)
-        _log_final_answer(space_id, answer, source="synthesized", observations=observations)
-        return answer
+                action = decision.get("action")
+                args = decision.get("args") or {}
+
+                if not action:
+                    action = "semantic_search"
+                    args = {
+                        "query": question,
+                        "top_k": QUERY_TOP_K,
+                        "min_score": DEFAULT_QUERY_MIN_SCORE,
+                    }
+
+                if not isinstance(args, dict):
+                    args = {}
+
+                add_step(
+                    trace,
+                    "query_routed",
+                    input_summary={"step": step + 1},
+                    output_summary={"tool": action, "safe_args": _safe_tool_args(str(action), args)},
+                    reason=str(decision.get("thought") or ""),
+                )
+
+                result = _run_tool(space_id, str(action), args, trace=trace)
+                observations.append(
+                    {
+                        "thought": decision.get("thought"),
+                        "tool": action,
+                        "args": args,
+                        "result": result,
+                    }
+                )
+                add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
+                add_step(trace, "rerank", output_summary={"strategy": "tool_order", "ids": _result_ids(result)})
+
+            answer = _with_sources(_synthesize_answer(question, observations), observations)
+            _log_final_answer(space_id, answer, source="synthesized", observations=observations)
+            add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="synthesized")
+            add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+            finish_trace(trace)
+            return answer
+        except Exception as exc:
+            add_step(trace, "answer_failed", status="failed", error=str(exc))
+            finish_trace(trace, status="failed")
+            raise

@@ -1,0 +1,2 @@
+{"case_id":"preference_recall","memories":[{"id":"m1","type":"preference","content":"用户喜欢简洁直接的项目评价"},{"id":"m2","type":"semantic","content":"用户正在学习 Agent 工程开发"}],"query":"我喜欢什么评价方式","expected_memory_ids":["m1"],"pass_k":1}
+{"case_id":"task_recall","memories":[{"id":"m1","type":"task","content":"完善随心记项目 README"},{"id":"m2","type":"semantic","content":"用户住在上海"}],"query":"README 要做什么","expected_memory_ids":["m1"],"pass_k":1}

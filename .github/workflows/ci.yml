@@ -35,3 +35,4 @@ jobs:
           python eval/eval_retrieval.py --dry-run
           python eval/eval_summary.py --dry-run
           python eval/eval_query_react.py --dry-run
+          python eval/eval_memory.py --dry-run

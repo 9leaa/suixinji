@@ -3,6 +3,11 @@
   "retrieval_pass_rate": 0.95,
   "query_pass_rate": 0.9,
   "summary_pass_rate": 1.0,
+  "memory_evaluation_status": "deterministic_eval_passed",
+  "memory_extraction_f1": 1.0,
+  "memory_retrieval_recall_at_5": 1.0,
+  "memory_conflict_accuracy": 1.0,
+  "memory_lifecycle_accuracy": 1.0,
   "p50_ingest_latency_ms": null,
   "p95_ingest_latency_ms": null,
   "p50_query_latency_ms": null,
@@ -12,6 +17,7 @@
   "known_failures": [
     "真实 LLM 分类仍可能受 prompt 和 taxonomy 边界影响，需要持续收集 /feedback 样例。",
     "当前本地 JSON 向量索引适合学习项目，不适合超大规模笔记或多进程写入。",
+    "Memory V2 当前使用确定性规则提取和关系判断，复杂语义合并需要后续扩大评测集。",
     "dry-run 指标只验证评测样例和流程，不代表真实线上 LLM 质量。"
   ]
 }

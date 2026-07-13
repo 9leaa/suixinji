@@ -1,0 +1,3 @@
+{"case_id":"coffee","messages":["我喜欢咖啡","最近胃不舒服，暂时不喝咖啡"],"query":"咖啡","must_return_latest":"暂时不喝咖啡"}
+{"case_id":"city","messages":["我住在北京","我搬到上海了"],"query":"住在哪","must_return_latest":"上海"}
+{"case_id":"ambiguous_work","messages":["我喜欢远程工作","我更喜欢去办公室工作"],"query":"工作偏好","must_conflict_count":2}

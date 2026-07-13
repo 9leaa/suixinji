@@ -1,0 +1,4 @@
+{"case_id":"forget_deleted","message":"我喜欢苹果","operation":"forget","query":"苹果","expected_no_active_result":true}
+{"case_id":"correct_content","message":"我住在北京","operation":"correct","corrected":"用户住在上海","query":"上海","expected_active_result":true}
+{"case_id":"expire_hidden","message":"我住在北京","operation":"expire","query":"北京","expected_no_active_result":true}
+{"case_id":"task_done","messages":["记得完善 README","完成 README"],"operation":"task_done","expected_task_status":"done"}

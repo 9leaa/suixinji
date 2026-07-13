@@ -18,6 +18,7 @@ Feishu Receiver
   -> related search
   -> save markdown + index.json
   -> save vector
+  -> extract / consolidate Memory V2
   -> mark WAL processed
 ```
 
@@ -57,6 +58,106 @@ create BoundedTaskExecutor
 ```
 
 默认查询参数来自 `core/settings.py`：`QUERY_TOP_K=5`、`QUERY_MIN_SCORE=0.55`。
+
+长期记忆查询通过 `memory_search` 工具和 `/memory search` 命令读取 `data/memory/memory.db` 中最新 `active` 记忆。`superseded`、`deleted` 和 `expired` 默认不会作为当前事实返回。
+
+## Memory V2
+
+Memory V2 将原始笔记和长期记忆分离：
+
+```text
+原始笔记
+  -> extract_candidates
+  -> retrieve active same-type memories
+  -> classify_relation
+  -> insert / add_source / merge / supersede
+  -> write memory trace
+```
+
+存储位于 `data/memory/memory.db`，核心表：
+
+```text
+memories          当前记忆内容、类型、状态、重要性、置信度、访问次数
+memory_sources    记忆与原始 note_id 的来源关系
+memory_versions   每次创建、修正、删除、supersede 的版本记录
+```
+
+短期支持四类记忆：
+
+```text
+episodic    具体事件
+semantic    稳定事实
+preference  偏好和约束
+task        待办和进度，含 todo/in_progress/blocked/done/cancelled
+```
+
+用户命令：
+
+```text
+/memory list
+/memory show <id>
+/memory search <内容>
+/memory forget <id>
+/memory purge <id>
+/memory correct <id> <新内容>
+/memory conflicts
+/memory stats
+/memory consolidate daily|weekly|monthly
+```
+
+当前提取器和关系判断器是确定性规则实现，不调用外部 API。它会过滤寒暄、低价值单句和明显敏感凭据；重复记忆只追加来源；明确变化的偏好或事实会将旧记忆置为 `superseded` 并创建新 active 记忆。
+
+Consolidation 入口：
+
+```text
+daily    process_unextracted_notes：处理尚未提取记忆的历史笔记
+weekly   merge_duplicate_episodic：合并重复情景记忆并保留来源
+monthly  generate_stable_semantic：由多条 episodic 生成稳定 semantic
+```
+
+`memory/scheduler.py` 在启动时创建后台线程，每小时检查一次：每天触发 daily，每周一触发 weekly，每月 1 日触发 monthly。`/memory consolidate daily|weekly|monthly` 保留为手动运维入口。
+
+`memory_vectors` 表已作为迁移占位保留，当前向量仍使用现有 JSON 向量索引。
+
+## Memory Trace
+
+Memory trace 写入 `data/memory/traces.jsonl`。默认只记录 ID、长度、类型、分数、状态和原因摘要，不记录完整原文、完整 Prompt 或 API key。
+
+写入 trace 关键步骤：
+
+```text
+note_saved
+memory_extraction_started
+candidate_extracted
+similar_memories_retrieved
+relation_classified
+memory_inserted / memory_merged / memory_superseded / memory_discarded
+trace_finished
+```
+
+查询 trace 关键步骤：
+
+```text
+query_received
+query_routed
+memory_search
+note_search
+rerank
+evidence_selected
+answer_generated
+answer_returned
+```
+
+`/ask` 默认先执行 active memory prefetch；如果命中长期记忆，最终回答会附带来源。
+
+查看方式：
+
+```text
+/trace latest
+/trace <trace_id>
+/trace memory <memory_id>
+python scripts/show_trace.py --trace-id <trace_id>
+```
 
 ## 总结链路
 
@@ -176,9 +277,22 @@ python eval/eval_classification.py --dry-run
 python eval/eval_retrieval.py --dry-run
 python eval/eval_summary.py --dry-run
 python eval/eval_query_react.py --dry-run
+python eval/eval_memory.py --dry-run
 ```
 
-CI 在 Python 3.10 和 3.11 上运行，设置 `timeout-minutes: 10`。评测样例位于 `eval/data/`，展示指标位于 `docs/metrics/latest.json`。Dry-run 只验证数据和流程，不调用真实 LLM 或 embedding API。
+CI 在 Python 3.10 和 3.11 上运行，设置 `timeout-minutes: 10`。评测样例位于 `eval/data/` 和 `eval/memory/`，展示指标位于 `docs/metrics/latest.json`。Dry-run 只验证数据和流程，不调用真实 LLM 或 embedding API。
+
+Memory Evaluation 覆盖：
+
+```text
+extraction_cases.jsonl
+filtering_cases.jsonl
+relation_cases.jsonl
+conflict_cases.jsonl
+lifecycle_cases.jsonl
+retrieval_cases.jsonl
+end_to_end_cases.jsonl
+```
 
 未真实测量的延迟字段使用 `null` 和 `measurement_status=not_measured`。后续可用 `scripts/build_metrics.py` 从结构化日志生成真实运行时指标。
 
@@ -190,3 +304,4 @@ CI 在 Python 3.10 和 3.11 上运行，设置 `timeout-minutes: 10`。评测样
 - 飞书发送没有严格 exactly-once 保证；当前实现提供本地幂等和 unknown 状态保护。
 - 语音、图片、文件尚未进入 WAL。
 - LLM 输出质量需要通过真实 `/feedback` 样例持续评估。
+- Memory V2 当前规则提取器适合第一版可测链路，复杂语义合并需要后续 LLM 提取器和更强评测集。

@@ -12,6 +12,7 @@ eval/results/
 data/logs/
 data/feedback/
 data/deliveries/
+data/memory/
 data/suixinji.pid
 data/logs/runtime.log
 backups/

@@ -1,0 +1,5 @@
+{"case_id":"hello","text":"你好","should_store":false}
+{"case_id":"weather","text":"今天天气不错","should_store":false}
+{"case_id":"laugh","text":"哈哈","should_store":false}
+{"case_id":"received","text":"收到","should_store":false}
+{"case_id":"low_confidence_guess","text":"可能以后会学 Java","should_store":false}

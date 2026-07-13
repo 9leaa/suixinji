@@ -18,6 +18,7 @@ eval-dry-run:
 	$(PYTHON) eval/eval_retrieval.py --dry-run
 	$(PYTHON) eval/eval_summary.py --dry-run
 	$(PYTHON) eval/eval_query_react.py --dry-run
+	$(PYTHON) eval/eval_memory.py --dry-run
 
 lint:
 	$(PYTHON) -m ruff check .
