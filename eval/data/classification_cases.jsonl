@@ -1,0 +1,36 @@
+{"case_id": "cls_task_reminder", "text": "明天晚上提醒我把 P4 自动总结的测试跑一遍。", "expected_type": "任务", "acceptable_types": ["任务"], "expected_tags_any": ["提醒", "待办", "计划", "检查"], "min_tag_hits": 2}
+{"case_id": "cls_task_deadline", "text": "周五之前要把 README 里的部署说明补完整，别忘了检查环境变量。", "expected_type": "任务", "acceptable_types": ["任务"], "expected_tags_any": ["截止时间", "待办", "检查", "提醒"], "min_tag_hits": 2}
+{"case_id": "cls_task_blocker", "text": "现在自动总结还卡在权限控制这里，得先确认群聊里谁可以开启订阅。", "expected_type": "任务", "acceptable_types": ["任务"], "expected_tags_any": ["阻塞", "待确认", "协作", "问题"], "min_tag_hits": 2}
+{"case_id": "cls_task_done", "text": "已经把第一阶段和第二阶段的测试都跑通了，42 个用例全绿。", "expected_type": "任务", "acceptable_types": ["任务", "学习"], "expected_tags_any": ["已完成", "检查", "总结", "复盘"], "min_tag_hits": 2}
+{"case_id": "cls_task_followup", "text": "记得跟进一下 zcj_hello 环境里的 pytest 依赖，避免换环境后跑不起来。", "expected_type": "任务", "acceptable_types": ["任务"], "expected_tags_any": ["跟进", "提醒", "待处理", "检查"], "min_tag_hits": 2}
+{"case_id": "cls_task_collab", "text": "找朋友帮忙试用随心记，收集三条真实失败反馈。", "expected_type": "任务", "acceptable_types": ["任务"], "expected_tags_any": ["协作", "跟进", "待办", "计划"], "min_tag_hits": 2}
+{"case_id": "cls_learning_note", "text": "今天看完了 RAG 里关于语义分块的章节，感觉按标题层级切分不一定适合长文。", "expected_type": "学习", "acceptable_types": ["学习"], "expected_tags_any": ["笔记", "概念", "总结", "知识点"], "min_tag_hits": 2}
+{"case_id": "cls_learning_question", "text": "不太理解 ReAct 里 observation 应该保留多少上下文，太多会不会干扰后续工具选择？", "expected_type": "学习", "acceptable_types": ["学习"], "expected_tags_any": ["疑问", "概念", "方法", "问题"], "min_tag_hits": 2}
+{"case_id": "cls_learning_practice", "text": "今天练习用 pytest 的 monkeypatch，把 LLM 和 embedding 都替换成假的函数。", "expected_type": "学习", "acceptable_types": ["学习"], "expected_tags_any": ["练习", "方法", "笔记", "知识点"], "min_tag_hits": 2}
+{"case_id": "cls_learning_paper", "text": "读了一篇关于 agent memory 的论文，里面把 episodic memory 和 semantic memory 分开讨论。", "expected_type": "学习", "acceptable_types": ["学习", "资料"], "expected_tags_any": ["论文", "概念", "知识点", "笔记"], "min_tag_hits": 2}
+{"case_id": "cls_learning_course", "text": "课程里提到 Plan-and-Solve 适合复杂输出，可以先列计划再生成答案。", "expected_type": "学习", "acceptable_types": ["学习"], "expected_tags_any": ["课程", "方法", "概念", "知识点"], "min_tag_hits": 2}
+{"case_id": "cls_learning_book", "text": "书里说好系统要有反馈闭环，测试和真实使用数据都属于反馈。", "expected_type": "学习", "acceptable_types": ["学习"], "expected_tags_any": ["书籍", "概念", "总结", "知识点"], "min_tag_hits": 2}
+{"case_id": "cls_idea_product", "text": "随心记以后可以在总结后面加一个一键生成明日计划的按钮。", "expected_type": "灵感", "acceptable_types": ["灵感"], "expected_tags_any": ["产品想法", "改进", "可能性", "想法"], "min_tag_hits": 2}
+{"case_id": "cls_idea_writing", "text": "想写一篇文章，主题是为什么学习 agent 要先做一个能用的小系统。", "expected_type": "灵感", "acceptable_types": ["灵感", "学习"], "expected_tags_any": ["写作", "想法", "创意", "总结"], "min_tag_hits": 2}
+{"case_id": "cls_idea_design", "text": "summary 的排版可以更像日报，先给结论，再列任务、学习、生活和情绪。", "expected_type": "灵感", "acceptable_types": ["灵感"], "expected_tags_any": ["设计", "改进", "观察", "总结"], "min_tag_hits": 2}
+{"case_id": "cls_idea_flash", "text": "突然想到：相关笔记不一定只靠 embedding，也可以把相同 tag 的近期笔记混进去。", "expected_type": "灵感", "acceptable_types": ["灵感", "学习"], "expected_tags_any": ["灵光一闪", "改进", "可能性", "想法"], "min_tag_hits": 2}
+{"case_id": "cls_idea_material", "text": "这个测试失败截图可以作为以后写评测文章的素材。", "expected_type": "灵感", "acceptable_types": ["灵感", "资料"], "expected_tags_any": ["素材", "写作", "观察", "案例"], "min_tag_hits": 2}
+{"case_id": "cls_idea_observe", "text": "观察到一个现象：越早把失败样例沉淀下来，后面越敢改 prompt。", "expected_type": "灵感", "acceptable_types": ["灵感", "学习"], "expected_tags_any": ["观察", "改进", "复盘", "想法"], "min_tag_hits": 2}
+{"case_id": "cls_resource_link", "text": "收藏一下飞书开放平台的事件订阅文档，后面部署 webhook 会用到。", "expected_type": "资料", "acceptable_types": ["资料"], "expected_tags_any": ["链接", "文档", "收藏", "备查"], "min_tag_hits": 2}
+{"case_id": "cls_resource_tool", "text": "APScheduler 可以用来做定时任务，不过现在先用 threading 和 sleep 就够了。", "expected_type": "资料", "acceptable_types": ["资料", "学习"], "expected_tags_any": ["工具", "备查", "教程", "方法"], "min_tag_hits": 2}
+{"case_id": "cls_resource_data", "text": "整理一份评测样例数据，包括分类、检索和总结三类 jsonl。", "expected_type": "资料", "acceptable_types": ["资料", "任务"], "expected_tags_any": ["数据", "清单", "备查", "计划"], "min_tag_hits": 2}
+{"case_id": "cls_resource_case", "text": "这个失败样例很典型：用户问任务时，agent 不该先走 semantic_search。", "expected_type": "资料", "acceptable_types": ["资料", "灵感", "学习"], "expected_tags_any": ["案例", "问题", "备查", "观察"], "min_tag_hits": 2}
+{"case_id": "cls_resource_doc", "text": "README 里关于 zcj_hello 测试命令的说明要保留，避免后面忘记环境。", "expected_type": "资料", "acceptable_types": ["资料", "任务"], "expected_tags_any": ["文档", "备查", "提醒", "检查"], "min_tag_hits": 2}
+{"case_id": "cls_resource_list", "text": "P4 的命令清单：/summary、/summary_auto on、off、status、time。", "expected_type": "资料", "acceptable_types": ["资料"], "expected_tags_any": ["清单", "备查", "文档", "总结"], "min_tag_hits": 2}
+{"case_id": "cls_life_exercise", "text": "晚上游泳 40 分钟，感觉肩膀放松了一点。", "expected_type": "生活", "acceptable_types": ["生活"], "expected_tags_any": ["运动", "健康", "日常", "平静"], "min_tag_hits": 2}
+{"case_id": "cls_life_food", "text": "今天中午吃了牛肉面，汤有点咸，但面很劲道。", "expected_type": "生活", "acceptable_types": ["生活"], "expected_tags_any": ["饮食", "日常", "消费", "健康"], "min_tag_hits": 2}
+{"case_id": "cls_life_sleep", "text": "昨晚只睡了 5 个小时，下午明显犯困，今天要早点休息。", "expected_type": "生活", "acceptable_types": ["生活", "情绪"], "expected_tags_any": ["睡眠", "健康", "日常", "疲惫"], "min_tag_hits": 2}
+{"case_id": "cls_life_expense", "text": "这个月云服务器又扣费了，晚上记得看一下账单。", "expected_type": "生活", "acceptable_types": ["生活", "任务"], "expected_tags_any": ["消费", "提醒", "日常", "待处理"], "min_tag_hits": 2}
+{"case_id": "cls_life_social", "text": "晚上和朋友聊了随心记，他说自动总结这个功能挺有用。", "expected_type": "生活", "acceptable_types": ["生活"], "expected_tags_any": ["社交", "日常", "感激", "想法"], "min_tag_hits": 2}
+{"case_id": "cls_life_housework", "text": "周末要把桌面和下载目录都清理一下，文件太乱了。", "expected_type": "生活", "acceptable_types": ["生活", "任务"], "expected_tags_any": ["家务", "安排", "待办", "日常"], "min_tag_hits": 2}
+{"case_id": "cls_mood_pressure", "text": "今天有点焦虑，主要是担心项目后面测评和部署补不完。", "expected_type": "情绪", "acceptable_types": ["情绪"], "expected_tags_any": ["焦虑", "压力", "困惑", "待处理"], "min_tag_hits": 2}
+{"case_id": "cls_mood_happy", "text": "看到 48 个测试全绿，心情挺开心，感觉项目终于稳了一点。", "expected_type": "情绪", "acceptable_types": ["情绪"], "expected_tags_any": ["开心", "期待", "感激", "总结"], "min_tag_hits": 2}
+{"case_id": "cls_mood_tired", "text": "连续调了一下午脚本，有点疲惫，脑子不太转了。", "expected_type": "情绪", "acceptable_types": ["情绪", "生活"], "expected_tags_any": ["疲惫", "压力", "低落", "困惑"], "min_tag_hits": 2}
+{"case_id": "cls_mood_calm", "text": "晚上散步回来以后平静了很多，决定明天再处理部署问题。", "expected_type": "情绪", "acceptable_types": ["情绪", "生活"], "expected_tags_any": ["平静", "决定", "期待", "压力"], "min_tag_hits": 2}
+{"case_id": "cls_mood_grateful", "text": "朋友愿意帮忙试用这个小 bot，挺感激的。", "expected_type": "情绪", "acceptable_types": ["情绪", "生活"], "expected_tags_any": ["感激", "开心", "社交", "期待"], "min_tag_hits": 2}
+{"case_id": "cls_mood_confused", "text": "有点困惑，为什么 summary 的 prompt 明明写了不要编造，还是会补一些没有的细节。", "expected_type": "情绪", "acceptable_types": ["情绪", "学习"], "expected_tags_any": ["困惑", "问题", "焦虑", "疑问"], "min_tag_hits": 2}

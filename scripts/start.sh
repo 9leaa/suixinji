@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PYTHON="/usr/local/anaconda3/envs/zcj_hello/bin/python"
+PID_FILE="$ROOT/data/suixinji.pid"
+LOG_FILE="$ROOT/data/logs/runtime.log"
+
+cd "$ROOT"
+
+"$PYTHON" scripts/check_config.py
+
+mkdir -p "$ROOT/data/logs"
+
+if [[ -f "$PID_FILE" ]]; then
+  OLD_PID="$(cat "$PID_FILE")"
+  if kill -0 "$OLD_PID" 2>/dev/null; then
+    echo "suixinji already running, pid=$OLD_PID"
+    exit 0
+  fi
+  echo "remove stale pid file: $PID_FILE"
+  rm -f "$PID_FILE"
+fi
+
+nohup "$PYTHON" -m bot.feishu_bot >> "$LOG_FILE" 2>&1 &
+echo $! > "$PID_FILE"
+
+echo "suixinji started, pid=$(cat "$PID_FILE")"
+echo "runtime log: $LOG_FILE"

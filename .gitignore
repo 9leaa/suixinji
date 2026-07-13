@@ -1,0 +1,13 @@
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+data/cache/*.jsonl
+data/notes/
+eval/results/
+data/logs/
+data/feedback/
+data/suixinji.pid
+data/logs/runtime.log
+backups/
