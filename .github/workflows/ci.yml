@@ -27,7 +27,7 @@ jobs:
         run: ruff check .
 
       - name: Pytest
-        run: python -m pytest tests --cov=. --cov-report=term-missing --cov-fail-under=54
+        run: python -m pytest tests --cov=. --cov-report=term-missing --cov-fail-under=62
 
       - name: Evaluation dry-run
         run: |

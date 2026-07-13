@@ -33,6 +33,7 @@ from core.wal import (
     load_pending_records,
 )
 from core.worker import process_pending
+from runtime.delivery_store import recover_stale_reserved_deliveries
 from runtime.executor import get_task_executor
 from runtime.pending_drainer import PendingDrainer
 from runtime.task import TASK_REJECTED
@@ -637,6 +638,7 @@ def start() -> None:
     )
 
     executor = get_task_executor(safe_send_text)
+    recover_stale_reserved_deliveries()
     pending_drainer = PendingDrainer(executor)
     pending_drainer.drain_once()
     pending_drainer.start()

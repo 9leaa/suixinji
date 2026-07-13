@@ -86,6 +86,8 @@ MAX_WORKERS = 4
 TASK_QUEUE_SIZE = 100
 PENDING_DRAIN_INTERVAL_SECONDS = 15
 PENDING_DRAIN_BATCH_SIZE = 20
+DELIVERY_RESERVATION_TTL_SECONDS = 600
+DELIVERY_MAX_ATTEMPTS = 3
 TASK_HISTORY_LIMIT = 1000
 TASK_HISTORY_TTL_HOURS = 24
 ```
@@ -147,6 +149,8 @@ data/logs/app-YYYY-MM-DD.jsonl              结构化日志
 - Worker 以 `message_id` 检查笔记是否已存在，避免重复写入。
 - 如果笔记已存在但向量缺失，`backfill_vector_if_missing()` 会补写向量。
 - DeliveryStore 以 delivery key 避免重复发送查询回答、归档成功提示、手动总结和自动总结。
+- 自动总结 scheduler 在提交任务前会调用 `summary/reconciliation.py` 对账：如果当天 auto summary delivery 已经是 `sent`，但订阅 `last_sent_date` 未更新，会直接补写订阅状态并跳过本轮生成。
+- 启动时会调用 `recover_stale_reserved_deliveries()`，把过期 reserved delivery 标记为 failed，允许后续按最大尝试次数重新 reserve。
 - 结构化日志记录成功、失败、拒绝和最近 LLM timeout，供 `/status` 展示。
 
 Delivery key 规则：
@@ -158,7 +162,7 @@ manual_summary:{space_id}:{message_id}
 auto_summary:{space_id}:{range_key}:{date}
 ```
 
-发送状态包括 `reserved`、`sent`、`failed` 和 `unknown`。`unknown` 不会立即自动重发，避免远端已成功但本地无法确认时重复发送。
+发送状态包括 `reserved`、`sent`、`failed` 和 `unknown`。`reserved` 是带 TTL 的租约，不是永久锁；`failed` 可有限重试；`sent` 永不自动重复发送；`unknown` 不会立即自动重发，避免远端已成功但本地无法确认时重复发送。
 
 ## 评测体系
 

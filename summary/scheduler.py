@@ -12,6 +12,7 @@ from core.observability import log_event
 from runtime.delivery_store import auto_summary_key
 from runtime.executor import BoundedTaskExecutor
 from runtime.task import TASK_REJECTED
+from summary.reconciliation import reconcile_auto_summary_delivery
 from summary.subscription import (
     SummarySubscription,
     list_enabled_summary_subscriptions,
@@ -50,12 +51,15 @@ def run_summary_scheduler_once(send_text: Callable[[str, str], bool], executor: 
     )
 
     for sub in subscriptions:
-        if not _is_due(sub, now):
-            continue
-
         trigger_start = time.perf_counter()
         ctx = {"space_id": sub.space_id}
         range_key = sub.range_key
+        if reconcile_auto_summary_delivery(sub.space_id, range_key, today):
+            continue
+
+        if not _is_due(sub, now):
+            continue
+
         log_event(
             "summary.auto.trigger",
             status="start",

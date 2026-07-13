@@ -22,6 +22,7 @@ Feishu
 - 手动和自动总结：`/summary 今天|昨天|一周|一个月|半年|一年`，以及 `/summary_auto on|off|status|time 22:00`。
 - 可靠性设计：WAL 先写入、`message_id` 幂等、pending 后台自动 drain、有界任务队列、同一 `space_id` 写入串行。
 - 发送幂等：查询回答、归档成功提示、手动总结和自动总结都通过 `DeliveryStore` 生成 delivery key，避免重复发送。
+- 状态对账：自动总结如果已经发送但订阅状态没更新，下一轮 scheduler 会按 delivery 记录补写 `last_sent_date`，不会重复生成或发送。
 - 可观测性：结构化日志写入 `data/logs/app-YYYY-MM-DD.jsonl`，`/status` 展示 pending、队列、容量、成功、失败、拒绝和最近错误。
 
 ## 快速启动
@@ -108,6 +109,7 @@ message_received
 - 本地 JSON/Markdown 存储适合学习和小规模使用，不适合多进程高并发生产部署。
 - 同一 `space_id` 写入在进程内串行；跨进程部署需要数据库锁或 OS 文件锁。
 - 飞书接口没有本地 exactly-once 保证；当前通过 delivery key 避免正常重试和重复调度造成重复发送，网络超时等不确定状态会标记为 `unknown`。
+- `reserved` delivery 使用 10 分钟租约，过期后可恢复为 failed 并有限重试；同一 delivery 默认最多尝试 3 次。
 - LLM 质量依赖模型和 prompt，真实失败样例应通过 `/feedback` 持续沉淀到 `eval/data/`。
 
 ## Roadmap
