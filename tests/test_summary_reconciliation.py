@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from runtime.delivery_store import (
     auto_summary_key,
@@ -10,6 +10,8 @@ from runtime.delivery_store import (
 )
 from runtime.task import create_task
 from summary import reconciliation, scheduler, subscription
+
+FIXED_NOW = datetime(2026, 7, 14, 23, 0, tzinfo=timezone.utc)
 
 
 def isolate_subscription_file(monkeypatch, tmp_path):
@@ -73,9 +75,10 @@ def test_unknown_delivery_skips_auto_summary(monkeypatch, tmp_path):
 
 def test_failed_delivery_allows_scheduler_to_submit_again(monkeypatch, tmp_path):
     isolate_subscription_file(monkeypatch, tmp_path)
-    today = datetime.now().astimezone().date().isoformat()
+    today = FIXED_NOW.date().isoformat()
     key = auto_summary_key("space1", "today", today)
     subscription.enable_summary_subscription("space1", "chat1")
+    subscription.update_summary_time("space1", "chat1", "00:00")
     reserve_delivery(key, delivery_type="auto_summary", space_id="space1")
     mark_failed(key, "send failed")
     submitted = []
@@ -85,15 +88,16 @@ def test_failed_delivery_allows_scheduler_to_submit_again(monkeypatch, tmp_path)
             submitted.append((space_id, range_key, chat_id, delivery_key, delivery_type))
             return create_task("summary", space_id, {})
 
-    assert scheduler.run_summary_scheduler_once(lambda chat_id, text: True, executor=FakeExecutor()) == 1
+    assert scheduler.run_summary_scheduler_once(lambda chat_id, text: True, executor=FakeExecutor(), now=FIXED_NOW) == 1
     assert submitted == [("space1", "today", "chat1", key, "auto_summary")]
 
 
 def test_expired_reserved_auto_summary_can_be_submitted_again(monkeypatch, tmp_path):
     isolate_subscription_file(monkeypatch, tmp_path)
-    today = datetime.now().astimezone().date().isoformat()
+    today = FIXED_NOW.date().isoformat()
     key = auto_summary_key("space1", "today", today)
     subscription.enable_summary_subscription("space1", "chat1")
+    subscription.update_summary_time("space1", "chat1", "00:00")
     reserve_delivery(key, delivery_type="auto_summary", space_id="space1")
     _patch_delivery(
         tmp_path,
@@ -107,7 +111,7 @@ def test_expired_reserved_auto_summary_can_be_submitted_again(monkeypatch, tmp_p
             submitted.append((space_id, range_key, chat_id, delivery_key, delivery_type))
             return create_task("summary", space_id, {})
 
-    assert scheduler.run_summary_scheduler_once(lambda chat_id, text: True, executor=FakeExecutor()) == 1
+    assert scheduler.run_summary_scheduler_once(lambda chat_id, text: True, executor=FakeExecutor(), now=FIXED_NOW) == 1
     assert submitted == [("space1", "today", "chat1", key, "auto_summary")]
 
 

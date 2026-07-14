@@ -37,8 +37,13 @@ def _is_due(sub: SummarySubscription, now: datetime) -> bool:
     return now_minutes >= _minutes(sub.time)
 
 
-def run_summary_scheduler_once(send_text: Callable[[str, str], bool], executor: BoundedTaskExecutor | None = None) -> int:
-    now = datetime.now().astimezone()
+def run_summary_scheduler_once(
+    send_text: Callable[[str, str], bool],
+    executor: BoundedTaskExecutor | None = None,
+    *,
+    now: datetime | None = None,
+) -> int:
+    now = now or datetime.now().astimezone()
     today = now.date().isoformat()
     count = 0
     tick_start = time.perf_counter()

@@ -1,10 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 
 from runtime.delivery_store import auto_summary_key, mark_sent, reserve_delivery
 from runtime.task import create_task
 from summary import reconciliation, scheduler, subscription
+
+FIXED_NOW = datetime(2026, 7, 14, 23, 0, tzinfo=timezone.utc)
 
 
 def isolate_subscription_file(monkeypatch, tmp_path):
@@ -62,10 +64,12 @@ def test_next_tick_repairs_subscription_after_previous_reconcile_failure(monkeyp
 
 def test_one_subscription_reconcile_failure_does_not_block_other_subscription(monkeypatch, tmp_path):
     isolate_subscription_file(monkeypatch, tmp_path)
-    today = datetime.now().astimezone().date().isoformat()
+    today = FIXED_NOW.date().isoformat()
     key = auto_summary_key("space_a", "today", today)
     subscription.enable_summary_subscription("space_a", "chat_a")
     subscription.enable_summary_subscription("space_b", "chat_b")
+    subscription.update_summary_time("space_a", "chat_a", "00:00")
+    subscription.update_summary_time("space_b", "chat_b", "00:00")
     reserve_delivery(key, delivery_type="auto_summary", space_id="space_a")
     mark_sent(key)
 
@@ -82,7 +86,7 @@ def test_one_subscription_reconcile_failure_does_not_block_other_subscription(mo
             submitted.append((space_id, range_key, chat_id, delivery_key, delivery_type))
             return create_task("summary", space_id, {})
 
-    assert scheduler.run_summary_scheduler_once(lambda chat_id, text: True, executor=FakeExecutor()) == 1
+    assert scheduler.run_summary_scheduler_once(lambda chat_id, text: True, executor=FakeExecutor(), now=FIXED_NOW) == 1
     assert submitted == [("space_b", "today", "chat_b", auto_summary_key("space_b", "today", today), "auto_summary")]
 
 
