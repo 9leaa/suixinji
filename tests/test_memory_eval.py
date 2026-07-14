@@ -16,5 +16,7 @@ def test_memory_eval_full_run(tmp_path):
 
     assert report["mode"] == "memory"
     assert "summary" in report
+    assert report["summary"]["consolidation_duplicate_rate"] == 0.0
+    assert report["summary"]["low_relevance_filter_rate"] >= 0.9
     assert Path(tmp_path / "memory_extraction.json").exists()
-
+    assert Path(tmp_path / "memory_hardening.json").exists()

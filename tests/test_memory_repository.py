@@ -67,7 +67,15 @@ def test_expired_memory_is_hidden_from_default_search():
 
     assert expire(memory.id) is True
     assert search_memories("space-1", "上海") == []
-    assert search_memories("space-1", "上海", include_inactive=True)
+    assert search_memories("space-1", "上海", include_inactive=True, min_score=0.1)
+
+
+def test_search_memories_respects_min_score():
+    insert_memory("space-1", MemoryCandidate("preference", "用户喜欢咖啡", 0.8, 0.9), source_note_id="note-1")
+
+    assert search_memories("space-1", "喜欢", min_score=0.1)
+    assert search_memories("space-1", "喜欢", min_score=0.95) == []
+    assert search_memories("space-1", "火星基地", min_score=0.1) == []
 
 
 def test_purge_memory_removes_record_and_audit_rows():

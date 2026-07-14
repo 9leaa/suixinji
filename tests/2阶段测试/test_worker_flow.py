@@ -82,6 +82,27 @@ def test_process_record_existing_note_backfills_vector_and_marks_processed(monke
     ]
 
 
+def test_process_record_existing_note_recovers_retryable_memory_once(monkeypatch):
+    calls = []
+    existing_note = {"id": "note-1", "message_id": "message-1", "space_id": "space-1", "text": "我喜欢咖啡"}
+
+    monkeypatch.setattr(worker, "note_exists", lambda space_id, message_id: True)
+    monkeypatch.setattr(worker, "_find_note_by_message_id", lambda space_id, message_id: existing_note)
+    monkeypatch.setattr(worker, "backfill_vector_if_missing", lambda space_id, message_id: calls.append(("vector", space_id, message_id)) or False)
+    monkeypatch.setattr(worker, "get_extraction_state", lambda note_id: SimpleNamespace(status="failed"))
+    monkeypatch.setattr(worker, "process_note_memory", lambda note: calls.append(("memory", note["id"])))
+    monkeypatch.setattr(worker, "mark_processed", lambda space_id, record_id: calls.append(("marked", space_id, record_id)))
+    monkeypatch.setattr(worker, "classify_text", lambda text: (_ for _ in ()).throw(AssertionError("should not classify existing note")))
+
+    worker.process_record(dict(RECORD))
+
+    assert calls == [
+        ("vector", "space-1", "message-1"),
+        ("memory", "note-1"),
+        ("marked", "space-1", "record-1"),
+    ]
+
+
 def test_backfill_vector_if_missing_writes_vector_from_existing_note(monkeypatch):
     added = []
     notes = [

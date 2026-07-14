@@ -12,6 +12,8 @@ MEMORY_TYPES = {"episodic", "semantic", "preference", "task"}
 MEMORY_STATUSES = {"active", "superseded", "conflicted", "deleted", "expired"}
 TASK_STATUSES = {"todo", "in_progress", "blocked", "done", "cancelled"}
 SOURCE_RELATIONS = {"created_from", "supported_by", "updated_by", "contradicted_by"}
+MEMORY_EXTRACTION_STATUSES = {"pending", "processing", "completed", "empty", "partial", "failed"}
+MEMORY_CONSOLIDATION_STATUSES = {"running", "completed", "failed"}
 
 
 def utc_now_iso() -> str:
@@ -74,6 +76,33 @@ class MemoryVersion:
 
 
 @dataclass(frozen=True)
+class MemoryExtractionState:
+    note_id: str
+    space_id: str
+    status: str
+    candidate_count: int
+    processed_count: int
+    attempt_count: int
+    last_error: str | None
+    started_at: str | None
+    completed_at: str | None
+    updated_at: str
+
+
+@dataclass(frozen=True)
+class ConsolidationRun:
+    id: str
+    space_id: str
+    cadence: str
+    period_key: str
+    status: str
+    started_at: str
+    completed_at: str | None
+    error: str | None
+    result_json: str | None
+
+
+@dataclass(frozen=True)
 class MemoryRecord:
     id: str
     space_id: str
@@ -115,4 +144,3 @@ class MemoryRecord:
             "sources": [source.__dict__ for source in self.sources],
             "versions": [version.__dict__ for version in self.versions],
         }
-

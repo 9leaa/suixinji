@@ -11,6 +11,7 @@ from core.settings import RELATED_MIN_SCORE, RELATED_TOP_K
 from core.wal import load_pending_records, mark_processed
 from storage.note_storage import NoteMetadata, load_index, note_exists, save_note
 from core.llm_client import embed_text
+from memory.repository import get_extraction_state
 from memory.service import process_note_memory
 from storage.vector_store import (
     VectorItem,
@@ -98,15 +99,38 @@ def process_record(record: dict[str, Any]) -> None:
 
     with observe("worker.process_record", **ctx):
         if note_exists(space_id, message_id):
+            note = _find_note_by_message_id(space_id, message_id)
             added_vector = backfill_vector_if_missing(space_id, message_id)
+            recovered_memory = False
+            if note is not None:
+                note_id = str(note.get("id") or "")
+                state = get_extraction_state(note_id) if note_id else None
+                if state is None or state.status in {"pending", "failed", "partial"}:
+                    try:
+                        with observe("worker.recover_memory", extra={"note_id": note_id}, **ctx):
+                            process_note_memory(note)
+                        recovered_memory = True
+                    except Exception:
+                        LOGGER.exception(
+                            "Memory recovery failed for existing note: space_id=%s message_id=%s record_id=%s note_id=%s",
+                            space_id,
+                            message_id,
+                            record_id,
+                            note_id,
+                        )
             LOGGER.info(
-                "Skip WAL record because note already exists: space_id=%s message_id=%s record_id=%s backfilled_vector=%s",
+                "Skip WAL record because note already exists: space_id=%s message_id=%s record_id=%s backfilled_vector=%s recovered_memory=%s",
                 space_id,
                 message_id,
                 record_id,
                 added_vector,
+                recovered_memory,
             )
-            with observe("worker.mark_processed", extra={"reason": "note_exists", "backfilled_vector": added_vector}, **ctx):
+            with observe(
+                "worker.mark_processed",
+                extra={"reason": "note_exists", "backfilled_vector": added_vector, "recovered_memory": recovered_memory},
+                **ctx,
+            ):
                 mark_processed(space_id, record_id)
             return
 

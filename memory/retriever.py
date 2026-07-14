@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from core.settings import MEMORY_QUERY_MIN_SCORE
 from memory.models import MemoryRecord, normalize_content
 
 
@@ -70,7 +71,14 @@ def score_memory(query: str, memory: MemoryRecord) -> float:
     return round(final * status_factor, 4)
 
 
-def search(space_id: str, query: str, *, memory_type: str | None = None, limit: int = 10) -> list[dict[str, object]]:
+def search(
+    space_id: str,
+    query: str,
+    *,
+    memory_type: str | None = None,
+    min_score: float = MEMORY_QUERY_MIN_SCORE,
+    limit: int = 10,
+) -> list[dict[str, object]]:
     from memory.repository import search_memories
 
     return [
@@ -78,5 +86,5 @@ def search(space_id: str, query: str, *, memory_type: str | None = None, limit: 
             **memory.to_dict(),
             "score": score,
         }
-        for memory, score in search_memories(space_id, query, memory_type=memory_type, limit=limit)
+        for memory, score in search_memories(space_id, query, memory_type=memory_type, min_score=min_score, limit=limit)
     ]

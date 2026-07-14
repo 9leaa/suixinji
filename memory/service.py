@@ -5,9 +5,24 @@ from __future__ import annotations
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
+from core.settings import MEMORY_QUERY_MIN_SCORE
 from memory.consolidator import consolidate_candidate
 from memory.extractor import extract_candidates
-from memory.repository import correct_memory, get_memory, list_memories, purge_memory, search_memories, soft_delete_memory, stats
+from memory.repository import (
+    correct_memory,
+    get_extraction_state,
+    get_memory,
+    list_memories,
+    mark_extraction_completed,
+    mark_extraction_empty,
+    mark_extraction_failed,
+    mark_extraction_partial,
+    mark_extraction_processing,
+    purge_memory,
+    search_memories,
+    soft_delete_memory,
+    stats,
+)
 from memory.scheduler import run_memory_consolidation
 from memory.trace import add_step, find_traces_by_memory, finish_trace, get_trace, latest_trace, start_trace
 
@@ -29,6 +44,12 @@ def process_note_memory(note: Any, classification: dict[str, Any] | None = None)
     add_step(trace, "memory_extraction_started", input_summary={"note_id": note_id, "text_len": len(text)})
 
     try:
+        state = mark_extraction_processing(note_id, space_id)
+        add_step(
+            trace,
+            "extraction_state_processing",
+            output_summary={"note_id": note_id, "attempt_count": state.attempt_count},
+        )
         candidates = extract_candidates(note_id, text, classification=classification)
         for candidate in candidates:
             add_step(
@@ -44,22 +65,135 @@ def process_note_memory(note: Any, classification: dict[str, Any] | None = None)
                 reason=candidate.reason,
             )
 
-        results = [consolidate_candidate(space_id, note_id, candidate, trace=trace) for candidate in candidates]
+        if not candidates:
+            state = mark_extraction_empty(note_id, space_id)
+            add_step(
+                trace,
+                "extraction_state_empty",
+                output_summary={
+                    "note_id": note_id,
+                    "candidate_count": state.candidate_count,
+                    "processed_count": state.processed_count,
+                    "attempt_count": state.attempt_count,
+                },
+            )
+            add_step(trace, "vector_written", output_summary={"note_id": note_id, "memory_count": 0}, reason="note_vector_written_before_memory")
+            finish_trace(trace)
+            return {
+                "note_id": note_id,
+                "space_id": space_id,
+                "candidates": 0,
+                "results": [],
+                "trace_id": trace["trace_id"],
+                "extraction_status": "empty",
+            }
+
+        results = []
+        errors = []
+        for candidate in candidates:
+            try:
+                results.append(consolidate_candidate(space_id, note_id, candidate, trace=trace))
+            except Exception as exc:
+                errors.append(f"{type(exc).__name__}: {exc}")
+
         add_step(trace, "vector_written", output_summary={"note_id": note_id, "memory_count": len(results)}, reason="note_vector_written_before_memory")
+
+        if errors and results:
+            state = mark_extraction_partial(
+                note_id,
+                space_id,
+                candidate_count=len(candidates),
+                processed_count=len(results),
+                error="; ".join(errors),
+            )
+            add_step(
+                trace,
+                "extraction_state_partial",
+                status="partial",
+                output_summary={
+                    "note_id": note_id,
+                    "candidate_count": state.candidate_count,
+                    "processed_count": state.processed_count,
+                    "attempt_count": state.attempt_count,
+                    "error_type": "candidate_error",
+                },
+            )
+            finish_trace(trace, status="partial")
+            return {
+                "note_id": note_id,
+                "space_id": space_id,
+                "candidates": len(candidates),
+                "results": results,
+                "errors": errors,
+                "trace_id": trace["trace_id"],
+                "extraction_status": "partial",
+            }
+
+        if errors:
+            error = "; ".join(errors)
+            state = mark_extraction_failed(note_id, space_id, error=error)
+            add_step(
+                trace,
+                "extraction_state_failed",
+                status="failed",
+                output_summary={
+                    "note_id": note_id,
+                    "candidate_count": len(candidates),
+                    "processed_count": 0,
+                    "attempt_count": state.attempt_count,
+                    "error_type": "candidate_error",
+                },
+            )
+            raise RuntimeError(error)
+
+        state = mark_extraction_completed(note_id, space_id, candidate_count=len(candidates), processed_count=len(results))
+        add_step(
+            trace,
+            "extraction_state_completed",
+            output_summary={
+                "note_id": note_id,
+                "candidate_count": state.candidate_count,
+                "processed_count": state.processed_count,
+                "attempt_count": state.attempt_count,
+            },
+        )
         finish_trace(trace)
-        return {"note_id": note_id, "space_id": space_id, "candidates": len(candidates), "results": results, "trace_id": trace["trace_id"]}
+        return {
+            "note_id": note_id,
+            "space_id": space_id,
+            "candidates": len(candidates),
+            "results": results,
+            "trace_id": trace["trace_id"],
+            "extraction_status": "completed",
+        }
     except Exception as exc:
+        current = get_extraction_state(note_id)
+        if current is None or current.status == "processing":
+            state = mark_extraction_failed(note_id, space_id, error=f"{type(exc).__name__}: {exc}")
+            add_step(
+                trace,
+                "extraction_state_failed",
+                status="failed",
+                output_summary={"note_id": note_id, "attempt_count": state.attempt_count, "error_type": type(exc).__name__},
+            )
         add_step(trace, "memory_write_failed", status="failed", error=str(exc))
         finish_trace(trace, status="failed")
         raise
 
 
-def memory_search(space_id: str, query: str, *, memory_type: str | None = None, limit: int = 8) -> list[dict[str, Any]]:
+def memory_search(
+    space_id: str,
+    query: str,
+    *,
+    memory_type: str | None = None,
+    min_score: float = MEMORY_QUERY_MIN_SCORE,
+    limit: int = 8,
+) -> list[dict[str, Any]]:
     trace = start_trace("memory_query", space_id, query_len=len(query))
-    add_step(trace, "query_received", input_summary={"query_len": len(query), "memory_type": memory_type})
+    add_step(trace, "query_received", input_summary={"query_len": len(query), "memory_type": memory_type, "min_score": min_score})
     results = [
         {**memory.to_dict(), "score": score}
-        for memory, score in search_memories(space_id, query, memory_type=memory_type, limit=limit)
+        for memory, score in search_memories(space_id, query, memory_type=memory_type, min_score=min_score, limit=limit)
     ]
     add_step(
         trace,
@@ -142,7 +276,10 @@ def format_memory_conflicts(space_id: str) -> str:
 
 def format_memory_stats(space_id: str) -> str:
     data = stats(space_id)
-    return f"记忆统计：total={data['total']}｜by_type={data['by_type']}｜by_status={data['by_status']}"
+    return (
+        f"记忆统计：total={data['total']}｜by_type={data['by_type']}｜by_status={data['by_status']}｜"
+        f"extraction={data.get('extraction_by_status', {})}｜retryable={data.get('retryable_extraction_count', 0)}"
+    )
 
 
 def format_memory_consolidate(space_id: str, cadence: str) -> str:

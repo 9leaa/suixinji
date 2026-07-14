@@ -2,15 +2,29 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
+from core.settings import MEMORY_EXTRACTION_LEASE_SECONDS
 from memory.candidate_retriever import retrieve_candidates
 from memory.models import MemoryCandidate, utc_now_iso
-from memory.repository import add_source, insert_memory, list_memories, note_has_memory, update_memory
+from memory.repository import add_source, get_extraction_state, insert_memory, list_memories, mark_extraction_failed, update_memory
 from memory.relation_classifier import classify_relation
 from memory.retriever import score_memory
 from memory.trace import add_step
 from storage.note_storage import load_index
+
+
+def _is_processing_stale(updated_at: str | None) -> bool:
+    if not updated_at:
+        return True
+    try:
+        parsed = datetime.fromisoformat(updated_at)
+    except ValueError:
+        return True
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=datetime.now().astimezone().tzinfo)
+    return (datetime.now().astimezone() - parsed).total_seconds() > MEMORY_EXTRACTION_LEASE_SECONDS
 
 
 def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidate, *, trace: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -115,18 +129,34 @@ def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidat
 
 
 def process_unextracted_notes(space_id: str, *, limit: int = 100) -> dict[str, Any]:
-    """Daily consolidation pass: extract memories for notes without memory sources."""
+    """Daily consolidation pass: recover notes without completed extraction state."""
     from memory.service import process_note_memory
 
     processed = []
     skipped = 0
     for note in load_index(space_id)[: max(1, min(int(limit), 500))]:
         note_id = str(note.get("id") or "")
-        if not note_id or note_has_memory(note_id):
+        if not note_id:
             skipped += 1
             continue
+        state = get_extraction_state(note_id)
+        if state is not None and state.status in {"completed", "empty"}:
+            skipped += 1
+            continue
+        if state is not None and state.status == "processing":
+            if not _is_processing_stale(state.updated_at):
+                skipped += 1
+                continue
+            mark_extraction_failed(note_id, space_id, error="stale processing lease expired")
         report = process_note_memory(note)
-        processed.append({"note_id": note_id, "trace_id": report.get("trace_id"), "candidates": report.get("candidates")})
+        processed.append(
+            {
+                "note_id": note_id,
+                "trace_id": report.get("trace_id"),
+                "candidates": report.get("candidates"),
+                "extraction_status": report.get("extraction_status"),
+            }
+        )
     return {"space_id": space_id, "processed": processed, "processed_count": len(processed), "skipped_count": skipped}
 
 

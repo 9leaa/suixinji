@@ -67,10 +67,12 @@ Memory V2 将原始笔记和长期记忆分离：
 
 ```text
 原始笔记
+  -> memory_extraction_states = processing
   -> extract_candidates
   -> retrieve active same-type memories
   -> classify_relation
   -> insert / add_source / merge / supersede
+  -> memory_extraction_states = completed / empty / partial / failed
   -> write memory trace
 ```
 
@@ -80,6 +82,8 @@ Memory V2 将原始笔记和长期记忆分离：
 memories          当前记忆内容、类型、状态、重要性、置信度、访问次数
 memory_sources    记忆与原始 note_id 的来源关系
 memory_versions   每次创建、修正、删除、supersede 的版本记录
+memory_extraction_states  每条 note 的记忆提取状态、候选数、成功数和错误摘要
+memory_consolidation_runs daily/weekly/monthly consolidation 的持久化幂等记录
 ```
 
 短期支持四类记忆：
@@ -105,7 +109,7 @@ task        待办和进度，含 todo/in_progress/blocked/done/cancelled
 /memory consolidate daily|weekly|monthly
 ```
 
-当前提取器和关系判断器是确定性规则实现，不调用外部 API。它会过滤寒暄、低价值单句和明显敏感凭据；重复记忆只追加来源；明确变化的偏好或事实会将旧记忆置为 `superseded` 并创建新 active 记忆。
+当前提取器和关系判断器是确定性规则实现，不调用外部 API。它会过滤寒暄、低价值单句和明显敏感凭据；重复记忆只追加来源；明确变化的偏好或事实会将旧记忆置为 `superseded` 并创建新 active 记忆。每条 note 的提取结果独立记录为 `processing`、`completed`、`empty`、`partial` 或 `failed`，daily consolidation 只重试缺失状态、`failed`、`partial` 和超时的 `processing`。
 
 Consolidation 入口：
 
@@ -115,9 +119,9 @@ weekly   merge_duplicate_episodic：合并重复情景记忆并保留来源
 monthly  generate_stable_semantic：由多条 episodic 生成稳定 semantic
 ```
 
-`memory/scheduler.py` 在启动时创建后台线程，每小时检查一次：每天触发 daily，每周一触发 weekly，每月 1 日触发 monthly。`/memory consolidate daily|weekly|monthly` 保留为手动运维入口。
+`memory/scheduler.py` 在启动时创建后台线程，每小时检查一次：每天触发 daily，每周一触发 weekly，每月 1 日触发 monthly。每次执行先按 `space_id + cadence + period_key` reserve `memory_consolidation_runs`，reserve 成功才运行，完成后写 `completed`，失败写 `failed` 并允许后续重试。`/memory consolidate daily|weekly|monthly` 保留为手动运维入口。
 
-`memory_vectors` 表已作为迁移占位保留，当前向量仍使用现有 JSON 向量索引。
+SQLite Memory DB 开启 WAL、`busy_timeout` 和针对 `database is locked` 的有限重试；`memory_vectors` 表已作为迁移占位保留，当前向量仍使用现有 JSON 向量索引。长期记忆查询通过 `SUIXINJI_MEMORY_QUERY_MIN_SCORE` 过滤低相关结果。
 
 ## Memory Trace
 

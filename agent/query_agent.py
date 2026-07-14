@@ -8,7 +8,7 @@ from typing import Any
 
 from core.llm_client import complete_json, embed_text
 from core.observability import log_event, observe
-from core.settings import QUERY_MIN_SCORE, QUERY_TOP_K
+from core.settings import MEMORY_QUERY_MIN_SCORE, QUERY_MIN_SCORE, QUERY_TOP_K
 from core.taxonomy import is_valid_tag, is_valid_type, normalize_tag, normalize_type
 from memory.service import memory_search
 from memory.trace import add_step, finish_trace, start_trace
@@ -17,6 +17,7 @@ from storage.vector_store import search_related
 
 
 DEFAULT_QUERY_MIN_SCORE = QUERY_MIN_SCORE
+DEFAULT_MEMORY_MIN_SCORE = MEMORY_QUERY_MIN_SCORE
 
 
 REACT_SYSTEM_PROMPT = f"""
@@ -30,7 +31,7 @@ REACT_SYSTEM_PROMPT = f"""
 3. list_recent(days, limit): 查看最近若干天笔记。
 4. get_note(note_id): 按 id 读取一条完整笔记。
 5. follow_links(note_id, limit): 查看某条笔记 related 关联的笔记，包括它指向的笔记和指向它的笔记。
-6. memory_search(query, memory_type, limit): 查询长期记忆，适合用户事实、偏好、任务状态和长期背景。
+6. memory_search(query, memory_type, limit, min_score): 查询长期记忆，适合用户事实、偏好、任务状态和长期背景。
 
 每一步只能输出 JSON object。
 
@@ -439,6 +440,7 @@ def _execute_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
             space_id,
             str(args.get("query", "")),
             memory_type=args.get("memory_type"),
+            min_score=args.get("min_score", DEFAULT_MEMORY_MIN_SCORE),
             limit=args.get("limit", 8),
         )
 
@@ -534,16 +536,19 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
             add_step(
                 trace,
                 "query_routed",
-                output_summary={"tool": "memory_search", "safe_args": {"tool": "memory_search", "query_len": len(question), "limit": 5}},
+                output_summary={
+                    "tool": "memory_search",
+                    "safe_args": {"tool": "memory_search", "query_len": len(question), "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
+                },
                 reason="prefetch_active_memory",
             )
-            memory_prefetch = _run_tool(space_id, "memory_search", {"query": question, "limit": 5}, trace=trace)
+            memory_prefetch = _run_tool(space_id, "memory_search", {"query": question, "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE}, trace=trace)
             if memory_prefetch:
                 observations.append(
                     {
                         "thought": "先召回最新 active 长期记忆。",
                         "tool": "memory_search",
-                        "args": {"query_len": len(question), "limit": 5},
+                        "args": {"query_len": len(question), "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
                         "result": memory_prefetch,
                     }
                 )

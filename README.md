@@ -84,7 +84,7 @@ make test
 make eval-dry-run
 ```
 
-CI 会在 Python 3.10 和 3.11 上执行 Ruff、pytest coverage 和四条 dry-run 评测：
+CI 会在 Python 3.10 和 3.11 上执行 Ruff、pytest coverage 和五条 dry-run 评测：
 
 ```text
 eval/eval_classification.py --dry-run
@@ -94,7 +94,9 @@ eval/eval_query_react.py --dry-run
 eval/eval_memory.py --dry-run
 ```
 
-Memory V2 独立评测数据位于 `eval/memory/`，覆盖提取、过滤、关系判断、冲突更新、任务状态、过期隐藏、生命周期、检索和端到端场景。当前展示指标记录在 `docs/metrics/latest.json`，包含分类、检索、查询、总结、pending 恢复、重复消息防护和 Memory Evaluation 状态。未真实测量的延迟字段使用 `null` 和 `measurement_status=not_measured`，不会把 0 包装成性能结论。
+Memory V2 独立评测数据位于 `eval/memory/`，覆盖提取、过滤、关系判断、冲突更新、任务状态、过期隐藏、生命周期、检索、端到端场景和工程加固指标。当前展示指标记录在 `docs/metrics/latest.json`，包含分类、检索、查询、总结、pending 恢复、重复消息防护和 Memory Evaluation 状态。未真实测量的延迟字段使用 `null` 和 `measurement_status=not_measured`，不会把 0 包装成性能结论。
+
+Memory V2 写入以 `memory_extraction_states` 记录每条 note 的提取状态：`completed` 和 `empty` 不会被 daily consolidation 重复处理，`failed` 和 `partial` 可恢复重试，超时的 `processing` 会被视为 stale 并恢复。SQLite 连接开启 WAL、`busy_timeout` 和有限 locked 重试；daily/weekly/monthly consolidation 通过 `memory_consolidation_runs` 按 `space_id + cadence + period_key` 持久化幂等。长期记忆查询默认应用 `SUIXINJI_MEMORY_QUERY_MIN_SCORE`，低相关记忆不会进入 `/ask` 的 active memory prefetch。
 
 ## Trace 示例
 
@@ -108,9 +110,11 @@ message_received
   -> note_saved
   -> vector_saved
   -> memory_extraction_started
+  -> extraction_state_processing
   -> candidate_extracted
   -> relation_classified
   -> memory_inserted / memory_merged / memory_superseded
+  -> extraction_state_completed / extraction_state_empty / extraction_state_partial / extraction_state_failed
   -> wal_processed
 ```
 

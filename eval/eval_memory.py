@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import tempfile
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +20,20 @@ from memory.models import MemoryCandidate
 from memory import repository as memory_repository
 from memory import trace as memory_trace
 from memory.lifecycle import expire
-from memory.repository import correct_memory, insert_memory, list_memories, search_memories, soft_delete_memory
+from memory.repository import (
+    consolidation_period_key,
+    correct_memory,
+    insert_memory,
+    list_memories,
+    list_retryable_extraction_states,
+    mark_consolidation_completed,
+    mark_extraction_empty,
+    mark_extraction_failed,
+    mark_extraction_partial,
+    reserve_consolidation_run,
+    search_memories,
+    soft_delete_memory,
+)
 from memory.relation_classifier import classify_relation
 from memory.service import process_note_memory
 
@@ -156,6 +170,48 @@ def _score_e2e(cases: list[dict[str, Any]]) -> dict[str, Any]:
     return {"summary": aggregate_boolean_scores(results), "results": results}
 
 
+def _score_hardening() -> dict[str, Any]:
+    space_id = "eval-hardening"
+    mark_extraction_failed("note-failed", space_id, error="simulated")
+    mark_extraction_partial("note-partial", space_id, candidate_count=2, processed_count=1, error="simulated")
+    empty_state = mark_extraction_empty("note-empty", space_id)
+    retryable = {state.note_id for state in list_retryable_extraction_states(space_id)}
+
+    period_key = consolidation_period_key("daily", date.fromisoformat("2026-07-14"))
+    run = reserve_consolidation_run(space_id, "daily", period_key)
+    if run is not None:
+        mark_consolidation_completed(run.id, {"ok": True})
+    duplicate = reserve_consolidation_run(space_id, "daily", period_key)
+
+    write_ok = True
+    try:
+        for idx in range(5):
+            insert_memory(f"{space_id}-{idx}", MemoryCandidate("semantic", f"并发写入守卫 {idx}", 0.8, 0.9), source_note_id=f"source-{idx}")
+    except Exception:
+        write_ok = False
+
+    insert_memory(space_id, MemoryCandidate("semantic", "用户喜欢咖啡", 0.8, 0.9), source_note_id="source-low")
+    low_relevance_filtered = not search_memories(space_id, "火星基地", min_score=0.95, limit=5)
+
+    metrics = {
+        "extraction_recovery_rate": 1.0 if "note-failed" in retryable else 0.0,
+        "empty_reprocessing_rate": 0.0 if empty_state.status == "empty" else 1.0,
+        "partial_recovery_rate": 1.0 if "note-partial" in retryable else 0.0,
+        "consolidation_duplicate_rate": 0.0 if duplicate is None else 1.0,
+        "sqlite_write_success_rate": 1.0 if write_ok else 0.0,
+        "low_relevance_filter_rate": 1.0 if low_relevance_filtered else 0.0,
+    }
+    results = [
+        {
+            "case_id": key,
+            "passed": value == (0.0 if key == "empty_reprocessing_rate" else 1.0),
+            "value": value,
+        }
+        for key, value in metrics.items()
+    ]
+    return {"summary": aggregate_boolean_scores(results), "metrics": metrics, "results": results}
+
+
 def run(*, dry_run: bool = False, output_dir: Path = Path("eval/results")) -> dict[str, Any]:
     files = {
         "extraction": DATA_DIR / "extraction_cases.jsonl",
@@ -182,6 +238,7 @@ def run(*, dry_run: bool = False, output_dir: Path = Path("eval/results")) -> di
             "lifecycle": _score_lifecycle(cases["lifecycle"]),
             "retrieval": _score_retrieval(cases["retrieval"]),
             "e2e": _score_e2e(cases["e2e"]),
+            "hardening": _score_hardening(),
         }
 
     summary = {
@@ -195,6 +252,7 @@ def run(*, dry_run: bool = False, output_dir: Path = Path("eval/results")) -> di
         "source_attribution_rate": reports["e2e"]["summary"]["pass_rate"],
         "lifecycle_accuracy": reports["lifecycle"]["summary"]["pass_rate"],
         "source_preservation_rate": reports["retrieval"]["summary"]["pass_rate"],
+        **reports["hardening"]["metrics"],
     }
     output_map = {
         "memory_extraction.json": reports["extraction"],
@@ -202,6 +260,7 @@ def run(*, dry_run: bool = False, output_dir: Path = Path("eval/results")) -> di
         "memory_conflict.json": reports["conflict"],
         "memory_retrieval.json": reports["retrieval"],
         "memory_e2e.json": reports["e2e"],
+        "memory_hardening.json": reports["hardening"],
         "memory_results.json": {"mode": "memory", "summary": summary, "reports": reports},
     }
     for filename, report in output_map.items():

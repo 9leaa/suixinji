@@ -15,7 +15,7 @@ def test_answer_question_writes_query_trace_with_safe_steps(monkeypatch):
     monkeypatch.setattr(
         query_agent,
         "memory_search",
-        lambda space_id, query, memory_type=None, limit=8: [
+        lambda space_id, query, memory_type=None, min_score=query_agent.DEFAULT_MEMORY_MIN_SCORE, limit=8: [
             {
                 "id": "mem-1",
                 "memory_type": "preference",
