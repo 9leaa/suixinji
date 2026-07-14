@@ -109,7 +109,7 @@ task        待办和进度，含 todo/in_progress/blocked/done/cancelled
 /memory consolidate daily|weekly|monthly
 ```
 
-当前提取器和关系判断器是确定性规则实现，不调用外部 API。它会过滤寒暄、低价值单句和明显敏感凭据；重复记忆只追加来源；明确变化的偏好或事实会将旧记忆置为 `superseded` 并创建新 active 记忆。每条 note 的提取结果独立记录为 `processing`、`completed`、`empty`、`partial` 或 `failed`，daily consolidation 只重试缺失状态、`failed`、`partial` 和超时的 `processing`。
+当前提取器和关系判断器是确定性规则实现，不调用外部 API。它会过滤寒暄、低价值单句和明显敏感凭据；重复记忆只追加来源；明确变化的偏好或事实会将旧记忆置为 `superseded` 并创建新 active 记忆。每条 note 的提取结果独立记录为 `processing`、`completed`、`empty`、`partial` 或 `failed`，daily consolidation 只重试缺失状态、`failed`、`partial` 和超时的 `processing`。单条 note 提取失败会记录到 daily 返回的 `failed` 列表，后续 note 继续执行；存在失败时 daily 返回 `partial`，外层 consolidation run 标记为 `failed` 以便下一 tick 重试。
 
 Consolidation 入口：
 
@@ -119,9 +119,9 @@ weekly   merge_duplicate_episodic：合并重复情景记忆并保留来源
 monthly  generate_stable_semantic：由多条 episodic 生成稳定 semantic
 ```
 
-`memory/scheduler.py` 在启动时创建后台线程，每小时检查一次：每天触发 daily，每周一触发 weekly，每月 1 日触发 monthly。每次执行先按 `space_id + cadence + period_key` reserve `memory_consolidation_runs`，reserve 成功才运行，完成后写 `completed`，失败写 `failed` 并允许后续重试。`/memory consolidate daily|weekly|monthly` 保留为手动运维入口。
+`memory/scheduler.py` 在启动时创建后台线程，每小时检查一次：每天触发 daily，每周一触发 weekly，每月 1 日触发 monthly。每次执行先按 `space_id + cadence + period_key` reserve `memory_consolidation_runs`，reserve 成功才运行，完成后写 `completed`，失败写 `failed` 并允许后续重试。只有当本 cadence 的 report 不含 failed space 时，scheduler 才记录当天已完成；否则同一进程当天后续 tick 会再次进入该 cadence，并由数据库跳过已 completed 的 space。`/memory consolidate daily|weekly|monthly` 保留为手动运维入口，但同样调用幂等 scheduler 入口，避免手动重复执行 monthly 生成重复稳定记忆。
 
-SQLite Memory DB 开启 WAL、`busy_timeout` 和针对 `database is locked` 的有限重试；`memory_vectors` 表已作为迁移占位保留，当前向量仍使用现有 JSON 向量索引。长期记忆查询通过 `SUIXINJI_MEMORY_QUERY_MIN_SCORE` 过滤低相关结果。
+SQLite Memory DB 开启 WAL、`busy_timeout` 和针对 `database is locked` 的有限重试；consolidation reserve 使用 `BEGIN IMMEDIATE` 原子事务，保证同 key 并发 reserve 只有一个成功。`memory_vectors` 表已作为迁移占位保留，当前向量仍使用现有 JSON 向量索引。长期记忆查询通过 `SUIXINJI_MEMORY_QUERY_MIN_SCORE` 过滤低相关结果。
 
 ## Memory Trace
 

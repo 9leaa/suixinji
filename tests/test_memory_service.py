@@ -1,4 +1,5 @@
-from memory.service import format_memory_correct, format_memory_forget, format_memory_search, process_note_memory
+from memory import service
+from memory.service import format_memory_consolidate, format_memory_correct, format_memory_forget, format_memory_search, process_note_memory
 from memory.repository import list_memories
 
 
@@ -65,3 +66,23 @@ def test_memory_commands_correct_forget_and_search():
     assert "上海" in format_memory_search("space-1", "住在哪")
     assert "已软删除记忆" in format_memory_forget(memory_id)
     assert "没有找到匹配" in format_memory_search("space-1", "上海")
+
+
+def test_format_memory_consolidate_uses_idempotent_scheduler(monkeypatch):
+    calls = []
+
+    def fake_run_once(cadence, *, space_ids=None, today=None):
+        calls.append((cadence, space_ids, today))
+        status = "completed" if len(calls) == 1 else "skipped"
+        return {"cadence": cadence, "results": [{"space_id": "space-1", "status": status}]}
+
+    monkeypatch.setattr(service, "run_memory_consolidation_once", fake_run_once)
+
+    first = format_memory_consolidate("space-1", "monthly")
+    second = format_memory_consolidate("space-1", "monthly")
+
+    assert "完成" in first
+    assert "未重复运行" in second
+    assert len(calls) == 2
+    assert calls[0][0] == "monthly"
+    assert calls[0][1] == ["space-1"]

@@ -32,7 +32,8 @@ CI 会额外执行 coverage、Ruff 和 dry-run 评测。
 - Summary scheduler 异常韧性，覆盖对账失败跳过当前订阅、下一轮恢复、一个订阅失败不影响其他订阅、tick 级异常保护。
 - Memory V2 extraction state，覆盖 completed、empty、partial、failed、attempt_count、retryable 状态和 stale processing 恢复。
 - Memory V2 SQLite WAL/locked 重试和并发写入，覆盖 sources、versions 不丢失。
-- Memory V2 consolidation run 幂等，覆盖 daily/weekly/monthly period_key、completed 跳过、failed 重试、running 租约。
+- Memory V2 consolidation run 幂等，覆盖 daily/weekly/monthly period_key、completed 跳过、failed 重试、running 租约、同日 scheduler retry、手动命令幂等和同 key 并发 reserve。
+- Memory V2 daily consolidation 异常隔离，覆盖单条坏笔记失败不阻塞后续笔记、下一轮只重试失败 note。
 - Memory V2 查询阈值，覆盖低相关结果过滤和自定义 `min_score`。
 - 任务级重试边界，确认 runner 失败不会整体重跑。
 - 同一 `space_id` ingest 串行、不同 `space_id` 可并行、压力提交受 worker/queue 限制。

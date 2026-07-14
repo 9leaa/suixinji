@@ -636,6 +636,7 @@ def reserve_consolidation_run(
 
     def _operation() -> str | None:
         with _connect(db_path) as conn:
+            conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
                 """
                 SELECT * FROM memory_consolidation_runs

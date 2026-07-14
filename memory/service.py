@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
+from datetime import date
 from typing import Any
 
 from core.settings import MEMORY_QUERY_MIN_SCORE
@@ -23,7 +24,7 @@ from memory.repository import (
     soft_delete_memory,
     stats,
 )
-from memory.scheduler import run_memory_consolidation
+from memory.scheduler import run_memory_consolidation_once
 from memory.trace import add_step, find_traces_by_memory, finish_trace, get_trace, latest_trace, start_trace
 
 
@@ -283,10 +284,16 @@ def format_memory_stats(space_id: str) -> str:
 
 
 def format_memory_consolidate(space_id: str, cadence: str) -> str:
-    try:
-        result = run_memory_consolidation(space_id, cadence)
-    except ValueError:
+    cadence = cadence.strip().lower()
+    if cadence not in {"daily", "weekly", "monthly"}:
         return "用法：/memory consolidate daily｜weekly｜monthly"
+    report = run_memory_consolidation_once(cadence, space_ids=[space_id], today=date.today())
+    result = (report.get("results") or [{}])[0]
+    status = result.get("status")
+    if status == "skipped":
+        return "本周期已经执行过，未重复运行 consolidation。"
+    if status == "failed":
+        return f"记忆 consolidation 执行失败：{result.get('error', 'unknown error')}"
     return f"记忆 consolidation 完成：{result}"
 
 

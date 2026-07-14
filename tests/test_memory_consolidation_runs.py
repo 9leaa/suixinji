@@ -87,3 +87,23 @@ def test_scheduler_failed_run_can_retry(monkeypatch):
     assert second["results"][0]["status"] == "completed"
     assert attempts["count"] == 2
     assert get_consolidation_run(second["results"][0]["run_id"]).status == "completed"
+
+
+def test_scheduler_marks_partial_daily_result_as_failed(monkeypatch):
+    monkeypatch.setattr(
+        scheduler,
+        "run_memory_consolidation",
+        lambda space_id, cadence: {
+            "space_id": space_id,
+            "processed_count": 2,
+            "failed_count": 1,
+            "status": "partial",
+        },
+    )
+
+    report = scheduler.run_memory_consolidation_once("daily", space_ids=["space-1"], today=date(2026, 7, 14))
+    result = report["results"][0]
+
+    assert result["status"] == "failed"
+    assert result["error"] == "1 notes failed"
+    assert get_consolidation_run(result["run_id"]).status == "failed"

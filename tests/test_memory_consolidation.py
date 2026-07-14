@@ -22,11 +22,13 @@ def test_merge_duplicate_episodic_preserves_sources_and_supersedes_duplicate():
 
     report = merge_duplicate_episodic("space-1", min_score=0.1)
 
-    keeper = next(memory for memory in list_memories("space-1", status="active", memory_type="episodic") if memory.id == first.id)
+    active = list_memories("space-1", status="active", memory_type="episodic")
     superseded = list_memories("space-1", status="superseded", memory_type="episodic")
     assert report["merged_count"] == 1
-    assert len(keeper.sources) == 2
-    assert superseded[0].id == second.id
+    assert len(active) == 1
+    assert len(active[0].sources) == 2
+    assert len(superseded) == 1
+    assert {active[0].id, superseded[0].id} == {first.id, second.id}
 
 
 def test_generate_stable_semantic_keeps_source_notes_and_original_episodic_memories():

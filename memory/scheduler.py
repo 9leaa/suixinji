@@ -77,6 +77,29 @@ def run_memory_consolidation_once(cadence: str, *, space_ids: list[str] | None =
         )
         try:
             result = run_memory_consolidation(safe_id, cadence)
+            if result.get("status") == "partial":
+                error = f"{result.get('failed_count', 0)} notes failed"
+                mark_consolidation_failed(run.id, error)
+                LOGGER.warning(
+                    "memory.consolidation.failed space_id=%s cadence=%s period_key=%s run_id=%s duration_ms=%s error=%s",
+                    safe_id,
+                    cadence,
+                    period_key,
+                    run.id,
+                    int((time.monotonic() - started) * 1000),
+                    error,
+                )
+                results.append(
+                    {
+                        **result,
+                        "cadence": cadence,
+                        "period_key": period_key,
+                        "run_id": run.id,
+                        "status": "failed",
+                        "error": error,
+                    }
+                )
+                continue
             result = {**result, "cadence": cadence, "period_key": period_key, "run_id": run.id, "status": result.get("status", "completed")}
             mark_consolidation_completed(run.id, result)
             LOGGER.info(
@@ -103,6 +126,17 @@ def run_memory_consolidation_once(cadence: str, *, space_ids: list[str] | None =
     return {"cadence": cadence, "period_key": period_key, "space_count": len(targets), "results": results}
 
 
+def _report_has_failures(report: dict[str, Any]) -> bool:
+    return any(item.get("status") == "failed" for item in report.get("results", []))
+
+
+def _report_is_complete(report: dict[str, Any]) -> bool:
+    results = report.get("results", [])
+    if not results:
+        return True
+    return not _report_has_failures(report)
+
+
 def due_cadences(today: date, last_run_dates: dict[str, str]) -> list[str]:
     due = []
     today_key = today.isoformat()
@@ -121,8 +155,15 @@ def run_memory_scheduler_tick(last_run_dates: dict[str, str] | None = None, *, t
     reports = []
     for cadence in due_cadences(current_day, state):
         report = run_memory_consolidation_once(cadence, today=current_day)
-        state[cadence] = current_day.isoformat()
         reports.append(report)
+        if _report_is_complete(report):
+            state[cadence] = current_day.isoformat()
+        else:
+            LOGGER.warning(
+                "Memory consolidation cadence remains retryable: cadence=%s date=%s",
+                cadence,
+                current_day.isoformat(),
+            )
     return {"date": current_day.isoformat(), "ran": [report["cadence"] for report in reports], "reports": reports}
 
 

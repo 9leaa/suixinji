@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Any
 
@@ -13,6 +14,8 @@ from memory.relation_classifier import classify_relation
 from memory.retriever import score_memory
 from memory.trace import add_step
 from storage.note_storage import load_index
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _is_processing_stale(updated_at: str | None) -> bool:
@@ -133,6 +136,7 @@ def process_unextracted_notes(space_id: str, *, limit: int = 100) -> dict[str, A
     from memory.service import process_note_memory
 
     processed = []
+    failed = []
     skipped = 0
     for note in load_index(space_id)[: max(1, min(int(limit), 500))]:
         note_id = str(note.get("id") or "")
@@ -148,16 +152,33 @@ def process_unextracted_notes(space_id: str, *, limit: int = 100) -> dict[str, A
                 skipped += 1
                 continue
             mark_extraction_failed(note_id, space_id, error="stale processing lease expired")
-        report = process_note_memory(note)
-        processed.append(
-            {
-                "note_id": note_id,
-                "trace_id": report.get("trace_id"),
-                "candidates": report.get("candidates"),
-                "extraction_status": report.get("extraction_status"),
-            }
-        )
-    return {"space_id": space_id, "processed": processed, "processed_count": len(processed), "skipped_count": skipped}
+        try:
+            report = process_note_memory(note)
+            processed.append(
+                {
+                    "note_id": note_id,
+                    "trace_id": report.get("trace_id"),
+                    "candidates": report.get("candidates"),
+                    "extraction_status": report.get("extraction_status"),
+                }
+            )
+        except Exception as exc:
+            LOGGER.exception(
+                "memory.daily.note.failed space_id=%s note_id=%s error_type=%s",
+                space_id,
+                note_id,
+                type(exc).__name__,
+            )
+            failed.append({"note_id": note_id, "error": f"{type(exc).__name__}: {exc}"})
+    return {
+        "space_id": space_id,
+        "processed": processed,
+        "failed": failed,
+        "processed_count": len(processed),
+        "failed_count": len(failed),
+        "skipped_count": skipped,
+        "status": "partial" if failed else "completed",
+    }
 
 
 def merge_duplicate_episodic(space_id: str, *, min_score: float = 0.72) -> dict[str, Any]:
