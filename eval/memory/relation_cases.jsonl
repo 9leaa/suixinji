@@ -1,3 +1,3 @@
-{"case_id":"same_agent","old":"用户正在学习 Agent","new":"最近主要学习 Agent","expected_relation":"extend"}
-{"case_id":"update_java","old":"用户想学习 Java","new":"用户短期只学 Python Agent","expected_relation":"update"}
+{"case_id":"same_agent","old":"用户正在学习 Agent","new":"最近主要学习 Agent","expected_relation":"merge"}
+{"case_id":"update_java","old":"用户想学习 Java","new":"用户短期只学 Python Agent","expected_relation":"supersede"}
 {"case_id":"new_unrelated","old":"用户喜欢咖啡","new":"用户正在学习 RAG","expected_relation":"new"}

@@ -121,3 +121,16 @@ def mark_summary_sent(space_id: str, sent_date: str) -> None:
     old["last_sent_date"] = sent_date
     items[space_id] = old
     _save_raw(items)
+
+
+from core.settings import STORAGE_BACKEND as _STORAGE_BACKEND
+
+if _STORAGE_BACKEND == "postgres":
+    from repositories.postgres import summary as _postgres_summary
+
+    get_summary_subscription = _postgres_summary.get_summary_subscription
+    list_enabled_summary_subscriptions = _postgres_summary.list_enabled_summary_subscriptions
+    enable_summary_subscription = _postgres_summary.enable_summary_subscription
+    disable_summary_subscription = _postgres_summary.disable_summary_subscription
+    update_summary_time = _postgres_summary.update_summary_time
+    mark_summary_sent = _postgres_summary.mark_summary_sent

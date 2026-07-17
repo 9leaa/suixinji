@@ -8,6 +8,23 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      DATABASE_URL: postgresql+psycopg://suixinji:suixinji@localhost:5432/suixinji
+      STORAGE_BACKEND: local
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: suixinji
+          POSTGRES_USER: suixinji
+          POSTGRES_PASSWORD: suixinji
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U suixinji -d suixinji"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     strategy:
       matrix:
         python-version: ["3.10", "3.11"]
@@ -25,6 +42,9 @@ jobs:
 
       - name: Ruff
         run: ruff check .
+
+      - name: PostgreSQL schema
+        run: alembic upgrade head
 
       - name: Pytest
         run: python -m pytest tests --cov=. --cov-report=term-missing --cov-fail-under=63

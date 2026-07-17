@@ -1,0 +1,416 @@
+"""SQLAlchemy schema for the shared PostgreSQL data store."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from decimal import Decimal
+from typing import Any
+
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class Tenant(Base):
+    __tablename__ = "tenants"
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class User(Base):
+    __tablename__ = "users"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    source: Mapped[str] = mapped_column(String(64), nullable=False, default="feishu")
+    source_user_id: Mapped[str | None] = mapped_column(String(255))
+    profile_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    __table_args__ = (UniqueConstraint("tenant_id", "source", "source_user_id", name="uq_users_source_identity"),)
+
+
+class Space(Base):
+    __tablename__ = "spaces"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    source: Mapped[str] = mapped_column(String(64), nullable=False, default="feishu")
+    source_space_id: Mapped[str | None] = mapped_column(String(255))
+    space_type: Mapped[str] = mapped_column(String(64), nullable=False, default="chat")
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    __table_args__ = (UniqueConstraint("tenant_id", "source", "source_space_id", name="uq_spaces_source_identity"),)
+
+
+class SpaceMember(Base):
+    __tablename__ = "space_members"
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), primary_key=True)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    role: Mapped[str] = mapped_column(String(32), nullable=False, default="member")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class InboxMessage(Base):
+    __tablename__ = "inbox_messages"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    source: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_message_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_event_id: Mapped[str | None] = mapped_column(String(255))
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    chat_id: Mapped[str | None] = mapped_column(String(255))
+    chat_type: Mapped[str | None] = mapped_column(String(64))
+    sender_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
+    sensitivity: Mapped[str] = mapped_column(String(64), nullable=False, default="normal")
+    sequence_no: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    __table_args__ = (
+        UniqueConstraint("source", "source_message_id", name="uq_inbox_source_message"),
+        UniqueConstraint("space_id", "sequence_no", name="uq_inbox_space_sequence"),
+        Index("ix_inbox_space_status_sequence", "space_id", "status", "sequence_no"),
+    )
+
+
+class OutboxEvent(Base):
+    __tablename__ = "outbox_events"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    event_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    aggregate_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    aggregate_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    payload_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    publish_attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text)
+    __table_args__ = (Index("ix_outbox_unpublished", "published_at", "created_at"),)
+
+
+class Task(Base):
+    __tablename__ = "tasks"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    task_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    source_message_id: Mapped[str | None] = mapped_column(String(255))
+    idempotency_key: Mapped[str] = mapped_column(String(512), nullable=False, unique=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    payload_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
+
+
+class TaskAttempt(Base):
+    __tablename__ = "task_attempts"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
+    worker_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    attempt_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_type: Mapped[str | None] = mapped_column(String(255))
+    error_summary: Mapped[str | None] = mapped_column(Text)
+    __table_args__ = (UniqueConstraint("task_id", "attempt_no", name="uq_task_attempt_no"),)
+
+
+class Note(Base):
+    __tablename__ = "notes"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    message_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
+    note_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    enrichment_status: Mapped[str] = mapped_column(String(32), nullable=False, default="ready")
+    enrichment_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    enrichment_error: Mapped[str | None] = mapped_column(Text)
+    enrichment_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    enrichment_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    sensitivity: Mapped[str] = mapped_column(String(64), nullable=False, default="normal")
+    __table_args__ = (
+        UniqueConstraint("space_id", "message_id", name="uq_notes_space_message"),
+        Index("ix_notes_space_created", "space_id", "created_at"),
+    )
+
+
+class NoteTag(Base):
+    __tablename__ = "note_tags"
+    note_id: Mapped[str] = mapped_column(ForeignKey("notes.id", ondelete="CASCADE"), primary_key=True)
+    tag: Mapped[str] = mapped_column(String(255), primary_key=True)
+
+
+class NoteRelation(Base):
+    __tablename__ = "note_relations"
+    source_note_id: Mapped[str] = mapped_column(ForeignKey("notes.id", ondelete="CASCADE"), primary_key=True)
+    target_note_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    relation: Mapped[str] = mapped_column(String(64), primary_key=True, default="related")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class NoteEmbedding(Base):
+    __tablename__ = "note_embeddings"
+    note_id: Mapped[str] = mapped_column(ForeignKey("notes.id", ondelete="CASCADE"), primary_key=True)
+    model: Mapped[str] = mapped_column(String(255), primary_key=True)
+    dimensions: Mapped[int] = mapped_column(Integer, nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(1024), nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class Memory(Base):
+    __tablename__ = "memories"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    memory_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    normalized_content: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    importance: Mapped[float] = mapped_column(Float, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    task_status: Mapped[str | None] = mapped_column(String(64))
+    subject: Mapped[str | None] = mapped_column(Text)
+    predicate: Mapped[str | None] = mapped_column(Text)
+    object_value: Mapped[str | None] = mapped_column(Text)
+    valid_from: Mapped[str | None] = mapped_column(String(64))
+    valid_until: Mapped[str | None] = mapped_column(String(64))
+    last_confirmed_at: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    last_accessed_at: Mapped[str | None] = mapped_column(String(64))
+    access_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    current_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    __table_args__ = (Index("ix_memories_space_status_type", "space_id", "status", "memory_type"),)
+
+
+class MemorySource(Base):
+    __tablename__ = "memory_sources"
+    memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), primary_key=True)
+    note_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    relation: Mapped[str] = mapped_column(String(64), primary_key=True)
+    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class MemoryVersion(Base):
+    __tablename__ = "memory_versions"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    task_status: Mapped[str | None] = mapped_column(String(64))
+    confidence: Mapped[float | None] = mapped_column(Float)
+    importance: Mapped[float | None] = mapped_column(Float)
+    valid_from: Mapped[str | None] = mapped_column(String(64))
+    valid_until: Mapped[str | None] = mapped_column(String(64))
+    reason: Mapped[str | None] = mapped_column(Text)
+    source_note_id: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    __table_args__ = (UniqueConstraint("memory_id", "version", name="uq_memory_version"),)
+
+
+class MemoryVector(Base):
+    __tablename__ = "memory_vectors"
+    memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), primary_key=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1024))
+    model: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class MemoryExtractionState(Base):
+    __tablename__ = "memory_extraction_states"
+    note_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    candidate_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    processed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text)
+    started_at: Mapped[str | None] = mapped_column(String(64))
+    completed_at: Mapped[str | None] = mapped_column(String(64))
+    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class MemoryConsolidationRun(Base):
+    __tablename__ = "memory_consolidation_runs"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    cadence: Mapped[str] = mapped_column(String(32), nullable=False)
+    period_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    started_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    completed_at: Mapped[str | None] = mapped_column(String(64))
+    error: Mapped[str | None] = mapped_column(Text)
+    result_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    __table_args__ = (UniqueConstraint("space_id", "cadence", "period_key", name="uq_memory_consolidation_period"),)
+
+
+class MemoryDecision(Base):
+    __tablename__ = "memory_decisions"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    note_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    candidate_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    relation: Mapped[str] = mapped_column(String(64), nullable=False)
+    target_memory_ids_json: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_json: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    recommended_action: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    result_memory_ids_json: Mapped[list[str] | None] = mapped_column(JSONB)
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    applied_at: Mapped[str | None] = mapped_column(String(64))
+
+
+class MemoryRelation(Base):
+    __tablename__ = "memory_relations"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    source_memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), nullable=False)
+    target_memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), nullable=False)
+    relation: Mapped[str] = mapped_column(String(64), nullable=False)
+    decision_id: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    __table_args__ = (UniqueConstraint("source_memory_id", "target_memory_id", "relation", "decision_id", name="uq_memory_relation"),)
+
+
+class MemoryTrace(Base):
+    __tablename__ = "memory_traces"
+    trace_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    note_id: Mapped[str | None] = mapped_column(String(255))
+    trace_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    payload_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    started_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    finished_at: Mapped[str | None] = mapped_column(String(64))
+
+
+class SummarySubscriptionRow(Base):
+    __tablename__ = "summary_subscriptions"
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    chat_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    time: Mapped[str] = mapped_column(String(5), nullable=False)
+    range_key: Mapped[str] = mapped_column(String(32), nullable=False, default="today")
+    last_sent_date: Mapped[str | None] = mapped_column(String(10))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class SummaryRun(Base):
+    __tablename__ = "summary_runs"
+    id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    range_key: Mapped[str] = mapped_column(String(32), nullable=False)
+    period_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    result_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error: Mapped[str | None] = mapped_column(Text)
+    __table_args__ = (UniqueConstraint("space_id", "range_key", "period_key", name="uq_summary_run_period"),)
+
+
+class Delivery(Base):
+    __tablename__ = "deliveries"
+    delivery_key: Mapped[str] = mapped_column(String(512), primary_key=True)
+    delivery_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    message_id: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    reserved_at: Mapped[str | None] = mapped_column(String(64))
+    lease_expires_at: Mapped[str | None] = mapped_column(String(64))
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+
+
+class DeliveryAttempt(Base):
+    __tablename__ = "delivery_attempts"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    delivery_key: Mapped[str] = mapped_column(ForeignKey("deliveries.delivery_key", ondelete="CASCADE"), nullable=False)
+    attempt_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    started_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    finished_at: Mapped[str | None] = mapped_column(String(64))
+    error: Mapped[str | None] = mapped_column(Text)
+    __table_args__ = (UniqueConstraint("delivery_key", "attempt_no", name="uq_delivery_attempt_no"),)
+
+
+class AgentRun(Base):
+    __tablename__ = "agent_runs"
+    run_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[str | None] = mapped_column(String(255))
+    message_id: Mapped[str | None] = mapped_column(String(255))
+    run_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_type: Mapped[str | None] = mapped_column(String(255))
+
+
+class AgentStep(Base):
+    __tablename__ = "agent_steps"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.run_id", ondelete="CASCADE"), nullable=False)
+    step_no: Mapped[int] = mapped_column(Integer, nullable=False)
+    step_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    duration_ms: Mapped[int | None] = mapped_column(Integer)
+    safe_input_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    safe_output_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    error_type: Mapped[str | None] = mapped_column(String(255))
+    __table_args__ = (UniqueConstraint("run_id", "step_no", name="uq_agent_step_no"),)
+
+
+class LlmUsage(Base):
+    __tablename__ = "llm_usage"
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.run_id", ondelete="CASCADE"), nullable=False)
+    model: Mapped[str] = mapped_column(String(255), nullable=False)
+    request_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    input_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    total_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    estimated_cost: Mapped[Decimal] = mapped_column(Numeric(14, 6), nullable=False, default=0)

@@ -35,6 +35,9 @@ CI 会额外执行 coverage、Ruff 和 dry-run 评测。
 - Memory V2 consolidation run 幂等，覆盖 daily/weekly/monthly period_key、completed 跳过、failed 重试、running 租约、同日 scheduler retry、手动命令幂等和同 key 并发 reserve。
 - Memory V2 daily consolidation 异常隔离，覆盖单条坏笔记失败不阻塞后续笔记、下一轮只重试失败 note。
 - Memory V2 查询阈值，覆盖低相关结果过滤和自定义 `min_score`。
+- 核心记忆审理与演化，覆盖 same 确认证据、真实 merge 版本、supersede 双向关系、Decision 持久化、低置信度 pending review 和 note 幂等。
+- LLM 候选抽取契约、规则 fallback、敏感信息前置过滤、Trace 脱敏与 SQLite Trace 副本。
+- 总结同时消费 Note 事件与 Memory 状态变化。
 - 任务级重试边界，确认 runner 失败不会整体重跑。
 - 同一 `space_id` ingest 串行、不同 `space_id` 可并行、压力提交受 worker/queue 限制。
 - TaskRegistry 的历史裁剪和累计计数保留。

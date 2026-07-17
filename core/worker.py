@@ -3,13 +3,23 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Any
 
-from core.classifier import classify_text
+from core.classifier import classify_text, classify_text_local
+from core.sensitive import assess_sensitive_text
 from core.observability import observe
-from core.settings import RELATED_MIN_SCORE, RELATED_TOP_K
-from core.wal import load_pending_records, mark_processed
-from storage.note_storage import NoteMetadata, load_index, note_exists, save_note
+from core.settings import ENRICHMENT_MAX_ATTEMPTS, RELATED_MIN_SCORE, RELATED_TOP_K
+from core.wal import load_pending_records, mark_processed, mark_sensitive_blocked
+from storage.note_storage import (
+    NoteMetadata,
+    find_note,
+    is_note_queryable,
+    load_index,
+    note_exists,
+    save_note,
+    update_note_metadata,
+)
 from core.llm_client import embed_text
 from memory.repository import get_extraction_state
 from memory.service import process_note_memory
@@ -38,7 +48,7 @@ def backfill_vector_if_missing(space_id: str, message_id: str) -> bool:
     这个函数用 index.json 中的笔记内容补写向量，恢复 semantic_search 能力。
     """
     note = _find_note_by_message_id(space_id, message_id)
-    if note is None:
+    if note is None or not is_note_queryable(note):
         return False
 
     note_id = str(note.get("id") or "")
@@ -78,7 +88,7 @@ def backfill_vector_if_missing(space_id: str, message_id: str) -> bool:
         )
 
 
-def process_record(record: dict[str, Any]) -> None:
+def process_record(record: dict[str, Any]) -> NoteMetadata | dict[str, Any] | None:
     """处理单条 pending WAL 记录。
 
     功能说明:
@@ -98,11 +108,22 @@ def process_record(record: dict[str, Any]) -> None:
     ctx = {"space_id": space_id, "message_id": message_id, "record_id": record_id}
 
     with observe("worker.process_record", **ctx):
+        sensitive = assess_sensitive_text(str(record.get("text") or ""))
+        if sensitive.blocks_storage:
+            mark_sensitive_blocked(space_id, record_id, str(sensitive.category or "sensitive"))
+            LOGGER.warning(
+                "Blocked sensitive WAL record before note storage: space_id=%s message_id=%s record_id=%s category=%s",
+                space_id,
+                message_id,
+                record_id,
+                sensitive.category,
+            )
+            return None
+
         if note_exists(space_id, message_id):
             note = _find_note_by_message_id(space_id, message_id)
-            added_vector = backfill_vector_if_missing(space_id, message_id)
             recovered_memory = False
-            if note is not None:
+            if note is not None and is_note_queryable(note):
                 note_id = str(note.get("id") or "")
                 state = get_extraction_state(note_id) if note_id else None
                 if state is None or state.status in {"pending", "failed", "partial"}:
@@ -119,33 +140,22 @@ def process_record(record: dict[str, Any]) -> None:
                             note_id,
                         )
             LOGGER.info(
-                "Skip WAL record because note already exists: space_id=%s message_id=%s record_id=%s backfilled_vector=%s recovered_memory=%s",
+                "Skip WAL record because note already exists: space_id=%s message_id=%s record_id=%s recovered_memory=%s",
                 space_id,
                 message_id,
                 record_id,
-                added_vector,
                 recovered_memory,
             )
             with observe(
                 "worker.mark_processed",
-                extra={"reason": "note_exists", "backfilled_vector": added_vector, "recovered_memory": recovered_memory},
+                extra={"reason": "note_exists", "recovered_memory": recovered_memory},
                 **ctx,
             ):
                 mark_processed(space_id, record_id)
-            return
+            return note
 
-        with observe("worker.classify", **ctx):
-            classification = classify_text(record["text"])
-
-        embedding = embed_text(record["text"])
-
-        related = search_related_note_ids(
-            space_id,
-            embedding,
-            top_k=RELATED_TOP_K,
-            exclude_note_id=record_id,
-            min_score=RELATED_MIN_SCORE,
-        )
+        with observe("worker.classify_local", **ctx):
+            classification = classify_text_local(record["text"])
 
         note = NoteMetadata(
             id=record_id,
@@ -157,29 +167,14 @@ def process_record(record: dict[str, Any]) -> None:
             type=classification.type,
             summary=classification.summary,
             text=record["text"],
-            related=related,
+            related=[],
+            enrichment_status="provisional",
+            enrichment_attempts=0,
+            sensitivity="normal",
         )
 
         with observe("worker.write_note", extra={"note_id": record_id}, **ctx):
             save_note(note)
-
-        with observe("worker.write_vector", extra={"note_id": record_id}, **ctx):
-            add_vector_item(
-                space_id,
-                VectorItem(
-                    note_id=record_id,
-                    message_id=message_id,
-                    text=record["text"],
-                    embedding=embedding,
-                    metadata={
-                        "title": classification.title,
-                        "tags": classification.tags,
-                        "type": classification.type,
-                        "summary": classification.summary,
-                        "ts": record["ts"],
-                    },
-                ),
-            )
 
         try:
             with observe("worker.write_memory", extra={"note_id": record_id}, **ctx):
@@ -199,6 +194,87 @@ def process_record(record: dict[str, Any]) -> None:
 
         with observe("worker.mark_processed", **ctx):
             mark_processed(space_id, record_id)
+        return note
+
+
+def enrich_note(space_id: str, note_id: str) -> bool:
+    """Run slow LLM classification and embedding after the note is queryable."""
+    note = find_note(space_id, note_id)
+    if note is None or not is_note_queryable(note):
+        return False
+
+    status = str(note.get("enrichment_status") or "ready")
+    attempts = int(note.get("enrichment_attempts") or 0)
+    message_id = str(note.get("message_id") or "")
+    if status == "ready" and vector_item_exists(space_id, note_id, message_id):
+        return False
+    if status in {"failed", "enriching"} and attempts >= ENRICHMENT_MAX_ATTEMPTS:
+        return False
+
+    now = datetime.now().astimezone().isoformat()
+    update_note_metadata(
+        space_id,
+        note_id,
+        enrichment_status="enriching",
+        enrichment_attempts=attempts + 1,
+        enrichment_error=None,
+        enrichment_started_at=now,
+        enrichment_updated_at=now,
+    )
+    ctx = {"space_id": space_id, "message_id": message_id, "record_id": note_id}
+    try:
+        with observe("worker.enrich_classify", extra={"attempt": attempts + 1}, **ctx):
+            classification = classify_text(str(note.get("text") or ""))
+        with observe("worker.enrich_embed", extra={"attempt": attempts + 1}, **ctx):
+            embedding = embed_text(str(note.get("text") or ""))
+        related = search_related_note_ids(
+            space_id,
+            embedding,
+            top_k=RELATED_TOP_K,
+            exclude_note_id=note_id,
+            min_score=RELATED_MIN_SCORE,
+        )
+        with observe("worker.write_vector", extra={"note_id": note_id, "reason": "background_enrichment"}, **ctx):
+            add_vector_item(
+                space_id,
+                VectorItem(
+                    note_id=note_id,
+                    message_id=message_id,
+                    text=str(note.get("text") or ""),
+                    embedding=embedding,
+                    metadata={
+                        "title": classification.title,
+                        "tags": classification.tags,
+                        "type": classification.type,
+                        "summary": classification.summary,
+                        "ts": note.get("ts"),
+                        "sensitivity": "normal",
+                    },
+                ),
+            )
+        finished_at = datetime.now().astimezone().isoformat()
+        update_note_metadata(
+            space_id,
+            note_id,
+            title=classification.title,
+            tags=classification.tags,
+            type=classification.type,
+            summary=classification.summary,
+            related=related,
+            enrichment_status="ready",
+            enrichment_error=None,
+            enrichment_updated_at=finished_at,
+        )
+        return True
+    except Exception:
+        update_note_metadata(
+            space_id,
+            note_id,
+            enrichment_status="failed",
+            enrichment_error="background_enrichment_failed",
+            enrichment_updated_at=datetime.now().astimezone().isoformat(),
+        )
+        raise
 
 
 def process_pending(space_id: str) -> int:

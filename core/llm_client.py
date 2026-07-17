@@ -8,6 +8,7 @@ from typing import Any
 
 from openai import OpenAI
 
+from core.sensitive import safe_text_preview
 from core.config import (
     ChatConfig,
     EmbeddingConfig,
@@ -128,16 +129,17 @@ def complete_json(system_prompt: str, user_prompt: str) -> dict[str, Any]:
             temperature=0,
         )
     except Exception as exc:
-        preview = user_prompt.replace("\n", " ")[:80]
+        preview = safe_text_preview(user_prompt)
         raise RuntimeError(
             "LLM chat completion failed; "
             f"model={config.model!r}, "
             f"base_url={config.base_url!r}, "
-            f"text_preview={preview!r}."
-        ) from exc
+            f"text_preview={preview!r}, "
+            f"cause={type(exc).__name__}."
+        ) from None
 
     if not response.choices:
-        preview = user_prompt.replace("\n", " ")[:80]
+        preview = safe_text_preview(user_prompt)
         raise RuntimeError(
             "LLM returned no choices; "
             f"model={config.model!r}, "
@@ -148,7 +150,7 @@ def complete_json(system_prompt: str, user_prompt: str) -> dict[str, Any]:
     content = response.choices[0].message.content
 
     if content is None:
-        preview = user_prompt.replace("\n", " ")[:80]
+        preview = safe_text_preview(user_prompt)
         raise RuntimeError(
             "LLM returned no message content; "
             f"model={config.model!r}, "
@@ -158,9 +160,9 @@ def complete_json(system_prompt: str, user_prompt: str) -> dict[str, Any]:
 
     try:
         return extract_json_object(content)
-    except Exception as exc:
-        preview = user_prompt.replace("\n", " ")[:80]
-        output_preview = content.replace("\n", " ")[:200]
+    except Exception:
+        preview = safe_text_preview(user_prompt)
+        output_preview = safe_text_preview(content, limit=200)
 
         raise RuntimeError(
             "LLM did not return valid JSON object; "
@@ -168,7 +170,7 @@ def complete_json(system_prompt: str, user_prompt: str) -> dict[str, Any]:
             f"base_url={config.base_url!r}, "
             f"text_preview={preview!r}, "
             f"output_preview={output_preview!r}."
-        ) from exc
+        ) from None
 
 
 def embed_text(text: str) -> list[float]:
@@ -203,18 +205,19 @@ def embed_text(text: str) -> list[float]:
             encoding_format="float",
         )
     except Exception as exc:
-        preview = text.replace("\n", " ")[:80]
+        preview = safe_text_preview(text)
 
         raise RuntimeError(
             "Embedding request failed; "
             f"model={config.model!r}, "
             f"base_url={config.base_url!r}, "
             f"dimension={config.dimension!r}, "
-            f"text_preview={preview!r}."
-        ) from exc
+            f"text_preview={preview!r}, "
+            f"cause={type(exc).__name__}."
+        ) from None
 
     if not response.data:
-        preview = text.replace("\n", " ")[:80]
+        preview = safe_text_preview(text)
         raise RuntimeError(
             "Embedding response contains no data; "
             f"model={config.model!r}, "
@@ -225,7 +228,7 @@ def embed_text(text: str) -> list[float]:
     embedding = response.data[0].embedding
 
     if not embedding:
-        preview = text.replace("\n", " ")[:80]
+        preview = safe_text_preview(text)
         raise RuntimeError(
             "Embedding response contains empty embedding; "
             f"model={config.model!r}, "

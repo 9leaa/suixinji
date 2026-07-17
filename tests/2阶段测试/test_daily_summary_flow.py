@@ -87,3 +87,33 @@ def test_generate_summary_with_no_notes_skips_llm(monkeypatch, tmp_path):
 
     assert result.note_count == 0
     assert result.markdown == "今天没有记录到随心记笔记。"
+
+
+def test_generate_summary_includes_memory_state_changes(monkeypatch, tmp_path):
+    patch_summary_io(monkeypatch, tmp_path)
+    memory_changes = [
+        {
+            "id": "mem-1",
+            "memory_type": "task",
+            "content": "完善 README",
+            "status": "active",
+            "task_status": "done",
+            "updated_at": "2026-06-07T12:10:00+08:00",
+            "sources": [{"note_id": "n2"}],
+        }
+    ]
+    monkeypatch.setattr(daily_summary, "load_memory_changes", lambda space_id, start, end: memory_changes)
+    calls = []
+    responses = iter([{"summary_markdown": "草稿"}, {"final_summary": "含记忆状态的总结"}])
+
+    def fake_complete_json(system_prompt, user_prompt):
+        calls.append(json.loads(user_prompt))
+        return next(responses)
+
+    monkeypatch.setattr(daily_summary, "complete_json", fake_complete_json)
+
+    result = daily_summary.generate_summary("space-1", "today")
+
+    assert result.memory_count == 1
+    assert calls[0]["memory_changes"][0]["task_status"] == "done"
+    assert calls[1]["memory_changes"][0]["content"] == "完善 README"

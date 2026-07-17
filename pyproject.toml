@@ -13,7 +13,7 @@ python_files = ["test_*.py"]
 
 [tool.coverage.run]
 branch = true
-source = ["agent", "bot", "core", "eval", "runtime", "storage", "summary"]
+source = ["agent", "bot", "core", "eval", "infrastructure", "memory", "repositories", "runtime", "storage", "summary"]
 
 [tool.coverage.report]
 show_missing = true

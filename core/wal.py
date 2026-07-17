@@ -52,6 +52,7 @@ class WalRecord:
     ts: str
     text: str
     status: str = "pending"
+    sensitivity: str = "normal"
     # pending 表示数据刚进 WAL，还没被 worker 处理。
 
 
@@ -207,6 +208,33 @@ def create_pending_record(
     )
 
 
+def create_blocked_sensitive_record(
+    *,
+    message_id: str,
+    space_id: str,
+    category: str,
+    event_id: str | None = None,
+    chat_id: str | None = None,
+    chat_type: str = "p2p",
+    sender: dict[str, Any] | None = None,
+) -> WalRecord:
+    """Create a redacted idempotency record without persisting the secret."""
+    return WalRecord(
+        id=str(uuid.uuid4()),
+        source="feishu",
+        event_id=event_id,
+        message_id=message_id,
+        space_id=space_id,
+        chat_id=chat_id,
+        chat_type=chat_type,
+        sender=sender or {},
+        ts=datetime.now().astimezone().isoformat(),
+        text="[敏感内容已拦截，原文未保存]",
+        status="blocked_sensitive",
+        sensitivity=category or "sensitive",
+    )
+
+
 def append_message_once(record: WalRecord) -> bool:
     """在消息未重复时追加写入 WAL。
 
@@ -272,3 +300,34 @@ def mark_processed(space_id: str, record_id: str) -> None:
         with path.open("w", encoding="utf-8") as f:
             for record in records:
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def mark_sensitive_blocked(space_id: str, record_id: str, category: str = "sensitive") -> None:
+    """Redact a legacy pending record in place without retaining its raw text."""
+    path = wal_path(space_id)
+    with locked_space(space_id):
+        records = load_records(space_id)
+        for record in records:
+            if record.get("id") != record_id:
+                continue
+            record["text"] = "[敏感内容已拦截，原文未保存]"
+            record["status"] = "blocked_sensitive"
+            record["sensitivity"] = category or "sensitive"
+        with path.open("w", encoding="utf-8") as f:
+            for record in records:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+from core.settings import STORAGE_BACKEND as _STORAGE_BACKEND
+
+if _STORAGE_BACKEND == "postgres":
+    from repositories.postgres import inbox as _postgres_inbox
+
+    append_record = _postgres_inbox.append_record
+    list_wal_space_ids = _postgres_inbox.list_wal_space_ids
+    load_records = _postgres_inbox.load_records
+    message_exists = _postgres_inbox.message_exists
+    append_message_once = _postgres_inbox.append_message_once
+    load_pending_records = _postgres_inbox.load_pending_records
+    mark_processed = _postgres_inbox.mark_processed
+    mark_sensitive_blocked = _postgres_inbox.mark_sensitive_blocked

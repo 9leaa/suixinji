@@ -1,3 +1,7 @@
+import os
+
+os.environ["STORAGE_BACKEND"] = "local"
+
 import pytest
 
 from runtime import delivery_store

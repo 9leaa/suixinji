@@ -59,6 +59,13 @@ def score_memory(query: str, memory: MemoryRecord) -> float:
         status_factor = 0.5
     elif memory.status != "active":
         status_factor = 0.2
+    if (
+        memory.memory_type == "task"
+        and memory.task_status in {"done", "cancelled"}
+        and any(marker in query for marker in ("待办", "要做", "任务"))
+        and not any(marker in query for marker in ("状态", "完成", "取消", "做完"))
+    ):
+        status_factor *= 0.7
     access_frequency = min(memory.access_count / 10, 1.0)
     final = (
         0.45 * semantic_similarity

@@ -3,24 +3,48 @@
 from __future__ import annotations
 
 import json
+import logging
+import re
+import threading
 from pathlib import Path
 from typing import Any
 
+from core.sensitive import assess_sensitive_text, redact_sensitive_text
+from core.settings import STORAGE_BACKEND
 from memory.models import new_id, utc_now_iso
 
 TRACE_PATH = Path("data/memory/traces.jsonl")
+LOGGER = logging.getLogger(__name__)
+_TRACE_LOCK = threading.RLock()
+
+
+def _safe_error(error: str | None) -> str | None:
+    if not error:
+        return None
+    value = str(error)
+    if assess_sensitive_text(value).blocks_storage:
+        return "[sensitive content redacted]"
+    value = redact_sensitive_text(value)
+    value = re.sub(r"(?:text|output)_preview=('[^']*'|\"[^\"]*\")", "preview=<redacted>", value, flags=re.IGNORECASE)
+    value = re.sub(r"(?i)(password|token|api[_ -]?key|secret)\s*[:=]\s*\S+", r"\1=<redacted>", value)
+    return value[:500]
 
 
 def _read_traces(path: str | Path | None = None) -> list[dict[str, Any]]:
+    if path is None and STORAGE_BACKEND == "postgres":
+        from repositories.postgres.memory import list_memory_traces
+
+        return list_memory_traces()
     trace_path = Path(path or TRACE_PATH)
-    if not trace_path.exists():
-        return []
-    items: list[dict[str, Any]] = []
-    with trace_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                items.append(json.loads(line))
+    with _TRACE_LOCK:
+        if not trace_path.exists():
+            return []
+        items: list[dict[str, Any]] = []
+        with trace_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    items.append(json.loads(line))
     return items
 
 
@@ -60,7 +84,7 @@ def add_step(
             "input_summary": input_summary or {},
             "output_summary": output_summary or {},
             "reason": reason,
-            "error": error,
+            "error": _safe_error(error),
         }
     )
 
@@ -71,10 +95,18 @@ def finish_trace(trace: dict[str, Any] | None, *, status: str = "success", path:
     trace["finished_at"] = utc_now_iso()
     trace["status"] = status
     add_step(trace, "trace_finished", status=status)
-    trace_path = Path(path or TRACE_PATH)
-    trace_path.parent.mkdir(parents=True, exist_ok=True)
-    with trace_path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(trace, ensure_ascii=False) + "\n")
+    if path is not None or STORAGE_BACKEND == "local":
+        trace_path = Path(path or TRACE_PATH)
+        trace_path.parent.mkdir(parents=True, exist_ok=True)
+        with _TRACE_LOCK:
+            with trace_path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(trace, ensure_ascii=False) + "\n")
+    try:
+        from memory.repository import save_memory_trace
+
+        save_memory_trace(trace)
+    except Exception as exc:
+        LOGGER.warning("memory.trace.db_persist_failed trace_id=%s error_type=%s", trace.get("trace_id"), type(exc).__name__)
     return trace
 
 

@@ -1,19 +1,24 @@
-"""Public service API and command formatting for Memory V2."""
+"""Public orchestration and command formatting for long-term memory."""
 
 from __future__ import annotations
 
-from dataclasses import asdict, is_dataclass
+from dataclasses import asdict, is_dataclass, replace
 from datetime import date
 from typing import Any
 
-from core.settings import MEMORY_QUERY_MIN_SCORE
+from core.settings import MEMORY_EXTRACTOR_MODE, MEMORY_QUERY_MIN_SCORE
 from memory.consolidator import consolidate_candidate
+from memory.candidate_validator import contains_sensitive_data, validate_candidates
 from memory.extractor import extract_candidates
+from memory.models import candidate_id_for
 from memory.repository import (
+    approve_pending_memory,
     correct_memory,
     get_extraction_state,
     get_memory,
     list_memories,
+    list_memory_decisions,
+    list_memory_relations,
     mark_extraction_completed,
     mark_extraction_empty,
     mark_extraction_failed,
@@ -42,17 +47,66 @@ def process_note_memory(note: Any, classification: dict[str, Any] | None = None)
     text = str(_note_value(note, "text", "") or "")
     trace = start_trace("memory_write", space_id, note_id=note_id)
     add_step(trace, "note_saved", output_summary={"note_id": note_id, "text_len": len(text)})
-    add_step(trace, "memory_extraction_started", input_summary={"note_id": note_id, "text_len": len(text)})
+    add_step(
+        trace,
+        "memory_extraction_started",
+        input_summary={"note_id": note_id, "text_len": len(text), "extractor_mode": MEMORY_EXTRACTOR_MODE},
+    )
 
     try:
+        if contains_sensitive_data(text):
+            state = mark_extraction_empty(note_id, space_id)
+            add_step(
+                trace,
+                "memory_extraction_skipped",
+                status="discarded",
+                output_summary={"note_id": note_id, "existing_status": state.status},
+                reason="sensitive_data",
+            )
+            finish_trace(trace)
+            return {
+                "note_id": note_id,
+                "space_id": space_id,
+                "candidates": 0,
+                "results": [],
+                "trace_id": trace["trace_id"],
+                "extraction_status": "empty",
+            }
+        existing_state = get_extraction_state(note_id) if note_id else None
+        if existing_state is not None and existing_state.status in {"completed", "empty"}:
+            add_step(
+                trace,
+                "memory_extraction_skipped",
+                output_summary={"note_id": note_id, "existing_status": existing_state.status},
+                reason="terminal_extraction_state",
+            )
+            finish_trace(trace)
+            return {
+                "note_id": note_id,
+                "space_id": space_id,
+                "candidates": existing_state.candidate_count,
+                "results": [],
+                "trace_id": trace["trace_id"],
+                "extraction_status": existing_state.status,
+                "idempotent": True,
+            }
         state = mark_extraction_processing(note_id, space_id)
         add_step(
             trace,
             "extraction_state_processing",
             output_summary={"note_id": note_id, "attempt_count": state.attempt_count},
         )
-        candidates = extract_candidates(note_id, text, classification=classification)
-        for candidate in candidates:
+        extracted_candidates = extract_candidates(note_id, text, classification=classification)
+        enriched_candidates = [
+            replace(
+                candidate,
+                note_id=note_id,
+                space_id=space_id,
+                candidate_id=candidate_id_for(note_id, candidate.memory_type, candidate.content),
+            )
+            for candidate in extracted_candidates
+        ]
+        for candidate in enriched_candidates:
             add_step(
                 trace,
                 "candidate_extracted",
@@ -63,7 +117,16 @@ def process_note_memory(note: Any, classification: dict[str, Any] | None = None)
                     "confidence": candidate.confidence,
                     "should_store": candidate.should_store,
                 },
-                reason=candidate.reason,
+                reason=candidate.effective_reason,
+            )
+        candidates, rejections = validate_candidates(enriched_candidates, note_text=text)
+        for rejection in rejections:
+            add_step(
+                trace,
+                "candidate_rejected",
+                status="discarded",
+                output_summary={"candidate_id": rejection.candidate_id},
+                reason=rejection.reason,
             )
 
         if not candidates:
@@ -85,6 +148,7 @@ def process_note_memory(note: Any, classification: dict[str, Any] | None = None)
                 "space_id": space_id,
                 "candidates": 0,
                 "results": [],
+                "rejected_candidates": len(rejections),
                 "trace_id": trace["trace_id"],
                 "extraction_status": "empty",
             }
@@ -195,6 +259,7 @@ def memory_search(
     results = [
         {**memory.to_dict(), "score": score}
         for memory, score in search_memories(space_id, query, memory_type=memory_type, min_score=min_score, limit=limit)
+        if not contains_sensitive_data(memory.content)
     ]
     add_step(
         trace,
@@ -217,7 +282,11 @@ def _format_memory(memory: dict[str, Any]) -> str:
 
 
 def format_memory_list(space_id: str, *, status: str = "active", limit: int = 20) -> str:
-    memories = [memory.to_dict() for memory in list_memories(space_id, status=status, limit=limit)]
+    memories = [
+        memory.to_dict()
+        for memory in list_memories(space_id, status=status, limit=limit)
+        if not contains_sensitive_data(memory.content)
+    ]
     if not memories:
         return "没有找到长期记忆。"
     return "长期记忆：\n" + "\n".join(_format_memory(memory) for memory in memories)
@@ -225,7 +294,7 @@ def format_memory_list(space_id: str, *, status: str = "active", limit: int = 20
 
 def format_memory_show(memory_id: str) -> str:
     memory = get_memory(memory_id)
-    if memory is None:
+    if memory is None or contains_sensitive_data(memory.content):
         return f"没有找到记忆：{memory_id}"
     data = memory.to_dict()
     lines = [
@@ -238,6 +307,12 @@ def format_memory_show(memory_id: str) -> str:
     ]
     for source in data["sources"][:5]:
         lines.append(f"  - {source['relation']} note={source['note_id']}")
+    relations = list_memory_relations(memory_id)
+    if relations:
+        lines.append(f"- 关系：{len(relations)} 条")
+        for relation in relations[:6]:
+            other_id = relation.target_memory_id if relation.source_memory_id == memory_id else relation.source_memory_id
+            lines.append(f"  - {relation.relation} memory={other_id}")
     return "\n".join(lines)
 
 
@@ -249,22 +324,63 @@ def format_memory_search(space_id: str, query: str) -> str:
 
 
 def format_memory_forget(memory_id: str) -> str:
+    existing = get_memory(memory_id)
+    if existing is None:
+        return f"没有找到记忆：{memory_id}"
+    trace = start_trace("memory_control", existing.space_id)
+    add_step(trace, "memory_control_requested", input_summary={"memory_id": memory_id, "action": "forget"})
     memory = soft_delete_memory(memory_id)
     if memory is None:
+        add_step(trace, "memory_control_failed", status="failed", output_summary={"memory_id": memory_id, "action": "forget"})
+        finish_trace(trace, status="failed")
         return f"没有找到记忆：{memory_id}"
+    add_step(trace, "memory_forgotten", output_summary={"memory_id": memory_id, "status": memory.status})
+    finish_trace(trace)
     return f"已软删除记忆：{memory_id}"
 
 
 def format_memory_purge(memory_id: str) -> str:
-    if not purge_memory(memory_id):
+    existing = get_memory(memory_id)
+    if existing is None:
         return f"没有找到记忆：{memory_id}"
+    trace = start_trace("memory_control", existing.space_id)
+    add_step(trace, "memory_control_requested", input_summary={"memory_id": memory_id, "action": "purge"})
+    if not purge_memory(memory_id):
+        add_step(trace, "memory_control_failed", status="failed", output_summary={"memory_id": memory_id, "action": "purge"})
+        finish_trace(trace, status="failed")
+        return f"没有找到记忆：{memory_id}"
+    add_step(trace, "memory_purged", output_summary={"memory_id": memory_id})
+    finish_trace(trace)
     return f"已彻底删除记忆：{memory_id}"
 
 
 def format_memory_correct(memory_id: str, content: str) -> str:
+    existing = get_memory(memory_id)
+    if existing is None:
+        return f"没有找到记忆：{memory_id}"
+    trace = start_trace("memory_control", existing.space_id)
+    add_step(
+        trace,
+        "memory_control_requested",
+        input_summary={"memory_id": memory_id, "action": "correct", "content_len": len(content)},
+    )
+    if not content.strip() or contains_sensitive_data(content):
+        add_step(
+            trace,
+            "memory_control_rejected",
+            status="rejected",
+            output_summary={"memory_id": memory_id, "action": "correct"},
+            reason="empty_or_sensitive_content",
+        )
+        finish_trace(trace, status="rejected")
+        return "修正内容为空或包含敏感凭据，未写入长期记忆。"
     memory = correct_memory(memory_id, content)
     if memory is None:
+        add_step(trace, "memory_control_failed", status="failed", output_summary={"memory_id": memory_id, "action": "correct"})
+        finish_trace(trace, status="failed")
         return f"没有找到记忆：{memory_id}"
+    add_step(trace, "memory_corrected", output_summary={"memory_id": memory_id, "version": memory.current_version})
+    finish_trace(trace)
     return f"已修正记忆：{memory_id}\n{memory.content}"
 
 
@@ -275,11 +391,74 @@ def format_memory_conflicts(space_id: str) -> str:
     return "冲突记忆：\n" + "\n".join(_format_memory(memory) for memory in memories)
 
 
+def format_memory_pending(space_id: str) -> str:
+    memories = [memory.to_dict() for memory in list_memories(space_id, status="pending_review", limit=50)]
+    if not memories:
+        return "当前没有 pending_review 记忆。"
+    return "待审记忆：\n" + "\n".join(_format_memory(memory) for memory in memories)
+
+
+def format_memory_approve(memory_id: str) -> str:
+    existing = get_memory(memory_id)
+    if existing is None or existing.status != "pending_review":
+        return f"没有找到待审记忆：{memory_id}"
+    trace = start_trace("memory_control", existing.space_id)
+    add_step(trace, "memory_control_requested", input_summary={"memory_id": memory_id, "action": "approve"})
+    memory = approve_pending_memory(memory_id)
+    if memory is None:
+        add_step(trace, "memory_control_failed", status="failed", output_summary={"memory_id": memory_id, "action": "approve"})
+        finish_trace(trace, status="failed")
+        return f"没有找到待审记忆：{memory_id}"
+    add_step(
+        trace,
+        "memory_approved",
+        output_summary={"memory_id": memory.id, "target_memory_id": memory_id, "status": memory.status},
+    )
+    finish_trace(trace)
+    return f"已批准待审记忆：{memory_id}\n生效记忆：{memory.id}\n{memory.content}"
+
+
+def format_memory_decisions(space_id: str, *, limit: int = 10) -> str:
+    decisions = list_memory_decisions(space_id, limit=limit)
+    if not decisions:
+        return "还没有记忆审理记录。"
+    lines = ["最近记忆审理："]
+    for decision in decisions:
+        lines.append(
+            f"- {decision['id']}｜{decision['relation']} → {decision['recommended_action']}｜"
+            f"confidence={decision['confidence']:.2f}｜{decision['status']}｜note={decision['note_id']}"
+        )
+        lines.append(f"  {decision['reason']}")
+    return "\n".join(lines)
+
+
+def format_memory_profile(space_id: str) -> str:
+    memories = list_memories(space_id, status="active", limit=100)
+    if not memories:
+        return "还没有足够的长期记忆生成用户画像。"
+    sections = [
+        ("当前任务", [memory for memory in memories if memory.memory_type == "task" and memory.task_status not in {"done", "cancelled"}]),
+        ("偏好与约束", [memory for memory in memories if memory.memory_type == "preference"]),
+        ("长期背景", [memory for memory in memories if memory.memory_type == "semantic"]),
+        ("近期事件", [memory for memory in memories if memory.memory_type == "episodic"][:5]),
+    ]
+    lines = ["动态用户画像："]
+    for title, items in sections:
+        if not items:
+            continue
+        lines.append(f"\n{title}：")
+        for memory in items[:10]:
+            task_suffix = f"（{memory.task_status}）" if memory.task_status else ""
+            lines.append(f"- {memory.content}{task_suffix}")
+    return "\n".join(lines)
+
+
 def format_memory_stats(space_id: str) -> str:
     data = stats(space_id)
     return (
         f"记忆统计：total={data['total']}｜by_type={data['by_type']}｜by_status={data['by_status']}｜"
-        f"extraction={data.get('extraction_by_status', {})}｜retryable={data.get('retryable_extraction_count', 0)}"
+        f"extraction={data.get('extraction_by_status', {})}｜retryable={data.get('retryable_extraction_count', 0)}｜"
+        f"decisions={data.get('decisions_by_relation', {})}"
     )
 
 

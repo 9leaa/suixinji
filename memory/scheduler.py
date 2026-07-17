@@ -17,13 +17,15 @@ from memory.repository import (
     mark_consolidation_failed,
     reserve_consolidation_run,
 )
-from storage.note_storage import NOTES_DIR
+from storage.note_storage import NOTES_DIR, list_note_space_ids
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MEMORY_SCHEDULER_INTERVAL_SECONDS = 3600
 
 
 def list_memory_space_ids(notes_dir: Path | None = None) -> list[str]:
+    if notes_dir is None:
+        return list_note_space_ids()
     root = notes_dir or NOTES_DIR
     if not root.exists():
         return []

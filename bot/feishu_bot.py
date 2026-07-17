@@ -26,19 +26,25 @@ from lark_oapi.api.im.v1 import (
 )
 from core.feedback import save_feedback
 from core.observability import latest_success, log_event, recent_errors
+from core.sensitive import assess_sensitive_text, safe_text_preview
 from core.wal import (
     append_message_once,
+    create_blocked_sensitive_record,
     create_pending_record,
     list_wal_space_ids,
     load_pending_records,
 )
 from core.worker import process_pending
 from memory.service import (
+    format_memory_approve,
     format_memory_conflicts,
     format_memory_consolidate,
     format_memory_correct,
+    format_memory_decisions,
     format_memory_forget,
     format_memory_list,
+    format_memory_pending,
+    format_memory_profile,
     format_memory_purge,
     format_memory_search,
     format_memory_show,
@@ -49,6 +55,7 @@ from memory.service import (
 )
 from memory.scheduler import start_memory_scheduler
 from runtime.delivery_store import recover_stale_reserved_deliveries
+from runtime.enrichment_drainer import EnrichmentDrainer
 from runtime.executor import get_task_executor
 from runtime.pending_drainer import PendingDrainer
 from runtime.task import TASK_REJECTED
@@ -149,7 +156,7 @@ def parse_text_content(content: Any) -> str:
     try:
         data = json.loads(content)
     except json.JSONDecodeError:
-        LOGGER.warning("Failed to decode Feishu text content as JSON: %r", content)
+        LOGGER.warning("Failed to decode Feishu text content as JSON: content_len=%s", len(str(content)))
         return ""
 
     return str(data.get("text", ""))
@@ -253,10 +260,7 @@ def _format_summary_auto_status(space_id: str) -> str:
 
 
 def _clip_status_text(value: Any, limit: int = 80) -> str:
-    text = str(value or "")
-    if len(text) <= limit:
-        return text
-    return text[:limit] + "..."
+    return safe_text_preview(str(value or ""), limit=limit)
 
 
 def _format_system_status(space_id: str) -> str:
@@ -282,6 +286,7 @@ def _format_system_status(space_id: str) -> str:
         "系统状态：",
         f"- 当前会话 pending：{pending_count} 条",
         f"- 运行任务：{task_stats['running']} 个",
+        f"- 后台 LLM 增强：{task_stats['inflight_enrichment']} 个",
         f"- 排队任务：{task_stats['queued']} 个",
         f"- 成功任务：{task_stats['success']} 个",
         f"- 失败任务：{task_stats['failed']} 个",
@@ -399,7 +404,7 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
 
     raw = text.removeprefix("/memory").strip()
     if not raw:
-        return "用法：/memory list｜show <id>｜search <内容>｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
+        return "用法：/memory list｜show <id>｜search <内容>｜profile｜pending｜approve <id>｜decisions｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
 
     parts = raw.split(maxsplit=2)
     action = parts[0].lower()
@@ -419,12 +424,20 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
         return format_memory_correct(parts[1], parts[2])
     if action == "conflicts":
         return format_memory_conflicts(space_id)
+    if action == "pending":
+        return format_memory_pending(space_id)
+    if action == "approve" and len(parts) >= 2:
+        return format_memory_approve(parts[1])
+    if action == "decisions":
+        return format_memory_decisions(space_id)
+    if action == "profile":
+        return format_memory_profile(space_id)
     if action == "stats":
         return format_memory_stats(space_id)
     if action == "consolidate" and len(parts) >= 2:
         return format_memory_consolidate(space_id, parts[1])
 
-    return "用法：/memory list｜show <id>｜search <内容>｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
+    return "用法：/memory list｜show <id>｜search <内容>｜profile｜pending｜approve <id>｜decisions｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
 
 
 def _handle_trace_command(text: str) -> str | None:
@@ -495,6 +508,37 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
         message_id=message_id,
         extra={"message_type": message_type, "chat_type": chat_type, "text_len": len(text)},
     )
+
+    sensitive = assess_sensitive_text(text)
+    if sensitive.blocks_storage:
+        record = create_blocked_sensitive_record(
+            message_id=str(message_id or event_id or "unknown"),
+            space_id=space_id,
+            category=str(sensitive.category or "sensitive"),
+            event_id=event_id,
+            chat_id=chat_id,
+            chat_type=chat_type,
+            sender=sender,
+        )
+        appended = append_message_once(record)
+        log_event(
+            "feishu.sensitive_rejected",
+            level="warning",
+            status="rejected" if appended else "skipped",
+            space_id=space_id,
+            message_id=message_id,
+            record_id=record.id if appended else None,
+            extra={
+                "category": sensitive.category,
+                "reason": sensitive.reason,
+                "duplicate": not appended,
+            },
+        )
+        if appended:
+            safe_send_text(chat_id, "检测到疑似密码、密钥或高风险身份信息：这条内容未保存，也未发送给模型。")
+        else:
+            safe_send_text(chat_id, "这条敏感消息已经拦截过了，未重复处理。")
+        return
 
     summary_auto_reply = _handle_summary_auto_command(space_id, chat_id, text)
     if summary_auto_reply is not None:
@@ -716,6 +760,9 @@ def start() -> None:
     pending_drainer = PendingDrainer(executor)
     pending_drainer.drain_once()
     pending_drainer.start()
+    enrichment_drainer = EnrichmentDrainer(executor)
+    enrichment_drainer.drain_once()
+    enrichment_drainer.start()
     start_summary_scheduler(safe_send_text, executor=executor)
     start_memory_scheduler()
 
@@ -723,7 +770,10 @@ def start() -> None:
         APP_ID,
         APP_SECRET,
         event_handler=build_event_handler(),
-        log_level=lark.LogLevel.INFO,
+        # INFO includes the temporary WebSocket access URL and ticket.  Keep
+        # third-party transport logs at WARNING so credentials never land in
+        # runtime.log during a normal connection.
+        log_level=lark.LogLevel.WARNING,
     )
     LOGGER.info("Starting Feishu long-connection client...")
     ws_client.start()

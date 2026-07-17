@@ -13,6 +13,7 @@ from core.taxonomy import (
     NOTE_TYPES,
     TYPE_TAGS,
     normalize_classification_data,
+    normalize_tags,
 )
 
 
@@ -87,3 +88,44 @@ def classify_text(text: str) -> NoteClassification:
     data = complete_json(system_prompt=SYSTEM_PROMPT, user_prompt=text)
     data = normalize_classification_data(data)
     return NoteClassification.model_validate(data)
+
+
+def classify_text_local(text: str) -> NoteClassification:
+    """Create a deterministic provisional classification without network I/O."""
+    value = " ".join(str(text or "").split()).strip()
+    lowered = value.casefold()
+
+    if any(marker in lowered for marker in ("记得", "待办", "todo", "需要", "提醒", "计划", "跟进", "截止", "完成", "修复", "实现")):
+        note_type = "任务"
+        tags = ["待办", "提醒"]
+    elif any(marker in value for marker in ("焦虑", "压力", "疲惫", "低落", "开心", "烦躁", "平静", "感激", "情绪")):
+        note_type = "情绪"
+        emotion_tag = next((tag for tag in TYPE_TAGS["情绪"] if tag in value), "困惑")
+        tags = [emotion_tag, "日常"]
+    elif any(marker in lowered for marker in ("学习", "课程", "书", "论文", "练习", "知识", "研究", "教程")):
+        note_type = "学习"
+        tags = ["笔记", "知识点"]
+    elif any(marker in value for marker in ("灵感", "创意", "想法", "设计", "可以做", "改进")):
+        note_type = "灵感"
+        tags = ["创意", "想法"]
+    elif "http://" in lowered or "https://" in lowered or any(marker in value for marker in ("链接", "文档", "收藏", "备查", "资料")):
+        note_type = "资料"
+        tags = ["备查", "收藏"]
+    else:
+        note_type = "生活"
+        if any(marker in value for marker in ("吃", "喝", "咖啡", "茶", "水果", "餐")):
+            tags = ["饮食", "日常"]
+        elif any(marker in value for marker in ("跑步", "健身", "运动", "游泳", "骑行")):
+            tags = ["运动", "日常"]
+        else:
+            tags = ["日常", "长期"]
+
+    title_source = value.split("。", 1)[0].split("！", 1)[0].split("？", 1)[0].strip(" ，,；;")
+    title = title_source[:20] or "随手记录"
+    summary = value[:120] or "一条随手记录。"
+    return NoteClassification(
+        title=title,
+        tags=normalize_tags(tags, note_type),
+        type=note_type,
+        summary=summary,
+    )

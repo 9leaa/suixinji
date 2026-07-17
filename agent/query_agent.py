@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timedelta
 from typing import Any
 
 from core.llm_client import complete_json, embed_text
 from core.observability import log_event, observe
+from core.sensitive import mentions_sensitive_topic
 from core.settings import MEMORY_QUERY_MIN_SCORE, QUERY_MIN_SCORE, QUERY_TOP_K
 from core.taxonomy import is_valid_tag, is_valid_type, normalize_tag, normalize_type
 from memory.service import memory_search
 from memory.trace import add_step, finish_trace, start_trace
-from storage.note_storage import load_index
+from storage.note_storage import is_note_queryable, load_index
 from storage.vector_store import search_related
 
 
@@ -199,11 +201,16 @@ def _note_brief(note: dict[str, Any], *, text_limit: int = 500) -> dict[str, Any
         "summary": note.get("summary"),
         "text": _clip(note.get("text"), text_limit),
         "related": note.get("related", []),
+        "enrichment_status": note.get("enrichment_status", "ready"),
     }
 
 
+def _safe_notes(space_id: str) -> list[dict[str, Any]]:
+    return [note for note in load_index(space_id) if is_note_queryable(note)]
+
+
 def _find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
-    for note in load_index(space_id):
+    for note in _safe_notes(space_id):
         if note.get("id") == note_id:
             return note
     return None
@@ -231,7 +238,7 @@ def filter_notes(
         return []
 
     results = []
-    for note in load_index(space_id):
+    for note in _safe_notes(space_id):
         if query_type and note.get("type") != query_type:
             continue
 
@@ -302,6 +309,71 @@ def semantic_search(
     ]
 
 
+_QUERY_FILLERS = (
+    "请问",
+    "帮我",
+    "告诉我",
+    "查一下",
+    "看一下",
+    "什么",
+    "哪个",
+    "哪些",
+    "是否",
+    "有没有",
+    "相关内容",
+    "相关记录",
+    "刚才",
+    "上次",
+)
+
+
+def _lexical_terms(text: str) -> set[str]:
+    value = str(text or "").casefold()
+    for filler in _QUERY_FILLERS:
+        value = value.replace(filler, "")
+    latin = set(re.findall(r"[a-z0-9][a-z0-9+#._-]*", value))
+    cjk_runs = re.findall(r"[\u3400-\u9fff]+", value)
+    terms = set(latin)
+    for run in cjk_runs:
+        if len(run) == 1:
+            terms.add(run)
+        else:
+            terms.update(run[index : index + 2] for index in range(len(run) - 1))
+    return {term for term in terms if term}
+
+
+def provisional_search(space_id: str, query: str, limit: int = 5) -> list[dict[str, Any]]:
+    """Search newly saved notes locally while LLM enrichment is still running."""
+    query_terms = _lexical_terms(query)
+    if not query_terms:
+        return []
+
+    scored: list[tuple[float, dict[str, Any]]] = []
+    for note in _safe_notes(space_id):
+        status = str(note.get("enrichment_status") or "ready")
+        if status not in {"provisional", "enriching", "failed"}:
+            continue
+        note_terms = _lexical_terms(
+            " ".join(
+                (
+                    str(note.get("title") or ""),
+                    str(note.get("summary") or ""),
+                    str(note.get("text") or ""),
+                )
+            )
+        )
+        overlap = len(query_terms & note_terms) / max(1, len(query_terms))
+        if overlap < 0.34:
+            continue
+        scored.append((overlap, note))
+
+    scored.sort(key=lambda item: (item[0], str(item[1].get("ts") or "")), reverse=True)
+    return [
+        {**_note_brief(note), "score": round(score, 4), "provisional": True}
+        for score, note in scored[: max(1, min(int(limit), 10))]
+    ]
+
+
 def get_note(space_id: str, note_id: str) -> dict[str, Any]:
     note = _find_note(space_id, note_id)
     if note is None:
@@ -317,7 +389,7 @@ def list_recent(space_id: str, days: int = 7, limit: int = 10) -> list[dict[str,
     cutoff = now - timedelta(days=days)
 
     notes = []
-    for note in load_index(space_id):
+    for note in _safe_notes(space_id):
         ts = _parse_ts(note.get("ts"))
         if ts is not None and ts >= cutoff:
             notes.append(note)
@@ -328,7 +400,7 @@ def list_recent(space_id: str, days: int = 7, limit: int = 10) -> list[dict[str,
 
 def follow_links(space_id: str, note_id: str, limit: int = 5) -> dict[str, Any]:
     limit = max(1, min(int(limit), 20))
-    notes = load_index(space_id)
+    notes = _safe_notes(space_id)
     note = next((item for item in notes if item.get("id") == note_id), None)
     if note is None:
         return {"error": f"note not found: {note_id}"}
@@ -492,8 +564,16 @@ def _fallback_answer(observations: list[dict[str, Any]]) -> str:
     lines = ["我找到几条可能相关的记录："]
     for item in candidates[:3]:
         title = item.get("title") or item.get("id")
-        summary = item.get("summary") or item.get("text") or ""
+        summary = item.get("summary") or item.get("content") or item.get("text") or ""
         lines.append(f"- {title}：{summary}")
+    return "\n".join(lines)
+
+
+def _provisional_answer(notes: list[dict[str, Any]]) -> str:
+    lines = ["刚收到的记录还在后台完善分类，但已经可以查询："]
+    for note in notes[:3]:
+        content = note.get("text") or note.get("summary") or note.get("title") or ""
+        lines.append(f"- {_clip(str(content), 220)}")
     return "\n".join(lines)
 
 
@@ -530,9 +610,49 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
             finish_trace(trace)
             return answer
 
+        if mentions_sensitive_topic(question):
+            answer = "为保护安全，随心记不会保存或检索密码、密钥、令牌、身份证号、银行卡号等敏感凭据。"
+            _log_final_answer(space_id, answer, source="sensitive_query_blocked")
+            add_step(
+                trace,
+                "query_blocked",
+                status="discarded",
+                output_summary={"reason": "sensitive_topic"},
+                reason="sensitive_topic",
+            )
+            add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+            finish_trace(trace)
+            return answer
+
         observations: list[dict[str, Any]] = []
 
         try:
+            provisional = provisional_search(space_id, question, limit=5)
+            if provisional:
+                observations.append(
+                    {
+                        "thought": "新笔记已本地落库，后台增强尚未结束。",
+                        "tool": "provisional_search",
+                        "args": {"query_len": len(question), "limit": 5},
+                        "result": provisional,
+                    }
+                )
+                add_step(
+                    trace,
+                    "query_routed",
+                    output_summary={"tool": "provisional_search", "safe_args": {"query_len": len(question), "limit": 5}},
+                    reason="read_after_write",
+                )
+                add_step(trace, "note_search", output_summary={"result_count": len(provisional), "ids": _result_ids(provisional)})
+                add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(provisional)})
+                add_step(trace, "rerank", output_summary={"strategy": "local_lexical_recency", "ids": _result_ids(provisional)})
+                answer = _with_sources(_provisional_answer(provisional), observations)
+                _log_final_answer(space_id, answer, source="provisional_read_after_write", observations=observations)
+                add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="no_llm_wait")
+                add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                finish_trace(trace)
+                return answer
+
             add_step(
                 trace,
                 "query_routed",
@@ -561,10 +681,28 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
                     "observations": observations,
                 }
 
-                decision = complete_json(
-                    system_prompt=REACT_SYSTEM_PROMPT,
-                    user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
-                )
+                try:
+                    decision = complete_json(
+                        system_prompt=REACT_SYSTEM_PROMPT,
+                        user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
+                    )
+                except Exception as exc:
+                    if not observations:
+                        raise
+                    answer = _with_sources(_fallback_answer(observations), observations)
+                    _log_final_answer(space_id, answer, source="react_fallback_after_error", observations=observations)
+                    add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="react_fallback_after_error")
+                    add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                    finish_trace(trace)
+                    log_event(
+                        "query.react_fallback",
+                        level="warning",
+                        status="success",
+                        space_id=space_id,
+                        error=f"{type(exc).__name__}: {exc}",
+                        extra={"observation_count": len(observations)},
+                    )
+                    return answer
 
                 final_answer = str(decision.get("final_answer") or "").strip()
                 if final_answer and observations:

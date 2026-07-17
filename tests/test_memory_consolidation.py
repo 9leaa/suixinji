@@ -1,6 +1,6 @@
 from memory.consolidator import generate_stable_semantic, merge_duplicate_episodic, process_unextracted_notes
 from memory.models import MemoryCandidate
-from memory.repository import insert_memory, list_memories
+from memory.repository import insert_memory, list_memories, list_memory_relations
 
 
 def test_process_unextracted_notes_processes_notes_without_memory_sources(monkeypatch):
@@ -42,4 +42,5 @@ def test_generate_stable_semantic_keeps_source_notes_and_original_episodic_memor
     episodic = list_memories("space-1", status="active", memory_type="episodic")
     assert semantic
     assert len(semantic[0].sources) == 3
+    assert len([relation for relation in list_memory_relations(semantic[0].id) if relation.relation == "summarized_from"]) == 3
     assert len(episodic) == 3
