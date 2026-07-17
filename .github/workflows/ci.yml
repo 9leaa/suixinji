@@ -10,6 +10,7 @@ jobs:
     timeout-minutes: 10
     env:
       DATABASE_URL: postgresql+psycopg://suixinji:suixinji@localhost:5432/suixinji
+      REDIS_URL: redis://localhost:6379/0
       STORAGE_BACKEND: local
     services:
       postgres:
@@ -22,6 +23,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U suixinji -d suixinji"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10

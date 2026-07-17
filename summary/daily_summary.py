@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from agent.hooks import AgentRunContext, get_default_hook_manager
 from core.file_lock import locked_space
 from core.llm_client import complete_json
 from memory.repository import list_memories
@@ -257,7 +258,23 @@ def save_summary(space_id: str, result: SummaryResult) -> None:
         index_path.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def generate_summary(space_id: str, range_key: str) -> SummaryResult:
+def _summary_complete_json(
+    context: AgentRunContext | None,
+    *,
+    name: str,
+    system_prompt: str,
+    user_prompt: str,
+) -> dict[str, Any]:
+    if context is None:
+        return complete_json(system_prompt=system_prompt, user_prompt=user_prompt)
+    return get_default_hook_manager().run_llm(
+        context,
+        {"name": name, "system_prompt_len": len(system_prompt), "user_prompt": user_prompt},
+        lambda: complete_json(system_prompt=system_prompt, user_prompt=user_prompt),
+    )
+
+
+def _generate_summary_impl(space_id: str, range_key: str, context: AgentRunContext | None) -> SummaryResult:
     start, end = build_time_range(range_key)
     range_label = RANGE_LABELS[range_key]
     notes = load_notes_in_range(space_id, start, end)
@@ -277,12 +294,16 @@ def generate_summary(space_id: str, range_key: str) -> SummaryResult:
         }
 
         try:
-            draft = complete_json(
+            draft = _summary_complete_json(
+                context,
+                name="summary_draft",
                 system_prompt=SUMMARY_SYSTEM_PROMPT,
                 user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
             ).get("summary_markdown", "")
 
-            reviewed = complete_json(
+            reviewed = _summary_complete_json(
+                context,
+                name="summary_review",
                 system_prompt=REFLECTION_SYSTEM_PROMPT,
                 user_prompt=json.dumps(
                     {"notes": payload["notes"], "memory_changes": payload["memory_changes"], "draft": draft},
@@ -307,3 +328,33 @@ def generate_summary(space_id: str, range_key: str) -> SummaryResult:
     )
     save_summary(space_id, result)
     return result
+
+
+def generate_summary(
+    space_id: str,
+    range_key: str,
+    *,
+    tenant_id: str = "default",
+    user_id: str | None = None,
+    message_id: str | None = None,
+    task_id: str | None = None,
+) -> SummaryResult:
+    context = AgentRunContext.create(
+        space_id=space_id,
+        run_type="summary",
+        tenant_id=tenant_id,
+        user_id=user_id,
+        message_id=message_id,
+        task_id=task_id,
+        metadata={"range_key": range_key},
+    )
+    manager = get_default_hook_manager()
+    return manager.run_agent(
+        context,
+        lambda: manager.run_tool(
+            context,
+            "generate_summary",
+            {"range_key": range_key},
+            lambda: _generate_summary_impl(space_id, range_key, context),
+        ),
+    )

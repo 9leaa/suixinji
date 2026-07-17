@@ -1,14 +1,17 @@
-"""PostgreSQL task and attempt persistence."""
+"""PostgreSQL task state, attempts, retries, and idempotency."""
 
 from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import update
+from datetime import datetime, timedelta
+
+from sqlalchemy import or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database import session_scope
-from infrastructure.schema import Task
+from infrastructure.schema import OutboxEvent, Task, TaskAttempt
+from memory.models import new_id
 from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space, parse_datetime
 
 
@@ -53,3 +56,113 @@ def update_task_status(task_id: str, status: str, **updates: Any) -> None:
     values["status"] = status
     with session_scope() as session:
         session.execute(update(Task).where(Task.id == task_id).values(**values))
+
+
+def claim_task(task_id: str, worker_id: str, *, stale_after_seconds: int = 60) -> dict[str, Any] | None:
+    now = datetime.now().astimezone()
+    stale_before = now - timedelta(seconds=max(1, stale_after_seconds))
+    with session_scope() as session:
+        row = session.execute(select(Task).where(Task.id == task_id).with_for_update()).scalar_one_or_none()
+        if row is None or row.status in {"completed", "dead_letter"}:
+            return None
+        if row.status == "running" and row.started_at is not None and row.started_at > stale_before:
+            return None
+        if row.next_retry_at is not None and row.next_retry_at > now:
+            return None
+        row.status = "running"
+        row.started_at = now
+        row.attempt_count += 1
+        session.add(
+            TaskAttempt(
+                task_id=row.id,
+                worker_id=worker_id,
+                attempt_no=row.attempt_count,
+                status="running",
+                started_at=now,
+            )
+        )
+        session.flush()
+        return {column.name: getattr(row, column.name) for column in Task.__table__.columns}
+
+
+def complete_task(task_id: str) -> None:
+    now = datetime.now().astimezone()
+    with session_scope() as session:
+        row = session.execute(select(Task).where(Task.id == task_id).with_for_update()).scalar_one_or_none()
+        if row is None:
+            return
+        row.status = "completed"
+        row.completed_at = now
+        row.last_error = None
+        session.execute(
+            update(TaskAttempt)
+            .where(TaskAttempt.task_id == task_id, TaskAttempt.attempt_no == row.attempt_count)
+            .values(status="completed", finished_at=now)
+        )
+
+
+def fail_task(task_id: str, error: str, *, retry_delay_seconds: float) -> str:
+    now = datetime.now().astimezone()
+    with session_scope() as session:
+        row = session.execute(select(Task).where(Task.id == task_id).with_for_update()).scalar_one_or_none()
+        if row is None:
+            return "missing"
+        exhausted = row.attempt_count >= row.max_attempts
+        row.status = "dead_letter" if exhausted else "retry"
+        row.last_error = error[:2000]
+        row.next_retry_at = None if exhausted else now + timedelta(seconds=max(0.1, retry_delay_seconds))
+        row.completed_at = now if exhausted else None
+        session.execute(
+            update(TaskAttempt)
+            .where(TaskAttempt.task_id == task_id, TaskAttempt.attempt_no == row.attempt_count)
+            .values(
+                status="dead_letter" if exhausted else "failed",
+                finished_at=now,
+                error_type=error.split(":", 1)[0][:255],
+                error_summary=error[:2000],
+            )
+        )
+        return row.status
+
+
+def defer_task(task_id: str, reason: str, *, retry_delay_seconds: float) -> None:
+    now = datetime.now().astimezone()
+    with session_scope() as session:
+        row = session.execute(select(Task).where(Task.id == task_id).with_for_update()).scalar_one_or_none()
+        if row is None:
+            return
+        row.status = "retry"
+        row.last_error = reason[:2000]
+        row.next_retry_at = now + timedelta(seconds=max(0.1, retry_delay_seconds))
+        session.execute(
+            update(TaskAttempt)
+            .where(TaskAttempt.task_id == task_id, TaskAttempt.attempt_no == row.attempt_count)
+            .values(status="deferred", finished_at=now, error_summary=reason[:2000])
+        )
+
+
+def enqueue_due_retries(*, limit: int = 50, task_ids: list[str] | None = None) -> int:
+    now = datetime.now().astimezone()
+    count = 0
+    with session_scope() as session:
+        statement = select(Task).where(Task.status == "retry", or_(Task.next_retry_at.is_(None), Task.next_retry_at <= now))
+        if task_ids is not None:
+            statement = statement.where(Task.id.in_(task_ids))
+        rows = list(session.execute(
+            statement.order_by(Task.next_retry_at, Task.created_at).limit(max(1, int(limit))).with_for_update(skip_locked=True)
+        ).scalars())
+        for row in rows:
+            event_id = new_id("event")
+            session.add(
+                OutboxEvent(
+                    id=event_id,
+                    event_type="task.requested",
+                    aggregate_type="task",
+                    aggregate_id=row.id,
+                    payload_json={"task_id": row.id, "task_type": row.task_type, "attempt": row.attempt_count + 1},
+                )
+            )
+            row.status = "queued"
+            row.next_retry_at = None
+            count += 1
+    return count

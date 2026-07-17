@@ -113,11 +113,35 @@ def check_storage_backend() -> None:
         ok("local storage backend selected")
 
 
+def check_coordination_backend() -> None:
+    coordination = os.getenv("COORDINATION_BACKEND", "local").strip().lower()
+    queue = os.getenv("TASK_QUEUE_BACKEND", "local").strip().lower()
+    if coordination not in {"local", "redis"}:
+        fail("COORDINATION_BACKEND 必须是 local 或 redis")
+    if queue not in {"local", "redis_streams"}:
+        fail("TASK_QUEUE_BACKEND 必须是 local 或 redis_streams")
+    if coordination == "redis":
+        if not os.getenv("REDIS_URL"):
+            fail("COORDINATION_BACKEND=redis 时必须配置 REDIS_URL")
+        try:
+            from infrastructure.redis_client import check_redis_health
+
+            check_redis_health()
+        except Exception as exc:
+            fail(f"Redis 连接失败: {type(exc).__name__}: {exc}")
+        ok("Redis connection is healthy")
+    else:
+        ok("local coordination backend selected")
+    if queue == "redis_streams" and (coordination != "redis" or os.getenv("STORAGE_BACKEND", "local") != "postgres"):
+        fail("TASK_QUEUE_BACKEND=redis_streams 需要 PostgreSQL 和 Redis")
+
+
 def main() -> None:
     check_env_file()
     check_required_env()
     check_memory_config()
     check_storage_backend()
+    check_coordination_backend()
     check_data_dir()
     print("配置检查通过。")
 

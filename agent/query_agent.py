@@ -7,6 +7,7 @@ import re
 from datetime import datetime, timedelta
 from typing import Any
 
+from agent.hooks import AgentRunContext, get_default_hook_manager
 from core.llm_client import complete_json, embed_text
 from core.observability import log_event, observe
 from core.sensitive import mentions_sensitive_topic
@@ -53,6 +54,8 @@ REACT_SYSTEM_PROMPT = f"""
 - 如果用户问“和某条笔记相关的有哪些”，先 semantic_search 找候选 note_id，再 follow_links。
 - 回答只能基于 observations，不要编造。
 - 如果没有找到相关笔记，要明确说没找到。
+- observations 中如果存在 session_context，它表示上一轮临时会话状态；可据此理解“一周”“这个”等承接回答。
+- 如果回答后需要等待用户补充信息，可额外输出 session_update，例如 {{"waiting_for":"summary_range","current_intent":"summary"}}；不再需要时输出空对象。
 - 回答要自然、简洁，必要时引用笔记标题或时间。
 """
 
@@ -519,13 +522,23 @@ def _execute_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
     return {"error": f"unknown tool: {action}"}
 
 
-def _run_tool(space_id: str, action: str, args: dict[str, Any], *, trace: dict[str, Any] | None = None) -> Any:
-    with observe(
-        "query.tool_call",
-        space_id=space_id,
-        extra=_safe_tool_args(action, args),
-    ):
-        result = _execute_tool(space_id, action, args)
+def _run_tool(
+    space_id: str,
+    action: str,
+    args: dict[str, Any],
+    *,
+    trace: dict[str, Any] | None = None,
+    hook_context: AgentRunContext | None = None,
+) -> Any:
+    def execute() -> Any:
+        with observe(
+            "query.tool_call",
+            space_id=space_id,
+            extra=_safe_tool_args(action, args),
+        ):
+            return _execute_tool(space_id, action, args)
+
+    result = get_default_hook_manager().run_tool(hook_context, action, args, execute) if hook_context else execute()
     step = "memory_search" if action == "memory_search" else "note_search"
     add_step(
         trace,
@@ -577,14 +590,37 @@ def _provisional_answer(notes: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
-def _synthesize_answer(question: str, observations: list[dict[str, Any]]) -> str:
+def _complete_json_with_hooks(
+    context: AgentRunContext | None,
+    *,
+    name: str,
+    system_prompt: str,
+    user_prompt: str,
+) -> dict[str, Any]:
+    if context is None:
+        return complete_json(system_prompt=system_prompt, user_prompt=user_prompt)
+    request: dict[str, Any] = {
+        "name": name,
+        "system_prompt_len": len(system_prompt),
+        "user_prompt": user_prompt,
+    }
+    return get_default_hook_manager().run_llm(
+        context,
+        request,
+        lambda: complete_json(system_prompt=system_prompt, user_prompt=user_prompt),
+    )
+
+
+def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hook_context: AgentRunContext | None = None) -> str:
     payload = {
         "question": question,
         "observations": observations,
     }
 
     try:
-        data = complete_json(
+        data = _complete_json_with_hooks(
+            hook_context,
+            name="query_synthesis",
             system_prompt=FINAL_SYSTEM_PROMPT,
             user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
         )
@@ -594,7 +630,7 @@ def _synthesize_answer(question: str, observations: list[dict[str, Any]]) -> str
     return str(data.get("final_answer") or "").strip() or _fallback_answer(observations)
 
 
-def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
+def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_context: AgentRunContext | None) -> str:
     question = question.strip()
     trace = start_trace("memory_query", space_id, query_len=len(question))
     add_step(trace, "query_received", input_summary={"question_len": len(question), "max_steps": max_steps})
@@ -625,6 +661,14 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
             return answer
 
         observations: list[dict[str, Any]] = []
+        if hook_context is not None and hook_context.session:
+            session_context = {
+                key: hook_context.session.get(key)
+                for key in ("current_intent", "waiting_for", "pending_operation", "conversation_summary")
+                if hook_context.session.get(key) is not None
+            }
+            if session_context:
+                observations.append({"thought": "恢复上一轮临时会话。", "tool": "session_context", "args": {}, "result": session_context})
 
         try:
             provisional = provisional_search(space_id, question, limit=5)
@@ -662,7 +706,13 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
                 },
                 reason="prefetch_active_memory",
             )
-            memory_prefetch = _run_tool(space_id, "memory_search", {"query": question, "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE}, trace=trace)
+            memory_prefetch = _run_tool(
+                space_id,
+                "memory_search",
+                {"query": question, "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
+                trace=trace,
+                hook_context=hook_context,
+            )
             if memory_prefetch:
                 observations.append(
                     {
@@ -682,7 +732,9 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
                 }
 
                 try:
-                    decision = complete_json(
+                    decision = _complete_json_with_hooks(
+                        hook_context,
+                        name="query_react",
                         system_prompt=REACT_SYSTEM_PROMPT,
                         user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
                     )
@@ -705,6 +757,9 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
                     return answer
 
                 final_answer = str(decision.get("final_answer") or "").strip()
+                if hook_context is not None and "session_update" in decision:
+                    update = decision.get("session_update")
+                    hook_context.metadata["session_update"] = update if isinstance(update, dict) else {}
                 if final_answer and observations:
                     answer = _with_sources(final_answer, observations)
                     _log_final_answer(space_id, answer, source="react_final", observations=observations)
@@ -735,7 +790,7 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
                     reason=str(decision.get("thought") or ""),
                 )
 
-                result = _run_tool(space_id, str(action), args, trace=trace)
+                result = _run_tool(space_id, str(action), args, trace=trace, hook_context=hook_context)
                 observations.append(
                     {
                         "thought": decision.get("thought"),
@@ -747,7 +802,7 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
                 add_step(trace, "rerank", output_summary={"strategy": "tool_order", "ids": _result_ids(result)})
 
-            answer = _with_sources(_synthesize_answer(question, observations), observations)
+            answer = _with_sources(_synthesize_answer(question, observations, hook_context=hook_context), observations)
             _log_final_answer(space_id, answer, source="synthesized", observations=observations)
             add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="synthesized")
             add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
@@ -757,3 +812,28 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
             add_step(trace, "answer_failed", status="failed", error=str(exc))
             finish_trace(trace, status="failed")
             raise
+
+
+def answer_question(
+    space_id: str,
+    question: str,
+    max_steps: int = 4,
+    *,
+    tenant_id: str = "default",
+    user_id: str | None = None,
+    message_id: str | None = None,
+    task_id: str | None = None,
+) -> str:
+    context = AgentRunContext.create(
+        space_id=space_id,
+        run_type="query",
+        tenant_id=tenant_id,
+        user_id=user_id,
+        message_id=message_id,
+        task_id=task_id,
+        metadata={"question_len": len(question), "max_steps": max_steps},
+    )
+    return get_default_hook_manager().run_agent(
+        context,
+        lambda: _answer_question_impl(space_id, question, max_steps, context),
+    )

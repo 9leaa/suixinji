@@ -2,7 +2,7 @@ PYTHON ?= python3
 PIP ?= $(PYTHON) -m pip
 PYTEST ?= $(PYTHON) -m pytest
 
-.PHONY: install install-dev test eval-dry-run lint db-check db-upgrade migrate-dry-run migrate verify-migration start stop status logs backup
+.PHONY: install install-dev test eval-dry-run lint db-check db-upgrade migrate-dry-run migrate verify-migration start stop status logs distributed-start distributed-stop distributed-status distributed-up distributed-down backup
 
 install:
 	$(PIP) install -r requirements.txt
@@ -49,6 +49,21 @@ status:
 
 logs:
 	bash scripts/logs.sh
+
+distributed-start:
+	bash scripts/start_distributed.sh
+
+distributed-stop:
+	bash scripts/stop_distributed.sh
+
+distributed-status:
+	bash scripts/status_distributed.sh
+
+distributed-up:
+	docker compose --profile distributed up -d --build
+
+distributed-down:
+	docker compose --profile distributed down
 
 backup:
 	bash scripts/backup_data.sh

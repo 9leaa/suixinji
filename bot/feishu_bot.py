@@ -8,6 +8,7 @@ import os
 import re
 from typing import Any
 
+from apps.receiver import InboxCommand, receive
 from agent.query_agent import by_tag, by_type, filter_notes
 from summary.daily_summary import parse_summary_range
 from summary.scheduler import start_summary_scheduler
@@ -27,6 +28,7 @@ from lark_oapi.api.im.v1 import (
 from core.feedback import save_feedback
 from core.observability import latest_success, log_event, recent_errors
 from core.sensitive import assess_sensitive_text, safe_text_preview
+from core.settings import TASK_QUEUE_BACKEND
 from core.wal import (
     append_message_once,
     create_blocked_sensitive_record,
@@ -54,7 +56,7 @@ from memory.service import (
     format_trace_memory,
 )
 from memory.scheduler import start_memory_scheduler
-from runtime.delivery_store import recover_stale_reserved_deliveries
+from runtime.delivery_store import manual_summary_key, query_key, recover_stale_reserved_deliveries
 from runtime.enrichment_drainer import EnrichmentDrainer
 from runtime.executor import get_task_executor
 from runtime.pending_drainer import PendingDrainer
@@ -644,6 +646,30 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
             return
 
         safe_send_text(chat_id, "我来整理这段时间的随心记。")
+        if TASK_QUEUE_BACKEND == "redis_streams":
+            result = receive(
+                InboxCommand(
+                    source="feishu",
+                    message_id=message_id,
+                    event_id=event_id,
+                    tenant_id=str(sender.get("tenant_key") or "default"),
+                    space_id=space_id,
+                    chat_id=chat_id,
+                    chat_type=chat_type,
+                    sender=sender,
+                    text=text,
+                    task_type="summary",
+                    task_payload={
+                        "range_key": range_key,
+                        "chat_id": chat_id,
+                        "delivery_key": manual_summary_key(space_id, message_id),
+                        "delivery_type": "manual_summary",
+                    },
+                )
+            )
+            if result.duplicate:
+                safe_send_text(chat_id, "这条总结请求已经收到过了。")
+            return
         task = get_task_executor(safe_send_text).submit_summary(
             space_id,
             range_key,
@@ -676,6 +702,30 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
             return
 
         safe_send_text(chat_id, "我去翻一下随心记。")
+        if TASK_QUEUE_BACKEND == "redis_streams":
+            result = receive(
+                InboxCommand(
+                    source="feishu",
+                    message_id=message_id,
+                    event_id=event_id,
+                    tenant_id=str(sender.get("tenant_key") or "default"),
+                    space_id=space_id,
+                    chat_id=chat_id,
+                    chat_type=chat_type,
+                    sender=sender,
+                    text=text,
+                    task_type="query",
+                    task_payload={
+                        "question": question,
+                        "chat_id": chat_id,
+                        "delivery_key": query_key(space_id, message_id),
+                        "delivery_type": "query",
+                    },
+                )
+            )
+            if result.duplicate:
+                safe_send_text(chat_id, "这条查询已经收到过了。")
+            return
         task = get_task_executor(safe_send_text).submit_query(
             space_id,
             question,
@@ -684,6 +734,28 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
         )
         if task.status == TASK_REJECTED:
             safe_send_text(chat_id, "当前任务较多，请稍后重试。")
+        return
+
+    if TASK_QUEUE_BACKEND == "redis_streams":
+        result = receive(
+            InboxCommand(
+                source="feishu",
+                message_id=message_id,
+                event_id=event_id,
+                tenant_id=str(sender.get("tenant_key") or "default"),
+                space_id=space_id,
+                chat_id=chat_id,
+                chat_type=chat_type,
+                sender=sender,
+                text=text,
+                task_type="ingest",
+                task_payload={"chat_id": chat_id, "notify_on_success": True, "source": "feishu_realtime"},
+            )
+        )
+        if result.duplicate:
+            safe_send_text(chat_id, "这条消息已经收到过了，已跳过重复处理。")
+        else:
+            safe_send_text(chat_id, "已收到，正在整理到随心记。")
         return
 
     record = create_pending_record(
@@ -755,16 +827,17 @@ def start() -> None:
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
     )
 
-    executor = get_task_executor(safe_send_text)
-    recover_stale_reserved_deliveries()
-    pending_drainer = PendingDrainer(executor)
-    pending_drainer.drain_once()
-    pending_drainer.start()
-    enrichment_drainer = EnrichmentDrainer(executor)
-    enrichment_drainer.drain_once()
-    enrichment_drainer.start()
-    start_summary_scheduler(safe_send_text, executor=executor)
-    start_memory_scheduler()
+    if TASK_QUEUE_BACKEND == "local":
+        executor = get_task_executor(safe_send_text)
+        recover_stale_reserved_deliveries()
+        pending_drainer = PendingDrainer(executor)
+        pending_drainer.drain_once()
+        pending_drainer.start()
+        enrichment_drainer = EnrichmentDrainer(executor)
+        enrichment_drainer.drain_once()
+        enrichment_drainer.start()
+        start_summary_scheduler(safe_send_text, executor=executor)
+        start_memory_scheduler()
 
     ws_client = lark.ws.Client(
         APP_ID,

@@ -24,6 +24,13 @@ def _float_env(name: str, default: float) -> float:
     return float(value)
 
 
+def _bool_env(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 MAX_WORKERS = _int_env("SUIXINJI_MAX_WORKERS", 4)
 TASK_QUEUE_SIZE = _int_env("SUIXINJI_TASK_QUEUE_SIZE", 100)
 TASK_HISTORY_LIMIT = _int_env("SUIXINJI_TASK_HISTORY_LIMIT", 1000)
@@ -69,3 +76,45 @@ if STORAGE_BACKEND not in {"local", "postgres"}:
     raise ValueError("STORAGE_BACKEND must be 'local' or 'postgres'")
 if STORAGE_BACKEND == "postgres" and not DATABASE_URL:
     raise ValueError("DATABASE_URL is required when STORAGE_BACKEND=postgres")
+
+SUIXINJI_ENV = os.getenv("SUIXINJI_ENV", "dev").strip().lower()
+COORDINATION_BACKEND = os.getenv("COORDINATION_BACKEND", "local").strip().lower()
+REDIS_URL = os.getenv("REDIS_URL", "").strip()
+CACHE_ENABLED = _bool_env("CACHE_ENABLED", True)
+AGENT_HOOKS_ENABLED = _bool_env("SUIXINJI_AGENT_HOOKS_ENABLED", True)
+TASK_QUEUE_BACKEND = os.getenv("TASK_QUEUE_BACKEND", "local").strip().lower()
+
+REDIS_MAX_CONNECTIONS = _int_env("SUIXINJI_REDIS_MAX_CONNECTIONS", 20)
+REDIS_SOCKET_TIMEOUT_SECONDS = _float_env("SUIXINJI_REDIS_SOCKET_TIMEOUT_SECONDS", 2.0)
+REDIS_CONNECT_TIMEOUT_SECONDS = _float_env("SUIXINJI_REDIS_CONNECT_TIMEOUT_SECONDS", 2.0)
+REDIS_HEALTH_CHECK_INTERVAL_SECONDS = _int_env("SUIXINJI_REDIS_HEALTH_CHECK_INTERVAL_SECONDS", 30)
+
+RATE_LIMIT_ASK_PER_MINUTE = _int_env("SUIXINJI_RATE_LIMIT_ASK_PER_MINUTE", 20)
+RATE_LIMIT_INGEST_PER_MINUTE = _int_env("SUIXINJI_RATE_LIMIT_INGEST_PER_MINUTE", 120)
+LLM_CONCURRENCY_LIMIT = _int_env("SUIXINJI_LLM_CONCURRENCY_LIMIT", 4)
+LLM_TOKEN_BUDGET_PER_MINUTE = _int_env("SUIXINJI_LLM_TOKEN_BUDGET_PER_MINUTE", 200000)
+IDEMPOTENCY_TTL_SECONDS = _int_env("SUIXINJI_IDEMPOTENCY_TTL_SECONDS", 600)
+SESSION_TTL_SECONDS = _int_env("SUIXINJI_SESSION_TTL_SECONDS", 1800)
+SPACE_LOCK_TTL_MS = _int_env("SUIXINJI_SPACE_LOCK_TTL_MS", 30000)
+SPACE_LOCK_WAIT_SECONDS = _float_env("SUIXINJI_SPACE_LOCK_WAIT_SECONDS", 5.0)
+CACHE_SEARCH_TTL_SECONDS = _int_env("SUIXINJI_CACHE_SEARCH_TTL_SECONDS", 180)
+EMBEDDING_CACHE_TTL_SECONDS = _int_env("SUIXINJI_EMBEDDING_CACHE_TTL_SECONDS", 86400)
+
+STREAM_BLOCK_MS = _int_env("SUIXINJI_STREAM_BLOCK_MS", 5000)
+STREAM_BATCH_SIZE = _int_env("SUIXINJI_STREAM_BATCH_SIZE", 10)
+STREAM_CLAIM_IDLE_MS = _int_env("SUIXINJI_STREAM_CLAIM_IDLE_MS", 60000)
+STREAM_MAXLEN = _int_env("SUIXINJI_STREAM_MAXLEN", 100000)
+OUTBOX_BATCH_SIZE = _int_env("SUIXINJI_OUTBOX_BATCH_SIZE", 50)
+OUTBOX_POLL_INTERVAL_SECONDS = _float_env("SUIXINJI_OUTBOX_POLL_INTERVAL_SECONDS", 1.0)
+WORKER_MAX_ATTEMPTS = _int_env("SUIXINJI_WORKER_MAX_ATTEMPTS", 5)
+WORKER_RETRY_BASE_SECONDS = _float_env("SUIXINJI_WORKER_RETRY_BASE_SECONDS", 2.0)
+SCHEDULER_LEADER_TTL_MS = _int_env("SUIXINJI_SCHEDULER_LEADER_TTL_MS", 30000)
+
+if COORDINATION_BACKEND not in {"local", "redis"}:
+    raise ValueError("COORDINATION_BACKEND must be 'local' or 'redis'")
+if COORDINATION_BACKEND == "redis" and not REDIS_URL:
+    raise ValueError("REDIS_URL is required when COORDINATION_BACKEND=redis")
+if TASK_QUEUE_BACKEND not in {"local", "redis_streams"}:
+    raise ValueError("TASK_QUEUE_BACKEND must be 'local' or 'redis_streams'")
+if TASK_QUEUE_BACKEND == "redis_streams" and (STORAGE_BACKEND != "postgres" or COORDINATION_BACKEND != "redis"):
+    raise ValueError("TASK_QUEUE_BACKEND=redis_streams requires PostgreSQL storage and Redis coordination")

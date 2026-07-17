@@ -51,6 +51,47 @@ make start
 
 PostgreSQL 模式需要设置 `STORAGE_BACKEND=postgres` 和 `DATABASE_URL`，然后运行 `make db-upgrade`。如果数据库由其他机器提供，不要启动 compose 的 `local-infra` profile。仓库中的 PostgreSQL 容器仅用于明确需要本机临时数据库时手动启动：`docker compose --profile local-infra up -d postgres`。
 
+## Redis Hooks 与分布式角色
+
+第二、第三阶段使用以下配置：
+
+```text
+STORAGE_BACKEND=postgres
+COORDINATION_BACKEND=redis
+TASK_QUEUE_BACKEND=redis_streams
+REDIS_URL=redis://...
+```
+
+Query、Summary 和 Memory 流程经过同步 HookManager，提供共享限流、请求幂等、LLM 并发槽位、版本化查询缓存、临时 Session、短临界区分布式锁和 PostgreSQL Agent Run 审计。Redis 故障时，缓存和 Session 会跳过；普通 Inbox 仍以 PostgreSQL 唯一约束为最终保证；关键写锁会回退 PostgreSQL advisory lock。
+
+分布式运行角色：
+
+```text
+Receiver -> PostgreSQL Inbox + Task + Outbox
+Outbox Relay -> Redis Streams
+Ingest / Query / Summary / Memory Worker
+Delivery Worker -> Feishu
+Leader-locked Scheduler
+FastAPI test receiver :8000
+```
+
+在已激活 `zcj_hello` 环境中启动：
+
+```bash
+make distributed-start
+make distributed-status
+make distributed-stop
+```
+
+也可以使用 Docker：
+
+```bash
+make distributed-up
+make distributed-down
+```
+
+本机测试用 Redis profile 明确关闭 AOF 和 RDB 快照，不做持久化写盘；使用外部 Redis 时无需启动该 profile。
+
 ## 使用示例
 
 ```text

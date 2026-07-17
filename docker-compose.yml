@@ -24,5 +24,82 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    profiles: ["local-infra"]
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  receiver:
+    build: .
+    profiles: ["distributed"]
+    env_file: [.env]
+    command: ["python", "-m", "bot.feishu_bot"]
+    restart: unless-stopped
+
+  outbox-relay:
+    build: .
+    profiles: ["distributed"]
+    env_file: [.env]
+    command: ["python", "-m", "apps.outbox_relay"]
+    restart: unless-stopped
+
+  worker-ingest:
+    build: .
+    profiles: ["distributed"]
+    env_file: [.env]
+    command: ["python", "-m", "apps.worker", "ingest"]
+    restart: unless-stopped
+
+  worker-query:
+    build: .
+    profiles: ["distributed"]
+    env_file: [.env]
+    command: ["python", "-m", "apps.worker", "query"]
+    restart: unless-stopped
+
+  worker-summary:
+    build: .
+    profiles: ["distributed"]
+    env_file: [.env]
+    command: ["python", "-m", "apps.worker", "summary"]
+    restart: unless-stopped
+
+  worker-memory:
+    build: .
+    profiles: ["distributed"]
+    env_file: [.env]
+    command: ["python", "-m", "apps.worker", "memory"]
+    restart: unless-stopped
+
+  worker-delivery:
+    build: .
+    profiles: ["distributed"]
+    env_file: [.env]
+    command: ["python", "-m", "apps.worker", "delivery"]
+    restart: unless-stopped
+
+  scheduler:
+    build: .
+    profiles: ["distributed"]
+    env_file: [.env]
+    command: ["python", "-m", "apps.scheduler"]
+    restart: unless-stopped
+
+  api:
+    build: .
+    profiles: ["distributed"]
+    env_file: [.env]
+    command: ["uvicorn", "apps.api:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
 volumes:
   suixinji-postgres:

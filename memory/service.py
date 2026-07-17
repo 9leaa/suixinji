@@ -6,6 +6,7 @@ from dataclasses import asdict, is_dataclass, replace
 from datetime import date
 from typing import Any
 
+from agent.hooks import AgentRunContext, get_default_hook_manager
 from core.settings import MEMORY_EXTRACTOR_MODE, MEMORY_QUERY_MIN_SCORE
 from memory.consolidator import consolidate_candidate
 from memory.candidate_validator import contains_sensitive_data, validate_candidates
@@ -41,7 +42,7 @@ def _note_value(note: Any, key: str, default: Any = None) -> Any:
     return getattr(note, key, default)
 
 
-def process_note_memory(note: Any, classification: dict[str, Any] | None = None) -> dict[str, Any]:
+def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None = None) -> dict[str, Any]:
     note_id = str(_note_value(note, "id", ""))
     space_id = str(_note_value(note, "space_id", ""))
     text = str(_note_value(note, "text", "") or "")
@@ -244,6 +245,28 @@ def process_note_memory(note: Any, classification: dict[str, Any] | None = None)
         add_step(trace, "memory_write_failed", status="failed", error=str(exc))
         finish_trace(trace, status="failed")
         raise
+
+
+def process_note_memory(note: Any, classification: dict[str, Any] | None = None) -> dict[str, Any]:
+    note_id = str(_note_value(note, "id", ""))
+    space_id = str(_note_value(note, "space_id", ""))
+    context = AgentRunContext.create(
+        space_id=space_id,
+        run_type="memory",
+        message_id=str(_note_value(note, "message_id", "")) or None,
+        task_id=note_id or None,
+        metadata={"note_id": note_id},
+    )
+    manager = get_default_hook_manager()
+    return manager.run_agent(
+        context,
+        lambda: manager.run_tool(
+            context,
+            "process_memory",
+            {"note_id": note_id},
+            lambda: _process_note_memory_impl(note, classification),
+        ),
+    )
 
 
 def memory_search(

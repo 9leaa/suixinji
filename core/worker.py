@@ -21,6 +21,7 @@ from storage.note_storage import (
     update_note_metadata,
 )
 from core.llm_client import embed_text
+from infrastructure.redis_cache import invalidate_space_cache
 from memory.repository import get_extraction_state
 from memory.service import process_note_memory
 from storage.vector_store import (
@@ -88,7 +89,7 @@ def backfill_vector_if_missing(space_id: str, message_id: str) -> bool:
         )
 
 
-def process_record(record: dict[str, Any]) -> NoteMetadata | dict[str, Any] | None:
+def process_record(record: dict[str, Any], *, defer_memory: bool = False) -> NoteMetadata | dict[str, Any] | None:
     """处理单条 pending WAL 记录。
 
     功能说明:
@@ -123,7 +124,7 @@ def process_record(record: dict[str, Any]) -> NoteMetadata | dict[str, Any] | No
         if note_exists(space_id, message_id):
             note = _find_note_by_message_id(space_id, message_id)
             recovered_memory = False
-            if note is not None and is_note_queryable(note):
+            if not defer_memory and note is not None and is_note_queryable(note):
                 note_id = str(note.get("id") or "")
                 state = get_extraction_state(note_id) if note_id else None
                 if state is None or state.status in {"pending", "failed", "partial"}:
@@ -175,22 +176,24 @@ def process_record(record: dict[str, Any]) -> NoteMetadata | dict[str, Any] | No
 
         with observe("worker.write_note", extra={"note_id": record_id}, **ctx):
             save_note(note)
+        invalidate_space_cache(space_id)
 
-        try:
-            with observe("worker.write_memory", extra={"note_id": record_id}, **ctx):
-                process_note_memory(note, classification={
-                    "title": classification.title,
-                    "tags": classification.tags,
-                    "type": classification.type,
-                    "summary": classification.summary,
-                })
-        except Exception:
-            LOGGER.exception(
-                "Memory processing failed after note was saved: space_id=%s message_id=%s record_id=%s",
-                space_id,
-                message_id,
-                record_id,
-            )
+        if not defer_memory:
+            try:
+                with observe("worker.write_memory", extra={"note_id": record_id}, **ctx):
+                    process_note_memory(note, classification={
+                        "title": classification.title,
+                        "tags": classification.tags,
+                        "type": classification.type,
+                        "summary": classification.summary,
+                    })
+            except Exception:
+                LOGGER.exception(
+                    "Memory processing failed after note was saved: space_id=%s message_id=%s record_id=%s",
+                    space_id,
+                    message_id,
+                    record_id,
+                )
 
         with observe("worker.mark_processed", **ctx):
             mark_processed(space_id, record_id)
@@ -265,6 +268,7 @@ def enrich_note(space_id: str, note_id: str) -> bool:
             enrichment_error=None,
             enrichment_updated_at=finished_at,
         )
+        invalidate_space_cache(space_id)
         return True
     except Exception:
         update_note_metadata(
@@ -274,6 +278,7 @@ def enrich_note(space_id: str, note_id: str) -> bool:
             enrichment_error="background_enrichment_failed",
             enrichment_updated_at=datetime.now().astimezone().isoformat(),
         )
+        invalidate_space_cache(space_id)
         raise
 
 
