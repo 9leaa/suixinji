@@ -1,0 +1,180 @@
+{
+  "measurement_status": "measured",
+  "submitted": 1000,
+  "submission_retry_attempts": 1,
+  "submission_retry_duration_ms": 28429,
+  "accepted": 994,
+  "client_confirmed_accepted": 900,
+  "accepted_after_client_timeout": 94,
+  "submission_failed_unaccepted": 0,
+  "rate_limited": 0,
+  "duplicate": 6,
+  "blocked": 0,
+  "queued": 0,
+  "running": 0,
+  "completed": 994,
+  "cancelled": 0,
+  "failed": 0,
+  "pending": 0,
+  "dead_letter": 0,
+  "all_task_status": {
+    "completed": 1988
+  },
+  "all_task_pending": 0,
+  "all_task_dead_letter": 0,
+  "retry_count": 0,
+  "failure_count": 0,
+  "defer_count": 0,
+  "memory_gap_spaces": 0,
+  "max_memory_watermark_lag": 0,
+  "stream_lag": 0,
+  "stream_pending": 0,
+  "p50_latency_ms": 187224,
+  "p95_latency_ms": 524545,
+  "p99_latency_ms": 581116,
+  "p50_queue_wait_ms": 176918,
+  "p95_queue_wait_ms": 515915,
+  "p99_queue_wait_ms": 567955,
+  "p50_execution_ms": 10476,
+  "p95_execution_ms": 13619,
+  "p99_execution_ms": 15548,
+  "p50_outbox_publish_ms": 1376,
+  "p95_outbox_publish_ms": 3308,
+  "p99_outbox_publish_ms": 5600,
+  "segmented_latency": {
+    "receiver_acceptance": {
+      "p50_ms": 7601,
+      "p95_ms": 10010,
+      "p99_ms": 10011
+    },
+    "outbox_publish": {
+      "p50_ms": 1376,
+      "p95_ms": 3308,
+      "p99_ms": 5600
+    },
+    "queue_wait": {
+      "p50_ms": 176918,
+      "p95_ms": 515915,
+      "p99_ms": 567955
+    },
+    "worker_execution": {
+      "p50_ms": 10476,
+      "p95_ms": 13619,
+      "p99_ms": 15548
+    },
+    "task_end_to_end": {
+      "p50_ms": 187224,
+      "p95_ms": 524545,
+      "p99_ms": 581116
+    },
+    "agent_steps": {
+      "tool": {
+        "count": 685,
+        "p50": 7041,
+        "p95": 8497,
+        "p99": 10210
+      }
+    }
+  },
+  "p50_lock_wait_ms": 993,
+  "p95_lock_wait_ms": 5456,
+  "p99_lock_wait_ms": 6275,
+  "llm_tokens": 0,
+  "estimated_cost": 0.0,
+  "failure_rate": 0.0,
+  "conservation_delta": 0,
+  "conservation_ok": true,
+  "database": {
+    "accepted": 994,
+    "inbox_pending": 0,
+    "root_task_status": {
+      "completed": 994
+    },
+    "all_task_status": {
+      "completed": 1988
+    },
+    "task_count": 1988,
+    "retry_count": 0,
+    "failure_count": 0,
+    "defer_count": 0,
+    "outbox_unpublished": 0,
+    "memory_gap_spaces": 0,
+    "max_memory_watermark_lag": 0,
+    "max_note_watermark_lag": 0,
+    "outbox_dead": 0,
+    "database_connections": {
+      "by_state": {
+        "active": 1,
+        "idle": 19,
+        "idle in transaction": 1
+      },
+      "total": 21,
+      "global_budget": 40,
+      "within_budget": true
+    },
+    "delivery_status": {
+      "sent": 309
+    },
+    "p50_queue_wait_ms": 176918,
+    "p95_queue_wait_ms": 515915,
+    "p99_queue_wait_ms": 567955,
+    "p50_execution_ms": 10476,
+    "p95_execution_ms": 13619,
+    "p99_execution_ms": 15548,
+    "p50_latency_ms": 187224,
+    "p95_latency_ms": 524545,
+    "p99_latency_ms": 581116,
+    "p50_outbox_publish_ms": 1376,
+    "p95_outbox_publish_ms": 3308,
+    "p99_outbox_publish_ms": 5600,
+    "agent_step_latency_ms": {
+      "tool": {
+        "count": 685,
+        "p50": 7041,
+        "p95": 8497,
+        "p99": 10210
+      }
+    },
+    "llm_requests": 0,
+    "llm_tokens": 0,
+    "estimated_cost": 0.0
+  },
+  "redis": {
+    "stream_lag": 0,
+    "stream_pending": 0,
+    "dead_letter_stream": 0,
+    "streams": {
+      "ingest": {
+        "lag": 0,
+        "pending": 0,
+        "length": 685
+      },
+      "query": {
+        "lag": 0,
+        "pending": 0,
+        "length": 245
+      },
+      "summary": {
+        "lag": 0,
+        "pending": 0,
+        "length": 64
+      },
+      "memory": {
+        "lag": 0,
+        "pending": 0,
+        "length": 0
+      },
+      "enrichment": {
+        "lag": 0,
+        "pending": 0,
+        "length": 685
+      },
+      "delivery": {
+        "lag": 0,
+        "pending": 0,
+        "length": 309
+      }
+    }
+  },
+  "tenant_id": "load-stage5-capacity100-20260718-r1"
+}

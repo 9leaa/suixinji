@@ -79,6 +79,12 @@ def test_postgres_inbox_and_note_contract(pg_space):
     loaded = notes.find_note(pg_space, note.id)
     assert loaded is not None
     assert loaded["tags"] == ["contract", "postgres"] or loaded["tags"] == ["postgres", "contract"]
+    content = notes.find_note_content(pg_space, note.id)
+    assert content is not None
+    assert content["title"] == "Contract"
+    assert set(content["tags"]) == {"postgres", "contract"}
+    assert content["type"] == "学习"
+    assert content["summary"] == "Repository contract"
     assert notes.update_note_metadata(pg_space, note.id, summary="updated")["summary"] == "updated"
 
 

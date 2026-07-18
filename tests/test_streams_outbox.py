@@ -220,6 +220,7 @@ def test_ingest_memory_barrier_blocks_query_but_not_enrichment(distributed_scope
         "process_record",
         lambda _record, defer_memory, defer_wal_completion: {"id": note_id},
     )
+    monkeypatch.setattr(handlers, "extract_candidates", lambda *_args, **_kwargs: ["candidate"])
 
     outcome = handlers.handle_ingest(root)
     assert isinstance(outcome, TaskOutcome)
@@ -392,6 +393,31 @@ def test_defer_does_not_consume_failure_budget(distributed_scope):
     assert task["defer_count"] == 1
     assert task["failure_count"] == 1
 
+
+def test_stream_group_cache_recovers_after_stream_recreation(distributed_scope):
+    _space_id, _source, keys, redis = distributed_scope
+    streams = StreamClient(redis, keys=keys)
+    stream, _group = streams.ensure_group("ingest")
+    redis.delete(stream)
+    streams.publish_task("event-recreated", {"task_id": "task-recreated", "task_type": "ingest"})
+
+    messages = streams.read("ingest", "recovery-worker", count=1, block_ms=1)
+
+    assert [message.fields["task_id"] for message in messages] == ["task-recreated"]
+
+
+def test_multi_stream_read_recovers_only_missing_groups(distributed_scope):
+    _space_id, _source, keys, redis = distributed_scope
+    streams = StreamClient(redis, keys=keys)
+    ingest_stream, _group = streams.ensure_group("ingest")
+    streams.ensure_group("query")
+    redis.delete(ingest_stream)
+    streams.publish_task("event-ingest", {"task_id": "task-ingest", "task_type": "ingest"})
+    streams.publish_task("event-query", {"task_id": "task-query", "task_type": "query"})
+
+    messages = streams.read_many(["ingest", "query"], "adaptive-recovery", count=1)
+
+    assert {message.fields["task_id"] for message in messages} == {"task-ingest", "task-query"}
 
 def test_outbox_relay_duplicate_publish_keeps_one_task(distributed_scope):
     space_id, source, keys, redis = distributed_scope

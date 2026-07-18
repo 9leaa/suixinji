@@ -83,6 +83,8 @@ def database_pool_budget(role: str | None = None) -> tuple[int, int]:
         return 1, 1
     if resolved == "worker-query":
         return 2, 1
+    if resolved == "worker-adaptive":
+        return 1, 1
     if resolved.startswith("worker-") or resolved == "scheduler":
         return 1, 0
     return max(1, DATABASE_POOL_SIZE), max(0, DATABASE_MAX_OVERFLOW)

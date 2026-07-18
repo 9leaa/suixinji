@@ -12,13 +12,20 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from runtime.distributed_metrics import build_report, collect_database_metrics, collect_lock_metrics, collect_stream_metrics
+from runtime.distributed_metrics import (
+    build_report,
+    collect_database_metrics,
+    collect_lock_metrics,
+    collect_stream_metrics,
+    reconcile_retry_submission,
+)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--tenant-id", required=True)
     parser.add_argument("--submission-report")
+    parser.add_argument("--retry-submission-report", action="append", default=[])
     parser.add_argument("--output")
     return parser.parse_args()
 
@@ -29,6 +36,12 @@ def main() -> None:
     if args.submission_report:
         submission = json.loads(Path(args.submission_report).read_text(encoding="utf-8"))
     database = collect_database_metrics(args.tenant_id)
+    retries = [json.loads(Path(path).read_text(encoding="utf-8")) for path in args.retry_submission_report]
+    submission = reconcile_retry_submission(
+        submission,
+        retries,
+        database_accepted=int(database.get("accepted") or 0),
+    )
     streams = collect_stream_metrics()
     locks = collect_lock_metrics(since=submission.get("started_at"))
     report = build_report(database, streams, submission=submission, locks=locks)

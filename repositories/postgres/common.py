@@ -35,12 +35,12 @@ def ensure_tenant_space(
     metadata: dict[str, Any] | None = None,
 ) -> str:
     source_space_id = str(space_id)
-    session.execute(
-        insert(Tenant).values(id=tenant_id, name=tenant_id).on_conflict_do_nothing()
-    )
     internal_existing = session.get(Space, source_space_id)
     if internal_existing is not None and internal_existing.tenant_id == tenant_id:
         return str(internal_existing.id)
+    session.execute(
+        insert(Tenant).values(id=tenant_id, name=tenant_id).on_conflict_do_nothing()
+    )
     existing = session.execute(
         select(Space.id).where(
             Space.tenant_id == tenant_id,

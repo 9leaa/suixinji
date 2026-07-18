@@ -1834,6 +1834,14 @@ def mark_extraction_empty(note_id: str, space_id: str, db_path: str | Path | Non
     return _mark_extraction_state(note_id, space_id, "empty", db_path=db_path)
 
 
+def mark_extraction_empty_attempt(
+    note_id: str,
+    space_id: str,
+    db_path: str | Path | None = None,
+) -> MemoryExtractionState:
+    return _mark_extraction_state(note_id, space_id, "empty", increment_attempt=True, db_path=db_path)
+
+
 def mark_extraction_partial(
     note_id: str,
     space_id: str,
@@ -2135,6 +2143,7 @@ if _STORAGE_BACKEND == "postgres":
         "mark_extraction_processing",
         "mark_extraction_completed",
         "mark_extraction_empty",
+        "mark_extraction_empty_attempt",
         "mark_extraction_partial",
         "mark_extraction_failed",
         "list_retryable_extraction_states",

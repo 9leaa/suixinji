@@ -86,26 +86,32 @@ class StreamWorker:
 
     def run_once(self, *, block_ms: int = 1000) -> int:
         messages = self.client.read(self.task_type, self.worker_id, block_ms=block_ms)
-        now = time.monotonic()
-        if not messages and now >= self._next_reclaim_at:
-            reclaim_started = time.perf_counter()
-            messages = self.client.reclaim(self.task_type, self.worker_id, min_idle_ms=STREAM_CLAIM_IDLE_MS)
-            self._next_reclaim_at = now + max(0.1, STREAM_RECLAIM_INTERVAL_SECONDS)
-            log_event(
-                "runtime.stream_reclaim",
-                status="completed",
-                duration_ms=int((time.perf_counter() - reclaim_started) * 1000),
-                extra={
-                    "task_type": self.task_type,
-                    "worker_id": self.worker_id,
-                    "reclaim_count": len(messages),
-                    "next_start_id": self.client.reclaim_cursor(self.task_type, self.worker_id),
-                    "min_idle_ms": STREAM_CLAIM_IDLE_MS,
-                },
-            )
+        if not messages:
+            messages = self._reclaim_if_due()
         for message in messages:
             self._handle(message)
         return len(messages)
+
+    def _reclaim_if_due(self) -> list[StreamMessage]:
+        now = time.monotonic()
+        if now < self._next_reclaim_at:
+            return []
+        reclaim_started = time.perf_counter()
+        messages = self.client.reclaim(self.task_type, self.worker_id, min_idle_ms=STREAM_CLAIM_IDLE_MS)
+        self._next_reclaim_at = now + max(0.1, STREAM_RECLAIM_INTERVAL_SECONDS)
+        log_event(
+            "runtime.stream_reclaim",
+            status="completed",
+            duration_ms=int((time.perf_counter() - reclaim_started) * 1000),
+            extra={
+                "task_type": self.task_type,
+                "worker_id": self.worker_id,
+                "reclaim_count": len(messages),
+                "next_start_id": self.client.reclaim_cursor(self.task_type, self.worker_id),
+                "min_idle_ms": STREAM_CLAIM_IDLE_MS,
+            },
+        )
+        return messages
 
     def run_forever(self) -> None:
         while self.running:
@@ -281,3 +287,99 @@ class StreamWorker:
                 "total_duration_ms": _elapsed_ms(task.get("created_at"), finished_at),
             },
         )
+
+
+class AdaptiveStreamWorker:
+    """Share one process and DB connection budget across all task streams."""
+
+    def __init__(
+        self,
+        handlers: dict[str, TaskHandler],
+        *,
+        client: StreamClient | None = None,
+        worker_id: str | None = None,
+    ) -> None:
+        self.client = client or StreamClient()
+        self.worker_id = worker_id or f"{socket.gethostname()}-adaptive-{uuid.uuid4().hex[:8]}"
+        self.task_types = list(handlers)
+        if not self.task_types:
+            raise ValueError("adaptive worker requires at least one task handler")
+        self.workers = {
+            task_type: StreamWorker(
+                task_type,
+                handler,
+                client=self.client,
+                worker_id=self.worker_id,
+            )
+            for task_type, handler in handlers.items()
+        }
+        self.running = True
+        self.foreground_task_types = [
+            task_type for task_type in self.task_types if task_type not in {"delivery", "enrichment"}
+        ]
+        self.background_task_types = [
+            task_type for task_type in self.task_types if task_type in {"delivery", "enrichment"}
+        ]
+        self._foreground_cursor = 0
+        self._background_cursor = 0
+        self._foreground_batches = 0
+
+    @staticmethod
+    def _rotated(task_types: list[str], cursor: int) -> list[str]:
+        return task_types[cursor:] + task_types[:cursor]
+
+    def _handle_messages(self, messages: list[StreamMessage]) -> None:
+        for message in messages:
+            task_type = str(message.fields.get("task_type") or "")
+            worker = self.workers.get(task_type)
+            if worker is None:
+                self.client.dead_letter(message, error=f"unsupported task_type: {task_type}")
+                continue
+            worker._handle(message)
+
+    def run_once(self) -> int:
+        foreground = self._rotated(self.foreground_task_types, self._foreground_cursor)
+        background = self._rotated(self.background_task_types, self._background_cursor)
+        lanes = [(foreground, True), (background, False)]
+        if background and self._foreground_batches >= 4:
+            lanes.reverse()
+        for lane, is_foreground in lanes:
+            if not lane:
+                continue
+            messages = self.client.read_many(lane, self.worker_id, count=1)
+            if not messages:
+                continue
+            self._handle_messages(messages)
+            if is_foreground:
+                self._foreground_cursor = (self._foreground_cursor + 1) % len(self.foreground_task_types)
+                self._foreground_batches += 1
+            else:
+                self._background_cursor = (self._background_cursor + 1) % len(self.background_task_types)
+                self._foreground_batches = 0
+            return len(messages)
+        ordered = self._rotated(self.task_types, self._foreground_cursor % len(self.task_types))
+        for task_type in ordered:
+            reclaimed = self.workers[task_type]._reclaim_if_due()
+            if not reclaimed:
+                continue
+            for message in reclaimed:
+                self.workers[task_type]._handle(message)
+            return len(reclaimed)
+        return 0
+
+    def run_forever(self) -> None:
+        idle_sleep = 0.02
+        while self.running:
+            try:
+                if self.run_once() == 0:
+                    time.sleep(idle_sleep)
+                    idle_sleep = min(0.25, idle_sleep * 2)
+                else:
+                    idle_sleep = 0.02
+            except Exception:
+                LOGGER.exception("adaptive stream worker loop failed: worker=%s", self.worker_id)
+                idle_sleep = 0.02
+                time.sleep(1)
+
+    def stop(self) -> None:
+        self.running = False

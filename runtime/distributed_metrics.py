@@ -307,6 +307,44 @@ def collect_lock_metrics(*, since: str | None = None) -> dict[str, int | None]:
     }
 
 
+def reconcile_retry_submission(
+    initial: dict[str, Any],
+    retries: list[dict[str, Any]],
+    *,
+    database_accepted: int,
+) -> dict[str, Any]:
+    """Reconcile idempotent replays of the same request corpus."""
+    if not retries:
+        return dict(initial)
+    submitted = int(initial.get("submitted") or 0)
+    if any(int(item.get("submitted") or 0) != submitted for item in retries):
+        raise ValueError("retry submission reports must contain the same request corpus")
+    latest = retries[-1]
+    final_rate_limited = int(latest.get("rate_limited") or 0)
+    final_failed = int(latest.get("failed") or 0)
+    intrinsic_duplicates = max(
+        int(initial.get("duplicate") or 0),
+        submitted - int(database_accepted) - final_rate_limited - final_failed,
+    )
+    confirmed_accepted = min(
+        int(database_accepted),
+        sum(int(item.get("accepted") or 0) for item in [initial, *retries]),
+    )
+    unresolved = max(0, submitted - int(database_accepted) - intrinsic_duplicates - final_rate_limited)
+    reconciled = dict(initial)
+    reconciled.update(
+        {
+            "accepted": confirmed_accepted,
+            "duplicate": intrinsic_duplicates,
+            "rate_limited": final_rate_limited,
+            "failed": max(0, int(database_accepted) - confirmed_accepted) + unresolved,
+            "retry_attempts": len(retries),
+            "retry_duration_ms": sum(int(item.get("duration_ms") or 0) for item in retries),
+        }
+    )
+    return reconciled
+
+
 def build_report(
     database: dict[str, Any],
     streams: dict[str, Any],
@@ -367,6 +405,8 @@ def build_report(
     return {
         "measurement_status": "measured",
         "submitted": submitted,
+        "submission_retry_attempts": int(submission.get("retry_attempts") or 0),
+        "submission_retry_duration_ms": int(submission.get("retry_duration_ms") or 0),
         "accepted": accepted,
         "client_confirmed_accepted": client_confirmed_accepted,
         "accepted_after_client_timeout": accepted_after_client_timeout,

@@ -232,6 +232,47 @@ def find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
         return _as_note(row, tags[row.id], related[row.id])
 
 
+def find_note_content(space_id: str, note_id: str) -> dict[str, Any] | None:
+    """Load only fields needed by memory extraction in one SQL query."""
+    with session_scope() as session:
+        tags = (
+            select(func.array_agg(NoteTag.tag))
+            .where(NoteTag.note_id == Note.id)
+            .correlate(Note)
+            .scalar_subquery()
+        )
+        row = session.execute(
+            select(
+                Note.id,
+                Note.message_id,
+                Note.space_id,
+                Note.tenant_id,
+                Note.created_at,
+                Note.title,
+                Note.note_type,
+                Note.summary,
+                Note.text,
+                Note.sensitivity,
+                tags.label("tags"),
+            ).where(Note.space_id == space_id, Note.id == note_id)
+        ).one_or_none()
+        if row is None:
+            return None
+        return {
+            "id": str(row.id),
+            "message_id": str(row.message_id),
+            "space_id": str(row.space_id),
+            "tenant_id": str(row.tenant_id),
+            "ts": row.created_at.isoformat(),
+            "title": str(row.title),
+            "tags": list(row.tags or []),
+            "type": str(row.note_type),
+            "summary": str(row.summary),
+            "text": str(row.text),
+            "sensitivity": str(row.sensitivity),
+        }
+
+
 def note_exists(space_id: str, message_id: str) -> bool:
     with session_scope() as session:
         return session.execute(select(Note.id).where(Note.space_id == space_id, Note.message_id == message_id).limit(1)).scalar_one_or_none() is not None

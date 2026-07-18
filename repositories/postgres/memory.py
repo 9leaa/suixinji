@@ -640,7 +640,6 @@ def apply_memory_decision(
     del db_path
     try:
         with session_scope() as session:
-            space_id = ensure_tenant_space(session, space_id)
             action = decision.recommended_action
             now = utc_now_iso()
             target_id = decision.target_memory_ids[0] if decision.target_memory_ids else None
@@ -718,7 +717,6 @@ def apply_memory_decision(
     except Exception as exc:
         try:
             with session_scope() as session:
-                space_id = ensure_tenant_space(session, space_id)
                 _save_decision(session, space_id, note_id, decision, status="failed", error=type(exc).__name__)
         except Exception:
             pass
@@ -992,7 +990,6 @@ def save_memory_trace(trace: dict[str, Any], db_path: Any = None) -> None:
     del db_path
     space_id = str(trace.get("space_id") or "unknown")
     with session_scope() as session:
-        space_id = ensure_tenant_space(session, space_id)
         values = {
             "space_id": space_id,
             "note_id": trace.get("note_id"),
@@ -1049,29 +1046,35 @@ def _mark_extraction_state(
         raise ValueError(f"invalid memory extraction status: {status}")
     now = utc_now_iso()
     with session_scope() as session:
-        space_id = ensure_tenant_space(session, space_id)
-        old = session.execute(
-            select(MemoryExtractionStateRow).where(MemoryExtractionStateRow.note_id == note_id).with_for_update()
-        ).scalar_one_or_none()
-        attempt_count = (old.attempt_count if old else 0) + (1 if increment_attempt else 0)
+        statement = insert(MemoryExtractionStateRow).values(
+            note_id=note_id,
+            space_id=space_id,
+            status=status,
+            candidate_count=max(0, int(candidate_count)),
+            processed_count=max(0, int(processed_count)),
+            attempt_count=1 if increment_attempt else 0,
+            last_error=error,
+            started_at=_dt(now) if status == "processing" else None,
+            completed_at=_dt(now) if status in {"completed", "empty", "partial", "failed"} else None,
+            updated_at=_dt(now),
+        )
         values = {
             "space_id": space_id,
             "status": status,
             "candidate_count": max(0, int(candidate_count)),
             "processed_count": max(0, int(processed_count)),
-            "attempt_count": attempt_count,
+            "attempt_count": MemoryExtractionStateRow.attempt_count + (1 if increment_attempt else 0),
             "last_error": error,
-            "started_at": _dt(now) if status == "processing" else (old.started_at if old else None),
+            "started_at": func.coalesce(statement.excluded.started_at, MemoryExtractionStateRow.started_at),
             "completed_at": _dt(now) if status in {"completed", "empty", "partial", "failed"} else None,
             "updated_at": _dt(now),
         }
-        session.execute(
-            insert(MemoryExtractionStateRow)
-            .values(note_id=note_id, **values)
+        row = session.execute(
+            statement
             .on_conflict_do_update(index_elements=[MemoryExtractionStateRow.note_id], set_=values)
-        )
-        session.flush()
-        return _state(session.get(MemoryExtractionStateRow, note_id))
+            .returning(MemoryExtractionStateRow)
+        ).scalar_one()
+        return _state(row)
 
 
 def mark_extraction_processing(note_id: str, space_id: str, db_path: Any = None) -> MemoryExtractionState:
@@ -1084,6 +1087,10 @@ def mark_extraction_completed(note_id: str, space_id: str, *, candidate_count: i
 
 def mark_extraction_empty(note_id: str, space_id: str, db_path: Any = None) -> MemoryExtractionState:
     return _mark_extraction_state(note_id, space_id, "empty", db_path=db_path)
+
+
+def mark_extraction_empty_attempt(note_id: str, space_id: str, db_path: Any = None) -> MemoryExtractionState:
+    return _mark_extraction_state(note_id, space_id, "empty", increment_attempt=True, db_path=db_path)
 
 
 def mark_extraction_partial(note_id: str, space_id: str, *, candidate_count: int, processed_count: int, error: str, db_path: Any = None) -> MemoryExtractionState:
@@ -1131,7 +1138,6 @@ def reserve_consolidation_run(space_id: str, cadence: str, period_key: str, db_p
     del db_path
     cadence = cadence.strip().lower()
     with session_scope() as session:
-        space_id = ensure_tenant_space(session, space_id)
         old = session.execute(
             select(MemoryConsolidationRun)
             .where(MemoryConsolidationRun.space_id == space_id, MemoryConsolidationRun.cadence == cadence, MemoryConsolidationRun.period_key == period_key)

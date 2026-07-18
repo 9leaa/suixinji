@@ -26,6 +26,7 @@ from memory.repository import (
     list_memory_relations,
     mark_extraction_completed,
     mark_extraction_empty,
+    mark_extraction_empty_attempt,
     mark_extraction_failed,
     mark_extraction_partial,
     mark_extraction_processing,
@@ -100,13 +101,44 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
                 "extraction_status": existing_state.status,
                 "idempotent": True,
             }
+        prefetched_candidates = None
+        if MEMORY_EXTRACTOR_MODE == "rules":
+            prefetched_candidates = extract_candidates(note_id, text, classification=classification)
+            if not prefetched_candidates:
+                state = mark_extraction_empty_attempt(note_id, space_id)
+                add_step(
+                    trace,
+                    "extraction_state_empty",
+                    output_summary={
+                        "note_id": note_id,
+                        "candidate_count": state.candidate_count,
+                        "processed_count": state.processed_count,
+                        "attempt_count": state.attempt_count,
+                    },
+                    reason="deterministic_rules_fast_path",
+                )
+                add_step(
+                    trace,
+                    "vector_written",
+                    output_summary={"note_id": note_id, "memory_count": 0},
+                    reason="note_vector_written_before_memory",
+                )
+                finish_trace(trace)
+                return {
+                    "note_id": note_id,
+                    "space_id": space_id,
+                    "candidates": 0,
+                    "results": [],
+                    "trace_id": trace["trace_id"],
+                    "extraction_status": "empty",
+                }
         state = mark_extraction_processing(note_id, space_id)
         add_step(
             trace,
             "extraction_state_processing",
             output_summary={"note_id": note_id, "attempt_count": state.attempt_count},
         )
-        extracted_candidates = extract_candidates(note_id, text, classification=classification)
+        extracted_candidates = prefetched_candidates or extract_candidates(note_id, text, classification=classification)
         enriched_candidates = [
             replace(
                 candidate,
