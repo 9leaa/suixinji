@@ -2,64 +2,90 @@
 
 ## Result
 
-Run `20260718-basic-02` used 18 independent server Python processes and the existing PostgreSQL/Redis SSH reverse ports. No Docker command or Docker Socket was used.
+Run `20260718-causal-05` used independent server Python processes and the existing PostgreSQL/Redis SSH reverse ports. No Docker command, Docker Socket, or `DOCKER_HOST` was used.
 
-The correctness checks passed, but the capacity acceptance failed because the workload did not settle and Redis timed out while the backlog was high.
+Causal ordering correctness passed. The run fully settled after worker startup resilience was fixed and the same durable tenant was resumed. The measured latency is not a clean capacity baseline because the run includes the diagnostic worker outage and full process-matrix restart.
+
+## Implementation Under Test
+
+- Only one root task per `space_id` is published; later root tasks remain `blocked` in PostgreSQL.
+- Ingest completion activates a critical Memory extraction task.
+- Critical Memory completion advances `memory_watermark` and releases exactly one next root task in one transaction.
+- Terminal root or critical Memory failure records a memory gap and releases the next task.
+- Enrichment runs on an independent Redis Stream and does not gate the watermark.
+- Failure and defer counters are independent, so ordering waits do not consume the dead-letter budget.
+- Worker startup and Redis metric collection retry transient Redis reverse-port timeouts.
 
 ## Workload
 
 - 100 virtual users and 100 isolated spaces
 - 1000 submissions: 685 ingest, 206 query, 64 summary, 45 memory commands
 - Receiver x2, Outbox Relay x2, Ingest Worker x4
-- Query, Summary, Memory, Delivery Worker x2 each
+- Query x2, Summary x2, Critical Memory x8, Enrichment x2, Delivery x2
 - Scheduler x2 in leader-lock-only test mode
 - Fake Feishu, LLM, and embedding; token usage and cost were zero
 
 ## Submission
 
-- Client-confirmed accepted: 988
-- Durable PostgreSQL Inbox: 994
+- Client-confirmed accepted: 977
+- Durable PostgreSQL Inbox: 993
 - Duplicate requests: 6
-- Client timeouts later reconciled to durable Inbox: 6
-- Unaccepted requests: 0
-- Submission p50/p95/p99: 5888 / 7531 / 9614 ms
-- Submission duration: 221842 ms
-
-The six 10-second client timeouts were not lost requests. PostgreSQL showed that all six had committed, so they are recorded as accepted with an initially unknown client outcome.
+- Client timeouts later reconciled to durable Inbox: 16
+- Unaccepted requests: 1
+- Submission p50/p95/p99: 6022 / 8360 / 10010 ms
+- Submission duration: 238057 ms
 
 ## Correctness
 
 - Conservation equation passed with delta 0
-- 994 unique Inbox messages across exactly 100 spaces
-- Space/user isolation mismatches: 0
-- Processed notes checked: 223; duplicate notes: 0
-- Tasks checked: 1572; duplicate idempotency keys: 0
-- Deliveries checked: 131 sent; duplicate delivery keys: 0
-- Dead-letter tasks at snapshot: 0
-- Worker, Relay, and Scheduler kill/restart scenarios executed
-- Query and Delivery pause/resume scenarios executed
-
-The first attempt exposed a concurrent space-upsert race on `uq_spaces_source_identity`. The upsert now ignores conflicts across both valid unique identities, and a 24-call concurrent regression test covers it.
-
-## Capacity Snapshot
-
-- Root tasks: 352 completed, 642 pending
-- All tasks: 787 completed, 781 pending
-- Retry/defer attempts: 2035
-- Stream lag: 1189
-- Stream pending: 49
+- 993 root tasks completed; pending root tasks: 0
+- 2669 total tasks completed; pending tasks: 0
+- Failure count: 0
+- Defer count: 0
+- Dead-letter tasks: 0
+- Memory gap spaces: 0
+- Maximum final memory-watermark lag: 0
+- Redis Stream lag: 0
+- Redis Stream pending: 0
 - Unpublished Outbox: 0
-- Total latency p50/p95/p99: 421933 / 851851 / 887315 ms
-- Queue wait p50/p95/p99: 559936 / 870930 / 940810 ms
-- Execution p50/p95/p99: 5088 / 8181 / 10030 ms
-- Lock wait p50/p95/p99: 119 / 3445 / 5335 ms
+- Deliveries sent: 310
+- Worker, Relay, and Scheduler restart scenarios executed
+- Query and Delivery pause/resume scenarios executed
+- The test tenant and its Redis namespace were deleted after metrics collection
 
-## Findings
+## Preference Evolution Smoke Test
 
-1. PostgreSQL Inbox durability, idempotency, tenant isolation, and Outbox conservation held during process failures.
-2. Separate task-type streams plus database sequence checks preserve correctness but create a defer/republish storm when messages from one space arrive concurrently out of order.
-3. The SSH reverse-port environment has high database round-trip latency. Submission p95 was 7.5 seconds even with fake external services.
-4. Redis's 2-second socket timeout is too small for this overloaded reverse-port path; the metrics waiter observed a read timeout.
-5. This configuration is not ready for the 100-user/1000-request acceptance target despite having no data loss or dead letters at the snapshot.
+A dedicated three-message distributed smoke test sent, in order:
 
-Recommended follow-up: partition dispatch by `space_id` before task-type execution, avoid republishing sequence-blocked work, add explicit unknown-outcome reconciliation at the HTTP boundary, and rerun this exact workload after the ordering change.
+```text
+I like drinking milk
+I dislike drinking milk
+What do I like drinking?
+```
+
+All Inbox messages and eight resulting tasks settled with zero failure/defer/gap. The final `memory_watermark` reached sequence 3. PostgreSQL Memory state contained:
+
+- `User dislikes drinking milk`: `active`
+- `User likes drinking milk`: `superseded`
+
+This verifies that the query root cannot execute before both critical Memory evolutions are durable.
+
+## Capacity Metrics
+
+- Total latency p50/p95/p99: 474212 / 1021709 / 1112633 ms
+- Queue wait p50/p95/p99: 471281 / 1018464 / 1108971 ms
+- Execution p50/p95/p99: 3026 / 4265 / 5897 ms
+- Lock wait p50/p95/p99: 72 / 625 / 1081 ms
+- Failure rate: 0.001
+
+These queue and total latency values include the startup timeout diagnosis and the full process-matrix restart. They prove durable recovery and eventual drain, but should not be treated as an uninterrupted capacity acceptance result.
+
+## Baseline Comparison
+
+The previous `20260718-basic-02` snapshot had 642 pending root tasks, 2035 retry/defer attempts, Redis lag 1189, and never settled. The causal run ended with zero pending work, zero defer, zero retry, and zero Redis lag.
+
+The ordering storm is removed. Remaining capacity cost is now explicit critical Memory work plus PostgreSQL round trips over the SSH reverse port, rather than repeated execution of out-of-order tasks.
+
+## Remaining Risk
+
+A clean no-intervention capacity run is still needed before declaring a strict p95 capacity target. Submission p95 remains dominated by PostgreSQL round trips, and causal per-space execution intentionally trades same-space latency for correct read-after-memory behavior.

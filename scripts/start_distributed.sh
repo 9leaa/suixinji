@@ -28,6 +28,7 @@ start_role worker-ingest "$PYTHON" -m apps.worker ingest
 start_role worker-query "$PYTHON" -m apps.worker query
 start_role worker-summary "$PYTHON" -m apps.worker summary
 start_role worker-memory "$PYTHON" -m apps.worker memory
+start_role worker-enrichment "$PYTHON" -m apps.worker enrichment
 start_role worker-delivery "$PYTHON" -m apps.worker delivery
 start_role scheduler "$PYTHON" -m apps.scheduler
 start_role api "$PYTHON" -m uvicorn apps.api:app --host 0.0.0.0 --port 8000

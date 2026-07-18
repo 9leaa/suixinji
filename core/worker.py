@@ -89,7 +89,12 @@ def backfill_vector_if_missing(space_id: str, message_id: str) -> bool:
         )
 
 
-def process_record(record: dict[str, Any], *, defer_memory: bool = False) -> NoteMetadata | dict[str, Any] | None:
+def process_record(
+    record: dict[str, Any],
+    *,
+    defer_memory: bool = False,
+    defer_wal_completion: bool = False,
+) -> NoteMetadata | dict[str, Any] | None:
     """处理单条 pending WAL 记录。
 
     功能说明:
@@ -111,7 +116,12 @@ def process_record(record: dict[str, Any], *, defer_memory: bool = False) -> Not
     with observe("worker.process_record", **ctx):
         sensitive = assess_sensitive_text(str(record.get("text") or ""))
         if sensitive.blocks_storage:
-            mark_sensitive_blocked(space_id, record_id, str(sensitive.category or "sensitive"))
+            mark_sensitive_blocked(
+                space_id,
+                record_id,
+                str(sensitive.category or "sensitive"),
+                preserve_pending=defer_wal_completion,
+            )
             LOGGER.warning(
                 "Blocked sensitive WAL record before note storage: space_id=%s message_id=%s record_id=%s category=%s",
                 space_id,
@@ -147,12 +157,13 @@ def process_record(record: dict[str, Any], *, defer_memory: bool = False) -> Not
                 record_id,
                 recovered_memory,
             )
-            with observe(
-                "worker.mark_processed",
-                extra={"reason": "note_exists", "recovered_memory": recovered_memory},
-                **ctx,
-            ):
-                mark_processed(space_id, record_id)
+            if not defer_wal_completion:
+                with observe(
+                    "worker.mark_processed",
+                    extra={"reason": "note_exists", "recovered_memory": recovered_memory},
+                    **ctx,
+                ):
+                    mark_processed(space_id, record_id)
             return note
 
         with observe("worker.classify_local", **ctx):
@@ -196,8 +207,9 @@ def process_record(record: dict[str, Any], *, defer_memory: bool = False) -> Not
                     record_id,
                 )
 
-        with observe("worker.mark_processed", **ctx):
-            mark_processed(space_id, record_id)
+        if not defer_wal_completion:
+            with observe("worker.mark_processed", **ctx):
+                mark_processed(space_id, record_id)
         return note
 
 

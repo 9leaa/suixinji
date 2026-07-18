@@ -302,7 +302,13 @@ def mark_processed(space_id: str, record_id: str) -> None:
                 f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
-def mark_sensitive_blocked(space_id: str, record_id: str, category: str = "sensitive") -> None:
+def mark_sensitive_blocked(
+    space_id: str,
+    record_id: str,
+    category: str = "sensitive",
+    *,
+    preserve_pending: bool = False,
+) -> None:
     """Redact a legacy pending record in place without retaining its raw text."""
     path = wal_path(space_id)
     with locked_space(space_id):
@@ -311,7 +317,7 @@ def mark_sensitive_blocked(space_id: str, record_id: str, category: str = "sensi
             if record.get("id") != record_id:
                 continue
             record["text"] = "[敏感内容已拦截，原文未保存]"
-            record["status"] = "blocked_sensitive"
+            record["status"] = "pending" if preserve_pending else "blocked_sensitive"
             record["sensitivity"] = category or "sensitive"
         with path.open("w", encoding="utf-8") as f:
             for record in records:

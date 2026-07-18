@@ -17,6 +17,7 @@ GROUPS = {
     "query": "query-workers",
     "summary": "summary-workers",
     "memory": "memory-workers",
+    "enrichment": "enrichment-workers",
     "delivery": "delivery-workers",
 }
 

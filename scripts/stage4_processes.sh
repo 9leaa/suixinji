@@ -65,13 +65,15 @@ start_all() {
   export SUIXINJI_AGENT_HOOKS_ENABLED=true
   export SUIXINJI_STREAM_BLOCK_MS=200
   export SUIXINJI_STREAM_BATCH_SIZE=50
-  export SUIXINJI_STREAM_CLAIM_IDLE_MS=1000
+  export SUIXINJI_STREAM_CLAIM_IDLE_MS=15000
   export SUIXINJI_OUTBOX_BATCH_SIZE=100
   export SUIXINJI_OUTBOX_POLL_INTERVAL_SECONDS=0.05
   export SUIXINJI_WORKER_RETRY_BASE_SECONDS=0.1
   export SUIXINJI_DATABASE_POOL_SIZE=1
   export SUIXINJI_DATABASE_MAX_OVERFLOW=2
   export SUIXINJI_REDIS_MAX_CONNECTIONS=10
+  export SUIXINJI_REDIS_SOCKET_TIMEOUT_SECONDS=5
+  export SUIXINJI_REDIS_CONNECT_TIMEOUT_SECONDS=5
 
   cat > "$STATE_FILE" <<EOF
 RUN_ID=$run_id
@@ -89,10 +91,13 @@ EOF
   for index in 1 2 3 4; do
     start_role "worker-ingest-$index" "$PYTHON" -m apps.worker ingest --worker-id "stage4-$run_id-ingest-$index"
   done
+  for index in 1 2 3 4 5 6 7 8; do
+    start_role "worker-memory-$index" "$PYTHON" -m apps.worker memory --worker-id "stage4-$run_id-memory-$index"
+  done
   for index in 1 2; do
     start_role "worker-query-$index" "$PYTHON" -m apps.worker query --worker-id "stage4-$run_id-query-$index"
     start_role "worker-summary-$index" "$PYTHON" -m apps.worker summary --worker-id "stage4-$run_id-summary-$index"
-    start_role "worker-memory-$index" "$PYTHON" -m apps.worker memory --worker-id "stage4-$run_id-memory-$index"
+    start_role "worker-enrichment-$index" "$PYTHON" -m apps.worker enrichment --worker-id "stage4-$run_id-enrichment-$index"
     start_role "worker-delivery-$index" "$PYTHON" -m apps.worker delivery --worker-id "stage4-$run_id-delivery-$index"
     start_role "scheduler-$index" "$PYTHON" -m apps.scheduler
   done
@@ -156,7 +161,7 @@ status_all() {
     fi
   done
   echo "running_processes=$count run_id=$RUN_ID"
-  [[ "$count" -eq 18 ]] || failed=1
+  [[ "$count" -eq 26 ]] || failed=1
   return "$failed"
 }
 

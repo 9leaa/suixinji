@@ -114,14 +114,20 @@ def mark_processed(space_id: str, record_id: str) -> None:
         )
 
 
-def mark_sensitive_blocked(space_id: str, record_id: str, category: str = "sensitive") -> None:
+def mark_sensitive_blocked(
+    space_id: str,
+    record_id: str,
+    category: str = "sensitive",
+    *,
+    preserve_pending: bool = False,
+) -> None:
     with session_scope() as session:
         session.execute(
             update(InboxMessage)
             .where(InboxMessage.space_id == space_id, InboxMessage.id == record_id)
             .values(
                 text="[敏感内容已拦截，原文未保存]",
-                status="blocked_sensitive",
+                status="pending" if preserve_pending else "blocked_sensitive",
                 sensitivity=category or "sensitive",
             )
         )

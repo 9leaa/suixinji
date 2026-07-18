@@ -3,18 +3,19 @@
 from __future__ import annotations
 
 import json
+import time
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from redis.exceptions import ResponseError
-from sqlalchemy import select
+from redis.exceptions import RedisError, ResponseError
+from sqlalchemy import func, select
 
 from infrastructure.database import session_scope
 from infrastructure.redis_client import get_redis
 from infrastructure.redis_keys import KEYS, RedisKeys
-from infrastructure.schema import AgentRun, Delivery, InboxMessage, LlmUsage, OutboxEvent, Task, TaskAttempt
+from infrastructure.schema import AgentRun, Delivery, InboxMessage, LlmUsage, OutboxEvent, Space, Task, TaskAttempt
 from runtime.streams.client import GROUPS
 
 
@@ -58,6 +59,7 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
         runs = list(session.execute(select(AgentRun).where(AgentRun.tenant_id == tenant_id)).scalars())
         run_ids = [run.run_id for run in runs]
         usage = list(session.execute(select(LlmUsage).where(LlmUsage.run_id.in_(run_ids))).scalars()) if run_ids else []
+        spaces = list(session.execute(select(Space).where(Space.tenant_id == tenant_id)).scalars())
 
     root_status = _status_counts(root_tasks)
     all_status = _status_counts(tasks)
@@ -67,6 +69,16 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
     queue_wait_values = [value for value in queue_wait if value is not None]
     execution_values = [value for value in execution if value is not None]
     latency_values = [value for value in latency if value is not None]
+    latest_sequence_by_space: dict[str, int] = {}
+    for row in inbox:
+        latest_sequence_by_space[row.space_id] = max(
+            latest_sequence_by_space.get(row.space_id, 0),
+            int(row.sequence_no),
+        )
+    watermark_lags = [
+        max(0, latest_sequence_by_space.get(space.id, 0) - int(space.memory_watermark or 0))
+        for space in spaces
+    ]
     return {
         "accepted": len(inbox),
         "inbox_pending": sum(1 for row in inbox if row.status == "pending"),
@@ -74,7 +86,11 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
         "all_task_status": all_status,
         "task_count": len(tasks),
         "retry_count": sum(1 for attempt in attempts if attempt.status in {"failed", "deferred"}),
+        "failure_count": sum(int(task.failure_count or 0) for task in tasks),
+        "defer_count": sum(int(task.defer_count or 0) for task in tasks),
         "outbox_unpublished": sum(1 for event in outbox if event.published_at is None),
+        "memory_gap_spaces": sum(1 for space in spaces if space.memory_gap_sequence_no is not None),
+        "max_memory_watermark_lag": max(watermark_lags, default=0),
         "delivery_status": _status_counts(deliveries),
         "p50_queue_wait_ms": percentile(queue_wait_values, 0.50),
         "p95_queue_wait_ms": percentile(queue_wait_values, 0.95),
@@ -91,7 +107,79 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
     }
 
 
-def collect_stream_metrics(keys: RedisKeys = KEYS) -> dict[str, Any]:
+def _grouped_status_counts(session: Any, model: Any, tenant_id: str) -> dict[str, int]:
+    rows = session.execute(
+        select(model.status, func.count()).where(model.tenant_id == tenant_id).group_by(model.status)
+    ).all()
+    return {str(status): int(count) for status, count in rows}
+
+
+def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
+    """Collect queue progress with aggregate SQL suitable for frequent polling."""
+    with session_scope() as session:
+        inbox_status = _grouped_status_counts(session, InboxMessage, tenant_id)
+        task_status = _grouped_status_counts(session, Task, tenant_id)
+        task_count, failure_count, defer_count = session.execute(
+            select(
+                func.count(Task.id),
+                func.coalesce(func.sum(Task.failure_count), 0),
+                func.coalesce(func.sum(Task.defer_count), 0),
+            ).where(Task.tenant_id == tenant_id)
+        ).one()
+        outbox_unpublished = session.execute(
+            select(func.count(OutboxEvent.id))
+            .select_from(OutboxEvent)
+            .join(Task, Task.id == OutboxEvent.aggregate_id)
+            .where(
+                Task.tenant_id == tenant_id,
+                OutboxEvent.aggregate_type == "task",
+                OutboxEvent.published_at.is_(None),
+            )
+        ).scalar_one()
+        latest_inbox = (
+            select(
+                InboxMessage.space_id.label("space_id"),
+                func.max(InboxMessage.sequence_no).label("latest_sequence_no"),
+            )
+            .where(InboxMessage.tenant_id == tenant_id)
+            .group_by(InboxMessage.space_id)
+            .subquery()
+        )
+        space_count, memory_gap_spaces, max_watermark_lag = session.execute(
+            select(
+                func.count(Space.id),
+                func.count(Space.id).filter(Space.memory_gap_sequence_no.is_not(None)),
+                func.coalesce(
+                    func.max(
+                        func.greatest(
+                            func.coalesce(latest_inbox.c.latest_sequence_no, 0) - Space.memory_watermark,
+                            0,
+                        )
+                    ),
+                    0,
+                ),
+            )
+            .select_from(Space)
+            .outerjoin(latest_inbox, latest_inbox.c.space_id == Space.id)
+            .where(Space.tenant_id == tenant_id)
+        ).one()
+
+    return {
+        "accepted": sum(inbox_status.values()),
+        "inbox_pending": int(inbox_status.get("pending") or 0),
+        "inbox_status": inbox_status,
+        "all_task_status": task_status,
+        "task_count": int(task_count or 0),
+        "failure_count": int(failure_count or 0),
+        "defer_count": int(defer_count or 0),
+        "outbox_unpublished": int(outbox_unpublished or 0),
+        "space_count": int(space_count or 0),
+        "memory_gap_spaces": int(memory_gap_spaces or 0),
+        "max_memory_watermark_lag": int(max_watermark_lag or 0),
+    }
+
+
+def _collect_stream_metrics_once(keys: RedisKeys) -> dict[str, Any]:
     client = get_redis()
     lag = 0
     pending = 0
@@ -114,6 +202,17 @@ def collect_stream_metrics(keys: RedisKeys = KEYS) -> dict[str, Any]:
         "dead_letter_stream": int(client.xlen(keys.dead_letter_stream())),
         "streams": streams,
     }
+
+
+def collect_stream_metrics(keys: RedisKeys = KEYS, *, max_attempts: int = 3) -> dict[str, Any]:
+    for attempt in range(max(1, max_attempts)):
+        try:
+            return _collect_stream_metrics_once(keys)
+        except RedisError:
+            if attempt + 1 >= max(1, max_attempts):
+                raise
+            time.sleep(0.5 * (attempt + 1))
+    raise RuntimeError("unreachable")
 
 
 def collect_lock_metrics(*, since: str | None = None) -> dict[str, int | None]:
@@ -151,10 +250,12 @@ def build_report(
 ) -> dict[str, Any]:
     submission = submission or {}
     root_status = database.get("root_task_status") or {}
+    blocked = int(root_status.get("blocked") or 0)
     queued = int(root_status.get("queued") or 0)
     running = int(root_status.get("running") or 0)
     retry = int(root_status.get("retry") or 0)
     completed = int(root_status.get("completed") or 0)
+    cancelled = int(root_status.get("cancelled") or 0)
     dead_letter = int(root_status.get("dead_letter") or 0)
     duplicate = int(submission.get("duplicate") or 0)
     rate_limited = int(submission.get("rate_limited") or 0)
@@ -164,11 +265,11 @@ def build_report(
     accepted_after_client_timeout = min(submission_failed, max(0, accepted - client_confirmed_accepted))
     submission_failed_unaccepted = max(0, submission_failed - accepted_after_client_timeout)
     submitted = int(submission.get("submitted") or accepted + duplicate + rate_limited + submission_failed)
-    pending = queued + running + retry
-    failed = dead_letter + submission_failed_unaccepted
+    pending = blocked + queued + running + retry
+    failed = cancelled + dead_letter + submission_failed_unaccepted
     terminal_or_pending = completed + failed + pending + rate_limited + duplicate
     all_status = database.get("all_task_status") or {}
-    all_pending = sum(int(all_status.get(name) or 0) for name in ("queued", "running", "retry"))
+    all_pending = sum(int(all_status.get(name) or 0) for name in ("blocked", "queued", "running", "retry"))
     return {
         "measurement_status": "measured",
         "submitted": submitted,
@@ -178,9 +279,11 @@ def build_report(
         "submission_failed_unaccepted": submission_failed_unaccepted,
         "rate_limited": rate_limited,
         "duplicate": duplicate,
+        "blocked": blocked,
         "queued": queued,
         "running": running,
         "completed": completed,
+        "cancelled": cancelled,
         "failed": failed,
         "pending": pending,
         "dead_letter": dead_letter,
@@ -188,6 +291,10 @@ def build_report(
         "all_task_pending": all_pending,
         "all_task_dead_letter": int(all_status.get("dead_letter") or 0),
         "retry_count": int(database.get("retry_count") or 0),
+        "failure_count": int(database.get("failure_count") or 0),
+        "defer_count": int(database.get("defer_count") or 0),
+        "memory_gap_spaces": int(database.get("memory_gap_spaces") or 0),
+        "max_memory_watermark_lag": int(database.get("max_memory_watermark_lag") or 0),
         "stream_lag": int(streams.get("stream_lag") or 0),
         "stream_pending": int(streams.get("stream_pending") or 0),
         "p50_latency_ms": database.get("p50_latency_ms"),

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from runtime.distributed_metrics import collect_database_metrics, collect_stream_metrics
+from runtime.distributed_metrics import collect_stream_metrics, collect_wait_metrics
 
 
 def parse_args() -> argparse.Namespace:
@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tenant-id", required=True)
     parser.add_argument("--expected-accepted", type=int, required=True)
     parser.add_argument("--timeout-seconds", type=float, default=600)
-    parser.add_argument("--poll-seconds", type=float, default=1)
+    parser.add_argument("--poll-seconds", type=float, default=5)
     return parser.parse_args()
 
 
@@ -30,10 +30,10 @@ def main() -> None:
     deadline = time.monotonic() + max(1, args.timeout_seconds)
     stable = 0
     while time.monotonic() < deadline:
-        database = collect_database_metrics(args.tenant_id)
+        database = collect_wait_metrics(args.tenant_id)
         streams = collect_stream_metrics()
         statuses = database["all_task_status"]
-        task_pending = sum(int(statuses.get(name) or 0) for name in ("queued", "running", "retry"))
+        task_pending = sum(int(statuses.get(name) or 0) for name in ("blocked", "queued", "running", "retry"))
         settled = (
             database["accepted"] >= args.expected_accepted
             and database["inbox_pending"] == 0
@@ -51,6 +51,10 @@ def main() -> None:
                     "task_status": statuses,
                     "inbox_pending": database["inbox_pending"],
                     "outbox_unpublished": database["outbox_unpublished"],
+                    "failure_count": database["failure_count"],
+                    "defer_count": database["defer_count"],
+                    "memory_gap_spaces": database["memory_gap_spaces"],
+                    "max_memory_watermark_lag": database["max_memory_watermark_lag"],
                     "stream_lag": streams["stream_lag"],
                     "stream_pending": streams["stream_pending"],
                     "stable_polls": stable,

@@ -49,6 +49,30 @@ def test_process_record_saves_provisional_note_without_waiting_for_llm(monkeypat
     assert marked == [("space-1", "record-1")]
 
 
+def test_process_record_can_defer_memory_and_wal_completion(monkeypatch):
+    saved_notes = []
+    marked = []
+
+    monkeypatch.setattr(worker, "note_exists", lambda space_id, message_id: False)
+    monkeypatch.setattr(
+        worker,
+        "classify_text_local",
+        lambda text: SimpleNamespace(title="title", tags=[], type="note", summary="summary"),
+    )
+    monkeypatch.setattr(worker, "save_note", lambda note: saved_notes.append(note))
+    monkeypatch.setattr(
+        worker,
+        "process_note_memory",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("memory must be deferred")),
+    )
+    monkeypatch.setattr(worker, "mark_processed", lambda space_id, record_id: marked.append((space_id, record_id)))
+
+    note = worker.process_record(dict(RECORD), defer_memory=True, defer_wal_completion=True)
+
+    assert note is saved_notes[0]
+    assert marked == []
+
+
 def test_process_record_existing_note_marks_processed_without_slow_backfill(monkeypatch):
     calls = []
     existing_note = {"id": "record-1", "message_id": "message-1", "space_id": "space-1", "text": "正文"}
@@ -159,11 +183,28 @@ def test_enrich_note_runs_slow_work_and_marks_ready(monkeypatch):
 def test_process_record_redacts_sensitive_pending_wal_before_storage(monkeypatch):
     blocked = []
     record = {**RECORD, "text": "密码是Abcd1234"}
-    monkeypatch.setattr(worker, "mark_sensitive_blocked", lambda space_id, record_id, category: blocked.append((space_id, record_id, category)))
+    monkeypatch.setattr(
+        worker,
+        "mark_sensitive_blocked",
+        lambda space_id, record_id, category, **kwargs: blocked.append((space_id, record_id, category, kwargs)),
+    )
     monkeypatch.setattr(worker, "save_note", lambda note: (_ for _ in ()).throw(AssertionError("must not save")))
 
     assert worker.process_record(record) is None
-    assert blocked == [("space-1", "record-1", "credential")]
+    assert blocked == [("space-1", "record-1", "credential", {"preserve_pending": False})]
+
+
+def test_process_record_redacts_sensitive_text_but_preserves_distributed_pending(monkeypatch):
+    blocked = []
+    record = {**RECORD, "text": "\u5bc6\u7801\u662fAbcd1234"}
+    monkeypatch.setattr(
+        worker,
+        "mark_sensitive_blocked",
+        lambda space_id, record_id, category, **kwargs: blocked.append((space_id, record_id, category, kwargs)),
+    )
+
+    assert worker.process_record(record, defer_wal_completion=True) is None
+    assert blocked == [("space-1", "record-1", "credential", {"preserve_pending": True})]
 
 
 def test_process_pending_skips_duplicate_message_ids(monkeypatch):
