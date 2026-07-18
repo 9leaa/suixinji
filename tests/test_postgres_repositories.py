@@ -135,6 +135,25 @@ def test_postgres_memory_summary_and_delivery_contract(pg_space):
     assert tasks.get_task(task_id)["status"] == "running"
 
 
+def test_postgres_memory_candidate_lifecycle(pg_space):
+    candidate = MemoryCandidate(
+        "preference",
+        "用户喜欢绿茶",
+        0.8,
+        0.9,
+        note_id=f"note-{uuid.uuid4().hex}",
+        space_id=pg_space,
+    )
+
+    stored = memory.save_memory_candidate(candidate, space_id=pg_space, status="extracted")
+    assert stored.candidate_id == candidate.candidate_id
+    assert memory.get_memory_candidate_status(candidate.candidate_id) == "extracted"
+    assert memory.mark_memory_candidate(candidate.candidate_id, "processing") is True
+    assert memory.mark_memory_candidate(candidate.candidate_id, "applied", decision_id="decision-test") is True
+    assert memory.get_memory_candidate_status(candidate.candidate_id) == "applied"
+    assert memory.list_retryable_memory_candidates(pg_space) == []
+
+
 def test_postgres_same_message_is_inserted_once_under_concurrency(pg_space):
     message_id = f"message-{uuid.uuid4().hex}"
 

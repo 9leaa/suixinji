@@ -13,6 +13,7 @@ from core.settings import MEMORY_CONSOLIDATION_RUN_LEASE_SECONDS, MEMORY_QUERY_M
 from infrastructure.database import session_scope
 from infrastructure.schema import (
     Memory,
+    MemoryCandidateRow,
     MemoryConsolidationRun,
     MemoryDecision as MemoryDecisionRow,
     MemoryExtractionState as MemoryExtractionStateRow,
@@ -35,6 +36,7 @@ from memory.models import (
     MemoryRelation,
     MemorySource,
     MemoryVersion,
+    memory_key_for,
     new_id,
     normalize_content,
     utc_now_iso,
@@ -99,6 +101,9 @@ def _record(session: Any, row: Memory, *, include_versions: bool = True) -> Memo
         predicate=row.predicate,
         object_value=row.object_value,
         last_confirmed_at=row.last_confirmed_at,
+        memory_key=row.memory_key,
+        polarity=row.polarity,
+        scope=dict(row.scope_json or {}),
         sources=_sources(session, row.id),
         versions=_versions(session, row.id) if include_versions else [],
     )
@@ -188,6 +193,9 @@ def _insert_memory(
         subject=candidate.subject,
         predicate=candidate.predicate,
         object_value=candidate.object_value,
+        memory_key=candidate.effective_memory_key,
+        polarity=candidate.polarity,
+        scope_json=dict(candidate.scope),
         valid_from=candidate.valid_from or timestamp,
         valid_until=candidate.valid_until,
         last_confirmed_at=timestamp,
@@ -221,6 +229,13 @@ def _versioned_update(
     if content is not None:
         row.content = content
         row.normalized_content = normalize_content(content)
+        row.memory_key = memory_key_for(
+            row.memory_type,
+            subject=row.subject,
+            predicate=row.predicate,
+            object_value=row.object_value,
+            content=content,
+        )
     if status is not None:
         row.status = status
     if task_status is not None:
@@ -279,6 +294,13 @@ def _save_decision(
             status=status,
             result_memory_ids_json=list(result_ids or []),
             error=error,
+            policy_version=decision.policy_version,
+            adjudicator_version=decision.adjudicator_version,
+            model=decision.model,
+            prompt_hash=decision.prompt_hash,
+            input_hash=decision.input_hash,
+            target_snapshot_version=decision.target_snapshot_version,
+            retry_of_decision_id=decision.retry_of_decision_id,
             created_at=now,
             applied_at=now if status == "applied" else None,
         )
@@ -312,16 +334,182 @@ def get_memory(memory_id: str, db_path: Any = None) -> MemoryRecord | None:
         return _record(session, row) if row is not None else None
 
 
-def list_memories(space_id: str, *, status: str | None = "active", memory_type: str | None = None, limit: int = 20, db_path: Any = None) -> list[MemoryRecord]:
+def list_memories(
+    space_id: str,
+    *,
+    status: str | None = "active",
+    memory_type: str | None = None,
+    memory_key: str | None = None,
+    include_expired: bool = False,
+    limit: int = 20,
+    db_path: Any = None,
+) -> list[MemoryRecord]:
     del db_path
     statement = select(Memory).where(Memory.space_id == space_id)
     if status:
         statement = statement.where(Memory.status == status)
     if memory_type:
         statement = statement.where(Memory.memory_type == memory_type)
+    if memory_key:
+        statement = statement.where(Memory.memory_key == memory_key)
+    if status == "active" and not include_expired:
+        statement = statement.where((Memory.valid_until.is_(None)) | (Memory.valid_until > utc_now_iso()))
     statement = statement.order_by(Memory.updated_at.desc(), Memory.id.desc()).limit(max(1, min(int(limit), 100)))
     with session_scope() as session:
         return [_record(session, row, include_versions=False) for row in session.execute(statement).scalars()]
+
+
+def expire_due_memories(space_id: str | None = None, *, limit: int = 500, db_path: Any = None) -> int:
+    del db_path
+    with session_scope() as session:
+        statement = select(Memory).where(
+            Memory.status == "active",
+            Memory.valid_until.is_not(None),
+            Memory.valid_until <= utc_now_iso(),
+        )
+        if space_id:
+            statement = statement.where(Memory.space_id == space_id)
+        statement = statement.order_by(Memory.valid_until).limit(max(1, min(int(limit), 1000))).with_for_update(skip_locked=True)
+        rows = list(session.execute(statement).scalars())
+        for row in rows:
+            _versioned_update(
+                session,
+                row,
+                status="expired",
+                valid_until=row.valid_until,
+                reason="valid_until_reached",
+                source_note_id=None,
+            )
+        return len(rows)
+
+
+def _candidate_record(row: MemoryCandidateRow) -> MemoryCandidate:
+    return MemoryCandidate(
+        memory_type=row.memory_type,
+        content=row.content,
+        importance=float(row.importance),
+        confidence=float(row.confidence),
+        entities=list(row.entities_json or []),
+        should_store=bool(row.should_store),
+        task_status=row.task_status,
+        candidate_id=row.candidate_id,
+        note_id=row.note_id,
+        space_id=row.space_id,
+        subject=row.subject,
+        predicate=row.predicate,
+        object_value=row.object_value,
+        valid_from=row.valid_from,
+        valid_until=row.valid_until,
+        evidence_span=row.evidence_span,
+        memory_key=row.memory_key,
+        polarity=row.polarity,
+        scope=dict(row.scope_json or {}),
+        extractor_type=row.extractor_type,
+        extractor_version=row.extractor_version,
+        model=row.model,
+        prompt_hash=row.prompt_hash,
+    )
+
+
+def save_memory_candidate(
+    candidate: MemoryCandidate,
+    *,
+    space_id: str,
+    status: str = "extracted",
+    error: str | None = None,
+    decision_id: str | None = None,
+    db_path: Any = None,
+) -> MemoryCandidate:
+    del db_path
+    with session_scope() as session:
+        space = session.get(Space, space_id)
+        tenant_id = str(space.tenant_id) if space is not None else DEFAULT_TENANT_ID
+        ensure_tenant_space(session, space_id, tenant_id=tenant_id)
+        values = {
+            "candidate_id": candidate.candidate_id,
+            "tenant_id": tenant_id,
+            "space_id": space_id,
+            "note_id": candidate.note_id or "",
+            "memory_type": candidate.memory_type,
+            "content": candidate.content,
+            "normalized_content": candidate.normalized_content,
+            "memory_key": candidate.effective_memory_key,
+            "subject": candidate.subject,
+            "predicate": candidate.predicate,
+            "object_value": candidate.object_value,
+            "task_status": candidate.task_status,
+            "polarity": candidate.polarity,
+            "scope_json": dict(candidate.scope),
+            "entities_json": list(candidate.entities),
+            "valid_from": candidate.valid_from,
+            "valid_until": candidate.valid_until,
+            "confidence": float(candidate.confidence),
+            "importance": float(candidate.importance),
+            "evidence_span": candidate.evidence_span,
+            "should_store": bool(candidate.should_store),
+            "extractor_type": candidate.extractor_type,
+            "extractor_version": candidate.extractor_version,
+            "model": candidate.model,
+            "prompt_hash": candidate.prompt_hash,
+            "status": status,
+            "last_error": error,
+            "decision_id": decision_id,
+            "updated_at": datetime.now().astimezone(),
+        }
+        session.execute(insert(MemoryCandidateRow).values(**values).on_conflict_do_nothing(index_elements=[MemoryCandidateRow.candidate_id]))
+        row = session.get(MemoryCandidateRow, candidate.candidate_id)
+        if row is None:
+            raise RuntimeError(f"failed to persist memory candidate: {candidate.candidate_id}")
+        return _candidate_record(row)
+
+
+def get_memory_candidate(candidate_id: str, db_path: Any = None) -> MemoryCandidate | None:
+    del db_path
+    with session_scope() as session:
+        row = session.get(MemoryCandidateRow, candidate_id)
+        return _candidate_record(row) if row is not None else None
+
+
+def get_memory_candidate_status(candidate_id: str, db_path: Any = None) -> str | None:
+    del db_path
+    with session_scope() as session:
+        row = session.get(MemoryCandidateRow, candidate_id)
+        return str(row.status) if row is not None else None
+
+
+def mark_memory_candidate(
+    candidate_id: str,
+    status: str,
+    *,
+    error: str | None = None,
+    decision_id: str | None = None,
+    db_path: Any = None,
+) -> bool:
+    del db_path
+    with session_scope() as session:
+        row = session.get(MemoryCandidateRow, candidate_id)
+        if row is None:
+            return False
+        row.status = status
+        row.attempt_count += int(status == "processing")
+        row.last_error = error
+        if decision_id:
+            row.decision_id = decision_id
+        if status in {"applied", "pending_review", "discarded"}:
+            row.applied_at = datetime.now().astimezone()
+        return True
+
+
+def list_retryable_memory_candidates(space_id: str, *, limit: int = 100, db_path: Any = None) -> list[MemoryCandidate]:
+    del db_path
+    with session_scope() as session:
+        rows = session.execute(
+            select(MemoryCandidateRow)
+            .where(MemoryCandidateRow.space_id == space_id, MemoryCandidateRow.status.in_(("extracted", "validated", "failed", "processing")))
+            .order_by(MemoryCandidateRow.updated_at)
+            .limit(max(1, min(int(limit), 500)))
+        ).scalars()
+        return [_candidate_record(row) for row in rows]
 
 
 def update_memory(
@@ -550,6 +738,71 @@ def approve_pending_memory(memory_id: str, db_path: Any = None) -> MemoryRecord 
         decision.applied_at = now
         session.flush()
         return _record(session, result)
+
+
+def reject_pending_memory(memory_id: str, *, reason: str = "user_rejected_pending_memory", db_path: Any = None) -> MemoryRecord | None:
+    del db_path
+    with session_scope() as session:
+        row = session.execute(select(Memory).where(Memory.id == memory_id, Memory.status == "pending_review").with_for_update()).scalar_one_or_none()
+        if row is None:
+            return None
+        decision = session.execute(
+            select(MemoryDecisionRow)
+            .where(MemoryDecisionRow.status == "pending_review", MemoryDecisionRow.result_memory_ids_json.contains([memory_id]))
+            .order_by(MemoryDecisionRow.created_at.desc())
+            .limit(1)
+            .with_for_update()
+        ).scalar_one_or_none()
+        _versioned_update(session, row, status="archived", reason=reason, source_note_id=None)
+        if decision is not None:
+            decision.status = "rejected"
+            decision.error = reason
+            candidate = session.get(MemoryCandidateRow, decision.candidate_id)
+            if candidate is not None:
+                candidate.status = "discarded"
+                candidate.last_error = reason
+        session.flush()
+        return _record(session, row)
+
+
+def edit_pending_memory(memory_id: str, content: str, db_path: Any = None) -> MemoryRecord | None:
+    del db_path
+    if not content.strip():
+        return None
+    with session_scope() as session:
+        row = session.execute(select(Memory).where(Memory.id == memory_id, Memory.status == "pending_review").with_for_update()).scalar_one_or_none()
+        if row is None:
+            return None
+        _versioned_update(session, row, content=content, status="pending_review", reason="user_edited_pending_memory", source_note_id=None)
+    return approve_pending_memory(memory_id)
+
+
+def resolve_memory_conflict(
+    memory_id: str,
+    *,
+    resolution: str,
+    content: str | None = None,
+    db_path: Any = None,
+) -> MemoryRecord | None:
+    del db_path
+    if resolution not in {"keep", "merge", "archive"}:
+        raise ValueError("resolution must be keep, merge, or archive")
+    with session_scope() as session:
+        row = session.execute(select(Memory).where(Memory.id == memory_id).with_for_update()).scalar_one_or_none()
+        if row is None:
+            return None
+        if resolution == "merge" and not content:
+            raise ValueError("merge resolution requires content")
+        _versioned_update(
+            session,
+            row,
+            content=content if resolution == "merge" else None,
+            status="active" if resolution in {"keep", "merge"} else "archived",
+            reason=f"user_resolved_conflict_{resolution}",
+            source_note_id=None,
+        )
+        session.flush()
+        return _record(session, row)
 
 
 def list_memory_decisions(space_id: str, *, note_id: str | None = None, status: str | None = None, limit: int = 50, db_path: Any = None) -> list[dict[str, Any]]:

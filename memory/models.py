@@ -51,6 +51,42 @@ def normalize_content(text: str) -> str:
     return value
 
 
+def memory_key_for(
+    memory_type: str,
+    *,
+    subject: str | None = None,
+    predicate: str | None = None,
+    object_value: str | None = None,
+    content: str = "",
+) -> str:
+    """Build a stable topic key used to scope destructive adjudication."""
+    subject_key = normalize_content(subject or "用户") or "用户"
+    predicate_key = normalize_content(predicate or memory_type) or memory_type
+    object_key = normalize_content(object_value or "")
+    if memory_type == "preference":
+        # Polarity is deliberately excluded: positive and negative statements
+        # about one topic must meet in the same adjudication key.
+        topic = object_key or normalize_content(content)
+        topic = re.sub(
+            r"(?:用户|本人|我现在|我最近|我|喜欢|更喜欢|最喜欢|偏好|习惯|不喜欢|讨厌|厌恶|不爱|不想|不打算|暂时不|过敏|优先选择|优先)",
+            "",
+            topic,
+        )
+        topic = re.sub(r"^(?:喝|吃|用|使用|采用|选择|选|穿|看|听|玩|住|做|学习|学|买|去)", "", topic)
+        return f"preference:{subject_key}:{predicate_key}:{topic}"
+    if memory_type == "task":
+        task_text = object_key or normalize_content(content)
+        task_text = re.sub(
+            r"(?:记得|需要|待办|完成|完善|处理|修复|修改|修|改|实现|已经|正在|进行中|开始|继续|阻塞|卡住|取消|不用做|不做了|现在|可以|还要给|补充测试|遇到)",
+            "",
+            task_text,
+        ).lstrip("是").rstrip("了")
+        return f"task:{subject_key}:{predicate_key}:{task_text or 'unspecified'}"
+    if memory_type == "semantic":
+        return f"semantic:{subject_key}:{predicate_key}"
+    return f"{memory_type}:{subject_key}:{predicate_key}:{object_key or normalize_content(content)}"
+
+
 @dataclass(frozen=True)
 class MemoryCandidate:
     memory_type: str
@@ -71,6 +107,13 @@ class MemoryCandidate:
     valid_until: str | None = None
     evidence_span: str | None = None
     extraction_reason: str | None = None
+    memory_key: str | None = None
+    polarity: str | None = None
+    scope: dict[str, Any] = field(default_factory=dict)
+    extractor_type: str = "rules"
+    extractor_version: str = "memory-extractor-v1"
+    model: str | None = None
+    prompt_hash: str | None = None
 
     def __post_init__(self) -> None:
         if self.memory_type not in MEMORY_TYPES:
@@ -86,6 +129,16 @@ class MemoryCandidate:
     def effective_reason(self) -> str | None:
         return self.extraction_reason or self.reason
 
+    @property
+    def effective_memory_key(self) -> str:
+        return self.memory_key or memory_key_for(
+            self.memory_type,
+            subject=self.subject,
+            predicate=self.predicate,
+            object_value=self.object_value,
+            content=self.content,
+        )
+
 
 @dataclass(frozen=True, kw_only=True)
 class MemoryDecision:
@@ -97,6 +150,13 @@ class MemoryDecision:
     evidence: list[str]
     recommended_action: str
     decision_id: str = field(default_factory=lambda: new_id("decision"))
+    policy_version: str = "memory-policy-v1"
+    adjudicator_version: str = "memory-adjudicator-v1"
+    model: str | None = None
+    prompt_hash: str | None = None
+    input_hash: str | None = None
+    target_snapshot_version: int | None = None
+    retry_of_decision_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.relation not in DECISION_RELATIONS:
@@ -194,6 +254,19 @@ class MemoryRecord:
     predicate: str | None = None
     object_value: str | None = None
     last_confirmed_at: str | None = None
+    memory_key: str | None = None
+    polarity: str | None = None
+    scope: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def effective_memory_key(self) -> str:
+        return self.memory_key or memory_key_for(
+            self.memory_type,
+            subject=self.subject,
+            predicate=self.predicate,
+            object_value=self.object_value,
+            content=self.content,
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -217,6 +290,9 @@ class MemoryRecord:
             "predicate": self.predicate,
             "object_value": self.object_value,
             "last_confirmed_at": self.last_confirmed_at,
+            "memory_key": self.memory_key,
+            "polarity": self.polarity,
+            "scope": self.scope,
             "sources": [source.__dict__ for source in self.sources],
             "versions": [version.__dict__ for version in self.versions],
         }

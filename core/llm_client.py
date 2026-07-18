@@ -99,7 +99,7 @@ def extract_json_object(content: str) -> dict[str, Any]:
     return data
 
 
-def complete_json(system_prompt: str, user_prompt: str) -> dict[str, Any]:
+def complete_json(system_prompt: str, user_prompt: str, *, model_role: str | None = None) -> dict[str, Any]:
     """调用 Chat Completions 并返回 JSON object。
 
     功能说明:
@@ -116,7 +116,7 @@ def complete_json(system_prompt: str, user_prompt: str) -> dict[str, Any]:
     返回类型说明:
         dict[str, Any]: 从模型输出中解析出的 JSON object。
     """
-    config = get_chat_config()
+    config = get_chat_config(model_role)
     client = build_openai_client(config)
 
     try:

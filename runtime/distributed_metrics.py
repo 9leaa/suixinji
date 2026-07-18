@@ -15,7 +15,7 @@ from sqlalchemy import func, select
 from infrastructure.database import session_scope
 from infrastructure.redis_client import get_redis
 from infrastructure.redis_keys import KEYS, RedisKeys
-from infrastructure.schema import AgentRun, Delivery, InboxMessage, LlmUsage, OutboxEvent, Space, Task, TaskAttempt
+from infrastructure.schema import AgentRun, AgentStep, Delivery, InboxMessage, LlmUsage, OutboxEvent, Space, Task, TaskAttempt
 from runtime.streams.client import GROUPS
 
 
@@ -59,6 +59,7 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
         runs = list(session.execute(select(AgentRun).where(AgentRun.tenant_id == tenant_id)).scalars())
         run_ids = [run.run_id for run in runs]
         usage = list(session.execute(select(LlmUsage).where(LlmUsage.run_id.in_(run_ids))).scalars()) if run_ids else []
+        steps = list(session.execute(select(AgentStep).where(AgentStep.run_id.in_(run_ids))).scalars()) if run_ids else []
         spaces = list(session.execute(select(Space).where(Space.tenant_id == tenant_id)).scalars())
 
     root_status = _status_counts(root_tasks)
@@ -69,6 +70,13 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
     queue_wait_values = [value for value in queue_wait if value is not None]
     execution_values = [value for value in execution if value is not None]
     latency_values = [value for value in latency if value is not None]
+    outbox_publish = [_duration_ms(event.created_at, event.published_at) for event in outbox]
+    outbox_publish_values = [value for value in outbox_publish if value is not None]
+    step_durations: dict[str, list[int]] = {}
+    for step in steps:
+        if step.duration_ms is None:
+            continue
+        step_durations.setdefault(str(step.step_type), []).append(int(step.duration_ms))
     latest_sequence_by_space: dict[str, int] = {}
     for row in inbox:
         latest_sequence_by_space[row.space_id] = max(
@@ -101,6 +109,18 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
         "p50_latency_ms": percentile(latency_values, 0.50),
         "p95_latency_ms": percentile(latency_values, 0.95),
         "p99_latency_ms": percentile(latency_values, 0.99),
+        "p50_outbox_publish_ms": percentile(outbox_publish_values, 0.50),
+        "p95_outbox_publish_ms": percentile(outbox_publish_values, 0.95),
+        "p99_outbox_publish_ms": percentile(outbox_publish_values, 0.99),
+        "agent_step_latency_ms": {
+            step_type: {
+                "count": len(values),
+                "p50": percentile(values, 0.50),
+                "p95": percentile(values, 0.95),
+                "p99": percentile(values, 0.99),
+            }
+            for step_type, values in sorted(step_durations.items())
+        },
         "llm_requests": sum(int(row.request_count) for row in usage),
         "llm_tokens": sum(int(row.total_tokens) for row in usage),
         "estimated_cost": float(sum((Decimal(row.estimated_cost) for row in usage), Decimal("0"))),
@@ -270,6 +290,34 @@ def build_report(
     terminal_or_pending = completed + failed + pending + rate_limited + duplicate
     all_status = database.get("all_task_status") or {}
     all_pending = sum(int(all_status.get(name) or 0) for name in ("blocked", "queued", "running", "retry"))
+    segmented_latency = {
+        "receiver_acceptance": {
+            "p50_ms": submission.get("p50_submission_latency_ms"),
+            "p95_ms": submission.get("p95_submission_latency_ms"),
+            "p99_ms": submission.get("p99_submission_latency_ms"),
+        },
+        "outbox_publish": {
+            "p50_ms": database.get("p50_outbox_publish_ms"),
+            "p95_ms": database.get("p95_outbox_publish_ms"),
+            "p99_ms": database.get("p99_outbox_publish_ms"),
+        },
+        "queue_wait": {
+            "p50_ms": database.get("p50_queue_wait_ms"),
+            "p95_ms": database.get("p95_queue_wait_ms"),
+            "p99_ms": database.get("p99_queue_wait_ms"),
+        },
+        "worker_execution": {
+            "p50_ms": database.get("p50_execution_ms"),
+            "p95_ms": database.get("p95_execution_ms"),
+            "p99_ms": database.get("p99_execution_ms"),
+        },
+        "task_end_to_end": {
+            "p50_ms": database.get("p50_latency_ms"),
+            "p95_ms": database.get("p95_latency_ms"),
+            "p99_ms": database.get("p99_latency_ms"),
+        },
+        "agent_steps": database.get("agent_step_latency_ms", {}),
+    }
     return {
         "measurement_status": "measured",
         "submitted": submitted,
@@ -306,6 +354,10 @@ def build_report(
         "p50_execution_ms": database.get("p50_execution_ms"),
         "p95_execution_ms": database.get("p95_execution_ms"),
         "p99_execution_ms": database.get("p99_execution_ms"),
+        "p50_outbox_publish_ms": database.get("p50_outbox_publish_ms"),
+        "p95_outbox_publish_ms": database.get("p95_outbox_publish_ms"),
+        "p99_outbox_publish_ms": database.get("p99_outbox_publish_ms"),
+        "segmented_latency": segmented_latency,
         **(locks or {}),
         "llm_tokens": int(database.get("llm_tokens") or 0),
         "estimated_cost": float(database.get("estimated_cost") or 0),

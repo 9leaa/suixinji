@@ -209,6 +209,9 @@ class Memory(Base):
     subject: Mapped[str | None] = mapped_column(Text)
     predicate: Mapped[str | None] = mapped_column(Text)
     object_value: Mapped[str | None] = mapped_column(Text)
+    memory_key: Mapped[str | None] = mapped_column(String(512))
+    polarity: Mapped[str | None] = mapped_column(String(32))
+    scope_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     valid_from: Mapped[str | None] = mapped_column(String(64))
     valid_until: Mapped[str | None] = mapped_column(String(64))
     last_confirmed_at: Mapped[str | None] = mapped_column(String(64))
@@ -217,7 +220,50 @@ class Memory(Base):
     last_accessed_at: Mapped[str | None] = mapped_column(String(64))
     access_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     current_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    __table_args__ = (Index("ix_memories_space_status_type", "space_id", "status", "memory_type"),)
+    __table_args__ = (
+        Index("ix_memories_space_status_type", "space_id", "status", "memory_type"),
+        Index("ix_memories_space_key_status", "space_id", "memory_key", "status"),
+    )
+
+
+class MemoryCandidateRow(Base):
+    __tablename__ = "memory_candidates"
+    candidate_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default="default")
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
+    note_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    memory_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    normalized_content: Mapped[str] = mapped_column(Text, nullable=False)
+    memory_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    subject: Mapped[str | None] = mapped_column(Text)
+    predicate: Mapped[str | None] = mapped_column(Text)
+    object_value: Mapped[str | None] = mapped_column(Text)
+    task_status: Mapped[str | None] = mapped_column(String(64))
+    polarity: Mapped[str | None] = mapped_column(String(32))
+    scope_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    entities_json: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    valid_from: Mapped[str | None] = mapped_column(String(64))
+    valid_until: Mapped[str | None] = mapped_column(String(64))
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    importance: Mapped[float] = mapped_column(Float, nullable=False)
+    evidence_span: Mapped[str | None] = mapped_column(Text)
+    should_store: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    extractor_type: Mapped[str] = mapped_column(String(32), nullable=False, default="rules")
+    extractor_version: Mapped[str] = mapped_column(String(128), nullable=False, default="memory-extractor-v1")
+    model: Mapped[str | None] = mapped_column(String(255))
+    prompt_hash: Mapped[str | None] = mapped_column(String(128))
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="extracted")
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text)
+    decision_id: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (
+        UniqueConstraint("note_id", "candidate_id", name="uq_memory_candidate_note"),
+        Index("ix_memory_candidates_space_status", "space_id", "status", "updated_at"),
+    )
 
 
 class MemorySource(Base):
@@ -298,6 +344,13 @@ class MemoryDecision(Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     result_memory_ids_json: Mapped[list[str] | None] = mapped_column(JSONB)
     error: Mapped[str | None] = mapped_column(Text)
+    policy_version: Mapped[str] = mapped_column(String(128), nullable=False, default="memory-policy-v1")
+    adjudicator_version: Mapped[str] = mapped_column(String(128), nullable=False, default="memory-adjudicator-v1")
+    model: Mapped[str | None] = mapped_column(String(255))
+    prompt_hash: Mapped[str | None] = mapped_column(String(128))
+    input_hash: Mapped[str | None] = mapped_column(String(128))
+    target_snapshot_version: Mapped[int | None] = mapped_column(Integer)
+    retry_of_decision_id: Mapped[str | None] = mapped_column(String(255))
     created_at: Mapped[str] = mapped_column(String(64), nullable=False)
     applied_at: Mapped[str | None] = mapped_column(String(64))
 

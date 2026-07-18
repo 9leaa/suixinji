@@ -30,6 +30,7 @@ from memory.models import (
     MemoryRelation,
     MemorySource,
     MemoryVersion,
+    memory_key_for,
     new_id,
     normalize_content,
     utc_now_iso,
@@ -118,6 +119,9 @@ def _init_db(db_path: str | Path | None = None) -> None:
                 subject TEXT,
                 predicate TEXT,
                 object_value TEXT,
+                memory_key TEXT,
+                polarity TEXT,
+                scope_json TEXT NOT NULL DEFAULT '{}',
                 valid_from TEXT,
                 valid_until TEXT,
                 last_confirmed_at TEXT,
@@ -130,6 +134,44 @@ def _init_db(db_path: str | Path | None = None) -> None:
 
             CREATE INDEX IF NOT EXISTS idx_memories_space_status
             ON memories(space_id, status, memory_type);
+
+            CREATE TABLE IF NOT EXISTS memory_candidates (
+                candidate_id TEXT PRIMARY KEY,
+                space_id TEXT NOT NULL,
+                note_id TEXT NOT NULL,
+                memory_type TEXT NOT NULL,
+                content TEXT NOT NULL,
+                normalized_content TEXT NOT NULL,
+                memory_key TEXT NOT NULL,
+                subject TEXT,
+                predicate TEXT,
+                object_value TEXT,
+                task_status TEXT,
+                polarity TEXT,
+                scope_json TEXT NOT NULL DEFAULT '{}',
+                entities_json TEXT NOT NULL DEFAULT '[]',
+                valid_from TEXT,
+                valid_until TEXT,
+                confidence REAL NOT NULL,
+                importance REAL NOT NULL,
+                evidence_span TEXT,
+                should_store INTEGER NOT NULL DEFAULT 1,
+                extractor_type TEXT NOT NULL DEFAULT 'rules',
+                extractor_version TEXT NOT NULL DEFAULT 'memory-extractor-v1',
+                model TEXT,
+                prompt_hash TEXT,
+                status TEXT NOT NULL DEFAULT 'extracted',
+                attempt_count INTEGER NOT NULL DEFAULT 0,
+                last_error TEXT,
+                decision_id TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                applied_at TEXT,
+                UNIQUE(note_id, candidate_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_memory_candidates_space_status
+            ON memory_candidates(space_id, status, updated_at);
 
             CREATE TABLE IF NOT EXISTS memory_sources (
                 memory_id TEXT NOT NULL,
@@ -215,6 +257,13 @@ def _init_db(db_path: str | Path | None = None) -> None:
                 status TEXT NOT NULL,
                 result_memory_ids_json TEXT,
                 error TEXT,
+                policy_version TEXT NOT NULL DEFAULT 'memory-policy-v1',
+                adjudicator_version TEXT NOT NULL DEFAULT 'memory-adjudicator-v1',
+                model TEXT,
+                prompt_hash TEXT,
+                input_hash TEXT,
+                target_snapshot_version INTEGER,
+                retry_of_decision_id TEXT,
                 created_at TEXT NOT NULL,
                 applied_at TEXT
             );
@@ -257,15 +306,31 @@ def _init_db(db_path: str | Path | None = None) -> None:
         _ensure_column(conn, "memories", "subject", "TEXT")
         _ensure_column(conn, "memories", "predicate", "TEXT")
         _ensure_column(conn, "memories", "object_value", "TEXT")
+        _ensure_column(conn, "memories", "memory_key", "TEXT")
+        _ensure_column(conn, "memories", "polarity", "TEXT")
+        _ensure_column(conn, "memories", "scope_json", "TEXT NOT NULL DEFAULT '{}'")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_memories_space_key_status ON memories(space_id, memory_key, status)")
         _ensure_column(conn, "memories", "last_confirmed_at", "TEXT")
         _ensure_column(conn, "memory_versions", "task_status", "TEXT")
         _ensure_column(conn, "memory_versions", "confidence", "REAL")
         _ensure_column(conn, "memory_versions", "importance", "REAL")
         _ensure_column(conn, "memory_versions", "valid_from", "TEXT")
         _ensure_column(conn, "memory_versions", "valid_until", "TEXT")
+        _ensure_column(conn, "memory_decisions", "policy_version", "TEXT NOT NULL DEFAULT 'memory-policy-v1'")
+        _ensure_column(conn, "memory_decisions", "adjudicator_version", "TEXT NOT NULL DEFAULT 'memory-adjudicator-v1'")
+        _ensure_column(conn, "memory_decisions", "model", "TEXT")
+        _ensure_column(conn, "memory_decisions", "prompt_hash", "TEXT")
+        _ensure_column(conn, "memory_decisions", "input_hash", "TEXT")
+        _ensure_column(conn, "memory_decisions", "target_snapshot_version", "INTEGER")
+        _ensure_column(conn, "memory_decisions", "retry_of_decision_id", "TEXT")
+        _ensure_column(conn, "memory_candidates", "task_status", "TEXT")
 
 
 def _memory_from_row(row: sqlite3.Row, *, sources: list[MemorySource] | None = None, versions: list[MemoryVersion] | None = None) -> MemoryRecord:
+    try:
+        scope = json.loads(row["scope_json"] or "{}")
+    except (TypeError, json.JSONDecodeError):
+        scope = {}
     return MemoryRecord(
         id=str(row["id"]),
         space_id=str(row["space_id"]),
@@ -287,9 +352,186 @@ def _memory_from_row(row: sqlite3.Row, *, sources: list[MemorySource] | None = N
         predicate=row["predicate"],
         object_value=row["object_value"],
         last_confirmed_at=row["last_confirmed_at"],
+        memory_key=row["memory_key"] or None,
+        polarity=row["polarity"] or None,
+        scope=scope if isinstance(scope, dict) else {},
         sources=sources or [],
         versions=versions or [],
     )
+
+
+def _candidate_from_row(row: sqlite3.Row) -> MemoryCandidate:
+    try:
+        scope = json.loads(row["scope_json"] or "{}")
+    except (TypeError, json.JSONDecodeError):
+        scope = {}
+    try:
+        entities = json.loads(row["entities_json"] or "[]")
+    except (TypeError, json.JSONDecodeError):
+        entities = []
+    return MemoryCandidate(
+        memory_type=str(row["memory_type"]),
+        content=str(row["content"]),
+        importance=float(row["importance"]),
+        confidence=float(row["confidence"]),
+        entities=list(entities) if isinstance(entities, list) else [],
+        should_store=bool(row["should_store"]),
+        task_status=row["task_status"],
+        candidate_id=str(row["candidate_id"]),
+        note_id=str(row["note_id"]),
+        space_id=str(row["space_id"]),
+        subject=row["subject"],
+        predicate=row["predicate"],
+        object_value=row["object_value"],
+        valid_from=row["valid_from"],
+        valid_until=row["valid_until"],
+        evidence_span=row["evidence_span"],
+        memory_key=row["memory_key"],
+        polarity=row["polarity"],
+        scope=scope if isinstance(scope, dict) else {},
+        extractor_type=str(row["extractor_type"]),
+        extractor_version=str(row["extractor_version"]),
+        model=row["model"],
+        prompt_hash=row["prompt_hash"],
+    )
+
+
+def save_memory_candidate(
+    candidate: MemoryCandidate,
+    *,
+    space_id: str,
+    status: str = "extracted",
+    error: str | None = None,
+    decision_id: str | None = None,
+    db_path: str | Path | None = None,
+) -> MemoryCandidate:
+    """Persist one candidate without resetting a terminal retry state."""
+    init_db(db_path)
+    now = utc_now_iso()
+
+    def _operation() -> None:
+        with _connect(db_path) as conn:
+            existing = conn.execute(
+                "SELECT status, attempt_count FROM memory_candidates WHERE candidate_id = ?",
+                (candidate.candidate_id,),
+            ).fetchone()
+            if existing is None:
+                conn.execute(
+                    """
+                    INSERT INTO memory_candidates(
+                        candidate_id, space_id, note_id, memory_type, content, normalized_content,
+                        memory_key, subject, predicate, object_value, task_status, polarity,
+                        scope_json, entities_json, valid_from, valid_until, confidence, importance,
+                        evidence_span, should_store, extractor_type, extractor_version, model,
+                        prompt_hash, status, attempt_count, last_error, decision_id, created_at, updated_at, applied_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+                    """,
+                    (
+                        candidate.candidate_id,
+                        space_id,
+                        candidate.note_id or "",
+                        candidate.memory_type,
+                        candidate.content,
+                        candidate.normalized_content,
+                        candidate.effective_memory_key,
+                        candidate.subject,
+                        candidate.predicate,
+                        candidate.object_value,
+                        candidate.task_status,
+                        candidate.polarity,
+                        json.dumps(candidate.scope, ensure_ascii=False),
+                        json.dumps(candidate.entities, ensure_ascii=False),
+                        candidate.valid_from,
+                        candidate.valid_until,
+                        float(candidate.confidence),
+                        float(candidate.importance),
+                        candidate.evidence_span,
+                        int(candidate.should_store),
+                        candidate.extractor_type,
+                        candidate.extractor_version,
+                        candidate.model,
+                        candidate.prompt_hash,
+                        status,
+                        0,
+                        error,
+                        decision_id,
+                        now,
+                        now,
+                    ),
+                )
+            else:
+                conn.execute(
+                    """
+                    UPDATE memory_candidates
+                    SET updated_at = ?, last_error = COALESCE(?, last_error), decision_id = COALESCE(?, decision_id)
+                    WHERE candidate_id = ?
+                    """,
+                    (now, error, decision_id, candidate.candidate_id),
+                )
+
+    _run_write(_operation)
+    stored = get_memory_candidate(candidate.candidate_id, db_path=db_path)
+    if stored is None:
+        raise RuntimeError(f"failed to persist memory candidate: {candidate.candidate_id}")
+    return stored
+
+
+def get_memory_candidate(candidate_id: str, db_path: str | Path | None = None) -> MemoryCandidate | None:
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        row = conn.execute("SELECT * FROM memory_candidates WHERE candidate_id = ?", (candidate_id,)).fetchone()
+    return _candidate_from_row(row) if row is not None else None
+
+
+def get_memory_candidate_status(candidate_id: str, db_path: str | Path | None = None) -> str | None:
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        row = conn.execute("SELECT status FROM memory_candidates WHERE candidate_id = ?", (candidate_id,)).fetchone()
+    return str(row["status"]) if row is not None else None
+
+
+def mark_memory_candidate(
+    candidate_id: str,
+    status: str,
+    *,
+    error: str | None = None,
+    decision_id: str | None = None,
+    db_path: str | Path | None = None,
+) -> bool:
+    allowed = {"extracted", "validated", "adjudicated", "applied", "pending_review", "discarded", "failed", "processing"}
+    if status not in allowed:
+        raise ValueError(f"invalid memory candidate status: {status}")
+    init_db(db_path)
+    now = utc_now_iso()
+
+    def _operation() -> bool:
+        with _connect(db_path) as conn:
+            result = conn.execute(
+                """
+                UPDATE memory_candidates
+                SET status = ?, attempt_count = attempt_count + ?, last_error = ?, decision_id = COALESCE(?, decision_id),
+                    updated_at = ?, applied_at = CASE WHEN ? IN ('applied', 'pending_review', 'discarded') THEN ? ELSE applied_at END
+                WHERE candidate_id = ?
+                """,
+                (status, int(status == "processing"), error, decision_id, now, status, now, candidate_id),
+            )
+            return bool(result.rowcount)
+
+    return _run_write(_operation)
+
+
+def list_retryable_memory_candidates(space_id: str, *, limit: int = 100, db_path: str | Path | None = None) -> list[MemoryCandidate]:
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM memory_candidates
+            WHERE space_id = ? AND status IN ('extracted', 'validated', 'failed', 'processing')
+            ORDER BY updated_at LIMIT ?
+            """,
+            (space_id, max(1, min(int(limit), 500))),
+        ).fetchall()
+    return [_candidate_from_row(row) for row in rows]
 
 
 def _extraction_state_from_row(row: sqlite3.Row) -> MemoryExtractionState:
@@ -438,10 +680,10 @@ def _insert_memory_row(
         """
         INSERT INTO memories(
             id, space_id, memory_type, content, normalized_content, importance, confidence,
-            status, task_status, subject, predicate, object_value, valid_from, valid_until,
+            status, task_status, subject, predicate, object_value, memory_key, polarity, scope_json, valid_from, valid_until,
             last_confirmed_at, created_at, updated_at, last_accessed_at, access_count, current_version
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, 1)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             record_id,
@@ -456,11 +698,17 @@ def _insert_memory_row(
             candidate.subject,
             candidate.predicate,
             candidate.object_value,
+            candidate.effective_memory_key,
+            candidate.polarity,
+            json.dumps(candidate.scope, ensure_ascii=False),
             valid_from,
             candidate.valid_until,
+            None,
             created_at,
             created_at,
-            created_at,
+            None,
+            0,
+            1,
         ),
     )
     _add_source_row(conn, record_id, source_note_id, source_relation, now=created_at)
@@ -532,8 +780,9 @@ def _insert_decision_row(
         INSERT OR REPLACE INTO memory_decisions(
             id, space_id, note_id, candidate_id, relation, target_memory_ids_json,
             confidence, reason, evidence_json, recommended_action, status,
-            result_memory_ids_json, error, created_at, applied_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            result_memory_ids_json, error, policy_version, adjudicator_version, model,
+            prompt_hash, input_hash, target_snapshot_version, retry_of_decision_id, created_at, applied_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             decision.decision_id,
@@ -549,6 +798,13 @@ def _insert_decision_row(
             status,
             json.dumps(result_memory_ids or [], ensure_ascii=False),
             error,
+            decision.policy_version,
+            decision.adjudicator_version,
+            decision.model,
+            decision.prompt_hash,
+            decision.input_hash,
+            decision.target_snapshot_version,
+            decision.retry_of_decision_id,
             created_at,
             created_at if status == "applied" else None,
         ),
@@ -613,6 +869,8 @@ def list_memories(
     *,
     status: str | None = "active",
     memory_type: str | None = None,
+    memory_key: str | None = None,
+    include_expired: bool = False,
     limit: int = 20,
     db_path: str | Path | None = None,
 ) -> list[MemoryRecord]:
@@ -625,11 +883,52 @@ def list_memories(
     if memory_type:
         clauses.append("memory_type = ?")
         params.append(memory_type)
+    if memory_key:
+        clauses.append("memory_key = ?")
+        params.append(memory_key)
+    if status == "active" and not include_expired:
+        clauses.append("(valid_until IS NULL OR valid_until > ?)")
+        params.append(utc_now_iso())
     params.append(max(1, min(int(limit), 100)))
     sql = f"SELECT * FROM memories WHERE {' AND '.join(clauses)} ORDER BY updated_at DESC LIMIT ?"
     with _connect(db_path) as conn:
         rows = conn.execute(sql, params).fetchall()
         return [_memory_from_row(row, sources=_load_sources(conn, row["id"])) for row in rows]
+
+
+def expire_due_memories(
+    space_id: str | None = None,
+    *,
+    limit: int = 500,
+    db_path: str | Path | None = None,
+) -> int:
+    init_db(db_path)
+    now = utc_now_iso()
+
+    def _operation() -> int:
+        with _connect(db_path) as conn:
+            clauses = ["status = 'active'", "valid_until IS NOT NULL", "valid_until <= ?"]
+            params: list[Any] = [now]
+            if space_id:
+                clauses.append("space_id = ?")
+                params.append(space_id)
+            params.append(max(1, min(int(limit), 1000)))
+            rows = conn.execute(
+                f"SELECT * FROM memories WHERE {' AND '.join(clauses)} ORDER BY valid_until LIMIT ?",
+                params,
+            ).fetchall()
+            for row in rows:
+                _versioned_update_row(
+                    conn,
+                    row,
+                    status="expired",
+                    reason="valid_until_reached",
+                    source_note_id=None,
+                    now=now,
+                )
+            return len(rows)
+
+    return _run_write(_operation)
 
 
 def update_memory(
@@ -663,12 +962,20 @@ def update_memory(
             next_confidence = float(confidence) if confidence is not None else float(row["confidence"])
             next_importance = float(importance) if importance is not None else float(row["importance"])
             next_confirmed = last_confirmed_at if last_confirmed_at is not None else row["last_confirmed_at"]
+            next_memory_key = memory_key_for(
+                str(row["memory_type"]),
+                subject=row["subject"],
+                predicate=row["predicate"],
+                object_value=row["object_value"],
+                content=next_content,
+            )
+            next_polarity = row["polarity"]
             now = utc_now_iso()
             conn.execute(
                 """
                 UPDATE memories
                 SET content = ?, normalized_content = ?, status = ?, task_status = ?,
-                    valid_until = ?, confidence = ?, importance = ?, last_confirmed_at = ?,
+                    memory_key = ?, polarity = ?, valid_until = ?, confidence = ?, importance = ?, last_confirmed_at = ?,
                     updated_at = ?, current_version = ?
                 WHERE id = ?
                 """,
@@ -677,6 +984,8 @@ def update_memory(
                     normalize_content(next_content),
                     next_status,
                     next_task_status,
+                    next_memory_key,
+                    next_polarity,
                     next_valid_until,
                     next_confidence,
                     next_importance,
@@ -1225,6 +1534,54 @@ def approve_pending_memory(memory_id: str, db_path: str | Path | None = None) ->
     return get_memory(result_id, db_path=db_path) if result_id else None
 
 
+def reject_pending_memory(memory_id: str, *, reason: str = "user_rejected_pending_memory", db_path: str | Path | None = None) -> MemoryRecord | None:
+    pending = get_memory(memory_id, db_path=db_path)
+    if pending is None or pending.status != "pending_review":
+        return None
+    updated = update_memory(memory_id, status="archived", reason=reason, db_path=db_path)
+    candidate_id = None
+    with _connect(db_path) as conn:
+        decision = conn.execute(
+            "SELECT candidate_id FROM memory_decisions WHERE status = 'pending_review' AND result_memory_ids_json LIKE ? ORDER BY created_at DESC LIMIT 1",
+            (f'%"{memory_id}"%',),
+        ).fetchone()
+        if decision is not None:
+            candidate_id = str(decision["candidate_id"])
+            conn.execute(
+                "UPDATE memory_decisions SET status = 'rejected', error = ? WHERE candidate_id = ? AND status = 'pending_review'",
+                (reason, candidate_id),
+            )
+    if candidate_id:
+        mark_memory_candidate(candidate_id, "discarded", error=reason, db_path=db_path)
+    return updated
+
+
+def edit_pending_memory(memory_id: str, content: str, db_path: str | Path | None = None) -> MemoryRecord | None:
+    pending = get_memory(memory_id, db_path=db_path)
+    if pending is None or pending.status != "pending_review" or not content.strip():
+        return None
+    update_memory(memory_id, content=content, status="pending_review", reason="user_edited_pending_memory", db_path=db_path)
+    return approve_pending_memory(memory_id, db_path=db_path)
+
+
+def resolve_memory_conflict(
+    memory_id: str,
+    *,
+    resolution: str,
+    content: str | None = None,
+    db_path: str | Path | None = None,
+) -> MemoryRecord | None:
+    if resolution not in {"keep", "merge", "archive"}:
+        raise ValueError("resolution must be keep, merge, or archive")
+    if resolution == "keep":
+        return update_memory(memory_id, status="active", reason="user_resolved_conflict_keep", db_path=db_path)
+    if resolution == "merge":
+        if not content or not content.strip():
+            raise ValueError("merge resolution requires content")
+        return update_memory(memory_id, content=content, status="active", reason="user_resolved_conflict_merge", db_path=db_path)
+    return update_memory(memory_id, status="archived", reason="user_resolved_conflict_archive", db_path=db_path)
+
+
 def list_memory_decisions(
     space_id: str,
     *,
@@ -1725,8 +2082,14 @@ if _STORAGE_BACKEND == "postgres":
         "init_db",
         "add_source",
         "insert_memory",
+        "save_memory_candidate",
+        "get_memory_candidate",
+        "get_memory_candidate_status",
+        "mark_memory_candidate",
+        "list_retryable_memory_candidates",
         "get_memory",
         "list_memories",
+        "expire_due_memories",
         "update_memory",
         "apply_memory_decision",
         "mark_accessed",
@@ -1734,6 +2097,9 @@ if _STORAGE_BACKEND == "postgres":
         "correct_memory",
         "purge_memory",
         "approve_pending_memory",
+        "reject_pending_memory",
+        "edit_pending_memory",
+        "resolve_memory_conflict",
         "list_memory_decisions",
         "list_memory_relations",
         "add_memory_relation",

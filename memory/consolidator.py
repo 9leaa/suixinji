@@ -148,39 +148,44 @@ def merge_duplicate_episodic(space_id: str, *, min_score: float = 0.72) -> dict[
 
 
 def generate_stable_semantic(space_id: str, *, min_sources: int = 3) -> dict[str, Any]:
-    """Monthly consolidation pass: synthesize a stable semantic memory from related episodic memories."""
-    episodic = [
-        memory
-        for memory in list_memories(space_id, status="active", memory_type="episodic", limit=100)
-        if any(token in memory.content for token in ("Agent", "RAG", "学习", "开发", "向量", "ReAct"))
-    ]
+    """Synthesize a stable semantic candidate from a generic episodic cluster."""
+    episodic = list_memories(space_id, status="active", memory_type="episodic", limit=100)
     if len(episodic) < min_sources:
         return {"space_id": space_id, "created": False, "reason": "not_enough_sources", "source_count": len(episodic)}
 
-    source_note_ids: list[str] = []
+    # Keep consolidation domain-neutral: the cluster is formed from structured
+    # predicates when available, otherwise from the current episodic stream.
+    grouped: dict[str, list[Any]] = {}
     for memory in episodic:
-        source_note_ids.extend(source.note_id for source in memory.sources)
-    source_note_ids = list(dict.fromkeys(source_note_ids))
+        group_key = memory.predicate or "episodic_stream"
+        grouped.setdefault(group_key, []).append(memory)
+    cluster = max(grouped.values(), key=lambda items: (len(items), max(item.updated_at for item in items)))
+    if len(cluster) < min_sources:
+        return {"space_id": space_id, "created": False, "reason": "no_stable_cluster", "source_count": len(cluster)}
+
+    source_note_ids = list(dict.fromkeys(source.note_id for memory in cluster for source in memory.sources))
+    source_note_ids = source_note_ids[:100]
+    source_contents = list(dict.fromkeys(memory.content for memory in cluster))[:5]
     candidate = MemoryCandidate(
         memory_type="semantic",
-        content="用户当前持续学习和开发 Agent/RAG 系统。",
+        content="用户近期稳定主题：" + "；".join(source_contents),
         importance=0.9,
         confidence=0.82,
-        entities=["Agent", "RAG"],
-        reason="monthly_stable_semantic_consolidation",
+        entities=[],
+        reason="monthly_generic_cluster_consolidation",
         space_id=space_id,
         subject="用户",
-        predicate="learning_focus",
-        object_value="Agent/RAG 系统",
+        predicate="stable_theme",
+        object_value=cluster[0].predicate or "episodic_stream",
     )
-    first_source = source_note_ids[0] if source_note_ids else episodic[0].id
+    first_source = source_note_ids[0] if source_note_ids else cluster[0].id
     result = consolidate_candidate(space_id, first_source, candidate)
     memory_id = str(result.get("memory_id") or "")
     if not memory_id:
         return {"space_id": space_id, "created": False, "reason": "candidate_not_applied", "source_count": len(source_note_ids)}
     for note_id in source_note_ids[1:]:
         add_source(memory_id, note_id, "summarized_from")
-    for source_memory in episodic:
+    for source_memory in cluster:
         add_memory_relation(space_id, memory_id, source_memory.id, "summarized_from", decision_id=result.get("decision_id"))
     return {
         "space_id": space_id,

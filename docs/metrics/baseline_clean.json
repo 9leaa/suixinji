@@ -1,0 +1,86 @@
+{
+  "schema_version": "stage0-clean-capacity-v1",
+  "stage": 0,
+  "mode": "fake_external_no_chaos",
+  "storage": {
+    "postgres": "existing Mac Docker service through SSH reverse port",
+    "redis": "existing Mac Docker service through SSH reverse port",
+    "docker_controlled_by_test": false,
+    "docker_host_used": false,
+    "test_data_cleaned": true
+  },
+  "model_routing": {
+    "baseline_external_calls": false,
+    "fast_model": "gpt-5.4-mini",
+    "balanced_model": "gpt-5.4",
+    "strong_model": "gpt-5.5",
+    "planned_roles": {
+      "prefilter_and_low_risk_extraction": "gpt-5.4-mini",
+      "high_risk_relation_adjudication": "gpt-5.5",
+      "complex_query_synthesis": "gpt-5.4",
+      "embedding": "configured_embedding_model"
+    }
+  },
+  "capacity_matrix": [
+    {
+      "users": 100,
+      "messages_per_user": 10,
+      "submitted": 1000,
+      "client_confirmed_accepted": 844,
+      "accepted_after_client_timeout": 133,
+      "duplicate": 6,
+      "submission_failed_unaccepted": 17,
+      "completed": 977,
+      "pending": 0,
+      "conservation_delta": 0,
+      "memory_gap": 0,
+      "stream_lag": 0,
+      "p50_submission_latency_ms": 7933,
+      "p95_submission_latency_ms": 10011,
+      "p99_submission_latency_ms": 10011,
+      "p50_queue_wait_ms": 331731,
+      "p95_queue_wait_ms": 947989,
+      "p99_queue_wait_ms": 1064124,
+      "p50_worker_execution_ms": 4199,
+      "p95_worker_execution_ms": 5702,
+      "p99_worker_execution_ms": 8193,
+      "p50_end_to_end_ms": 334384,
+      "p95_end_to_end_ms": 951013,
+      "p99_end_to_end_ms": 1070998,
+      "p50_outbox_publish_ms": 1785,
+      "p95_outbox_publish_ms": 3188,
+      "redis_metric_read_timeout": true,
+      "status": "completed_but_over_capacity_target"
+    },
+    {
+      "users": 500,
+      "messages_per_user": 10,
+      "status": "deferred_until_after_stage2",
+      "reason": "The 100-user baseline already misses the 120-second clean convergence target by about 7.9x at p95."
+    },
+    {
+      "users": 1000,
+      "messages_per_user": 10,
+      "status": "deferred_until_after_stage2",
+      "reason": "Avoid amplifying known queue and reverse-port bottlenecks before query and memory-path optimization."
+    }
+  ],
+  "baseline_vs_improvement": {
+    "improvement_claim": "none_yet",
+    "reason": "Stage 0 establishes the comparison baseline; optimization starts in the next stage.",
+    "clean_target_all_tasks_within_seconds": 120,
+    "observed_p95_end_to_end_seconds": 951.013,
+    "target_overrun_ratio_at_p95": 7.9251
+  },
+  "artifacts": {
+    "submission": "data/load-tests/baseline-clean-100-20260718-r2-submission.json",
+    "detailed_metrics": "docs/metrics/baseline_clean_100.json",
+    "memory_quality": "docs/memory_eval/baseline.json",
+    "quality_dataset": "eval/memory/quality_cases.jsonl"
+  },
+  "measurement_notes": [
+    "The first 100-user attempt was a process-lifetime startup failure and is excluded from performance metrics.",
+    "The valid run had one Redis metrics-read timeout while the business workload later converged successfully.",
+    "All Stage 4 tenant rows and its Redis namespace were cleaned after measurement; containers and volumes were not stopped or deleted."
+  ]
+}

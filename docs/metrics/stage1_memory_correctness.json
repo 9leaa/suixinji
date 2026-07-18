@@ -1,0 +1,81 @@
+{
+  "schema_version": "stage-metrics-v1",
+  "stage": 1,
+  "name": "memory_correctness",
+  "generated_at": "2026-07-18T17:07:19+08:00",
+  "branch": "optimize/stage1-memory-correctness",
+  "baseline_commit": "deda2b3a51fda260c10d93a84ebfb3b48d64cece",
+  "comparison_contract": {
+    "dataset": "eval/memory/quality_cases.jsonl",
+    "dataset_sha256": "10cc2f950264b03b35f034775ebf4cc6696b7ca8d13ee40ff6e6ccddd670c240",
+    "cases": 360,
+    "external_llm_calls": 0,
+    "external_embedding_calls": 0,
+    "baseline_report": "docs/memory_eval/baseline_v2.json",
+    "stage_report": "docs/memory_eval/stage1.json"
+  },
+  "metrics": {
+    "extraction_exact_store_rate": {
+      "baseline": 0.8167,
+      "stage": 0.8167,
+      "absolute_delta": 0.0,
+      "relative_change": 0.0
+    },
+    "extraction_type_macro_f1": {
+      "baseline": 0.6653,
+      "stage": 0.6653,
+      "absolute_delta": 0.0,
+      "relative_change": 0.0
+    },
+    "relation_accuracy": {
+      "baseline": 0.7833,
+      "stage": 1.0,
+      "absolute_delta": 0.2167,
+      "relative_change": 0.2766
+    },
+    "relation_macro_f1": {
+      "baseline": 0.761,
+      "stage": 1.0,
+      "absolute_delta": 0.239,
+      "relative_change": 0.3141
+    },
+    "false_destructive_rate": {
+      "baseline": 0.325,
+      "stage": 0.0,
+      "absolute_delta": -0.325,
+      "relative_change": -1.0
+    },
+    "retrieval_recall_at_20": {
+      "baseline": 0.8333,
+      "stage": 1.0,
+      "absolute_delta": 0.1667,
+      "relative_change": 0.2
+    },
+    "retrieval_mrr": {
+      "baseline": 0.775,
+      "stage": 0.9417,
+      "absolute_delta": 0.1667,
+      "relative_change": 0.2151
+    },
+    "end_to_end_accuracy": {
+      "baseline": 0.6667,
+      "stage": 0.8333,
+      "absolute_delta": 0.1666,
+      "relative_change": 0.2499
+    }
+  },
+  "acceptance": {
+    "destructive_false_positive_below_1_percent": true,
+    "candidate_recall_at_20_at_least_95_percent": true,
+    "candidate_retry_idempotency": true,
+    "domain_neutral_consolidation": true,
+    "passed": true
+  },
+  "verification": {
+    "memory_tests": "97 passed",
+    "postgres_repository_tests": "7 passed",
+    "ruff": "passed",
+    "git_diff_check": "passed",
+    "migration_round_trip": "passed"
+  }
+}

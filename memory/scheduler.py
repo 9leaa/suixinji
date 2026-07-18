@@ -11,6 +11,7 @@ from typing import Any
 
 from core.file_lock import safe_space_id
 from memory.consolidator import generate_stable_semantic, merge_duplicate_episodic, process_unextracted_notes
+from memory.expiry import run_expiry_once
 from memory.repository import (
     consolidation_period_key,
     mark_consolidation_completed,
@@ -35,7 +36,7 @@ def list_memory_space_ids(notes_dir: Path | None = None) -> list[str]:
 def run_memory_consolidation(space_id: str, cadence: str) -> dict[str, Any]:
     cadence = cadence.strip().lower()
     if cadence == "daily":
-        return process_unextracted_notes(space_id)
+        return {**process_unextracted_notes(space_id), "expired_count": run_expiry_once(space_id=space_id)["expired_count"]}
     if cadence == "weekly":
         return merge_duplicate_episodic(space_id)
     if cadence == "monthly":

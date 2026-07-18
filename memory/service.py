@@ -15,7 +15,9 @@ from memory.models import candidate_id_for
 from memory.repository import (
     approve_pending_memory,
     correct_memory,
+    edit_pending_memory,
     get_extraction_state,
+    get_memory_candidate_status,
     get_memory,
     list_memories,
     list_memory_decisions,
@@ -25,7 +27,11 @@ from memory.repository import (
     mark_extraction_failed,
     mark_extraction_partial,
     mark_extraction_processing,
+    mark_memory_candidate,
     purge_memory,
+    reject_pending_memory,
+    resolve_memory_conflict,
+    save_memory_candidate,
     search_memories,
     soft_delete_memory,
     stats,
@@ -108,6 +114,8 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
             for candidate in extracted_candidates
         ]
         for candidate in enriched_candidates:
+            save_memory_candidate(candidate, space_id=space_id, status="extracted")
+        for candidate in enriched_candidates:
             add_step(
                 trace,
                 "candidate_extracted",
@@ -122,6 +130,7 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
             )
         candidates, rejections = validate_candidates(enriched_candidates, note_text=text)
         for rejection in rejections:
+            mark_memory_candidate(rejection.candidate_id, "discarded", error=rejection.reason)
             add_step(
                 trace,
                 "candidate_rejected",
@@ -157,9 +166,19 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
         results = []
         errors = []
         for candidate in candidates:
+            existing_status = get_memory_candidate_status(candidate.candidate_id)
+            if existing_status in {"applied", "pending_review", "discarded"}:
+                results.append({"candidate_id": candidate.candidate_id, "action": existing_status, "idempotent": True})
+                continue
             try:
+                mark_memory_candidate(candidate.candidate_id, "validated")
+                mark_memory_candidate(candidate.candidate_id, "processing")
                 results.append(consolidate_candidate(space_id, note_id, candidate, trace=trace))
+                result = results[-1]
+                final_status = "pending_review" if result.get("action") == "pending_review" else "discarded" if result.get("action") == "discard" else "applied"
+                mark_memory_candidate(candidate.candidate_id, final_status, decision_id=result.get("decision_id"))
             except Exception as exc:
+                mark_memory_candidate(candidate.candidate_id, "failed", error=f"{type(exc).__name__}: {exc}")
                 errors.append(f"{type(exc).__name__}: {exc}")
 
         add_step(trace, "vector_written", output_summary={"note_id": note_id, "memory_count": len(results)}, reason="note_vector_written_before_memory")
@@ -420,6 +439,29 @@ def format_memory_pending(space_id: str) -> str:
     if not memories:
         return "当前没有 pending_review 记忆。"
     return "待审记忆：\n" + "\n".join(_format_memory(memory) for memory in memories)
+
+
+def format_memory_reject(memory_id: str, reason: str = "user_rejected_pending_memory") -> str:
+    memory = reject_pending_memory(memory_id, reason=reason)
+    if memory is None:
+        return f"没有找到待审记忆：{memory_id}"
+    return f"已拒绝待审记忆：{memory_id}"
+
+
+def format_memory_edit(memory_id: str, content: str) -> str:
+    if contains_sensitive_data(content):
+        return "修正内容包含敏感凭据，未写入长期记忆。"
+    memory = edit_pending_memory(memory_id, content)
+    if memory is None:
+        return f"没有找到待审记忆：{memory_id}"
+    return f"已编辑并批准记忆：{memory.id}\n{memory.content}"
+
+
+def format_memory_resolve(memory_id: str, resolution: str, content: str | None = None) -> str:
+    memory = resolve_memory_conflict(memory_id, resolution=resolution, content=content)
+    if memory is None:
+        return f"没有找到冲突记忆：{memory_id}"
+    return f"已解决冲突：{memory.id}\n{memory.content}"
 
 
 def format_memory_approve(memory_id: str) -> str:
