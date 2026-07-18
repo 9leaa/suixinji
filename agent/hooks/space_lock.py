@@ -18,7 +18,7 @@ class SpaceLockHook(AgentHook):
     def before_tool(self, context: AgentRunContext, tool_name: str, args: dict[str, Any]) -> None:
         if tool_name not in WRITE_TOOLS:
             return
-        manager = coordinated_lock(KEYS.lock_space(context.space_id), critical=True)
+        manager = coordinated_lock(KEYS.lock_space(context.tenant_id, context.space_id), critical=True)
         source = manager.__enter__()
         context.resources[f"space_lock:{tool_name}"] = manager
         context.metadata["lock_source"] = source

@@ -62,6 +62,8 @@ start_all() {
   export SUIXINJI_ENV="stage4-$run_id"
   export SUIXINJI_FAKE_EXTERNALS=true
   export SUIXINJI_STAGE4_MODE=true
+  export SUIXINJI_TEST_API_ENABLED=true
+  export SUIXINJI_TEST_API_TOKEN="stage4-$run_id-local-token"
   export SUIXINJI_AGENT_HOOKS_ENABLED=true
   export SUIXINJI_STREAM_BLOCK_MS=200
   export SUIXINJI_STREAM_BATCH_SIZE=50
@@ -79,27 +81,28 @@ start_all() {
 RUN_ID=$run_id
 TENANT_ID=load-$run_id
 REDIS_ENV=stage4-$run_id
+SUIXINJI_TEST_API_TOKEN=stage4-$run_id-local-token
 RECEIVER_1=http://127.0.0.1:18101
 RECEIVER_2=http://127.0.0.1:18102
 STARTED_AT=$(date --iso-8601=seconds)
 EOF
 
-  start_role receiver-1 "$PYTHON" -m uvicorn apps.api:app --host 127.0.0.1 --port 18101
-  start_role receiver-2 "$PYTHON" -m uvicorn apps.api:app --host 127.0.0.1 --port 18102
-  start_role outbox-relay-1 "$PYTHON" -m apps.outbox_relay
-  start_role outbox-relay-2 "$PYTHON" -m apps.outbox_relay
+  start_role receiver-1 env SUIXINJI_PROCESS_ROLE=receiver "$PYTHON" -m uvicorn apps.api:app --host 127.0.0.1 --port 18101
+  start_role receiver-2 env SUIXINJI_PROCESS_ROLE=receiver "$PYTHON" -m uvicorn apps.api:app --host 127.0.0.1 --port 18102
+  start_role outbox-relay-1 env SUIXINJI_PROCESS_ROLE=outbox-relay "$PYTHON" -m apps.outbox_relay
+  start_role outbox-relay-2 env SUIXINJI_PROCESS_ROLE=outbox-relay "$PYTHON" -m apps.outbox_relay
   for index in 1 2 3 4; do
-    start_role "worker-ingest-$index" "$PYTHON" -m apps.worker ingest --worker-id "stage4-$run_id-ingest-$index"
+    start_role "worker-ingest-$index" env SUIXINJI_PROCESS_ROLE=worker-ingest "$PYTHON" -m apps.worker ingest --worker-id "stage4-$run_id-ingest-$index"
   done
   for index in 1 2 3 4 5 6 7 8; do
-    start_role "worker-memory-$index" "$PYTHON" -m apps.worker memory --worker-id "stage4-$run_id-memory-$index"
+    start_role "worker-memory-$index" env SUIXINJI_PROCESS_ROLE=worker-memory "$PYTHON" -m apps.worker memory --worker-id "stage4-$run_id-memory-$index"
   done
   for index in 1 2; do
-    start_role "worker-query-$index" "$PYTHON" -m apps.worker query --worker-id "stage4-$run_id-query-$index"
-    start_role "worker-summary-$index" "$PYTHON" -m apps.worker summary --worker-id "stage4-$run_id-summary-$index"
-    start_role "worker-enrichment-$index" "$PYTHON" -m apps.worker enrichment --worker-id "stage4-$run_id-enrichment-$index"
-    start_role "worker-delivery-$index" "$PYTHON" -m apps.worker delivery --worker-id "stage4-$run_id-delivery-$index"
-    start_role "scheduler-$index" "$PYTHON" -m apps.scheduler
+    start_role "worker-query-$index" env SUIXINJI_PROCESS_ROLE=worker-query "$PYTHON" -m apps.worker query --worker-id "stage4-$run_id-query-$index"
+    start_role "worker-summary-$index" env SUIXINJI_PROCESS_ROLE=worker-summary "$PYTHON" -m apps.worker summary --worker-id "stage4-$run_id-summary-$index"
+    start_role "worker-enrichment-$index" env SUIXINJI_PROCESS_ROLE=worker-enrichment "$PYTHON" -m apps.worker enrichment --worker-id "stage4-$run_id-enrichment-$index"
+    start_role "worker-delivery-$index" env SUIXINJI_PROCESS_ROLE=worker-delivery "$PYTHON" -m apps.worker delivery --worker-id "stage4-$run_id-delivery-$index"
+    start_role "scheduler-$index" env SUIXINJI_PROCESS_ROLE=scheduler "$PYTHON" -m apps.scheduler
   done
 
   if ! wait_receiver "http://127.0.0.1:18101" || ! wait_receiver "http://127.0.0.1:18102"; then

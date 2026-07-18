@@ -19,7 +19,7 @@ class RateLimitHook(AgentHook):
     def before_agent(self, context: AgentRunContext) -> None:
         action = "ingest" if context.run_type in {"ingest", "memory"} else "ask"
         limit = RATE_LIMIT_INGEST_PER_MINUTE if action == "ingest" else RATE_LIMIT_ASK_PER_MINUTE
-        key = KEYS.rate_user(context.user_id, action)
+        key = KEYS.rate_user(context.tenant_id, context.user_id, action)
         limiter = LOCAL_RATE_LIMITER
         if COORDINATION_BACKEND == "redis":
             try:

@@ -18,11 +18,11 @@ def run_once(client: StreamClient | None = None) -> dict[str, int]:
     enqueue_due_retries(limit=OUTBOX_BATCH_SIZE)
     started = time.perf_counter()
     report = relay_outbox_batch(client or StreamClient(), limit=OUTBOX_BATCH_SIZE)
-    if report["published"] or report["failed"]:
+    if any(report.values()):
         log_event(
             "runtime.outbox_relay",
-            level="warning" if report["failed"] else "info",
-            status="partial" if report["failed"] else "completed",
+            level="warning" if report["failed"] or report["dead"] or report["stale"] else "info",
+            status="partial" if report["failed"] or report["dead"] or report["stale"] else "completed",
             duration_ms=int((time.perf_counter() - started) * 1000),
             extra=report,
         )

@@ -7,12 +7,14 @@ from typing import Any
 
 from agent.query_agent import answer_question
 from bot.feishu_bot import send_text
-from core.settings import FAKE_EXTERNALS
+from core.settings import FAKE_EXTERNALS, MEMORY_EXTRACTOR_MODE
 from core.worker import enrich_note, process_record
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock
 from memory.service import process_note_memory
+from memory.extractor import extract_candidates
 from repositories.postgres.dispatch import enqueue_task, load_inbox_record
+from repositories.postgres.notes import find_note_content
 from runtime.delivery_store import get_delivery, mark_failed, mark_sent, mark_unknown, reserve_delivery
 from runtime.streams.worker import RetryLater, TaskOutcome
 from storage.note_storage import find_note
@@ -22,6 +24,10 @@ from summary.subscription import mark_summary_sent
 
 def _payload(task: dict[str, Any]) -> dict[str, Any]:
     return dict(task.get("payload_json") or {})
+
+
+def _tenant_id(task: dict[str, Any]) -> str:
+    return str(task.get("tenant_id") or "default")
 
 
 def _enqueue_delivery(task: dict[str, Any], *, text: str, payload: dict[str, Any]) -> None:
@@ -36,7 +42,7 @@ def _enqueue_delivery(task: dict[str, Any], *, text: str, payload: dict[str, Any
     }
     enqueue_task(
         task_type="delivery",
-        tenant_id=str(task.get("tenant_id") or "default"),
+        tenant_id=_tenant_id(task),
         space_id=str(task["space_id"]),
         source_message_id=task.get("source_message_id"),
         idempotency_key=f"delivery:{delivery_key}",
@@ -52,29 +58,46 @@ def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
         raise ValueError(f"inbox record not found: {inbox_id}")
 
     critical_task_id: str | None = None
-    with coordinated_lock(KEYS.lock_space(str(task["space_id"])), critical=True):
+    with coordinated_lock(KEYS.lock_space(_tenant_id(task), str(task["space_id"])), critical=True):
         note = process_record(record, defer_memory=True, defer_wal_completion=True)
         if note is not None:
             note_data = asdict(note) if is_dataclass(note) else dict(note)
             note_id = str(note_data["id"])
-            critical_task_id, _ = enqueue_task(
-                task_type="memory",
-                tenant_id=str(task.get("tenant_id") or "default"),
-                space_id=str(task["space_id"]),
-                source_message_id=task.get("source_message_id"),
-                idempotency_key=f"memory:extract:{note_id}",
-                payload={
-                    "operation": "extract",
-                    "note_id": note_id,
-                    "barrier_inbox_id": inbox_id,
-                    "parent_task_id": str(task["id"]),
-                },
-                initial_status="blocked",
-                publish=False,
-            )
+            classification = {
+                "title": note_data.get("title"),
+                "tags": list(note_data.get("tags") or []),
+                "type": note_data.get("type"),
+                "summary": note_data.get("summary"),
+            }
+            deterministic_candidates = None
+            if MEMORY_EXTRACTOR_MODE == "rules":
+                deterministic_candidates = extract_candidates(
+                    note_id,
+                    str(note_data.get("text") or ""),
+                    classification=classification,
+                )
+            if deterministic_candidates == []:
+                process_note_memory(note_data, classification=classification)
+            else:
+                critical_task_id, _ = enqueue_task(
+                    task_type="memory",
+                    tenant_id=_tenant_id(task),
+                    space_id=str(task["space_id"]),
+                    source_message_id=task.get("source_message_id"),
+                    idempotency_key=f"memory:extract:{note_id}",
+                    payload={
+                        "operation": "extract",
+                        "note_id": note_id,
+                        "barrier_inbox_id": inbox_id,
+                        "parent_task_id": str(task["id"]),
+                        "sequence_no": int(payload.get("sequence_no") or 0),
+                    },
+                    initial_status="queued",
+                    publish=True,
+                )
             enqueue_task(
                 task_type="enrichment",
-                tenant_id=str(task.get("tenant_id") or "default"),
+                tenant_id=_tenant_id(task),
                 space_id=str(task["space_id"]),
                 source_message_id=task.get("source_message_id"),
                 idempotency_key=f"enrichment:{note_id}",
@@ -90,8 +113,8 @@ def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
         )
 
     if critical_task_id:
-        return TaskOutcome(activate_task_id=critical_task_id)
-    return TaskOutcome(release_inbox_id=inbox_id)
+        return TaskOutcome(note_ready_inbox_id=inbox_id)
+    return TaskOutcome(ingest_complete_inbox_id=inbox_id)
 
 
 def handle_query(task: dict[str, Any]) -> TaskOutcome:
@@ -103,7 +126,7 @@ def handle_query(task: dict[str, Any]) -> TaskOutcome:
         answer = answer_question(
             str(task["space_id"]),
             str(payload["question"]),
-            tenant_id=str(task.get("tenant_id") or "default"),
+            tenant_id=_tenant_id(task),
             user_id=str(payload.get("user_id") or "") or None,
             message_id=task.get("source_message_id"),
             task_id=str(task["id"]),
@@ -121,7 +144,7 @@ def handle_summary(task: dict[str, Any]) -> TaskOutcome:
         result = generate_summary(
             str(task["space_id"]),
             str(payload["range_key"]),
-            tenant_id=str(task.get("tenant_id") or "default"),
+            tenant_id=_tenant_id(task),
             user_id=str(payload.get("user_id") or "") or None,
             message_id=task.get("source_message_id"),
             task_id=str(task["id"]),
@@ -140,15 +163,23 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
 
         run_memory_consolidation_once(str(payload["cadence"]), space_ids=[str(task["space_id"])])
         return None
-    note = find_note(str(task["space_id"]), note_id)
+    note = find_note_content(str(task["space_id"]), note_id)
     if note is None:
         raise ValueError(f"note not found: {note_id}")
     if operation == "enrich":
         handle_enrichment(task)
         return None
-    process_note_memory(note)
+    process_note_memory(
+        note,
+        classification={
+            "title": note.get("title"),
+            "tags": list(note.get("tags") or []),
+            "type": note.get("type"),
+            "summary": note.get("summary"),
+        },
+    )
     barrier_inbox_id = str(payload.get("barrier_inbox_id") or "")
-    return TaskOutcome(release_inbox_id=barrier_inbox_id or None)
+    return TaskOutcome(memory_ready_inbox_id=barrier_inbox_id or None)
 
 
 def handle_enrichment(task: dict[str, Any]) -> None:
@@ -159,7 +190,7 @@ def handle_enrichment(task: dict[str, Any]) -> None:
     note = find_note(str(task["space_id"]), note_id)
     if note is None:
         raise ValueError(f"note not found: {note_id}")
-    with coordinated_lock(KEYS.lock_space(str(task["space_id"])), critical=True):
+    with coordinated_lock(KEYS.lock_space(_tenant_id(task), str(task["space_id"])), critical=True):
         enrich_note(str(task["space_id"]), note_id)
 
 
@@ -169,7 +200,7 @@ def handle_delivery(task: dict[str, Any]) -> None:
     reservation = reserve_delivery(
         key,
         delivery_type=str(payload.get("delivery_type") or "message"),
-        tenant_id=str(task.get("tenant_id") or "default"),
+        tenant_id=_tenant_id(task),
         space_id=str(task["space_id"]),
         message_id=payload.get("message_id"),
     )

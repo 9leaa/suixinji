@@ -19,7 +19,7 @@ class IdempotencyHook(AgentHook):
     def before_agent(self, context: AgentRunContext) -> None:
         if not context.message_id or context.task_id:
             return
-        key = KEYS.idempotency(context.run_type, context.message_id)
+        key = KEYS.idempotency(context.tenant_id, context.run_type, context.message_id)
         store = LOCAL_IDEMPOTENCY
         if COORDINATION_BACKEND == "redis":
             try:

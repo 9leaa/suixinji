@@ -7,7 +7,7 @@ from dataclasses import dataclass, replace
 
 from core.sensitive import contains_sensitive_data
 from core.settings import MEMORY_CANDIDATE_MIN_CONFIDENCE
-from memory.models import MemoryCandidate, normalize_content
+from memory.models import MemoryCandidate, memory_key_for, normalize_content
 
 
 LOW_VALUE_TEXTS = {"你好", "您好", "hello", "hi", "收到", "好的", "好", "ok", "谢谢", "哈哈", "嗯", "嗯嗯"}
@@ -55,6 +55,13 @@ def validate_candidate(candidate: MemoryCandidate, *, note_text: str = "") -> tu
         predicate=(str(candidate.predicate).strip()[:80] if candidate.predicate else None),
         object_value=(str(candidate.object_value).strip()[:240] if candidate.object_value else None),
         evidence_span=(evidence_span[:500] or None),
+        memory_key=memory_key_for(
+            candidate.memory_type,
+            subject=candidate.subject,
+            predicate=candidate.predicate,
+            object_value=candidate.object_value,
+            content=content[:1000],
+        ),
     )
     return validated, None
 

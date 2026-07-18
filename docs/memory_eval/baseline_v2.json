@@ -1,0 +1,3536 @@
+{
+  "schema_version": "memory-quality-v1",
+  "generated_at": "2026-07-18T17:01:20+08:00",
+  "commit": "deda2b3a51fda260c10d93a84ebfb3b48d64cece",
+  "mode": "deterministic_rules",
+  "dataset": {
+    "path": "eval/memory/quality_cases.jsonl",
+    "cases": 360,
+    "by_kind": {
+      "e2e": 60,
+      "extraction": 120,
+      "relation": 120,
+      "retrieval": 60
+    }
+  },
+  "routing": {
+    "baseline_external_calls": false,
+    "fast_model": "gpt-5.4-mini",
+    "balanced_model": "gpt-5.4",
+    "strong_model": "gpt-5.5",
+    "recommended_roles": {
+      "rule_prefilter_and_structured_extraction": "fast_model",
+      "low_risk_candidate_validation": "fast_model",
+      "high_risk_relation_adjudication": "strong_model",
+      "complex_query_synthesis": "balanced_model",
+      "embedding": "configured_embedding_model"
+    },
+    "note": "Model routing is recorded for later stages; this baseline intentionally uses deterministic rules."
+  },
+  "extraction": {
+    "cases": 120,
+    "exact_store_rate": 0.8167,
+    "type_macro_f1": 0.6653,
+    "per_type": {
+      "episodic": {
+        "precision": 0.1667,
+        "recall": 0.0833,
+        "f1": 0.1111
+      },
+      "semantic": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "preference": {
+        "precision": 0.6,
+        "recall": 1.0,
+        "f1": 0.75
+      },
+      "task": {
+        "precision": 0.6667,
+        "recall": 1.0,
+        "f1": 0.8
+      }
+    },
+    "results": [
+      {
+        "case_id": "extract-000",
+        "category": "explicit_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-001",
+        "category": "explicit_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-002",
+        "category": "explicit_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-003",
+        "category": "explicit_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-004",
+        "category": "explicit_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-005",
+        "category": "explicit_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-006",
+        "category": "negative_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-007",
+        "category": "negative_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-008",
+        "category": "negative_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-009",
+        "category": "negative_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-010",
+        "category": "negative_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-011",
+        "category": "negative_preference",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-012",
+        "category": "habit",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-013",
+        "category": "habit",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-014",
+        "category": "habit",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-015",
+        "category": "habit",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-016",
+        "category": "habit",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-017",
+        "category": "habit",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [
+          "preference"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-018",
+        "category": "task_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-019",
+        "category": "task_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-020",
+        "category": "task_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-021",
+        "category": "task_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-022",
+        "category": "task_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-023",
+        "category": "task_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-024",
+        "category": "todo_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-025",
+        "category": "todo_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-026",
+        "category": "todo_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-027",
+        "category": "todo_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-028",
+        "category": "todo_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-029",
+        "category": "todo_marker",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "task"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-030",
+        "category": "learning_fact",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-031",
+        "category": "learning_fact",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-032",
+        "category": "learning_fact",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-033",
+        "category": "learning_fact",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-034",
+        "category": "learning_fact",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-035",
+        "category": "learning_fact",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-036",
+        "category": "responsibility",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-037",
+        "category": "responsibility",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-038",
+        "category": "responsibility",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-039",
+        "category": "responsibility",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-040",
+        "category": "responsibility",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-041",
+        "category": "responsibility",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-042",
+        "category": "location",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-043",
+        "category": "location",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-044",
+        "category": "location",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-045",
+        "category": "location",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-046",
+        "category": "location",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-047",
+        "category": "location",
+        "predicted_types": [
+          "semantic"
+        ],
+        "expected_types": [
+          "semantic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-048",
+        "category": "recent_event",
+        "predicted_types": [],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 0,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-049",
+        "category": "recent_event",
+        "predicted_types": [],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 0,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-050",
+        "category": "recent_event",
+        "predicted_types": [],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 0,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-051",
+        "category": "recent_event",
+        "predicted_types": [],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 0,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-052",
+        "category": "recent_event",
+        "predicted_types": [],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 0,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-053",
+        "category": "recent_event",
+        "predicted_types": [
+          "episodic"
+        ],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-054",
+        "category": "recent_event",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-055",
+        "category": "recent_event",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-056",
+        "category": "recent_event",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-057",
+        "category": "recent_event",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-058",
+        "category": "recent_event",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-059",
+        "category": "recent_event",
+        "predicted_types": [
+          "task"
+        ],
+        "expected_types": [
+          "episodic"
+        ],
+        "candidate_count": 1,
+        "store_ok": true,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-060",
+        "category": "闲聊问候",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-061",
+        "category": "闲聊问候",
+        "predicted_types": [
+          "episodic"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-062",
+        "category": "闲聊问候",
+        "predicted_types": [
+          "episodic"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-063",
+        "category": "闲聊问候",
+        "predicted_types": [
+          "episodic"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-064",
+        "category": "闲聊问候",
+        "predicted_types": [
+          "episodic"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-065",
+        "category": "闲聊问候",
+        "predicted_types": [
+          "episodic"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-066",
+        "category": "纯问题",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-067",
+        "category": "纯问题",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-068",
+        "category": "纯问题",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-069",
+        "category": "纯问题",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-070",
+        "category": "纯问题",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-071",
+        "category": "纯问题",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-072",
+        "category": "临时天气",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-073",
+        "category": "临时天气",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-074",
+        "category": "临时天气",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-075",
+        "category": "临时天气",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-076",
+        "category": "临时天气",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-077",
+        "category": "临时天气",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-078",
+        "category": "短确认",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-079",
+        "category": "短确认",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-080",
+        "category": "短确认",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-081",
+        "category": "短确认",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-082",
+        "category": "短确认",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-083",
+        "category": "短确认",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-084",
+        "category": "泛泛计划",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-085",
+        "category": "泛泛计划",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-086",
+        "category": "泛泛计划",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-087",
+        "category": "泛泛计划",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-088",
+        "category": "泛泛计划",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-089",
+        "category": "泛泛计划",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-090",
+        "category": "引用内容",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-091",
+        "category": "引用内容",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-092",
+        "category": "引用内容",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-093",
+        "category": "引用内容",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-094",
+        "category": "引用内容",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-095",
+        "category": "引用内容",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-096",
+        "category": "系统操作",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-097",
+        "category": "系统操作",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-098",
+        "category": "系统操作",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-099",
+        "category": "系统操作",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-100",
+        "category": "系统操作",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-101",
+        "category": "系统操作",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-102",
+        "category": "无关感叹",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-103",
+        "category": "无关感叹",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-104",
+        "category": "无关感叹",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-105",
+        "category": "无关感叹",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-106",
+        "category": "无关感叹",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-107",
+        "category": "无关感叹",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-108",
+        "category": "不确定猜测",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-109",
+        "category": "不确定猜测",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-110",
+        "category": "不确定猜测",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-111",
+        "category": "不确定猜测",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-112",
+        "category": "不确定猜测",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-113",
+        "category": "不确定猜测",
+        "predicted_types": [],
+        "expected_types": [],
+        "candidate_count": 0,
+        "store_ok": true,
+        "type_exact": true
+      },
+      {
+        "case_id": "extract-114",
+        "category": "泛化观点",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-115",
+        "category": "泛化观点",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-116",
+        "category": "泛化观点",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-117",
+        "category": "泛化观点",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-118",
+        "category": "泛化观点",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      },
+      {
+        "case_id": "extract-119",
+        "category": "泛化观点",
+        "predicted_types": [
+          "preference"
+        ],
+        "expected_types": [],
+        "candidate_count": 1,
+        "store_ok": false,
+        "type_exact": false
+      }
+    ]
+  },
+  "relation": {
+    "cases": 120,
+    "accuracy": 0.7833,
+    "macro_f1": 0.761,
+    "per_relation": {
+      "new": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "same": {
+        "precision": 1.0,
+        "recall": 0.35,
+        "f1": 0.5185
+      },
+      "merge": {
+        "precision": 0.5128,
+        "recall": 1.0,
+        "f1": 0.678
+      },
+      "update_task": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "supersede": {
+        "precision": 0.7407,
+        "recall": 1.0,
+        "f1": 0.8511
+      },
+      "conflict": {
+        "precision": 1.0,
+        "recall": 0.35,
+        "f1": 0.5185
+      }
+    },
+    "false_destructive_rate": 0.325,
+    "confusion_matrix": {
+      "new": {
+        "new": 20,
+        "same": 0,
+        "merge": 0,
+        "update_task": 0,
+        "supersede": 0,
+        "conflict": 0
+      },
+      "same": {
+        "new": 0,
+        "same": 7,
+        "merge": 13,
+        "update_task": 0,
+        "supersede": 0,
+        "conflict": 0
+      },
+      "merge": {
+        "new": 0,
+        "same": 0,
+        "merge": 20,
+        "update_task": 0,
+        "supersede": 0,
+        "conflict": 0
+      },
+      "update_task": {
+        "new": 0,
+        "same": 0,
+        "merge": 0,
+        "update_task": 20,
+        "supersede": 0,
+        "conflict": 0
+      },
+      "supersede": {
+        "new": 0,
+        "same": 0,
+        "merge": 0,
+        "update_task": 0,
+        "supersede": 20,
+        "conflict": 0
+      },
+      "conflict": {
+        "new": 0,
+        "same": 0,
+        "merge": 6,
+        "update_task": 0,
+        "supersede": 7,
+        "conflict": 7
+      }
+    },
+    "results": [
+      {
+        "case_id": "relation-000",
+        "category": "same",
+        "expected": "same",
+        "predicted": "same",
+        "action": "add_source",
+        "confidence": 0.92
+      },
+      {
+        "case_id": "relation-001",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8952
+      },
+      {
+        "case_id": "relation-002",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8968
+      },
+      {
+        "case_id": "relation-003",
+        "category": "same",
+        "expected": "same",
+        "predicted": "same",
+        "action": "add_source",
+        "confidence": 0.92
+      },
+      {
+        "case_id": "relation-004",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8987200000000001
+      },
+      {
+        "case_id": "relation-005",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8932416000000001
+      },
+      {
+        "case_id": "relation-006",
+        "category": "same",
+        "expected": "same",
+        "predicted": "same",
+        "action": "add_source",
+        "confidence": 0.92
+      },
+      {
+        "case_id": "relation-007",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8952
+      },
+      {
+        "case_id": "relation-008",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8932416000000001
+      },
+      {
+        "case_id": "relation-009",
+        "category": "same",
+        "expected": "same",
+        "predicted": "same",
+        "action": "add_source",
+        "confidence": 0.92
+      },
+      {
+        "case_id": "relation-010",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8952
+      },
+      {
+        "case_id": "relation-011",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8932416000000001
+      },
+      {
+        "case_id": "relation-012",
+        "category": "same",
+        "expected": "same",
+        "predicted": "same",
+        "action": "add_source",
+        "confidence": 0.92
+      },
+      {
+        "case_id": "relation-013",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "case_id": "relation-014",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8987200000000001
+      },
+      {
+        "case_id": "relation-015",
+        "category": "same",
+        "expected": "same",
+        "predicted": "same",
+        "action": "add_source",
+        "confidence": 0.92
+      },
+      {
+        "case_id": "relation-016",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8971584000000001
+      },
+      {
+        "case_id": "relation-017",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8932416000000001
+      },
+      {
+        "case_id": "relation-018",
+        "category": "same",
+        "expected": "same",
+        "predicted": "same",
+        "action": "add_source",
+        "confidence": 0.92
+      },
+      {
+        "case_id": "relation-019",
+        "category": "same",
+        "expected": "same",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8952
+      },
+      {
+        "case_id": "relation-020",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "case_id": "relation-021",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8864000000000001
+      },
+      {
+        "case_id": "relation-022",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8869888000000001
+      },
+      {
+        "case_id": "relation-023",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "case_id": "relation-024",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.891136
+      },
+      {
+        "case_id": "relation-025",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8830144
+      },
+      {
+        "case_id": "relation-026",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "case_id": "relation-027",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8864000000000001
+      },
+      {
+        "case_id": "relation-028",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8830144
+      },
+      {
+        "case_id": "relation-029",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "case_id": "relation-030",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8864000000000001
+      },
+      {
+        "case_id": "relation-031",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8830144
+      },
+      {
+        "case_id": "relation-032",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "case_id": "relation-033",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.89168
+      },
+      {
+        "case_id": "relation-034",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8876544000000001
+      },
+      {
+        "case_id": "relation-035",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "case_id": "relation-036",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8884288
+      },
+      {
+        "case_id": "relation-037",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8830144
+      },
+      {
+        "case_id": "relation-038",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "case_id": "relation-039",
+        "category": "merge",
+        "expected": "merge",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8864000000000001
+      },
+      {
+        "case_id": "relation-040",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9109312
+      },
+      {
+        "case_id": "relation-041",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.904
+      },
+      {
+        "case_id": "relation-042",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9062416
+      },
+      {
+        "case_id": "relation-043",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9145984
+      },
+      {
+        "case_id": "relation-044",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9079984000000001
+      },
+      {
+        "case_id": "relation-045",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9032608
+      },
+      {
+        "case_id": "relation-046",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9124000000000001
+      },
+      {
+        "case_id": "relation-047",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.904
+      },
+      {
+        "case_id": "relation-048",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9032608
+      },
+      {
+        "case_id": "relation-049",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9109312
+      },
+      {
+        "case_id": "relation-050",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.904
+      },
+      {
+        "case_id": "relation-051",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9032608
+      },
+      {
+        "case_id": "relation-052",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9136
+      },
+      {
+        "case_id": "relation-053",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9086272
+      },
+      {
+        "case_id": "relation-054",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9062416
+      },
+      {
+        "case_id": "relation-055",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9109312
+      },
+      {
+        "case_id": "relation-056",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9058
+      },
+      {
+        "case_id": "relation-057",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9032608
+      },
+      {
+        "case_id": "relation-058",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.9109312
+      },
+      {
+        "case_id": "relation-059",
+        "category": "update_task",
+        "expected": "update_task",
+        "predicted": "update_task",
+        "action": "update_task",
+        "confidence": 0.904
+      },
+      {
+        "case_id": "relation-060",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.90256
+      },
+      {
+        "case_id": "relation-061",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9009616
+      },
+      {
+        "case_id": "relation-062",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.916
+      },
+      {
+        "case_id": "relation-063",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.90256
+      },
+      {
+        "case_id": "relation-064",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9009616
+      },
+      {
+        "case_id": "relation-065",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.916
+      },
+      {
+        "case_id": "relation-066",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.90256
+      },
+      {
+        "case_id": "relation-067",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9009616
+      },
+      {
+        "case_id": "relation-068",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.916
+      },
+      {
+        "case_id": "relation-069",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.90256
+      },
+      {
+        "case_id": "relation-070",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9009616
+      },
+      {
+        "case_id": "relation-071",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.916
+      },
+      {
+        "case_id": "relation-072",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.90256
+      },
+      {
+        "case_id": "relation-073",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9009616
+      },
+      {
+        "case_id": "relation-074",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.916
+      },
+      {
+        "case_id": "relation-075",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.90256
+      },
+      {
+        "case_id": "relation-076",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9009616
+      },
+      {
+        "case_id": "relation-077",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.916
+      },
+      {
+        "case_id": "relation-078",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.90256
+      },
+      {
+        "case_id": "relation-079",
+        "category": "supersede",
+        "expected": "supersede",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9009616
+      },
+      {
+        "case_id": "relation-080",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "conflict",
+        "action": "conflict",
+        "confidence": 0.9028400000000001
+      },
+      {
+        "case_id": "relation-081",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9079984000000001
+      },
+      {
+        "case_id": "relation-082",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "case_id": "relation-083",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "conflict",
+        "action": "conflict",
+        "confidence": 0.9028400000000001
+      },
+      {
+        "case_id": "relation-084",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9079984000000001
+      },
+      {
+        "case_id": "relation-085",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8995968000000001
+      },
+      {
+        "case_id": "relation-086",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "conflict",
+        "action": "conflict",
+        "confidence": 0.9028400000000001
+      },
+      {
+        "case_id": "relation-087",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9079984000000001
+      },
+      {
+        "case_id": "relation-088",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8995968000000001
+      },
+      {
+        "case_id": "relation-089",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "conflict",
+        "action": "conflict",
+        "confidence": 0.9028400000000001
+      },
+      {
+        "case_id": "relation-090",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9079984000000001
+      },
+      {
+        "case_id": "relation-091",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8995968000000001
+      },
+      {
+        "case_id": "relation-092",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "conflict",
+        "action": "conflict",
+        "confidence": 0.9028400000000001
+      },
+      {
+        "case_id": "relation-093",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9079984000000001
+      },
+      {
+        "case_id": "relation-094",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.9000000000000001
+      },
+      {
+        "case_id": "relation-095",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "conflict",
+        "action": "conflict",
+        "confidence": 0.9028400000000001
+      },
+      {
+        "case_id": "relation-096",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9079984000000001
+      },
+      {
+        "case_id": "relation-097",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "merge",
+        "action": "merge",
+        "confidence": 0.8995968000000001
+      },
+      {
+        "case_id": "relation-098",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "conflict",
+        "action": "conflict",
+        "confidence": 0.9028400000000001
+      },
+      {
+        "case_id": "relation-099",
+        "category": "conflict",
+        "expected": "conflict",
+        "predicted": "supersede",
+        "action": "supersede",
+        "confidence": 0.9079984000000001
+      },
+      {
+        "case_id": "relation-100",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-101",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-102",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-103",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-104",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-105",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-106",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-107",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-108",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-109",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-110",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-111",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-112",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-113",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-114",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-115",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-116",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-117",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-118",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      },
+      {
+        "case_id": "relation-119",
+        "category": "new",
+        "expected": "new",
+        "predicted": "new",
+        "action": "insert",
+        "confidence": 0.9
+      }
+    ]
+  },
+  "retrieval": {
+    "cases": 60,
+    "recall_at_20": 0.8333,
+    "mrr": 0.775,
+    "results": [
+      {
+        "case_id": "retrieval-000",
+        "ranked_ids": [
+          "target-000",
+          "distractor-0-1"
+        ],
+        "target_id": "target-000",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-001",
+        "ranked_ids": [
+          "target-001",
+          "distractor-1-1"
+        ],
+        "target_id": "target-001",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-002",
+        "ranked_ids": [
+          "distractor-2-1",
+          "target-002"
+        ],
+        "target_id": "target-002",
+        "rank": 2
+      },
+      {
+        "case_id": "retrieval-003",
+        "ranked_ids": [
+          "target-003",
+          "distractor-3-1"
+        ],
+        "target_id": "target-003",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-004",
+        "ranked_ids": [
+          "target-004",
+          "distractor-4-1"
+        ],
+        "target_id": "target-004",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-005",
+        "ranked_ids": [
+          "distractor-5-1",
+          "target-005"
+        ],
+        "target_id": "target-005",
+        "rank": 2
+      },
+      {
+        "case_id": "retrieval-006",
+        "ranked_ids": [
+          "target-006",
+          "distractor-6-1"
+        ],
+        "target_id": "target-006",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-007",
+        "ranked_ids": [
+          "distractor-7-1",
+          "target-007"
+        ],
+        "target_id": "target-007",
+        "rank": 2
+      },
+      {
+        "case_id": "retrieval-008",
+        "ranked_ids": [
+          "target-008",
+          "distractor-8-1"
+        ],
+        "target_id": "target-008",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-009",
+        "ranked_ids": [
+          "target-009",
+          "distractor-9-1"
+        ],
+        "target_id": "target-009",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-010",
+        "ranked_ids": [],
+        "target_id": "target-010",
+        "rank": null
+      },
+      {
+        "case_id": "retrieval-011",
+        "ranked_ids": [],
+        "target_id": "target-011",
+        "rank": null
+      },
+      {
+        "case_id": "retrieval-012",
+        "ranked_ids": [],
+        "target_id": "target-012",
+        "rank": null
+      },
+      {
+        "case_id": "retrieval-013",
+        "ranked_ids": [],
+        "target_id": "target-013",
+        "rank": null
+      },
+      {
+        "case_id": "retrieval-014",
+        "ranked_ids": [],
+        "target_id": "target-014",
+        "rank": null
+      },
+      {
+        "case_id": "retrieval-015",
+        "ranked_ids": [],
+        "target_id": "target-015",
+        "rank": null
+      },
+      {
+        "case_id": "retrieval-016",
+        "ranked_ids": [],
+        "target_id": "target-016",
+        "rank": null
+      },
+      {
+        "case_id": "retrieval-017",
+        "ranked_ids": [],
+        "target_id": "target-017",
+        "rank": null
+      },
+      {
+        "case_id": "retrieval-018",
+        "ranked_ids": [],
+        "target_id": "target-018",
+        "rank": null
+      },
+      {
+        "case_id": "retrieval-019",
+        "ranked_ids": [],
+        "target_id": "target-019",
+        "rank": null
+      },
+      {
+        "case_id": "retrieval-020",
+        "ranked_ids": [
+          "target-020"
+        ],
+        "target_id": "target-020",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-021",
+        "ranked_ids": [
+          "target-021"
+        ],
+        "target_id": "target-021",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-022",
+        "ranked_ids": [
+          "target-022"
+        ],
+        "target_id": "target-022",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-023",
+        "ranked_ids": [
+          "target-023"
+        ],
+        "target_id": "target-023",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-024",
+        "ranked_ids": [
+          "target-024"
+        ],
+        "target_id": "target-024",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-025",
+        "ranked_ids": [
+          "target-025"
+        ],
+        "target_id": "target-025",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-026",
+        "ranked_ids": [
+          "target-026"
+        ],
+        "target_id": "target-026",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-027",
+        "ranked_ids": [
+          "target-027"
+        ],
+        "target_id": "target-027",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-028",
+        "ranked_ids": [
+          "target-028"
+        ],
+        "target_id": "target-028",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-029",
+        "ranked_ids": [
+          "target-029"
+        ],
+        "target_id": "target-029",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-030",
+        "ranked_ids": [
+          "target-030"
+        ],
+        "target_id": "target-030",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-031",
+        "ranked_ids": [
+          "target-031"
+        ],
+        "target_id": "target-031",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-032",
+        "ranked_ids": [
+          "target-032"
+        ],
+        "target_id": "target-032",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-033",
+        "ranked_ids": [
+          "target-033"
+        ],
+        "target_id": "target-033",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-034",
+        "ranked_ids": [
+          "target-034"
+        ],
+        "target_id": "target-034",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-035",
+        "ranked_ids": [
+          "target-035"
+        ],
+        "target_id": "target-035",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-036",
+        "ranked_ids": [
+          "target-036"
+        ],
+        "target_id": "target-036",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-037",
+        "ranked_ids": [
+          "target-037"
+        ],
+        "target_id": "target-037",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-038",
+        "ranked_ids": [
+          "target-038"
+        ],
+        "target_id": "target-038",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-039",
+        "ranked_ids": [
+          "target-039"
+        ],
+        "target_id": "target-039",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-040",
+        "ranked_ids": [
+          "distractor-40-2",
+          "target-040"
+        ],
+        "target_id": "target-040",
+        "rank": 2
+      },
+      {
+        "case_id": "retrieval-041",
+        "ranked_ids": [
+          "target-041",
+          "distractor-41-2"
+        ],
+        "target_id": "target-041",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-042",
+        "ranked_ids": [
+          "distractor-42-2",
+          "target-042"
+        ],
+        "target_id": "target-042",
+        "rank": 2
+      },
+      {
+        "case_id": "retrieval-043",
+        "ranked_ids": [
+          "target-043",
+          "distractor-43-2"
+        ],
+        "target_id": "target-043",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-044",
+        "ranked_ids": [
+          "target-044",
+          "distractor-44-2"
+        ],
+        "target_id": "target-044",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-045",
+        "ranked_ids": [
+          "target-045",
+          "distractor-45-2"
+        ],
+        "target_id": "target-045",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-046",
+        "ranked_ids": [
+          "distractor-46-2",
+          "target-046"
+        ],
+        "target_id": "target-046",
+        "rank": 2
+      },
+      {
+        "case_id": "retrieval-047",
+        "ranked_ids": [
+          "target-047",
+          "distractor-47-2"
+        ],
+        "target_id": "target-047",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-048",
+        "ranked_ids": [
+          "distractor-48-2",
+          "target-048"
+        ],
+        "target_id": "target-048",
+        "rank": 2
+      },
+      {
+        "case_id": "retrieval-049",
+        "ranked_ids": [
+          "target-049",
+          "distractor-49-2"
+        ],
+        "target_id": "target-049",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-050",
+        "ranked_ids": [
+          "target-050"
+        ],
+        "target_id": "target-050",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-051",
+        "ranked_ids": [
+          "target-051"
+        ],
+        "target_id": "target-051",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-052",
+        "ranked_ids": [
+          "target-052"
+        ],
+        "target_id": "target-052",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-053",
+        "ranked_ids": [
+          "target-053"
+        ],
+        "target_id": "target-053",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-054",
+        "ranked_ids": [
+          "target-054"
+        ],
+        "target_id": "target-054",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-055",
+        "ranked_ids": [
+          "target-055"
+        ],
+        "target_id": "target-055",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-056",
+        "ranked_ids": [
+          "target-056"
+        ],
+        "target_id": "target-056",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-057",
+        "ranked_ids": [
+          "target-057"
+        ],
+        "target_id": "target-057",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-058",
+        "ranked_ids": [
+          "target-058"
+        ],
+        "target_id": "target-058",
+        "rank": 1
+      },
+      {
+        "case_id": "retrieval-059",
+        "ranked_ids": [
+          "target-059"
+        ],
+        "target_id": "target-059",
+        "rank": 1
+      }
+    ]
+  },
+  "end_to_end": {
+    "cases": 60,
+    "accuracy": 0.6667,
+    "results": [
+      {
+        "case_id": "e2e-000",
+        "category": "preference",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户喜欢喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-001",
+        "category": "preference",
+        "passed": false,
+        "expected_no_result": true,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户讨厌喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-002",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在住在哪里",
+        "contents": [
+          "用户已经搬到上海了。"
+        ]
+      },
+      {
+        "case_id": "e2e-003",
+        "category": "task",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "当前待办是什么",
+        "contents": [
+          "完成项目周报；项目周报已经完成了"
+        ]
+      },
+      {
+        "case_id": "e2e-004",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在学习什么",
+        "contents": [
+          "用户正在学习Java。",
+          "现在改学Python了。"
+        ]
+      },
+      {
+        "case_id": "e2e-005",
+        "category": "episodic",
+        "passed": false,
+        "expected_no_result": false,
+        "query": "我最近去了哪里",
+        "contents": []
+      },
+      {
+        "case_id": "e2e-006",
+        "category": "preference",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户喜欢喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-007",
+        "category": "preference",
+        "passed": false,
+        "expected_no_result": true,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户讨厌喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-008",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在住在哪里",
+        "contents": [
+          "用户已经搬到上海了。"
+        ]
+      },
+      {
+        "case_id": "e2e-009",
+        "category": "task",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "当前待办是什么",
+        "contents": [
+          "完成项目周报；项目周报已经完成了"
+        ]
+      },
+      {
+        "case_id": "e2e-010",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在学习什么",
+        "contents": [
+          "用户正在学习Java。",
+          "现在改学Python了。"
+        ]
+      },
+      {
+        "case_id": "e2e-011",
+        "category": "episodic",
+        "passed": false,
+        "expected_no_result": false,
+        "query": "我最近去了哪里",
+        "contents": []
+      },
+      {
+        "case_id": "e2e-012",
+        "category": "preference",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户喜欢喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-013",
+        "category": "preference",
+        "passed": false,
+        "expected_no_result": true,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户讨厌喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-014",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在住在哪里",
+        "contents": [
+          "用户已经搬到上海了。"
+        ]
+      },
+      {
+        "case_id": "e2e-015",
+        "category": "task",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "当前待办是什么",
+        "contents": [
+          "完成项目周报；项目周报已经完成了"
+        ]
+      },
+      {
+        "case_id": "e2e-016",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在学习什么",
+        "contents": [
+          "用户正在学习Java。",
+          "现在改学Python了。"
+        ]
+      },
+      {
+        "case_id": "e2e-017",
+        "category": "episodic",
+        "passed": false,
+        "expected_no_result": false,
+        "query": "我最近去了哪里",
+        "contents": []
+      },
+      {
+        "case_id": "e2e-018",
+        "category": "preference",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户喜欢喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-019",
+        "category": "preference",
+        "passed": false,
+        "expected_no_result": true,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户讨厌喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-020",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在住在哪里",
+        "contents": [
+          "用户已经搬到上海了。"
+        ]
+      },
+      {
+        "case_id": "e2e-021",
+        "category": "task",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "当前待办是什么",
+        "contents": [
+          "完成项目周报；项目周报已经完成了"
+        ]
+      },
+      {
+        "case_id": "e2e-022",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在学习什么",
+        "contents": [
+          "用户正在学习Java。",
+          "现在改学Python了。"
+        ]
+      },
+      {
+        "case_id": "e2e-023",
+        "category": "episodic",
+        "passed": false,
+        "expected_no_result": false,
+        "query": "我最近去了哪里",
+        "contents": []
+      },
+      {
+        "case_id": "e2e-024",
+        "category": "preference",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户喜欢喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-025",
+        "category": "preference",
+        "passed": false,
+        "expected_no_result": true,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户讨厌喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-026",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在住在哪里",
+        "contents": [
+          "用户已经搬到上海了。"
+        ]
+      },
+      {
+        "case_id": "e2e-027",
+        "category": "task",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "当前待办是什么",
+        "contents": [
+          "完成项目周报；项目周报已经完成了"
+        ]
+      },
+      {
+        "case_id": "e2e-028",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在学习什么",
+        "contents": [
+          "用户正在学习Java。",
+          "现在改学Python了。"
+        ]
+      },
+      {
+        "case_id": "e2e-029",
+        "category": "episodic",
+        "passed": false,
+        "expected_no_result": false,
+        "query": "我最近去了哪里",
+        "contents": []
+      },
+      {
+        "case_id": "e2e-030",
+        "category": "preference",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户喜欢喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-031",
+        "category": "preference",
+        "passed": false,
+        "expected_no_result": true,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户讨厌喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-032",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在住在哪里",
+        "contents": [
+          "用户已经搬到上海了。"
+        ]
+      },
+      {
+        "case_id": "e2e-033",
+        "category": "task",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "当前待办是什么",
+        "contents": [
+          "完成项目周报；项目周报已经完成了"
+        ]
+      },
+      {
+        "case_id": "e2e-034",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在学习什么",
+        "contents": [
+          "用户正在学习Java。",
+          "现在改学Python了。"
+        ]
+      },
+      {
+        "case_id": "e2e-035",
+        "category": "episodic",
+        "passed": false,
+        "expected_no_result": false,
+        "query": "我最近去了哪里",
+        "contents": []
+      },
+      {
+        "case_id": "e2e-036",
+        "category": "preference",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户喜欢喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-037",
+        "category": "preference",
+        "passed": false,
+        "expected_no_result": true,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户讨厌喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-038",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在住在哪里",
+        "contents": [
+          "用户已经搬到上海了。"
+        ]
+      },
+      {
+        "case_id": "e2e-039",
+        "category": "task",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "当前待办是什么",
+        "contents": [
+          "完成项目周报；项目周报已经完成了"
+        ]
+      },
+      {
+        "case_id": "e2e-040",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在学习什么",
+        "contents": [
+          "用户正在学习Java。",
+          "现在改学Python了。"
+        ]
+      },
+      {
+        "case_id": "e2e-041",
+        "category": "episodic",
+        "passed": false,
+        "expected_no_result": false,
+        "query": "我最近去了哪里",
+        "contents": []
+      },
+      {
+        "case_id": "e2e-042",
+        "category": "preference",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户喜欢喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-043",
+        "category": "preference",
+        "passed": false,
+        "expected_no_result": true,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户讨厌喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-044",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在住在哪里",
+        "contents": [
+          "用户已经搬到上海了。"
+        ]
+      },
+      {
+        "case_id": "e2e-045",
+        "category": "task",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "当前待办是什么",
+        "contents": [
+          "完成项目周报；项目周报已经完成了"
+        ]
+      },
+      {
+        "case_id": "e2e-046",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在学习什么",
+        "contents": [
+          "用户正在学习Java。",
+          "现在改学Python了。"
+        ]
+      },
+      {
+        "case_id": "e2e-047",
+        "category": "episodic",
+        "passed": false,
+        "expected_no_result": false,
+        "query": "我最近去了哪里",
+        "contents": []
+      },
+      {
+        "case_id": "e2e-048",
+        "category": "preference",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户喜欢喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-049",
+        "category": "preference",
+        "passed": false,
+        "expected_no_result": true,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户讨厌喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-050",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在住在哪里",
+        "contents": [
+          "用户已经搬到上海了。"
+        ]
+      },
+      {
+        "case_id": "e2e-051",
+        "category": "task",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "当前待办是什么",
+        "contents": [
+          "完成项目周报；项目周报已经完成了"
+        ]
+      },
+      {
+        "case_id": "e2e-052",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在学习什么",
+        "contents": [
+          "用户正在学习Java。",
+          "现在改学Python了。"
+        ]
+      },
+      {
+        "case_id": "e2e-053",
+        "category": "episodic",
+        "passed": false,
+        "expected_no_result": false,
+        "query": "我最近去了哪里",
+        "contents": []
+      },
+      {
+        "case_id": "e2e-054",
+        "category": "preference",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户喜欢喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-055",
+        "category": "preference",
+        "passed": false,
+        "expected_no_result": true,
+        "query": "我喜欢喝什么",
+        "contents": [
+          "用户讨厌喝牛奶。"
+        ]
+      },
+      {
+        "case_id": "e2e-056",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在住在哪里",
+        "contents": [
+          "用户已经搬到上海了。"
+        ]
+      },
+      {
+        "case_id": "e2e-057",
+        "category": "task",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "当前待办是什么",
+        "contents": [
+          "完成项目周报；项目周报已经完成了"
+        ]
+      },
+      {
+        "case_id": "e2e-058",
+        "category": "semantic",
+        "passed": true,
+        "expected_no_result": false,
+        "query": "我现在学习什么",
+        "contents": [
+          "用户正在学习Java。",
+          "现在改学Python了。"
+        ]
+      },
+      {
+        "case_id": "e2e-059",
+        "category": "episodic",
+        "passed": false,
+        "expected_no_result": false,
+        "query": "我最近去了哪里",
+        "contents": []
+      }
+    ]
+  }
+}

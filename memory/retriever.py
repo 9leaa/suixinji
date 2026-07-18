@@ -6,6 +6,7 @@ from datetime import datetime
 
 from core.settings import MEMORY_QUERY_MIN_SCORE
 from memory.models import MemoryRecord, normalize_content
+from memory.policies.preference import preference_polarity
 
 
 def _parse_ts(value: str | None) -> datetime | None:
@@ -33,7 +34,7 @@ def _overlap_score(query: str, content: str) -> float:
 def _intent_score(query: str, memory: MemoryRecord) -> float:
     if memory.memory_type == "task" and any(marker in query for marker in ("待办", "任务", "要做", "进度")):
         return 0.7
-    if memory.memory_type == "preference" and any(marker in query for marker in ("喜欢", "偏好", "习惯")):
+    if memory.memory_type == "preference" and any(marker in query for marker in ("喜欢", "偏好", "习惯", "讨厌", "避开", "过敏")):
         return 0.6
     return 0.0
 
@@ -51,6 +52,13 @@ def _recency_score(memory: MemoryRecord) -> float:
 
 
 def score_memory(query: str, memory: MemoryRecord) -> float:
+    if memory.memory_type == "preference":
+        query_polarity = preference_polarity(query)
+        memory_polarity = memory.polarity or preference_polarity(memory.content)
+        if query_polarity == "positive" and memory_polarity == "negative":
+            return 0.0
+        if query_polarity == "negative" and memory_polarity == "positive":
+            return 0.0
     semantic_similarity = max(_overlap_score(query, memory.content), _intent_score(query, memory))
     if semantic_similarity <= 0:
         return 0.0

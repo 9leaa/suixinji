@@ -15,6 +15,7 @@ data/deliveries/
 data/memory/
 data/load-tests/
 data/stage4/
+data/stage5/
 data/suixinji.pid
 data/logs/runtime.log
 backups/

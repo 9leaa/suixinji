@@ -6,11 +6,12 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import update
+from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database import session_scope
 from infrastructure.schema import AgentRun, AgentStep, LlmUsage
-from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space, ensure_user
+from repositories.postgres.common import DEFAULT_TENANT_ID
 
 
 def start_agent_run(
@@ -24,32 +25,29 @@ def start_agent_run(
     started_at: datetime,
 ) -> None:
     with session_scope() as session:
-        ensure_tenant_space(session, space_id, tenant_id=tenant_id)
-        if user_id:
-            ensure_user(session, user_id, tenant_id=tenant_id)
-        if session.get(AgentRun, run_id) is None:
-            session.add(
-                AgentRun(
-                    run_id=run_id,
-                    tenant_id=tenant_id or DEFAULT_TENANT_ID,
-                    space_id=space_id,
-                    user_id=user_id or None,
-                    message_id=message_id,
-                    run_type=run_type,
-                    status="running",
-                    started_at=started_at,
-                )
+        session.execute(
+            insert(AgentRun)
+            .values(
+                run_id=run_id,
+                tenant_id=tenant_id or DEFAULT_TENANT_ID,
+                space_id=space_id,
+                user_id=user_id or None,
+                message_id=message_id,
+                run_type=run_type,
+                status="running",
+                started_at=started_at,
             )
+            .on_conflict_do_nothing(index_elements=[AgentRun.run_id])
+        )
 
 
 def finish_agent_run(run_id: str, status: str, *, error_type: str | None = None) -> None:
     with session_scope() as session:
-        row = session.execute(select(AgentRun).where(AgentRun.run_id == run_id).with_for_update()).scalar_one_or_none()
-        if row is None:
-            return
-        row.status = status
-        row.finished_at = datetime.now().astimezone()
-        row.error_type = error_type
+        session.execute(
+            update(AgentRun)
+            .where(AgentRun.run_id == run_id)
+            .values(status=status, finished_at=datetime.now().astimezone(), error_type=error_type)
+        )
 
 
 def add_agent_step(

@@ -10,12 +10,13 @@ from pathlib import Path
 from typing import Any
 
 from redis.exceptions import RedisError, ResponseError
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
+from core.settings import DATABASE_GLOBAL_BUDGET
 from infrastructure.database import session_scope
 from infrastructure.redis_client import get_redis
 from infrastructure.redis_keys import KEYS, RedisKeys
-from infrastructure.schema import AgentRun, Delivery, InboxMessage, LlmUsage, OutboxEvent, Space, Task, TaskAttempt
+from infrastructure.schema import AgentRun, AgentStep, Delivery, InboxMessage, LlmUsage, OutboxEvent, Space, Task, TaskAttempt
 from runtime.streams.client import GROUPS
 
 
@@ -50,7 +51,8 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
             task
             for task in tasks
             if task.source_message_id
-            and task.idempotency_key == f"{task.task_type}:{source_by_message.get(task.source_message_id, '')}:{task.source_message_id}"
+            and task.idempotency_key
+            == f"{task.tenant_id}:{task.task_type}:{source_by_message.get(task.source_message_id, '')}:{task.source_message_id}"
         ]
         task_ids = [task.id for task in tasks]
         attempts = list(session.execute(select(TaskAttempt).where(TaskAttempt.task_id.in_(task_ids))).scalars()) if task_ids else []
@@ -59,7 +61,17 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
         runs = list(session.execute(select(AgentRun).where(AgentRun.tenant_id == tenant_id)).scalars())
         run_ids = [run.run_id for run in runs]
         usage = list(session.execute(select(LlmUsage).where(LlmUsage.run_id.in_(run_ids))).scalars()) if run_ids else []
+        steps = list(session.execute(select(AgentStep).where(AgentStep.run_id.in_(run_ids))).scalars()) if run_ids else []
         spaces = list(session.execute(select(Space).where(Space.tenant_id == tenant_id)).scalars())
+        connection_rows = list(
+            session.execute(
+                text(
+                    "SELECT COALESCE(state, 'unknown') AS state, COUNT(*) AS count "
+                    "FROM pg_stat_activity WHERE datname = current_database() "
+                    "AND application_name LIKE 'suixinji:%' GROUP BY COALESCE(state, 'unknown')"
+                )
+            )
+        )
 
     root_status = _status_counts(root_tasks)
     all_status = _status_counts(tasks)
@@ -69,6 +81,13 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
     queue_wait_values = [value for value in queue_wait if value is not None]
     execution_values = [value for value in execution if value is not None]
     latency_values = [value for value in latency if value is not None]
+    outbox_publish = [_duration_ms(event.created_at, event.published_at) for event in outbox]
+    outbox_publish_values = [value for value in outbox_publish if value is not None]
+    step_durations: dict[str, list[int]] = {}
+    for step in steps:
+        if step.duration_ms is None:
+            continue
+        step_durations.setdefault(str(step.step_type), []).append(int(step.duration_ms))
     latest_sequence_by_space: dict[str, int] = {}
     for row in inbox:
         latest_sequence_by_space[row.space_id] = max(
@@ -79,6 +98,12 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
         max(0, latest_sequence_by_space.get(space.id, 0) - int(space.memory_watermark or 0))
         for space in spaces
     ]
+    note_watermark_lags = [
+        max(0, latest_sequence_by_space.get(space.id, 0) - int(space.note_watermark or 0))
+        for space in spaces
+    ]
+    connections_by_state = {str(state): int(count) for state, count in connection_rows}
+    total_connections = sum(connections_by_state.values())
     return {
         "accepted": len(inbox),
         "inbox_pending": sum(1 for row in inbox if row.status == "pending"),
@@ -88,9 +113,17 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
         "retry_count": sum(1 for attempt in attempts if attempt.status in {"failed", "deferred"}),
         "failure_count": sum(int(task.failure_count or 0) for task in tasks),
         "defer_count": sum(int(task.defer_count or 0) for task in tasks),
-        "outbox_unpublished": sum(1 for event in outbox if event.published_at is None),
+        "outbox_unpublished": sum(1 for event in outbox if event.published_at is None and event.status != "dead"),
         "memory_gap_spaces": sum(1 for space in spaces if space.memory_gap_sequence_no is not None),
         "max_memory_watermark_lag": max(watermark_lags, default=0),
+        "max_note_watermark_lag": max(note_watermark_lags, default=0),
+        "outbox_dead": sum(1 for event in outbox if event.status == "dead"),
+        "database_connections": {
+            "by_state": connections_by_state,
+            "total": total_connections,
+            "global_budget": DATABASE_GLOBAL_BUDGET,
+            "within_budget": total_connections <= DATABASE_GLOBAL_BUDGET,
+        },
         "delivery_status": _status_counts(deliveries),
         "p50_queue_wait_ms": percentile(queue_wait_values, 0.50),
         "p95_queue_wait_ms": percentile(queue_wait_values, 0.95),
@@ -101,6 +134,18 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
         "p50_latency_ms": percentile(latency_values, 0.50),
         "p95_latency_ms": percentile(latency_values, 0.95),
         "p99_latency_ms": percentile(latency_values, 0.99),
+        "p50_outbox_publish_ms": percentile(outbox_publish_values, 0.50),
+        "p95_outbox_publish_ms": percentile(outbox_publish_values, 0.95),
+        "p99_outbox_publish_ms": percentile(outbox_publish_values, 0.99),
+        "agent_step_latency_ms": {
+            step_type: {
+                "count": len(values),
+                "p50": percentile(values, 0.50),
+                "p95": percentile(values, 0.95),
+                "p99": percentile(values, 0.99),
+            }
+            for step_type, values in sorted(step_durations.items())
+        },
         "llm_requests": sum(int(row.request_count) for row in usage),
         "llm_tokens": sum(int(row.total_tokens) for row in usage),
         "estimated_cost": float(sum((Decimal(row.estimated_cost) for row in usage), Decimal("0"))),
@@ -134,6 +179,7 @@ def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
                 Task.tenant_id == tenant_id,
                 OutboxEvent.aggregate_type == "task",
                 OutboxEvent.published_at.is_(None),
+                OutboxEvent.status != "dead",
             )
         ).scalar_one()
         latest_inbox = (
@@ -145,7 +191,7 @@ def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
             .group_by(InboxMessage.space_id)
             .subquery()
         )
-        space_count, memory_gap_spaces, max_watermark_lag = session.execute(
+        space_count, memory_gap_spaces, max_watermark_lag, max_note_watermark_lag = session.execute(
             select(
                 func.count(Space.id),
                 func.count(Space.id).filter(Space.memory_gap_sequence_no.is_not(None)),
@@ -158,11 +204,28 @@ def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
                     ),
                     0,
                 ),
+                func.coalesce(
+                    func.max(
+                        func.greatest(
+                            func.coalesce(latest_inbox.c.latest_sequence_no, 0) - Space.note_watermark,
+                            0,
+                        )
+                    ),
+                    0,
+                ),
             )
             .select_from(Space)
             .outerjoin(latest_inbox, latest_inbox.c.space_id == Space.id)
             .where(Space.tenant_id == tenant_id)
         ).one()
+        connection_count = int(
+            session.execute(
+                text(
+                    "SELECT COUNT(*) FROM pg_stat_activity WHERE datname = current_database() "
+                    "AND application_name LIKE 'suixinji:%'"
+                )
+            ).scalar_one()
+        )
 
     return {
         "accepted": sum(inbox_status.values()),
@@ -176,6 +239,9 @@ def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
         "space_count": int(space_count or 0),
         "memory_gap_spaces": int(memory_gap_spaces or 0),
         "max_memory_watermark_lag": int(max_watermark_lag or 0),
+        "max_note_watermark_lag": int(max_note_watermark_lag or 0),
+        "database_connections": connection_count,
+        "database_connection_budget": DATABASE_GLOBAL_BUDGET,
     }
 
 
@@ -241,6 +307,44 @@ def collect_lock_metrics(*, since: str | None = None) -> dict[str, int | None]:
     }
 
 
+def reconcile_retry_submission(
+    initial: dict[str, Any],
+    retries: list[dict[str, Any]],
+    *,
+    database_accepted: int,
+) -> dict[str, Any]:
+    """Reconcile idempotent replays of the same request corpus."""
+    if not retries:
+        return dict(initial)
+    submitted = int(initial.get("submitted") or 0)
+    if any(int(item.get("submitted") or 0) != submitted for item in retries):
+        raise ValueError("retry submission reports must contain the same request corpus")
+    latest = retries[-1]
+    final_rate_limited = int(latest.get("rate_limited") or 0)
+    final_failed = int(latest.get("failed") or 0)
+    intrinsic_duplicates = max(
+        int(initial.get("duplicate") or 0),
+        submitted - int(database_accepted) - final_rate_limited - final_failed,
+    )
+    confirmed_accepted = min(
+        int(database_accepted),
+        sum(int(item.get("accepted") or 0) for item in [initial, *retries]),
+    )
+    unresolved = max(0, submitted - int(database_accepted) - intrinsic_duplicates - final_rate_limited)
+    reconciled = dict(initial)
+    reconciled.update(
+        {
+            "accepted": confirmed_accepted,
+            "duplicate": intrinsic_duplicates,
+            "rate_limited": final_rate_limited,
+            "failed": max(0, int(database_accepted) - confirmed_accepted) + unresolved,
+            "retry_attempts": len(retries),
+            "retry_duration_ms": sum(int(item.get("duration_ms") or 0) for item in retries),
+        }
+    )
+    return reconciled
+
+
 def build_report(
     database: dict[str, Any],
     streams: dict[str, Any],
@@ -270,9 +374,39 @@ def build_report(
     terminal_or_pending = completed + failed + pending + rate_limited + duplicate
     all_status = database.get("all_task_status") or {}
     all_pending = sum(int(all_status.get(name) or 0) for name in ("blocked", "queued", "running", "retry"))
+    segmented_latency = {
+        "receiver_acceptance": {
+            "p50_ms": submission.get("p50_submission_latency_ms"),
+            "p95_ms": submission.get("p95_submission_latency_ms"),
+            "p99_ms": submission.get("p99_submission_latency_ms"),
+        },
+        "outbox_publish": {
+            "p50_ms": database.get("p50_outbox_publish_ms"),
+            "p95_ms": database.get("p95_outbox_publish_ms"),
+            "p99_ms": database.get("p99_outbox_publish_ms"),
+        },
+        "queue_wait": {
+            "p50_ms": database.get("p50_queue_wait_ms"),
+            "p95_ms": database.get("p95_queue_wait_ms"),
+            "p99_ms": database.get("p99_queue_wait_ms"),
+        },
+        "worker_execution": {
+            "p50_ms": database.get("p50_execution_ms"),
+            "p95_ms": database.get("p95_execution_ms"),
+            "p99_ms": database.get("p99_execution_ms"),
+        },
+        "task_end_to_end": {
+            "p50_ms": database.get("p50_latency_ms"),
+            "p95_ms": database.get("p95_latency_ms"),
+            "p99_ms": database.get("p99_latency_ms"),
+        },
+        "agent_steps": database.get("agent_step_latency_ms", {}),
+    }
     return {
         "measurement_status": "measured",
         "submitted": submitted,
+        "submission_retry_attempts": int(submission.get("retry_attempts") or 0),
+        "submission_retry_duration_ms": int(submission.get("retry_duration_ms") or 0),
         "accepted": accepted,
         "client_confirmed_accepted": client_confirmed_accepted,
         "accepted_after_client_timeout": accepted_after_client_timeout,
@@ -306,6 +440,10 @@ def build_report(
         "p50_execution_ms": database.get("p50_execution_ms"),
         "p95_execution_ms": database.get("p95_execution_ms"),
         "p99_execution_ms": database.get("p99_execution_ms"),
+        "p50_outbox_publish_ms": database.get("p50_outbox_publish_ms"),
+        "p95_outbox_publish_ms": database.get("p95_outbox_publish_ms"),
+        "p99_outbox_publish_ms": database.get("p99_outbox_publish_ms"),
+        "segmented_latency": segmented_latency,
         **(locks or {}),
         "llm_tokens": int(database.get("llm_tokens") or 0),
         "estimated_cost": float(database.get("estimated_cost") or 0),

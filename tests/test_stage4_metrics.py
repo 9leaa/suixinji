@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from runtime.distributed_metrics import build_report, percentile
+import pytest
+
+from runtime.distributed_metrics import build_report, percentile, reconcile_retry_submission
 
 
 def test_percentile_uses_measured_values():
@@ -39,3 +41,48 @@ def test_distributed_report_reconciles_client_timeout_with_durable_inbox():
     assert report["submission_failed_unaccepted"] == 0
     assert report["failed"] == 0
     assert report["conservation_ok"]
+
+
+def test_retry_reconciliation_separates_timeouts_from_intrinsic_duplicates():
+    initial = {
+        "submitted": 1000,
+        "accepted": 866,
+        "duplicate": 0,
+        "rate_limited": 0,
+        "failed": 134,
+        "duration_ms": 298917,
+    }
+    retry = {
+        "submitted": 1000,
+        "accepted": 34,
+        "duplicate": 966,
+        "rate_limited": 0,
+        "failed": 0,
+        "duration_ms": 28429,
+    }
+
+    submission = reconcile_retry_submission(initial, [retry], database_accepted=994)
+    report = build_report(
+        {"accepted": 994, "root_task_status": {"completed": 994}},
+        {},
+        submission=submission,
+    )
+
+    assert submission["accepted"] == 900
+    assert submission["failed"] == 94
+    assert submission["duplicate"] == 6
+    assert report["accepted_after_client_timeout"] == 94
+    assert report["submission_failed_unaccepted"] == 0
+    assert report["submission_retry_attempts"] == 1
+    assert report["submission_retry_duration_ms"] == 28429
+    assert report["failure_rate"] == 0
+    assert report["conservation_ok"]
+
+
+def test_retry_reconciliation_rejects_a_different_request_corpus():
+    with pytest.raises(ValueError, match="same request corpus"):
+        reconcile_retry_submission(
+            {"submitted": 10},
+            [{"submitted": 9}],
+            database_accepted=9,
+        )

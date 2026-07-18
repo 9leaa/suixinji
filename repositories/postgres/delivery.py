@@ -11,7 +11,6 @@ from core.settings import DELIVERY_MAX_ATTEMPTS, DELIVERY_RESERVATION_TTL_SECOND
 from infrastructure.database import session_scope
 from infrastructure.schema import Delivery, DeliveryAttempt
 from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space
-from runtime.task import now_iso
 
 DELIVERY_RESERVED = "reserved"
 DELIVERY_SENT = "sent"
@@ -27,21 +26,21 @@ def _record(row: Delivery):
         space_id=row.space_id,
         message_id=row.message_id,
         status=row.status,
-        created_at=row.created_at,
-        updated_at=row.updated_at,
-        reserved_at=row.reserved_at,
-        lease_expires_at=row.lease_expires_at,
+        created_at=row.created_at.isoformat() if isinstance(row.created_at, datetime) else str(row.created_at),
+        updated_at=row.updated_at.isoformat() if isinstance(row.updated_at, datetime) else str(row.updated_at),
+        reserved_at=row.reserved_at.isoformat() if isinstance(row.reserved_at, datetime) else row.reserved_at,
+        lease_expires_at=row.lease_expires_at.isoformat() if isinstance(row.lease_expires_at, datetime) else row.lease_expires_at,
         attempt_count=row.attempt_count,
         error=row.error,
     )
 
 
-def _future_iso(seconds: int) -> str:
-    return (datetime.now().astimezone() + timedelta(seconds=seconds)).isoformat(timespec="milliseconds")
+def _future_dt(seconds: int) -> datetime:
+    return datetime.now().astimezone() + timedelta(seconds=seconds)
 
 
-def _parse_iso(value: str) -> datetime:
-    parsed = datetime.fromisoformat(value)
+def _parse_iso(value: str | datetime) -> datetime:
+    parsed = value if isinstance(value, datetime) else datetime.fromisoformat(value)
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=datetime.now().astimezone().tzinfo)
     return parsed
@@ -64,7 +63,7 @@ def reserve_delivery(
     tenant_id: str = DEFAULT_TENANT_ID,
 ):
     with session_scope() as session:
-        ensure_tenant_space(session, space_id, tenant_id=tenant_id)
+        space_id = ensure_tenant_space(session, space_id, tenant_id=tenant_id)
         session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:delivery_key))"), {"delivery_key": delivery_key})
         row = session.execute(
             select(Delivery).where(Delivery.delivery_key == delivery_key).with_for_update()
@@ -78,7 +77,7 @@ def reserve_delivery(
             if current.attempt_count >= DELIVERY_MAX_ATTEMPTS:
                 return None
 
-        now = now_iso()
+        now = datetime.now().astimezone()
         attempt_count = (row.attempt_count if row is not None else 0) + 1
         created_at = row.created_at if row is not None else now
         values = {
@@ -90,7 +89,7 @@ def reserve_delivery(
             "created_at": created_at,
             "updated_at": now,
             "reserved_at": now,
-            "lease_expires_at": _future_iso(DELIVERY_RESERVATION_TTL_SECONDS),
+            "lease_expires_at": _future_dt(DELIVERY_RESERVATION_TTL_SECONDS),
             "attempt_count": attempt_count,
             "error": None,
         }
@@ -115,7 +114,7 @@ def reserve_delivery(
 
 
 def _update_status(delivery_key: str, status: str, error: str | None) -> None:
-    now = now_iso()
+    now = datetime.now().astimezone()
     with session_scope() as session:
         row = session.execute(select(Delivery).where(Delivery.delivery_key == delivery_key).with_for_update()).scalar_one_or_none()
         if row is None:
@@ -153,7 +152,7 @@ def recover_stale_reserved_deliveries() -> int:
     with session_scope() as session:
         rows = list(session.execute(select(Delivery).where(Delivery.status == DELIVERY_RESERVED).with_for_update()).scalars())
         stale = [row for row in rows if not row.lease_expires_at or _parse_iso(row.lease_expires_at) <= now]
-        finished_at = now_iso()
+        finished_at = datetime.now().astimezone()
         for row in stale:
             row.status = DELIVERY_FAILED
             row.updated_at = finished_at

@@ -1,0 +1,178 @@
+{
+  "measurement_status": "measured",
+  "submitted": 100,
+  "accepted": 100,
+  "client_confirmed_accepted": 100,
+  "accepted_after_client_timeout": 0,
+  "submission_failed_unaccepted": 0,
+  "rate_limited": 0,
+  "duplicate": 0,
+  "blocked": 0,
+  "queued": 0,
+  "running": 0,
+  "completed": 100,
+  "cancelled": 0,
+  "failed": 0,
+  "pending": 0,
+  "dead_letter": 0,
+  "all_task_status": {
+    "completed": 200
+  },
+  "all_task_pending": 0,
+  "all_task_dead_letter": 0,
+  "retry_count": 0,
+  "failure_count": 0,
+  "defer_count": 0,
+  "memory_gap_spaces": 0,
+  "max_memory_watermark_lag": 0,
+  "stream_lag": 0,
+  "stream_pending": 0,
+  "p50_latency_ms": 30719,
+  "p95_latency_ms": 70131,
+  "p99_latency_ms": 70648,
+  "p50_queue_wait_ms": 28353,
+  "p95_queue_wait_ms": 59570,
+  "p99_queue_wait_ms": 60167,
+  "p50_execution_ms": 10506,
+  "p95_execution_ms": 11353,
+  "p99_execution_ms": 11486,
+  "p50_outbox_publish_ms": 2000,
+  "p95_outbox_publish_ms": 4633,
+  "p99_outbox_publish_ms": 7244,
+  "segmented_latency": {
+    "receiver_acceptance": {
+      "p50_ms": 3381,
+      "p95_ms": 4375,
+      "p99_ms": 4561
+    },
+    "outbox_publish": {
+      "p50_ms": 2000,
+      "p95_ms": 4633,
+      "p99_ms": 7244
+    },
+    "queue_wait": {
+      "p50_ms": 28353,
+      "p95_ms": 59570,
+      "p99_ms": 60167
+    },
+    "worker_execution": {
+      "p50_ms": 10506,
+      "p95_ms": 11353,
+      "p99_ms": 11486
+    },
+    "task_end_to_end": {
+      "p50_ms": 30719,
+      "p95_ms": 70131,
+      "p99_ms": 70648
+    },
+    "agent_steps": {
+      "tool": {
+        "count": 70,
+        "p50": 7105,
+        "p95": 7406,
+        "p99": 7540
+      }
+    }
+  },
+  "p50_lock_wait_ms": 5223,
+  "p95_lock_wait_ms": 5450,
+  "p99_lock_wait_ms": 5554,
+  "llm_tokens": 0,
+  "estimated_cost": 0.0,
+  "failure_rate": 0.0,
+  "conservation_delta": 0,
+  "conservation_ok": true,
+  "database": {
+    "accepted": 100,
+    "inbox_pending": 0,
+    "root_task_status": {
+      "completed": 100
+    },
+    "all_task_status": {
+      "completed": 200
+    },
+    "task_count": 200,
+    "retry_count": 0,
+    "failure_count": 0,
+    "defer_count": 0,
+    "outbox_unpublished": 0,
+    "memory_gap_spaces": 0,
+    "max_memory_watermark_lag": 0,
+    "max_note_watermark_lag": 0,
+    "outbox_dead": 0,
+    "database_connections": {
+      "by_state": {
+        "active": 1,
+        "idle": 32,
+        "idle in transaction": 2
+      },
+      "total": 35,
+      "global_budget": 40,
+      "within_budget": true
+    },
+    "delivery_status": {
+      "sent": 30
+    },
+    "p50_queue_wait_ms": 28353,
+    "p95_queue_wait_ms": 59570,
+    "p99_queue_wait_ms": 60167,
+    "p50_execution_ms": 10506,
+    "p95_execution_ms": 11353,
+    "p99_execution_ms": 11486,
+    "p50_latency_ms": 30719,
+    "p95_latency_ms": 70131,
+    "p99_latency_ms": 70648,
+    "p50_outbox_publish_ms": 2000,
+    "p95_outbox_publish_ms": 4633,
+    "p99_outbox_publish_ms": 7244,
+    "agent_step_latency_ms": {
+      "tool": {
+        "count": 70,
+        "p50": 7105,
+        "p95": 7406,
+        "p99": 7540
+      }
+    },
+    "llm_requests": 0,
+    "llm_tokens": 0,
+    "estimated_cost": 0.0
+  },
+  "redis": {
+    "stream_lag": 0,
+    "stream_pending": 0,
+    "dead_letter_stream": 0,
+    "streams": {
+      "ingest": {
+        "lag": 0,
+        "pending": 0,
+        "length": 70
+      },
+      "query": {
+        "lag": 0,
+        "pending": 0,
+        "length": 24
+      },
+      "summary": {
+        "lag": 0,
+        "pending": 0,
+        "length": 6
+      },
+      "memory": {
+        "lag": 0,
+        "pending": 0,
+        "length": 0
+      },
+      "enrichment": {
+        "lag": 0,
+        "pending": 0,
+        "length": 70
+      },
+      "delivery": {
+        "lag": 0,
+        "pending": 0,
+        "length": 30
+      }
+    }
+  },
+  "tenant_id": "load-stage5-cross100-20260718-r1"
+}

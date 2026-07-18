@@ -1,0 +1,90 @@
+{
+  "schema_version": "stage-metrics-v1",
+  "stage": 2,
+  "name": "database_and_query_performance",
+  "generated_at": "2026-07-18T18:04:06+08:00",
+  "branch": "optimize/stage2-db-query-performance",
+  "baseline_commit": "b0fe2d2",
+  "storage": {
+    "postgres": "existing service through DATABASE_URL",
+    "redis": "existing service through REDIS_URL",
+    "docker_controlled": false,
+    "docker_host_used": false,
+    "test_data_cleaned": true
+  },
+  "microbenchmark": {
+    "baseline_report": "docs/metrics/stage2_query_baseline.json",
+    "optimized_report": "docs/metrics/stage2_query_optimized.json",
+    "repetitions": 1,
+    "memory_list_top_100": {
+      "sql_before": 101,
+      "sql_after": 2,
+      "latency_before_ms": 6838.977,
+      "latency_after_ms": 658.0,
+      "latency_improvement": 0.9038,
+      "speedup": 10.39
+    },
+    "notes_10000": {
+      "filter_type": {"before_ms": 3793.649, "after_ms": 464.932, "improvement": 0.8774, "speedup": 8.16},
+      "filter_tag": {"before_ms": 6788.853, "after_ms": 519.356, "improvement": 0.9235, "speedup": 13.07},
+      "list_recent": {"before_ms": 3427.65, "after_ms": 526.419, "improvement": 0.8464, "speedup": 6.51},
+      "get_note": {"before_ms": 3497.842, "after_ms": 378.09, "improvement": 0.8919, "speedup": 9.25},
+      "follow_links": {"before_ms": 5291.506, "after_ms": 633.662, "improvement": 0.8802, "speedup": 8.35},
+      "provisional_search": {"before_ms": 4077.43, "after_ms": 539.104, "improvement": 0.8678, "speedup": 7.56}
+    },
+    "growth_1000_to_10000": {
+      "baseline_max_latency_ratio": 8.89,
+      "optimized_max_latency_ratio": 1.29
+    }
+  },
+  "clean_capacity_100_users": {
+    "baseline_report": "docs/metrics/baseline_clean_100.json",
+    "optimized_report": "docs/metrics/stage2_clean_capacity_100.json",
+    "submitted": 1000,
+    "eventually_accepted_and_completed": 988,
+    "pending": 0,
+    "memory_gap_spaces": 0,
+    "stream_lag": 0,
+    "p95_worker_execution_ms": {"before": 5702, "after": 4949, "improvement": 0.1321},
+    "p95_queue_wait_ms": {"before": 947989, "after": 813221, "improvement": 0.1422},
+    "p95_end_to_end_ms": {"before": 951013, "after": 815361, "improvement": 0.1426},
+    "p95_outbox_publish_ms": {"before": 3188, "after": 2802, "improvement": 0.1211},
+    "target_seconds": 120,
+    "target_overrun_ratio": 6.7947,
+    "target_met": false
+  },
+  "fast_path_and_cache": {
+    "common_query_static_route_coverage": 0.9,
+    "required_coverage": 0.7,
+    "embedding_repeat_external_calls_before": 2,
+    "embedding_repeat_external_calls_after": 1,
+    "access_counter_before_flush": 0,
+    "access_counter_after_flush": 2,
+    "external_llm_calls_in_benchmarks": 0,
+    "measured_api_cost": 0.0
+  },
+  "quality_regression": {
+    "relation_accuracy": 1.0,
+    "false_destructive_rate": 0.0,
+    "recall_at_20": 1.0,
+    "mrr_before": 0.9417,
+    "mrr_after": 0.925,
+    "end_to_end_accuracy": 0.8333
+  },
+  "verification": {
+    "full_test_suite": "238 passed",
+    "postgres_repository_suite": "9 passed",
+    "ruff": "passed",
+    "git_diff_check": "passed",
+    "migration_round_trip": "20260718_0004 -> 20260718_0003 -> 20260718_0004 passed"
+  },
+  "acceptance": {
+    "bounded_note_queries": true,
+    "memory_list_sql_at_most_3": true,
+    "clean_queue_wait_p95_significantly_lower": true,
+    "tenfold_data_does_not_create_tenfold_latency": true,
+    "stage_passed": true,
+    "capacity_target_passed": false,
+    "next_stage": "Stage 3 causal scheduling, task ownership, and concurrency"
+  }
+}

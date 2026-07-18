@@ -6,11 +6,12 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database import session_scope
 from infrastructure.schema import Note, NoteRelation, NoteTag
+from core.sensitive import contains_sensitive_data
 from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space, parse_datetime
 
 
@@ -67,7 +68,7 @@ def save_note(meta: Any) -> bool:
     }
     metadata = {key: value for key, value in values.items() if key not in standard_keys}
     with session_scope() as session:
-        ensure_tenant_space(session, space_id, tenant_id=tenant_id)
+        space_id = ensure_tenant_space(session, space_id, tenant_id=tenant_id)
         note_id = session.execute(
             insert(Note)
             .values(
@@ -111,6 +112,112 @@ def load_index(space_id: str) -> list[dict[str, Any]]:
         return [_as_note(row, tags[row.id], related[row.id]) for row in rows]
 
 
+def _query_notes(
+    space_id: str,
+    *,
+    note_type: str | None = None,
+    tags: list[str] | None = None,
+    match_all_tags: bool = True,
+    created_after: datetime | None = None,
+    enrichment_statuses: tuple[str, ...] | None = None,
+    limit: int = 30,
+) -> list[dict[str, Any]]:
+    requested_tags = sorted(set(tags or []))
+    statement = select(Note).where(Note.space_id == space_id, Note.sensitivity == "normal")
+    if note_type:
+        statement = statement.where(Note.note_type == note_type)
+    if created_after is not None:
+        statement = statement.where(Note.created_at >= created_after)
+    if enrichment_statuses:
+        statement = statement.where(Note.enrichment_status.in_(enrichment_statuses))
+    if requested_tags:
+        tag_ids = select(NoteTag.note_id).where(NoteTag.tag.in_(requested_tags)).group_by(NoteTag.note_id)
+        if match_all_tags:
+            tag_ids = tag_ids.having(func.count(func.distinct(NoteTag.tag)) == len(requested_tags))
+        statement = statement.where(Note.id.in_(tag_ids))
+    bounded_limit = max(1, min(int(limit), 500))
+    statement = statement.order_by(Note.created_at.desc(), Note.id.desc()).limit(bounded_limit * 4)
+    with session_scope() as session:
+        rows = list(session.execute(statement).scalars())
+        tags_by_id, related = _load_parts(session, [row.id for row in rows])
+        notes = [_as_note(row, tags_by_id[row.id], related[row.id]) for row in rows]
+        return [note for note in notes if not contains_sensitive_data(str(note.get("text") or ""))][:bounded_limit]
+
+
+def query_notes_by_type(space_id: str, note_type: str, *, limit: int = 30) -> list[dict[str, Any]]:
+    return _query_notes(space_id, note_type=note_type, limit=limit)
+
+
+def query_notes_by_tags(
+    space_id: str,
+    tags: list[str],
+    *,
+    note_type: str | None = None,
+    match_all_tags: bool = True,
+    limit: int = 30,
+) -> list[dict[str, Any]]:
+    return _query_notes(
+        space_id,
+        note_type=note_type,
+        tags=tags,
+        match_all_tags=match_all_tags,
+        limit=limit,
+    )
+
+
+def list_recent_notes(space_id: str, *, created_after: datetime, limit: int = 30) -> list[dict[str, Any]]:
+    return _query_notes(space_id, created_after=created_after, limit=limit)
+
+
+def list_provisional_notes(space_id: str, *, limit: int = 200) -> list[dict[str, Any]]:
+    return _query_notes(
+        space_id,
+        enrichment_statuses=("provisional", "enriching", "failed"),
+        limit=limit,
+    )
+
+
+def get_note_relations(space_id: str, note_id: str, *, limit: int = 5) -> dict[str, Any] | None:
+    bounded_limit = max(1, min(int(limit), 20))
+    with session_scope() as session:
+        source = session.execute(
+            select(Note).where(Note.space_id == space_id, Note.id == note_id, Note.sensitivity == "normal")
+        ).scalar_one_or_none()
+        if source is None or contains_sensitive_data(source.text):
+            return None
+        relation_rows = list(
+            session.execute(
+                select(NoteRelation.source_note_id, NoteRelation.target_note_id).where(
+                    or_(NoteRelation.source_note_id == note_id, NoteRelation.target_note_id == note_id)
+                )
+            )
+        )
+        outbound_ids = [str(target) for source_id, target in relation_rows if str(source_id) == note_id][:bounded_limit]
+        inbound_ids = [str(source_id) for source_id, target in relation_rows if str(target) == note_id][:bounded_limit]
+        related_ids = list(dict.fromkeys([*outbound_ids, *inbound_ids]))
+        related_rows = list(
+            session.execute(
+                select(Note).where(
+                    Note.space_id == space_id,
+                    Note.id.in_(related_ids),
+                    Note.sensitivity == "normal",
+                )
+            ).scalars()
+        ) if related_ids else []
+        all_rows = [source, *related_rows]
+        tags_by_id, _related = _load_parts(session, [row.id for row in all_rows])
+        notes = {
+            row.id: _as_note(row, tags_by_id[row.id], outbound_ids if row.id == note_id else [])
+            for row in all_rows
+            if not contains_sensitive_data(row.text)
+        }
+        return {
+            "source": notes.get(note_id),
+            "outbound": [notes[item_id] for item_id in outbound_ids if item_id in notes],
+            "inbound": [notes[item_id] for item_id in inbound_ids if item_id in notes],
+        }
+
+
 def list_space_ids() -> list[str]:
     with session_scope() as session:
         return list(session.execute(select(Note.space_id).distinct().order_by(Note.space_id)).scalars())
@@ -123,6 +230,47 @@ def find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
             return None
         tags, related = _load_parts(session, [row.id])
         return _as_note(row, tags[row.id], related[row.id])
+
+
+def find_note_content(space_id: str, note_id: str) -> dict[str, Any] | None:
+    """Load only fields needed by memory extraction in one SQL query."""
+    with session_scope() as session:
+        tags = (
+            select(func.array_agg(NoteTag.tag))
+            .where(NoteTag.note_id == Note.id)
+            .correlate(Note)
+            .scalar_subquery()
+        )
+        row = session.execute(
+            select(
+                Note.id,
+                Note.message_id,
+                Note.space_id,
+                Note.tenant_id,
+                Note.created_at,
+                Note.title,
+                Note.note_type,
+                Note.summary,
+                Note.text,
+                Note.sensitivity,
+                tags.label("tags"),
+            ).where(Note.space_id == space_id, Note.id == note_id)
+        ).one_or_none()
+        if row is None:
+            return None
+        return {
+            "id": str(row.id),
+            "message_id": str(row.message_id),
+            "space_id": str(row.space_id),
+            "tenant_id": str(row.tenant_id),
+            "ts": row.created_at.isoformat(),
+            "title": str(row.title),
+            "tags": list(row.tags or []),
+            "type": str(row.note_type),
+            "summary": str(row.summary),
+            "text": str(row.text),
+            "sensitivity": str(row.sensitivity),
+        }
 
 
 def note_exists(space_id: str, message_id: str) -> bool:

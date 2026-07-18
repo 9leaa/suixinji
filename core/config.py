@@ -44,7 +44,7 @@ class EmbeddingConfig:
     max_retries: int = 2
 
 
-def get_chat_config() -> ChatConfig:
+def get_chat_config(model_role: str | None = None) -> ChatConfig:
     """读取当前 LLM 配置。
 
     功能说明:
@@ -57,10 +57,16 @@ def get_chat_config() -> ChatConfig:
     返回类型说明:
         LLMConfig: 当前进程使用的 LLM 配置。
     """
+    role_models = {
+        "fast": os.getenv("SUIXINJI_FAST_MODEL", "gpt-5.4-mini"),
+        "balanced": os.getenv("SUIXINJI_BALANCED_MODEL", "gpt-5.4"),
+        "strong": os.getenv("SUIXINJI_STRONG_MODEL", "gpt-5.5"),
+    }
+    model = role_models.get(str(model_role or "").strip().lower()) or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     return ChatConfig(
         api_key=os.getenv("OPENAI_API_KEY") or None,
         base_url=os.getenv("OPENAI_BASE_URL") or None,
-        model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        model=model,
         timeout_seconds=LLM_TIMEOUT_SECONDS,
         max_retries=LLM_MAX_RETRIES,
     )

@@ -99,7 +99,7 @@ def extract_json_object(content: str) -> dict[str, Any]:
     return data
 
 
-def complete_json(system_prompt: str, user_prompt: str) -> dict[str, Any]:
+def complete_json(system_prompt: str, user_prompt: str, *, model_role: str | None = None) -> dict[str, Any]:
     """调用 Chat Completions 并返回 JSON object。
 
     功能说明:
@@ -116,7 +116,7 @@ def complete_json(system_prompt: str, user_prompt: str) -> dict[str, Any]:
     返回类型说明:
         dict[str, Any]: 从模型输出中解析出的 JSON object。
     """
-    config = get_chat_config()
+    config = get_chat_config(model_role)
     client = build_openai_client(config)
 
     try:
@@ -195,12 +195,24 @@ def embed_text(text: str) -> list[float]:
         raise ValueError("embed_text received empty text")
 
     config = get_embedding_config()
+    normalized_text = " ".join(text.split())
+    cache = None
+    try:
+        from core.settings import CACHE_ENABLED, COORDINATION_BACKEND
+        if CACHE_ENABLED and COORDINATION_BACKEND == "redis":
+            from infrastructure.redis_cache import EmbeddingCache
+            cache = EmbeddingCache()
+            cached = cache.get(config.model, normalized_text)
+            if cached is not None and len(cached) == config.dimension:
+                return cached
+    except Exception:
+        cache = None
     client = build_openai_client(config)
 
     try:
         response = client.embeddings.create(
             model=config.model,
-            input=text,
+            input=normalized_text,
             dimensions=config.dimension,
             encoding_format="float",
         )
@@ -236,4 +248,9 @@ def embed_text(text: str) -> list[float]:
             f"text_preview={preview!r}."
         )
 
+    if cache is not None:
+        try:
+            cache.set(config.model, normalized_text, embedding)
+        except Exception:
+            pass
     return embedding

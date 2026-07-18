@@ -43,11 +43,14 @@ from memory.service import (
     format_memory_consolidate,
     format_memory_correct,
     format_memory_decisions,
+    format_memory_edit,
     format_memory_forget,
     format_memory_list,
     format_memory_pending,
     format_memory_profile,
     format_memory_purge,
+    format_memory_reject,
+    format_memory_resolve,
     format_memory_search,
     format_memory_show,
     format_memory_stats,
@@ -406,7 +409,7 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
 
     raw = text.removeprefix("/memory").strip()
     if not raw:
-        return "用法：/memory list｜show <id>｜search <内容>｜profile｜pending｜approve <id>｜decisions｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
+        return "用法：/memory list｜show <id>｜search <内容>｜profile｜pending｜approve <id>｜reject <id>｜edit <id> <内容>｜resolve <id> keep|merge|archive [内容]｜decisions｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
 
     parts = raw.split(maxsplit=2)
     action = parts[0].lower()
@@ -424,6 +427,13 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
         return format_memory_purge(parts[1])
     if action == "correct" and len(parts) >= 3:
         return format_memory_correct(parts[1], parts[2])
+    if action == "reject" and len(parts) >= 2:
+        return format_memory_reject(parts[1], parts[2] if len(parts) >= 3 else "user_rejected_pending_memory")
+    if action == "edit" and len(parts) >= 3:
+        return format_memory_edit(parts[1], parts[2])
+    if action == "resolve" and len(parts) >= 3:
+        resolution_parts = parts[2].split(maxsplit=1)
+        return format_memory_resolve(parts[1], resolution_parts[0], resolution_parts[1] if len(resolution_parts) == 2 else None)
     if action == "conflicts":
         return format_memory_conflicts(space_id)
     if action == "pending":
@@ -439,7 +449,7 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
     if action == "consolidate" and len(parts) >= 2:
         return format_memory_consolidate(space_id, parts[1])
 
-    return "用法：/memory list｜show <id>｜search <内容>｜profile｜pending｜approve <id>｜decisions｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
+    return "用法：/memory list｜show <id>｜search <内容>｜profile｜pending｜approve <id>｜reject <id>｜edit <id> <内容>｜resolve <id> keep|merge|archive [内容]｜decisions｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
 
 
 def _handle_trace_command(text: str) -> str | None:

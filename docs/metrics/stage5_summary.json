@@ -1,0 +1,118 @@
+{
+  "schema_version": "stage-metrics-v1",
+  "stage": 5,
+  "name": "dispatch_roundtrip_and_adaptive_workers",
+  "generated_at": "2026-07-18T22:45:44+08:00",
+  "branch": "optimize/stage5-dispatch-roundtrips",
+  "baseline_commit": "9b0d60e",
+  "storage": {
+    "postgres": "existing service through DATABASE_URL at the configured reverse port",
+    "redis": "existing service through REDIS_URL at the configured reverse port",
+    "docker_controlled": false,
+    "docker_host_used": false,
+    "test_data_cleaned": true
+  },
+  "implementation": {
+    "single_statement_task_claim": true,
+    "single_statement_leaf_completion": true,
+    "single_statement_inbox_watermark_completion": true,
+    "single_statement_blocked_task_activation": true,
+    "task_inbox_tenant_space_guard": true,
+    "rules_empty_memory_fast_path": true,
+    "memory_trace_internal_space_fix": true,
+    "one_query_memory_note_load": true,
+    "adaptive_multi_stream_workers": 12,
+    "foreground_background_weighting": true,
+    "redis_group_cache_recovery": true,
+    "adaptive_idle_backoff": true,
+    "idempotent_retry_metric_reconciliation": true
+  },
+  "ordinary_ingest_microbenchmark": {
+    "tasks_before": 3,
+    "tasks_after": 2,
+    "sql_before": 105,
+    "sql_after": 40,
+    "sql_reduction": 0.619,
+    "external_llm_calls": 0
+  },
+  "cross_space_100": {
+    "baseline_report": "docs/metrics/stage5_cross_space_100.json",
+    "optimized_report": "docs/metrics/stage5_cross_space_100_final.json",
+    "completed": 100,
+    "all_tasks_completed": 200,
+    "p95_queue_wait_ms": {
+      "before": 59570,
+      "after": 49848,
+      "improvement": 0.1632
+    },
+    "p95_end_to_end_ms": {
+      "before": 70131,
+      "after": 60823,
+      "improvement": 0.1327
+    },
+    "database_connections_observed": 34,
+    "database_connection_budget": 40,
+    "failure_count": 0,
+    "stream_lag": 0
+  },
+  "clean_capacity_100_users": {
+    "report": "docs/metrics/stage5_clean_capacity_100.json",
+    "submitted": 1000,
+    "intrinsic_duplicate_message_ids": 6,
+    "expected_unique": 994,
+    "eventually_accepted_and_completed": 994,
+    "client_confirmed_accepted": 900,
+    "accepted_after_client_timeout": 94,
+    "idempotent_retry_attempts": 1,
+    "idempotent_retry_duration_ms": 28429,
+    "all_tasks_completed": 1988,
+    "pending": 0,
+    "dead_letter": 0,
+    "failure_count": 0,
+    "defer_count": 0,
+    "memory_gap_spaces": 0,
+    "stream_lag": 0,
+    "stream_pending": 0,
+    "p95_queue_wait_ms": 515915,
+    "p95_end_to_end_ms": 524545,
+    "p95_worker_execution_ms": 13619,
+    "p95_outbox_publish_ms": 3308,
+    "target_seconds": 120,
+    "target_overrun_ratio": 4.3712,
+    "capacity_target_passed": false
+  },
+  "comparison_to_stage2": {
+    "eventual_unique_completion_before": 988,
+    "eventual_unique_completion_after": 994,
+    "completion_rate_percentage_points_improvement": 0.6036,
+    "task_count_before": 2656,
+    "task_count_after": 1988,
+    "task_count_reduction": 0.2515,
+    "p95_queue_wait_improvement": 0.3656,
+    "p95_end_to_end_improvement": 0.3567,
+    "p95_worker_execution_regression": 1.7519,
+    "p95_outbox_publish_regression": 0.1806,
+    "initial_submission_duration_regression": 0.2069
+  },
+  "verification": {
+    "ruff": "passed",
+    "full_test_suite": "263 passed",
+    "final_targeted_suite": "15 passed",
+    "transient_pool_timeout_observed": "one full-suite run had 262 passed and one pool-timeout failure; the isolated test and final full rerun passed",
+    "migration_current": "20260718_0006 (head)",
+    "migration_heads": "20260718_0006 (head)",
+    "stage5_processes_after_test": 0
+  },
+  "acceptance": {
+    "dispatch_roundtrip_reduction_passed": true,
+    "causal_memory_barrier_preserved": true,
+    "stale_worker_fencing_preserved": true,
+    "tenant_guard_passed": true,
+    "redis_restart_recovery_passed": true,
+    "database_connection_budget_passed": true,
+    "final_conservation_passed": true,
+    "stage_functional_acceptance_passed": true,
+    "capacity_target_passed": false,
+    "next_stage": "Receiver admission isolation and bounded concurrency for slow handler work"
+  }
+}

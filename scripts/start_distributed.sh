@@ -23,13 +23,13 @@ start_role() {
   echo "started $role, pid=$(<"$pid_file")"
 }
 
-start_role outbox-relay "$PYTHON" -m apps.outbox_relay
-start_role worker-ingest "$PYTHON" -m apps.worker ingest
-start_role worker-query "$PYTHON" -m apps.worker query
-start_role worker-summary "$PYTHON" -m apps.worker summary
-start_role worker-memory "$PYTHON" -m apps.worker memory
-start_role worker-enrichment "$PYTHON" -m apps.worker enrichment
-start_role worker-delivery "$PYTHON" -m apps.worker delivery
-start_role scheduler "$PYTHON" -m apps.scheduler
-start_role api "$PYTHON" -m uvicorn apps.api:app --host 0.0.0.0 --port 8000
-start_role receiver "$PYTHON" -m bot.feishu_bot
+start_role outbox-relay env SUIXINJI_PROCESS_ROLE=outbox-relay "$PYTHON" -m apps.outbox_relay
+start_role worker-ingest env SUIXINJI_PROCESS_ROLE=worker-ingest "$PYTHON" -m apps.worker ingest
+start_role worker-query env SUIXINJI_PROCESS_ROLE=worker-query "$PYTHON" -m apps.worker query
+start_role worker-summary env SUIXINJI_PROCESS_ROLE=worker-summary "$PYTHON" -m apps.worker summary
+start_role worker-memory env SUIXINJI_PROCESS_ROLE=worker-memory "$PYTHON" -m apps.worker memory
+start_role worker-enrichment env SUIXINJI_PROCESS_ROLE=worker-enrichment "$PYTHON" -m apps.worker enrichment
+start_role worker-delivery env SUIXINJI_PROCESS_ROLE=worker-delivery "$PYTHON" -m apps.worker delivery
+start_role scheduler env SUIXINJI_PROCESS_ROLE=scheduler "$PYTHON" -m apps.scheduler
+start_role api env SUIXINJI_PROCESS_ROLE=receiver "$PYTHON" -m uvicorn apps.api:app --host 127.0.0.1 --port 8000
+start_role receiver env SUIXINJI_PROCESS_ROLE=receiver "$PYTHON" -m bot.feishu_bot

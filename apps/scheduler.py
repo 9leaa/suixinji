@@ -10,7 +10,7 @@ from core.observability import log_event
 from core.settings import SCHEDULER_LEADER_TTL_MS, STAGE4_MODE
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import RedisDistributedLock
-from memory.repository import consolidation_period_key
+from memory.repository import consolidation_period_key, flush_access_counts
 from memory.scheduler import due_cadences, list_memory_space_ids
 from repositories.postgres.dispatch import enqueue_task
 from repositories.postgres.tasks import enqueue_due_retries
@@ -25,6 +25,10 @@ def run_once() -> bool:
     if not lock.acquire(wait_seconds=0):
         return False
     try:
+        try:
+            flush_access_counts()
+        except Exception:
+            LOGGER.warning("memory access counter flush failed", exc_info=True)
         if STAGE4_MODE:
             log_event("runtime.scheduler_leader", status="completed", extra={"stage4_mode": True})
             return True

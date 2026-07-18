@@ -37,7 +37,7 @@ def test_process_note_memory_supersedes_repeated_dislike_preference():
     assert "讨厌喝牛奶" in active[0].content
     assert len(active[0].sources) == 2
     assert len(superseded) == 1
-    assert "讨厌喝牛奶" in results
+    assert "讨厌喝牛奶" not in results
     assert "喜欢喝牛奶" not in results
 
 
@@ -57,10 +57,10 @@ def test_process_note_memory_preserves_ambiguous_preference_conflict():
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我喜欢远程工作"})
     process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我更喜欢去办公室工作"})
 
-    conflicts = list_memories("space-1", status="conflicted")
+    conflicts = list_memories("space-1", status="pending_review")
 
-    assert len(conflicts) == 2
-    assert any(source.relation == "contradicted_by" for memory in conflicts for source in memory.sources)
+    assert len(conflicts) == 1
+    assert "办公室" in conflicts[0].content
 
 
 def test_process_note_memory_updates_task_status_in_place():

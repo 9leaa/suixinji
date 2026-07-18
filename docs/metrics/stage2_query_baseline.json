@@ -1,0 +1,528 @@
+{
+  "schema_version": "stage2-query-benchmark-v1",
+  "generated_at": "2026-07-18T17:16:42+08:00",
+  "commit": "b0fe2d2efd176c734e9d4fdd0d628123883abe25",
+  "branch": "optimize/stage2-db-query-performance",
+  "dataset": {
+    "note_sizes": [
+      1000,
+      10000
+    ],
+    "memory_count": 100,
+    "repetitions": 1
+  },
+  "storage": {
+    "postgres": "existing service through DATABASE_URL",
+    "docker_controlled_by_benchmark": false,
+    "docker_host_used": false,
+    "test_data_cleaned": true
+  },
+  "measurements": {
+    "memory_list_top_100": {
+      "name": "memory_list_top_100",
+      "repetitions": 1,
+      "sql_count": {
+        "min": 101,
+        "max": 101
+      },
+      "wall_latency_ms": {
+        "p50": 6838.977,
+        "p95": 6838.977,
+        "mean": 6838.977
+      },
+      "result_size": {
+        "min": 100,
+        "max": 100
+      }
+    },
+    "notes_1000": {
+      "filter_type": {
+        "name": "filter_type",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 1317.703,
+          "p95": 1317.703,
+          "mean": 1317.703
+        },
+        "result_size": {
+          "min": 30,
+          "max": 30
+        }
+      },
+      "filter_tag": {
+        "name": "filter_tag",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 763.887,
+          "p95": 763.887,
+          "mean": 763.887
+        },
+        "result_size": {
+          "min": 30,
+          "max": 30
+        }
+      },
+      "list_recent": {
+        "name": "list_recent",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 1200.522,
+          "p95": 1200.522,
+          "mean": 1200.522
+        },
+        "result_size": {
+          "min": 30,
+          "max": 30
+        }
+      },
+      "get_note": {
+        "name": "get_note",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 780.58,
+          "p95": 780.58,
+          "mean": 780.58
+        },
+        "result_size": {
+          "min": 9,
+          "max": 9
+        }
+      },
+      "follow_links": {
+        "name": "follow_links",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 1238.606,
+          "p95": 1238.606,
+          "mean": 1238.606
+        },
+        "result_size": {
+          "min": 4,
+          "max": 4
+        }
+      },
+      "provisional_search": {
+        "name": "provisional_search",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 1062.093,
+          "p95": 1062.093,
+          "mean": 1062.093
+        },
+        "result_size": {
+          "min": 5,
+          "max": 5
+        }
+      }
+    },
+    "notes_10000": {
+      "filter_type": {
+        "name": "filter_type",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 3793.649,
+          "p95": 3793.649,
+          "mean": 3793.649
+        },
+        "result_size": {
+          "min": 30,
+          "max": 30
+        }
+      },
+      "filter_tag": {
+        "name": "filter_tag",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 6788.853,
+          "p95": 6788.853,
+          "mean": 6788.853
+        },
+        "result_size": {
+          "min": 30,
+          "max": 30
+        }
+      },
+      "list_recent": {
+        "name": "list_recent",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 3427.65,
+          "p95": 3427.65,
+          "mean": 3427.65
+        },
+        "result_size": {
+          "min": 30,
+          "max": 30
+        }
+      },
+      "get_note": {
+        "name": "get_note",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 3497.842,
+          "p95": 3497.842,
+          "mean": 3497.842
+        },
+        "result_size": {
+          "min": 9,
+          "max": 9
+        }
+      },
+      "follow_links": {
+        "name": "follow_links",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 5291.506,
+          "p95": 5291.506,
+          "mean": 5291.506
+        },
+        "result_size": {
+          "min": 4,
+          "max": 4
+        }
+      },
+      "provisional_search": {
+        "name": "provisional_search",
+        "repetitions": 1,
+        "sql_count": {
+          "min": 3,
+          "max": 3
+        },
+        "wall_latency_ms": {
+          "p50": 4077.43,
+          "p95": 4077.43,
+          "mean": 4077.43
+        },
+        "result_size": {
+          "min": 5,
+          "max": 5
+        }
+      }
+    }
+  },
+  "explain_analyze": {
+    "type_recent": {
+      "Plan": {
+        "Node Type": "Limit",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 0.41,
+        "Total Cost": 27.74,
+        "Plan Rows": 30,
+        "Plan Width": 80,
+        "Actual Startup Time": 0.053,
+        "Actual Total Time": 0.133,
+        "Actual Rows": 30,
+        "Actual Loops": 1,
+        "Shared Hit Blocks": 14,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0,
+        "Plans": [
+          {
+            "Node Type": "Index Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Scan Direction": "Backward",
+            "Index Name": "ix_notes_space_created",
+            "Relation Name": "notes",
+            "Alias": "notes",
+            "Startup Cost": 0.41,
+            "Total Cost": 2270.45,
+            "Plan Rows": 2492,
+            "Plan Width": 80,
+            "Actual Startup Time": 0.052,
+            "Actual Total Time": 0.128,
+            "Actual Rows": 30,
+            "Actual Loops": 1,
+            "Index Cond": "((space_id)::text = 'stage2-benchmark-dc89a772e7574b78a2434c3fda125312-notes-10000'::text)",
+            "Rows Removed by Index Recheck": 0,
+            "Filter": "((note_type)::text = '学习'::text)",
+            "Rows Removed by Filter": 90,
+            "Shared Hit Blocks": 14,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          }
+        ]
+      },
+      "Planning": {
+        "Shared Hit Blocks": 5,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning Time": 0.219,
+      "Triggers": [],
+      "Execution Time": 0.155
+    },
+    "tag_recent": {
+      "Plan": {
+        "Node Type": "Limit",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 0.82,
+        "Total Cost": 92.08,
+        "Plan Rows": 30,
+        "Plan Width": 80,
+        "Actual Startup Time": 0.204,
+        "Actual Total Time": 2.902,
+        "Actual Rows": 30,
+        "Actual Loops": 1,
+        "Shared Hit Blocks": 375,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0,
+        "Plans": [
+          {
+            "Node Type": "Nested Loop",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Join Type": "Inner",
+            "Startup Cost": 0.82,
+            "Total Cost": 7581.33,
+            "Plan Rows": 2492,
+            "Plan Width": 80,
+            "Actual Startup Time": 0.201,
+            "Actual Total Time": 2.894,
+            "Actual Rows": 30,
+            "Actual Loops": 1,
+            "Inner Unique": true,
+            "Shared Hit Blocks": 375,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0,
+            "Plans": [
+              {
+                "Node Type": "Index Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Backward",
+                "Index Name": "ix_notes_space_created",
+                "Relation Name": "notes",
+                "Alias": "n",
+                "Startup Cost": 0.41,
+                "Total Cost": 2245.45,
+                "Plan Rows": 10000,
+                "Plan Width": 80,
+                "Actual Startup Time": 0.029,
+                "Actual Total Time": 0.099,
+                "Actual Rows": 120,
+                "Actual Loops": 1,
+                "Index Cond": "((space_id)::text = 'stage2-benchmark-dc89a772e7574b78a2434c3fda125312-notes-10000'::text)",
+                "Rows Removed by Index Recheck": 0,
+                "Shared Hit Blocks": 14,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0
+              },
+              {
+                "Node Type": "Index Only Scan",
+                "Parent Relationship": "Inner",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Forward",
+                "Index Name": "note_tags_pkey",
+                "Relation Name": "note_tags",
+                "Alias": "t",
+                "Startup Cost": 0.41,
+                "Total Cost": 0.53,
+                "Plan Rows": 1,
+                "Plan Width": 72,
+                "Actual Startup Time": 0.023,
+                "Actual Total Time": 0.023,
+                "Actual Rows": 0,
+                "Actual Loops": 120,
+                "Index Cond": "((note_id = (n.id)::text) AND (tag = '笔记'::text))",
+                "Rows Removed by Index Recheck": 0,
+                "Heap Fetches": 0,
+                "Shared Hit Blocks": 361,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0
+              }
+            ]
+          }
+        ]
+      },
+      "Planning": {
+        "Shared Hit Blocks": 83,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning Time": 1.399,
+      "Triggers": [],
+      "Execution Time": 2.947
+    },
+    "provisional_recent": {
+      "Plan": {
+        "Node Type": "Limit",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Startup Cost": 0.41,
+        "Total Cost": 458.75,
+        "Plan Rows": 100,
+        "Plan Width": 80,
+        "Actual Startup Time": 0.354,
+        "Actual Total Time": 1.587,
+        "Actual Rows": 100,
+        "Actual Loops": 1,
+        "Shared Hit Blocks": 175,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0,
+        "Plans": [
+          {
+            "Node Type": "Index Scan",
+            "Parent Relationship": "Outer",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Scan Direction": "Backward",
+            "Index Name": "ix_notes_space_created",
+            "Relation Name": "notes",
+            "Alias": "notes",
+            "Startup Cost": 0.41,
+            "Total Cost": 2282.95,
+            "Plan Rows": 498,
+            "Plan Width": 80,
+            "Actual Startup Time": 0.351,
+            "Actual Total Time": 1.568,
+            "Actual Rows": 100,
+            "Actual Loops": 1,
+            "Index Cond": "((space_id)::text = 'stage2-benchmark-dc89a772e7574b78a2434c3fda125312-notes-10000'::text)",
+            "Rows Removed by Index Recheck": 0,
+            "Filter": "((enrichment_status)::text = ANY ('{provisional,enriching,failed}'::text[]))",
+            "Rows Removed by Filter": 1900,
+            "Shared Hit Blocks": 175,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          }
+        ]
+      },
+      "Planning": {
+        "Shared Hit Blocks": 0,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning Time": 0.211,
+      "Triggers": [],
+      "Execution Time": 1.629
+    }
+  }
+}

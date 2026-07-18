@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import random
 import time
 import uuid
@@ -178,10 +179,18 @@ def summarize_plan(requests: list[LoadRequest]) -> dict[str, Any]:
 
 def submit_request(endpoint: str, item: LoadRequest, *, timeout_seconds: float = 10.0) -> SubmissionResult:
     started = time.perf_counter()
+    headers = {
+        "Content-Type": "application/json",
+        "X-Suixinji-Tenant-Id": item.tenant_id,
+        "X-Suixinji-User-Id": item.user_id,
+    }
+    token = os.getenv("SUIXINJI_TEST_API_TOKEN", "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     request = Request(
         endpoint.rstrip("/") + "/v1/commands",
         data=json.dumps(item.api_payload()).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers=headers,
         method="POST",
     )
     try:

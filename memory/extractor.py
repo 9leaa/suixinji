@@ -3,19 +3,24 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import logging
 import re
 from dataclasses import replace
 from typing import Any
 
 from core.llm_client import complete_json
+from core.config import get_chat_config
 from core.settings import MEMORY_EXTRACTOR_MODE
 from memory.candidate_validator import contains_sensitive_data
-from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for
-from memory.policies.preference import preference_signature
+from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for, memory_key_for
+from memory.policies.preference import preference_polarity, preference_signature
 from memory.prompts import MEMORY_EXTRACTOR_PROMPT
 
 LOGGER = logging.getLogger(__name__)
+EXTRACTOR_VERSION = "memory-extractor-v1"
+LLM_EXTRACTOR_VERSION = "memory-extractor-v1-llm"
+PROMPT_HASH = hashlib.sha256(MEMORY_EXTRACTOR_PROMPT.encode("utf-8")).hexdigest()[:16]
 
 LOW_VALUE_PATTERNS = {
     "你好",
@@ -109,9 +114,13 @@ def _candidate(
     valid_from: str | None = None,
     valid_until: str | None = None,
     should_store: bool = True,
+    extractor_type: str = "rules",
+    extractor_version: str = EXTRACTOR_VERSION,
+    model: str | None = None,
 ) -> MemoryCandidate:
     if subject is None and predicate is None and object_value is None:
         subject, predicate, object_value = _structured_fields(memory_type, evidence_span or content, entities)
+    polarity = preference_polarity(evidence_span or content) if memory_type == "preference" else None
     return MemoryCandidate(
         memory_type=memory_type,
         content=content,
@@ -130,6 +139,18 @@ def _candidate(
         valid_until=valid_until,
         evidence_span=evidence_span,
         extraction_reason=reason,
+        memory_key=memory_key_for(
+            memory_type,
+            subject=subject,
+            predicate=predicate,
+            object_value=object_value,
+            content=content,
+        ),
+        polarity=polarity,
+        extractor_type=extractor_type,
+        extractor_version=extractor_version,
+        model=model,
+        prompt_hash=PROMPT_HASH if extractor_type == "llm" else None,
     )
 
 
@@ -247,7 +268,7 @@ def extract_llm_candidates(note_id: str, text: str, classification: dict[str, An
         "text": raw,
         "classification": classification or {},
     }
-    data = complete_json(system_prompt=MEMORY_EXTRACTOR_PROMPT, user_prompt=json.dumps(payload, ensure_ascii=False))
+    data = complete_json(system_prompt=MEMORY_EXTRACTOR_PROMPT, user_prompt=json.dumps(payload, ensure_ascii=False), model_role="fast")
     rows = data.get("candidates") or []
     if not isinstance(rows, list):
         raise ValueError("memory extractor candidates must be a list")
@@ -282,6 +303,9 @@ def extract_llm_candidates(note_id: str, text: str, classification: dict[str, An
                 valid_from=str(row.get("valid_from") or "") or None,
                 valid_until=str(row.get("valid_until") or "") or None,
                 should_store=_bool_value(row.get("should_store"), True),
+                extractor_type="llm",
+                extractor_version=LLM_EXTRACTOR_VERSION,
+                model=get_chat_config("fast").model,
             )
         )
     return _dedupe(candidates)

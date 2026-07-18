@@ -10,6 +10,15 @@ from redis import Redis
 from core.settings import IDEMPOTENCY_TTL_SECONDS
 from infrastructure.redis_client import get_redis
 
+_BEGIN_LUA = """
+local current = redis.call('GET', KEYS[1])
+if not current or current == 'failed' then
+  redis.call('SET', KEYS[1], 'processing', 'EX', ARGV[1])
+  return 1
+end
+return 0
+"""
+
 
 class IdempotencyStore:
     def __init__(self, client: Redis | None = None, ttl_seconds: int = IDEMPOTENCY_TTL_SECONDS) -> None:
@@ -17,7 +26,7 @@ class IdempotencyStore:
         self.ttl_seconds = max(1, int(ttl_seconds))
 
     def begin(self, key: str) -> bool:
-        return bool(self.client.set(key, "processing", nx=True, ex=self.ttl_seconds))
+        return bool(self.client.eval(_BEGIN_LUA, 1, key, self.ttl_seconds))
 
     def complete(self, key: str) -> None:
         self.client.set(key, "completed", ex=self.ttl_seconds)
