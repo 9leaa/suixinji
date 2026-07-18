@@ -6,7 +6,8 @@ import logging
 import time
 from datetime import date
 
-from core.settings import SCHEDULER_LEADER_TTL_MS
+from core.observability import log_event
+from core.settings import SCHEDULER_LEADER_TTL_MS, STAGE4_MODE
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import RedisDistributedLock
 from memory.repository import consolidation_period_key
@@ -24,6 +25,9 @@ def run_once() -> bool:
     if not lock.acquire(wait_seconds=0):
         return False
     try:
+        if STAGE4_MODE:
+            log_event("runtime.scheduler_leader", status="completed", extra={"stage4_mode": True})
+            return True
         run_scheduler_tick_safely(lambda _chat_id, _text: False, executor=StreamTaskDispatcher())
         today = date.today()
         for cadence in due_cadences(today, {}):

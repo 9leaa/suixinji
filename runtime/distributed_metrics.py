@@ -160,14 +160,22 @@ def build_report(
     rate_limited = int(submission.get("rate_limited") or 0)
     submission_failed = int(submission.get("failed") or 0)
     accepted = int(database.get("accepted") or 0)
+    client_confirmed_accepted = int(submission.get("accepted") if "accepted" in submission else accepted)
+    accepted_after_client_timeout = min(submission_failed, max(0, accepted - client_confirmed_accepted))
+    submission_failed_unaccepted = max(0, submission_failed - accepted_after_client_timeout)
     submitted = int(submission.get("submitted") or accepted + duplicate + rate_limited + submission_failed)
     pending = queued + running + retry
-    failed = dead_letter + submission_failed
+    failed = dead_letter + submission_failed_unaccepted
     terminal_or_pending = completed + failed + pending + rate_limited + duplicate
+    all_status = database.get("all_task_status") or {}
+    all_pending = sum(int(all_status.get(name) or 0) for name in ("queued", "running", "retry"))
     return {
         "measurement_status": "measured",
         "submitted": submitted,
         "accepted": accepted,
+        "client_confirmed_accepted": client_confirmed_accepted,
+        "accepted_after_client_timeout": accepted_after_client_timeout,
+        "submission_failed_unaccepted": submission_failed_unaccepted,
         "rate_limited": rate_limited,
         "duplicate": duplicate,
         "queued": queued,
@@ -176,6 +184,9 @@ def build_report(
         "failed": failed,
         "pending": pending,
         "dead_letter": dead_letter,
+        "all_task_status": all_status,
+        "all_task_pending": all_pending,
+        "all_task_dead_letter": int(all_status.get("dead_letter") or 0),
         "retry_count": int(database.get("retry_count") or 0),
         "stream_lag": int(streams.get("stream_lag") or 0),
         "stream_pending": int(streams.get("stream_pending") or 0),

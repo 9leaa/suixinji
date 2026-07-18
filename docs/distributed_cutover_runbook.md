@@ -5,8 +5,7 @@
 - Keep the Feishu receiver single-active until PostgreSQL migration verification passes.
 - Do not start the `local-infra` Compose profile when `.env` points to external PostgreSQL or Redis.
 - Run large load tests with `SUIXINJI_FAKE_EXTERNALS=true`; use real LLM and embedding only for a small sampled run.
-- The Stage 4 Compose file never starts or restarts PostgreSQL or Redis.
-- Set `STAGE4_DATABASE_URL` and `STAGE4_REDIS_URL` to addresses reachable from containers. A host-only `127.0.0.1` tunnel is rejected before startup.
+- Stage 4 uses independent Python processes and the existing `DATABASE_URL`/`REDIS_URL`; it never invokes Docker or controls Docker Socket.
 
 ## Pre-Cutover
 
@@ -47,13 +46,10 @@ SUIXINJI_FAKE_EXTERNALS=false
 ## Stage 4 Validation
 
 ```bash
-make stage4-up
-make stage4-load-smoke
-python scripts/chaos_test_distributed.py
+make stage4-start
+make stage4-validate-basic
 make stage4-status
-make stage4-down
+make stage4-stop
 ```
 
-The Chaos command is a dry run by default. `--execute` affects application containers only. Redis and PostgreSQL restart scenarios additionally require both `--include-infrastructure` and an explicit `--infra-compose` path.
-
-For a real 1000-request validation without external disk writes, use `make stage4-ephemeral-up`, `make stage4-ephemeral-load-basic`, and `make stage4-ephemeral-down`. Both data services use `tmpfs`, and Redis persistence is disabled.
+The Chaos command is a dry run by default. `--execute` restarts or pauses only Stage 4 Python processes. It never restarts PostgreSQL, Redis, or any container. After metrics are recorded, stop the process matrix and clean only the generated `load-*` tenant and `stage4-*` Redis namespace.

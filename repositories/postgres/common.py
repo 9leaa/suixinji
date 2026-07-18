@@ -33,7 +33,7 @@ def ensure_tenant_space(
     metadata: dict[str, Any] | None = None,
 ) -> None:
     session.execute(
-        insert(Tenant).values(id=tenant_id, name=tenant_id).on_conflict_do_nothing(index_elements=[Tenant.id])
+        insert(Tenant).values(id=tenant_id, name=tenant_id).on_conflict_do_nothing()
     )
     session.execute(
         insert(Space)
@@ -44,7 +44,7 @@ def ensure_tenant_space(
             source_space_id=space_id,
             metadata_json=metadata or {},
         )
-        .on_conflict_do_nothing(index_elements=[Space.id])
+        .on_conflict_do_nothing()
     )
 
 
@@ -57,7 +57,7 @@ def ensure_user(
     profile: dict[str, Any] | None = None,
 ) -> None:
     session.execute(
-        insert(Tenant).values(id=tenant_id, name=tenant_id).on_conflict_do_nothing(index_elements=[Tenant.id])
+        insert(Tenant).values(id=tenant_id, name=tenant_id).on_conflict_do_nothing()
     )
     session.execute(
         insert(User)
@@ -68,5 +68,5 @@ def ensure_user(
             source_user_id=user_id,
             profile_json=profile or {},
         )
-        .on_conflict_do_nothing(index_elements=[User.id])
+        .on_conflict_do_nothing()
     )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 
 import pytest
@@ -117,6 +118,24 @@ def test_memory_insert_inherits_space_tenant():
         )
         with session_scope() as session:
             assert session.get(Memory, created.id).tenant_id == tenant_id
+    finally:
+        with session_scope() as session:
+            session.execute(delete(Tenant).where(Tenant.id == tenant_id))
+
+
+@pytest.mark.skipif(not os.getenv("DATABASE_URL"), reason="PostgreSQL integration URL is not configured")
+def test_concurrent_space_creation_handles_all_unique_constraints():
+    suffix = uuid.uuid4().hex
+    tenant_id = f"stage4-tenant-{suffix}"
+    space_id = f"stage4-space-{suffix}"
+
+    def create_space(_index: int) -> None:
+        with session_scope() as session:
+            ensure_tenant_space(session, space_id, tenant_id=tenant_id, source="stage4")
+
+    try:
+        with ThreadPoolExecutor(max_workers=12) as pool:
+            list(pool.map(create_space, range(24)))
     finally:
         with session_scope() as session:
             session.execute(delete(Tenant).where(Tenant.id == tenant_id))

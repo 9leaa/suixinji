@@ -94,16 +94,13 @@ make distributed-down
 
 ## 第四阶段分布式验收
 
-第四阶段提供独立的 `docker-compose.stage4.yml`，固定使用 PostgreSQL、Redis Streams 和 Fake 外部调用。它只启动应用角色，不会创建、重启或修改 PostgreSQL/Redis，因此可以连接 `.env` 中已经配置的外部服务。
-
-容器不能使用宿主机的 `127.0.0.1`。启动前需在 `.env` 设置容器可达的 `STAGE4_DATABASE_URL` 和 `STAGE4_REDIS_URL`（通常使用 Mac 局域网地址或 `host.docker.internal`）；预检只检查主机名，不会输出连接串或密钥。Stage 4 容器也不会注入飞书、OpenAI、Embedding 密钥。
+第四阶段直接使用 `.env` 中的 `DATABASE_URL` 和 `REDIS_URL`，在服务器启动独立 Python 进程模拟多服务器：Receiver x2、Outbox Relay x2、Ingest Worker x4，以及 Query/Summary/Memory/Delivery Worker 和 Scheduler 各 x2。它不执行 Docker 命令，也不连接 Docker Socket。
 
 ```bash
-make stage4-up                 # receiver x2, relay x2, ingest x4, 其余 worker/scheduler x2
-make stage4-load-smoke         # 10 用户安全冒烟
-make stage4-load-basic         # 100 用户、1000 请求
+make stage4-start
+make stage4-validate-basic     # 100 用户、1000 请求，并执行进程故障演练
 make stage4-status
-make stage4-down
+make stage4-stop
 ```
 
 宿主机直接生成压测计划不会发送请求：
@@ -121,17 +118,7 @@ python scripts/chaos_test_distributed.py
 python scripts/chaos_test_distributed.py --execute
 ```
 
-应用级演练覆盖 Worker 崩溃接管、Outbox Relay 重启、Delivery/Query 积压和 Scheduler Leader 切换。它绝不会隐式重启外部 Redis/PostgreSQL；基础设施演练必须额外提供 `--include-infrastructure --infra-compose <path>`。正式切换前运行 `make cutover-check`，完整步骤见 `docs/distributed_cutover_runbook.md`。
-
-需要实际执行 1000 请求验收但不写外部服务时，使用临时环境：
-
-```bash
-make stage4-ephemeral-up
-make stage4-ephemeral-load-basic
-make stage4-ephemeral-down
-```
-
-临时 PostgreSQL 与 Redis 都使用 `tmpfs`；Redis 关闭 AOF/RDB，`down -v` 后数据消失。该模式不会连接 `.env` 中的 Mac PostgreSQL/Redis。
+应用级演练覆盖 Worker 崩溃接管、Outbox Relay 重启、Delivery/Query 暂停恢复和 Scheduler Leader 切换。每次运行使用独立测试租户和 Redis namespace；采集指标并停止进程后，通过 `scripts/cleanup_stage4_run.py` 只删除本次测试数据，不停止 PostgreSQL/Redis，不操作容器或数据卷。正式切换前运行 `make cutover-check`，完整步骤见 `docs/distributed_cutover_runbook.md`。
 
 ## 使用示例
 

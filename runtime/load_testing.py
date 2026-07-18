@@ -199,14 +199,23 @@ def submit_request(endpoint: str, item: LoadRequest, *, timeout_seconds: float =
 def execute_load(
     requests: list[LoadRequest],
     *,
-    endpoint: str,
+    endpoint: str | list[str],
     concurrency: int,
     timeout_seconds: float = 10.0,
 ) -> dict[str, Any]:
+    endpoints = [endpoint] if isinstance(endpoint, str) else list(endpoint)
+    if not endpoints:
+        raise ValueError("at least one endpoint is required")
     started_at = datetime.now().astimezone().isoformat(timespec="seconds")
     started = time.perf_counter()
     with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:
-        results = list(pool.map(lambda item: submit_request(endpoint, item, timeout_seconds=timeout_seconds), requests))
+        indexed = list(enumerate(requests))
+        results = list(
+            pool.map(
+                lambda pair: submit_request(endpoints[pair[0] % len(endpoints)], pair[1], timeout_seconds=timeout_seconds),
+                indexed,
+            )
+        )
     counts = {"accepted": 0, "duplicate": 0, "rate_limited": 0, "failed": 0}
     for result in results:
         counts[result.status] = counts.get(result.status, 0) + 1
@@ -220,6 +229,7 @@ def execute_load(
         "p95_submission_latency_ms": percentile(latencies, 0.95),
         "p99_submission_latency_ms": percentile(latencies, 0.99),
         "errors": [asdict(result) for result in results if result.status == "failed"][:20],
+        "endpoints": endpoints,
     }
     report["submission_conservation_ok"] = report["submitted"] == sum(counts.values())
     return report

@@ -1,0 +1,74 @@
+{
+  "run_id": "20260718-basic-02",
+  "measured_at": "2026-07-18T09:14:43+08:00",
+  "environment": "server Python processes over SSH reverse PostgreSQL/Redis ports",
+  "result": "failed_to_settle",
+  "workload": {
+    "submitted": 1000,
+    "users": 100,
+    "spaces": 100,
+    "ingest": 685,
+    "query": 206,
+    "summary": 64,
+    "memory": 45
+  },
+  "submission": {
+    "client_confirmed_accepted": 988,
+    "durable_inbox": 994,
+    "accepted_after_client_timeout": 6,
+    "duplicate": 6,
+    "rate_limited": 0,
+    "unaccepted": 0,
+    "duration_ms": 221842,
+    "p50_ms": 5888,
+    "p95_ms": 7531,
+    "p99_ms": 9614
+  },
+  "snapshot": {
+    "root_completed": 352,
+    "root_pending": 642,
+    "all_task_completed": 787,
+    "all_task_pending": 781,
+    "dead_letter": 0,
+    "retry_count": 2035,
+    "outbox_unpublished": 0,
+    "stream_lag": 1189,
+    "stream_pending": 49,
+    "deliveries_sent": 131
+  },
+  "latency_ms": {
+    "p50_total": 421933,
+    "p95_total": 851851,
+    "p99_total": 887315,
+    "p50_queue_wait": 559936,
+    "p95_queue_wait": 870930,
+    "p99_queue_wait": 940810,
+    "p50_execution": 5088,
+    "p95_execution": 8181,
+    "p99_execution": 10030,
+    "p50_lock_wait": 119,
+    "p95_lock_wait": 3445,
+    "p99_lock_wait": 5335
+  },
+  "correctness": {
+    "conservation_ok": true,
+    "conservation_delta": 0,
+    "space_isolation_mismatches": 0,
+    "duplicate_notes": 0,
+    "duplicate_task_idempotency_keys": 0,
+    "duplicate_delivery_keys": 0,
+    "chaos_worker_recovery_executed": true,
+    "chaos_relay_recovery_executed": true,
+    "chaos_scheduler_recovery_executed": true
+  },
+  "external_usage": {
+    "fake_externals": true,
+    "llm_tokens": 0,
+    "estimated_cost": 0.0
+  },
+  "failure_reasons": [
+    "The run did not drain within the observation window.",
+    "Cross-task-type same-space ordering caused repeated defer and republish cycles.",
+    "Redis access through the SSH reverse port hit the configured 2 second read timeout under backlog."
+  ]
+}

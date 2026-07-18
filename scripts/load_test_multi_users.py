@@ -22,7 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--users", type=int)
     parser.add_argument("--messages-per-user", type=int)
     parser.add_argument("--concurrency", type=int)
-    parser.add_argument("--endpoint", default="http://127.0.0.1:8000")
+    parser.add_argument("--endpoint", action="append", dest="endpoints")
     parser.add_argument("--timeout-seconds", type=float, default=10.0)
     parser.add_argument("--seed", type=int, default=20260718)
     parser.add_argument("--run-id")
@@ -51,14 +51,15 @@ def main() -> None:
             "started_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         }
     else:
+        endpoints = args.endpoints or ["http://127.0.0.1:8000"]
         report = execute_load(
             requests,
-            endpoint=args.endpoint,
+            endpoint=endpoints,
             concurrency=concurrency,
             timeout_seconds=args.timeout_seconds,
         )
         report["mode"] = "executed"
-        report["endpoint"] = args.endpoint
+        report["endpoints"] = endpoints
     output = Path(args.output) if args.output else ROOT / "data" / "load-tests" / f"{requests[0].run_id}.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
