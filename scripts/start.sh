@@ -10,6 +10,11 @@ cd "$ROOT"
 
 "$PYTHON" scripts/check_config.py
 
+QUEUE_BACKEND="$("$PYTHON" -c 'from core.settings import TASK_QUEUE_BACKEND; print(TASK_QUEUE_BACKEND)')"
+if [[ "$QUEUE_BACKEND" == "redis_streams" ]]; then
+  exec bash "$ROOT/scripts/start_distributed.sh"
+fi
+
 mkdir -p "$ROOT/data/logs"
 
 if [[ -f "$PID_FILE" ]]; then

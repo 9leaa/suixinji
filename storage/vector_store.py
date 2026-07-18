@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from core.file_lock import locked_space
+from core.sensitive import contains_sensitive_data
 from storage.note_storage import note_dir
 
 
@@ -169,6 +170,17 @@ def add_vector_item(space_id: str, item: VectorItem) -> bool:
         return True
 
 
+def remove_vector_item(space_id: str, note_id: str) -> bool:
+    """Remove one vector record, primarily for privacy cleanup."""
+    with locked_space(space_id):
+        items = load_vector_items(space_id)
+        kept = [item for item in items if item.note_id != note_id]
+        if len(kept) == len(items):
+            return False
+        save_vector_items(space_id, kept)
+        return True
+
+
 def cosine_similarity(a: list[float], b: list[float]) -> float:
     """计算两个向量之间的余弦相似度。
 
@@ -227,6 +239,9 @@ def search_related(
     for item in load_vector_items(space_id):
         if exclude_note_id is not None and item.note_id == exclude_note_id:
             continue
+        sensitivity = str(item.metadata.get("sensitivity") or "normal").casefold()
+        if sensitivity not in {"", "normal", "none"} or contains_sensitive_data(item.text):
+            continue
 
         score = cosine_similarity(query_embedding, item.embedding)
         if min_score is not None and score < min_score:
@@ -279,3 +294,17 @@ def search_related_note_ids(
             min_score=min_score,
         )
     ]
+
+
+from core.settings import STORAGE_BACKEND as _STORAGE_BACKEND
+
+if _STORAGE_BACKEND == "postgres":
+    from repositories.postgres import vectors as _postgres_vectors
+
+    load_vector_items = _postgres_vectors.load_vector_items
+    save_vector_items = _postgres_vectors.save_vector_items
+    vector_item_exists = _postgres_vectors.vector_item_exists
+    add_vector_item = _postgres_vectors.add_vector_item
+    remove_vector_item = _postgres_vectors.remove_vector_item
+    search_related = _postgres_vectors.search_related
+    search_related_note_ids = _postgres_vectors.search_related_note_ids

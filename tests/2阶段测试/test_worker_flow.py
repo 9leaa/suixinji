@@ -12,15 +12,14 @@ RECORD = {
 }
 
 
-def test_process_record_saves_new_note_vector_and_marks_processed(monkeypatch):
+def test_process_record_saves_provisional_note_without_waiting_for_llm(monkeypatch):
     saved_notes = []
-    vector_items = []
     marked = []
 
     monkeypatch.setattr(worker, "note_exists", lambda space_id, message_id: False)
     monkeypatch.setattr(
         worker,
-        "classify_text",
+        "classify_text_local",
         lambda text: SimpleNamespace(
             title="测试 P4 自动总结",
             tags=["待办", "提醒"],
@@ -28,19 +27,10 @@ def test_process_record_saves_new_note_vector_and_marks_processed(monkeypatch):
             summary="需要测试 P4 自动总结。",
         ),
     )
-    monkeypatch.setattr(worker, "embed_text", lambda text: [0.1, 0.2, 0.3])
-
-    def fake_search(space_id, embedding, *, top_k, exclude_note_id, min_score):
-        assert space_id == "space-1"
-        assert embedding == [0.1, 0.2, 0.3]
-        assert top_k == 3
-        assert exclude_note_id == "record-1"
-        assert min_score == 0.5
-        return ["old-note-1"]
-
-    monkeypatch.setattr(worker, "search_related_note_ids", fake_search)
+    monkeypatch.setattr(worker, "classify_text", lambda text: (_ for _ in ()).throw(AssertionError("slow classifier must run in enrichment")))
+    monkeypatch.setattr(worker, "embed_text", lambda text: (_ for _ in ()).throw(AssertionError("embedding must run in enrichment")))
     monkeypatch.setattr(worker, "save_note", lambda note: saved_notes.append(note))
-    monkeypatch.setattr(worker, "add_vector_item", lambda space_id, item: vector_items.append((space_id, item)) or True)
+    monkeypatch.setattr(worker, "process_note_memory", lambda note, classification=None: None)
     monkeypatch.setattr(worker, "mark_processed", lambda space_id, record_id: marked.append((space_id, record_id)))
 
     worker.process_record(dict(RECORD))
@@ -52,34 +42,51 @@ def test_process_record_saves_new_note_vector_and_marks_processed(monkeypatch):
     assert note.title == "测试 P4 自动总结"
     assert note.type == "任务"
     assert note.tags == ["待办", "提醒"]
-    assert note.related == ["old-note-1"]
-
-    assert len(vector_items) == 1
-    vector_space_id, vector_item = vector_items[0]
-    assert vector_space_id == "space-1"
-    assert vector_item.note_id == "record-1"
-    assert vector_item.message_id == "message-1"
-    assert vector_item.embedding == [0.1, 0.2, 0.3]
-    assert vector_item.metadata["title"] == "测试 P4 自动总结"
-    assert vector_item.metadata["tags"] == ["待办", "提醒"]
+    assert note.related == []
+    assert note.enrichment_status == "provisional"
+    assert note.enrichment_attempts == 0
 
     assert marked == [("space-1", "record-1")]
 
 
-def test_process_record_existing_note_backfills_vector_and_marks_processed(monkeypatch):
+def test_process_record_can_defer_memory_and_wal_completion(monkeypatch):
+    saved_notes = []
+    marked = []
+
+    monkeypatch.setattr(worker, "note_exists", lambda space_id, message_id: False)
+    monkeypatch.setattr(
+        worker,
+        "classify_text_local",
+        lambda text: SimpleNamespace(title="title", tags=[], type="note", summary="summary"),
+    )
+    monkeypatch.setattr(worker, "save_note", lambda note: saved_notes.append(note))
+    monkeypatch.setattr(
+        worker,
+        "process_note_memory",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("memory must be deferred")),
+    )
+    monkeypatch.setattr(worker, "mark_processed", lambda space_id, record_id: marked.append((space_id, record_id)))
+
+    note = worker.process_record(dict(RECORD), defer_memory=True, defer_wal_completion=True)
+
+    assert note is saved_notes[0]
+    assert marked == []
+
+
+def test_process_record_existing_note_marks_processed_without_slow_backfill(monkeypatch):
     calls = []
+    existing_note = {"id": "record-1", "message_id": "message-1", "space_id": "space-1", "text": "正文"}
 
     monkeypatch.setattr(worker, "note_exists", lambda space_id, message_id: True)
-    monkeypatch.setattr(worker, "backfill_vector_if_missing", lambda space_id, message_id: calls.append((space_id, message_id)) or True)
+    monkeypatch.setattr(worker, "_find_note_by_message_id", lambda space_id, message_id: existing_note)
+    monkeypatch.setattr(worker, "get_extraction_state", lambda note_id: SimpleNamespace(status="completed"))
+    monkeypatch.setattr(worker, "backfill_vector_if_missing", lambda *args: (_ for _ in ()).throw(AssertionError("must not backfill inline")))
     monkeypatch.setattr(worker, "mark_processed", lambda space_id, record_id: calls.append(("marked", space_id, record_id)))
     monkeypatch.setattr(worker, "classify_text", lambda text: (_ for _ in ()).throw(AssertionError("should not classify existing note")))
 
     worker.process_record(dict(RECORD))
 
-    assert calls == [
-        ("space-1", "message-1"),
-        ("marked", "space-1", "record-1"),
-    ]
+    assert calls == [("marked", "space-1", "record-1")]
 
 
 def test_process_record_existing_note_recovers_retryable_memory_once(monkeypatch):
@@ -88,7 +95,6 @@ def test_process_record_existing_note_recovers_retryable_memory_once(monkeypatch
 
     monkeypatch.setattr(worker, "note_exists", lambda space_id, message_id: True)
     monkeypatch.setattr(worker, "_find_note_by_message_id", lambda space_id, message_id: existing_note)
-    monkeypatch.setattr(worker, "backfill_vector_if_missing", lambda space_id, message_id: calls.append(("vector", space_id, message_id)) or False)
     monkeypatch.setattr(worker, "get_extraction_state", lambda note_id: SimpleNamespace(status="failed"))
     monkeypatch.setattr(worker, "process_note_memory", lambda note: calls.append(("memory", note["id"])))
     monkeypatch.setattr(worker, "mark_processed", lambda space_id, record_id: calls.append(("marked", space_id, record_id)))
@@ -97,7 +103,6 @@ def test_process_record_existing_note_recovers_retryable_memory_once(monkeypatch
     worker.process_record(dict(RECORD))
 
     assert calls == [
-        ("vector", "space-1", "message-1"),
         ("memory", "note-1"),
         ("marked", "space-1", "record-1"),
     ]
@@ -143,6 +148,63 @@ def test_backfill_vector_if_missing_skips_existing_vector(monkeypatch):
     monkeypatch.setattr(worker, "embed_text", lambda text: (_ for _ in ()).throw(AssertionError("should not embed existing vector")))
 
     assert worker.backfill_vector_if_missing("space-1", "message-1") is False
+
+
+def test_enrich_note_runs_slow_work_and_marks_ready(monkeypatch):
+    updates = []
+    vectors = []
+    note = {
+        "id": "note-1",
+        "message_id": "message-1",
+        "space_id": "space-1",
+        "ts": "2026-06-07T10:00:00+08:00",
+        "text": "我喜欢喝乌龙茶",
+        "enrichment_status": "provisional",
+        "enrichment_attempts": 0,
+        "sensitivity": "normal",
+    }
+    classification = SimpleNamespace(title="喜欢乌龙茶", tags=["饮食", "日常"], type="生活", summary="用户喜欢乌龙茶。")
+
+    monkeypatch.setattr(worker, "find_note", lambda space_id, note_id: dict(note))
+    monkeypatch.setattr(worker, "vector_item_exists", lambda *args: False)
+    monkeypatch.setattr(worker, "update_note_metadata", lambda space_id, note_id, **kwargs: updates.append(kwargs) or {**note, **kwargs})
+    monkeypatch.setattr(worker, "classify_text", lambda text: classification)
+    monkeypatch.setattr(worker, "embed_text", lambda text: [1.0, 0.0])
+    monkeypatch.setattr(worker, "search_related_note_ids", lambda *args, **kwargs: ["older-note"])
+    monkeypatch.setattr(worker, "add_vector_item", lambda space_id, item: vectors.append(item) or True)
+
+    assert worker.enrich_note("space-1", "note-1") is True
+    assert updates[0]["enrichment_status"] == "enriching"
+    assert updates[-1]["enrichment_status"] == "ready"
+    assert updates[-1]["related"] == ["older-note"]
+    assert vectors[0].text == "我喜欢喝乌龙茶"
+
+
+def test_process_record_redacts_sensitive_pending_wal_before_storage(monkeypatch):
+    blocked = []
+    record = {**RECORD, "text": "密码是Abcd1234"}
+    monkeypatch.setattr(
+        worker,
+        "mark_sensitive_blocked",
+        lambda space_id, record_id, category, **kwargs: blocked.append((space_id, record_id, category, kwargs)),
+    )
+    monkeypatch.setattr(worker, "save_note", lambda note: (_ for _ in ()).throw(AssertionError("must not save")))
+
+    assert worker.process_record(record) is None
+    assert blocked == [("space-1", "record-1", "credential", {"preserve_pending": False})]
+
+
+def test_process_record_redacts_sensitive_text_but_preserves_distributed_pending(monkeypatch):
+    blocked = []
+    record = {**RECORD, "text": "\u5bc6\u7801\u662fAbcd1234"}
+    monkeypatch.setattr(
+        worker,
+        "mark_sensitive_blocked",
+        lambda space_id, record_id, category, **kwargs: blocked.append((space_id, record_id, category, kwargs)),
+    )
+
+    assert worker.process_record(record, defer_wal_completion=True) is None
+    assert blocked == [("space-1", "record-1", "credential", {"preserve_pending": True})]
 
 
 def test_process_pending_skips_duplicate_message_ids(monkeypatch):

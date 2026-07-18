@@ -12,8 +12,8 @@ from typing import Any
 from agent.query_agent import answer_question
 from core.file_lock import get_space_lock
 from core.observability import log_event
-from core.settings import MAX_WORKERS, TASK_QUEUE_SIZE
-from core.worker import process_record
+from core.settings import ENRICHMENT_MAX_WORKERS, ENRICHMENT_QUEUE_SIZE, MAX_WORKERS, TASK_QUEUE_SIZE
+from core.worker import enrich_note, process_pending, process_record
 from runtime.delivery_store import (
     ingest_archived_key,
     manual_summary_key,
@@ -40,6 +40,11 @@ class BoundedTaskExecutor:
         send_text: SendText | None = None,
     ) -> None:
         self._pool = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="suixinji-task")
+        self._enrichment_pool = ThreadPoolExecutor(
+            max_workers=ENRICHMENT_MAX_WORKERS,
+            thread_name_prefix="suixinji-enrichment",
+        )
+        self._enrichment_slots = threading.BoundedSemaphore(ENRICHMENT_MAX_WORKERS + ENRICHMENT_QUEUE_SIZE)
         self._slots = threading.BoundedSemaphore(max_workers + queue_size)
         self._max_workers = max_workers
         self._queue_size = queue_size
@@ -50,6 +55,8 @@ class BoundedTaskExecutor:
         self._summary_locks_guard = threading.Lock()
         self._inflight_ingest_keys: set[tuple[str, str]] = set()
         self._inflight_ingest_lock = threading.Lock()
+        self._inflight_enrichment: set[tuple[str, str]] = set()
+        self._inflight_enrichment_lock = threading.Lock()
         self._shutdown = False
         self._shutdown_lock = threading.Lock()
 
@@ -140,6 +147,7 @@ class BoundedTaskExecutor:
                 "capacity": self._capacity,
                 "remaining_slots": self.remaining_slots(),
                 "inflight_ingest": self.inflight_ingest_count(),
+                "inflight_enrichment": self.inflight_enrichment_count(),
             }
         )
         return stats
@@ -155,10 +163,31 @@ class BoundedTaskExecutor:
         with self._inflight_ingest_lock:
             return len(self._inflight_ingest_keys)
 
+    def inflight_enrichment_count(self) -> int:
+        with self._inflight_enrichment_lock:
+            return len(self._inflight_enrichment)
+
+    def submit_enrichment(self, space_id: str, note_id: str) -> bool:
+        key = (str(space_id), str(note_id))
+        if not key[0] or not key[1]:
+            return False
+        with self._shutdown_lock:
+            if self._shutdown:
+                return False
+        with self._inflight_enrichment_lock:
+            if key in self._inflight_enrichment:
+                return False
+            if not self._enrichment_slots.acquire(blocking=False):
+                return False
+            self._inflight_enrichment.add(key)
+        self._enrichment_pool.submit(self._run_enrichment, key)
+        return True
+
     def shutdown(self) -> None:
         with self._shutdown_lock:
             self._shutdown = True
         self._pool.shutdown(wait=True)
+        self._enrichment_pool.shutdown(wait=True)
 
     def _submit(
         self,
@@ -242,7 +271,7 @@ class BoundedTaskExecutor:
         record = task.payload["record"]
         chat_id = task.payload.get("chat_id")
         with get_space_lock(task.space_id):
-            process_record(record)
+            note = process_record(record)
         if chat_id and task.payload.get("notify_on_success"):
             message_id = str(record.get("message_id") or task.message_id or task.id)
             self._deliver(
@@ -252,11 +281,22 @@ class BoundedTaskExecutor:
                 delivery_type="ingest_archived",
                 task=task,
             )
+        note_id = _note_id(note)
+        if note_id:
+            self.submit_enrichment(task.space_id, note_id)
 
     def _run_query(self, task: Task) -> None:
         question = str(task.payload["question"])
         chat_id = str(task.payload["chat_id"])
-        answer = answer_question(task.space_id, question)
+        try:
+            # A query may race the previous ingest task.  Flush the same space
+            # through the fast local archival stage before reading notes.
+            with get_space_lock(task.space_id):
+                process_pending(task.space_id)
+            answer = answer_question(task.space_id, question)
+        except Exception:
+            self._deliver_query_failure_notice(chat_id, task)
+            raise
         self._deliver(
             chat_id,
             answer,
@@ -264,6 +304,33 @@ class BoundedTaskExecutor:
             delivery_type=str(task.payload["delivery_type"]),
             task=task,
         )
+
+    def _run_enrichment(self, key: tuple[str, str]) -> None:
+        space_id, note_id = key
+        log_event("worker.enrichment_queued", space_id=space_id, record_id=note_id)
+        try:
+            changed = enrich_note(space_id, note_id)
+        except Exception as exc:
+            LOGGER.exception("Background enrichment failed: space_id=%s note_id=%s", space_id, note_id)
+            log_event(
+                "worker.enrichment_failed",
+                level="warning",
+                status="failed",
+                space_id=space_id,
+                record_id=note_id,
+                error=type(exc).__name__,
+            )
+        else:
+            log_event(
+                "worker.enrichment_finished",
+                status="success" if changed else "skipped",
+                space_id=space_id,
+                record_id=note_id,
+            )
+        finally:
+            with self._inflight_enrichment_lock:
+                self._inflight_enrichment.discard(key)
+            self._enrichment_slots.release()
 
     def _run_summary(self, task: Task) -> None:
         range_key = str(task.payload["range_key"])
@@ -331,6 +398,18 @@ class BoundedTaskExecutor:
         if on_sent is not None:
             on_sent()
 
+    def _deliver_query_failure_notice(self, chat_id: str, task: Task) -> None:
+        try:
+            self._deliver(
+                chat_id,
+                "这次查询失败了，可能是模型暂时没有返回内容。请稍后再问一次。",
+                delivery_key=f"{task.payload.get('delivery_key')}:failed",
+                delivery_type="query_failed",
+                task=task,
+            )
+        except Exception:
+            LOGGER.exception("Failed to send query failure notice: task_id=%s", task.id)
+
     def _summary_lock(self, space_id: str) -> threading.Lock:
         with self._summary_locks_guard:
             lock = self._summary_locks.get(space_id)
@@ -355,6 +434,14 @@ def _record_to_dict(record: Any) -> dict[str, Any]:
     if isinstance(record, dict):
         return dict(record)
     return asdict(record)
+
+
+def _note_id(note: Any) -> str:
+    if note is None:
+        return ""
+    if isinstance(note, dict):
+        return str(note.get("id") or "")
+    return str(getattr(note, "id", "") or "")
 
 
 def _task_timing(task: Task) -> dict[str, int | None]:

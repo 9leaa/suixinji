@@ -47,8 +47,10 @@ def reserve_delivery(
     delivery_type: str,
     space_id: str,
     message_id: str | None = None,
+    tenant_id: str = "default",
 ) -> DeliveryRecord | None:
     """Reserve a send operation if it is safe to attempt."""
+    del tenant_id
     with _LOCK:
         items = _load_raw()
         old = items.get(delivery_key)
@@ -218,3 +220,17 @@ def manual_summary_key(space_id: str, message_id: str) -> str:
 
 def auto_summary_key(space_id: str, range_key: str, date: str) -> str:
     return f"auto_summary:{space_id}:{range_key}:{date}"
+
+
+from core.settings import STORAGE_BACKEND as _STORAGE_BACKEND
+
+if _STORAGE_BACKEND == "postgres":
+    from repositories.postgres import delivery as _postgres_delivery
+
+    reserve_delivery = _postgres_delivery.reserve_delivery
+    mark_sent = _postgres_delivery.mark_sent
+    mark_failed = _postgres_delivery.mark_failed
+    mark_unknown = _postgres_delivery.mark_unknown
+    get_delivery = _postgres_delivery.get_delivery
+    is_reservation_expired = _postgres_delivery.is_reservation_expired
+    recover_stale_reserved_deliveries = _postgres_delivery.recover_stale_reserved_deliveries

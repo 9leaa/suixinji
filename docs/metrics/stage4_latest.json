@@ -1,0 +1,117 @@
+{
+  "measurement_status": "measured",
+  "submitted": 1000,
+  "accepted": 993,
+  "client_confirmed_accepted": 977,
+  "accepted_after_client_timeout": 16,
+  "submission_failed_unaccepted": 1,
+  "rate_limited": 0,
+  "duplicate": 6,
+  "blocked": 0,
+  "queued": 0,
+  "running": 0,
+  "completed": 993,
+  "cancelled": 0,
+  "failed": 1,
+  "pending": 0,
+  "dead_letter": 0,
+  "all_task_status": {
+    "completed": 2669
+  },
+  "all_task_pending": 0,
+  "all_task_dead_letter": 0,
+  "retry_count": 0,
+  "failure_count": 0,
+  "defer_count": 0,
+  "memory_gap_spaces": 0,
+  "max_memory_watermark_lag": 0,
+  "stream_lag": 0,
+  "stream_pending": 0,
+  "p50_latency_ms": 474212,
+  "p95_latency_ms": 1021709,
+  "p99_latency_ms": 1112633,
+  "p50_queue_wait_ms": 471281,
+  "p95_queue_wait_ms": 1018464,
+  "p99_queue_wait_ms": 1108971,
+  "p50_execution_ms": 3026,
+  "p95_execution_ms": 4265,
+  "p99_execution_ms": 5897,
+  "p50_lock_wait_ms": 72,
+  "p95_lock_wait_ms": 625,
+  "p99_lock_wait_ms": 1081,
+  "llm_tokens": 0,
+  "estimated_cost": 0.0,
+  "failure_rate": 0.001,
+  "conservation_delta": 0,
+  "conservation_ok": true,
+  "database": {
+    "accepted": 993,
+    "inbox_pending": 0,
+    "root_task_status": {
+      "completed": 993
+    },
+    "all_task_status": {
+      "completed": 2669
+    },
+    "task_count": 2669,
+    "retry_count": 0,
+    "failure_count": 0,
+    "defer_count": 0,
+    "outbox_unpublished": 0,
+    "memory_gap_spaces": 0,
+    "max_memory_watermark_lag": 0,
+    "delivery_status": {
+      "sent": 310
+    },
+    "p50_queue_wait_ms": 471281,
+    "p95_queue_wait_ms": 1018464,
+    "p99_queue_wait_ms": 1108971,
+    "p50_execution_ms": 3026,
+    "p95_execution_ms": 4265,
+    "p99_execution_ms": 5897,
+    "p50_latency_ms": 474212,
+    "p95_latency_ms": 1021709,
+    "p99_latency_ms": 1112633,
+    "llm_requests": 0,
+    "llm_tokens": 0,
+    "estimated_cost": 0.0
+  },
+  "redis": {
+    "stream_lag": 0,
+    "stream_pending": 0,
+    "dead_letter_stream": 0,
+    "streams": {
+      "ingest": {
+        "lag": 0,
+        "pending": 0,
+        "length": 683
+      },
+      "query": {
+        "lag": 0,
+        "pending": 0,
+        "length": 246
+      },
+      "summary": {
+        "lag": 0,
+        "pending": 0,
+        "length": 64
+      },
+      "memory": {
+        "lag": 0,
+        "pending": 0,
+        "length": 684
+      },
+      "enrichment": {
+        "lag": 0,
+        "pending": 0,
+        "length": 684
+      },
+      "delivery": {
+        "lag": 0,
+        "pending": 0,
+        "length": 310
+      }
+    }
+  },
+  "tenant_id": "load-20260718-causal-05"
+}

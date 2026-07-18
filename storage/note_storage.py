@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from core.file_lock import locked_space, safe_space_id
+from core.sensitive import contains_sensitive_data
 
 
 DATA_DIR = Path("data")
@@ -46,6 +47,13 @@ class NoteMetadata:
     summary: str
     text: str
     related: list[str]
+    enrichment_status: str = "ready"
+    enrichment_attempts: int = 0
+    enrichment_error: str | None = None
+    enrichment_started_at: str | None = None
+    enrichment_updated_at: str | None = None
+    sensitivity: str = "normal"
+    tenant_id: str = "default"
 
 
 def note_dir(space_id: str) -> Path:
@@ -130,6 +138,73 @@ def load_index(space_id: str) -> list[dict[str, Any]]:
 
         with path.open("r", encoding="utf-8") as f:
             return json.load(f)
+
+
+def list_note_space_ids() -> list[str]:
+    if not NOTES_DIR.exists():
+        return []
+    return sorted(path.name for path in NOTES_DIR.iterdir() if path.is_dir())
+
+
+def is_note_queryable(note: dict[str, Any]) -> bool:
+    """Return False for blocked or legacy notes containing sensitive values."""
+    sensitivity = str(note.get("sensitivity") or "normal").casefold()
+    if sensitivity not in {"", "normal", "none"}:
+        return False
+    return not contains_sensitive_data(str(note.get("text") or ""))
+
+
+def load_queryable_index(space_id: str) -> list[dict[str, Any]]:
+    """Load notes safe for query, summary, linking, and memory extraction."""
+    return [note for note in load_index(space_id) if is_note_queryable(note)]
+
+
+def find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
+    for note in load_index(space_id):
+        if str(note.get("id") or "") == str(note_id):
+            return note
+    return None
+
+
+def update_note_metadata(space_id: str, note_id: str, **updates: Any) -> dict[str, Any] | None:
+    """Update one index entry under the per-space re-entrant lock."""
+    with locked_space(space_id):
+        items = load_index(space_id)
+        updated: dict[str, Any] | None = None
+        for item in items:
+            if str(item.get("id") or "") != str(note_id):
+                continue
+            item.update(updates)
+            updated = dict(item)
+            break
+        if updated is not None:
+            save_index(space_id, items)
+        return updated
+
+
+def list_pending_enrichments(*, limit: int = 100, max_attempts: int = 3) -> list[dict[str, str]]:
+    """List explicitly provisional notes; legacy notes without the field are ready."""
+    if not NOTES_DIR.exists():
+        return []
+
+    pending: list[dict[str, str]] = []
+    for directory in sorted(path for path in NOTES_DIR.iterdir() if path.is_dir()):
+        for note in load_index(directory.name):
+            status = str(note.get("enrichment_status") or "ready")
+            attempts = int(note.get("enrichment_attempts") or 0)
+            if status not in {"provisional", "enriching", "failed"}:
+                continue
+            if attempts >= max_attempts:
+                continue
+            if not is_note_queryable(note):
+                continue
+            note_id = str(note.get("id") or "")
+            space_id = str(note.get("space_id") or directory.name)
+            if note_id and space_id:
+                pending.append({"space_id": space_id, "note_id": note_id})
+                if len(pending) >= max(1, int(limit)):
+                    return pending
+    return pending
 
 
 def note_exists(space_id: str, message_id: str) -> bool:
@@ -246,3 +321,21 @@ def save_note(meta: NoteMetadata) -> None:
 
         append_markdown_note(meta)
         append_index(meta)
+
+
+from core.settings import STORAGE_BACKEND as _STORAGE_BACKEND
+
+if _STORAGE_BACKEND == "postgres":
+    from repositories.postgres import notes as _postgres_notes
+
+    load_index = _postgres_notes.load_index
+    list_note_space_ids = _postgres_notes.list_space_ids
+
+    def load_queryable_index(space_id: str) -> list[dict[str, Any]]:
+        return [note for note in load_index(space_id) if is_note_queryable(note)]
+
+    find_note = _postgres_notes.find_note
+    update_note_metadata = _postgres_notes.update_note_metadata
+    list_pending_enrichments = _postgres_notes.list_pending_enrichments
+    note_exists = _postgres_notes.note_exists
+    save_note = _postgres_notes.save_note

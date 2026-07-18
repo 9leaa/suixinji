@@ -1,3 +1,10 @@
+import os
+
+os.environ["STORAGE_BACKEND"] = "local"
+os.environ["COORDINATION_BACKEND"] = "local"
+os.environ["TASK_QUEUE_BACKEND"] = "local"
+os.environ["SUIXINJI_AGENT_HOOKS_ENABLED"] = "false"
+
 import pytest
 
 from runtime import delivery_store

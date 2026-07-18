@@ -10,18 +10,21 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from agent.hooks import AgentRunContext, get_default_hook_manager
 from core.file_lock import locked_space
 from core.llm_client import complete_json
-from storage.note_storage import load_index, note_dir
+from memory.repository import list_memories
+from storage.note_storage import is_note_queryable, load_index, note_dir
 
 
 SUMMARY_SYSTEM_PROMPT = """
 你是“随心记 Agent”的总结助手。
-你要基于用户一段时间内的笔记生成总结。
+你要基于用户一段时间内的笔记证据和长期记忆状态生成两层总结。
 
 要求：
-- 只能基于 notes，不要编造。
+- 只能基于 notes 和 memory_changes，不要编造。
 - 先按 type/tags/主题整理，再提炼任务、问题、决定、提醒。
+- 明确区分“这段时间发生了什么”和“目标、偏好、任务状态发生了什么变化”。
 - 如果没有某类内容，不要硬写。
 - 输出适合直接发到飞书。
 - 必须输出 JSON object：{"summary_markdown":"..."}
@@ -29,8 +32,8 @@ SUMMARY_SYSTEM_PROMPT = """
 
 REFLECTION_SYSTEM_PROMPT = """
 你是“随心记 Agent”的总结审阅器。
-请检查草稿是否遗漏重要笔记、是否编造、是否把已完成任务写成待办。
-只基于 notes 修订总结。
+请检查草稿是否遗漏重要笔记或记忆变化、是否编造、是否把已完成任务写成待办。
+只基于 notes 和 memory_changes 修订总结。
 必须输出 JSON object：{"final_summary":"..."}
 """
 
@@ -76,6 +79,7 @@ class SummaryResult:
     note_count: int
     markdown: str
     path: str
+    memory_count: int = 0
 
 
 def parse_summary_range(raw: str) -> str | None:
@@ -123,6 +127,8 @@ def _parse_ts(value: str | None) -> datetime | None:
 def load_notes_in_range(space_id: str, start: datetime, end: datetime) -> list[dict[str, Any]]:
     notes = []
     for note in load_index(space_id):
+        if not is_note_queryable(note):
+            continue
         ts = _parse_ts(note.get("ts"))
         if ts is not None and start <= ts < end:
             notes.append(note)
@@ -151,6 +157,31 @@ def _brief_notes(notes: list[dict[str, Any]], limit: int = 120) -> list[dict[str
     ]
 
 
+def load_memory_changes(space_id: str, start: datetime, end: datetime) -> list[dict[str, Any]]:
+    changes = []
+    for memory in list_memories(space_id, status=None, limit=100):
+        updated = _parse_ts(memory.updated_at)
+        if updated is not None and start <= updated < end:
+            changes.append(memory.to_dict())
+    changes.sort(key=lambda item: item.get("updated_at", ""))
+    return changes
+
+
+def _brief_memories(memories: list[dict[str, Any]], limit: int = 60) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": memory.get("id"),
+            "memory_type": memory.get("memory_type"),
+            "content": _clip(memory.get("content"), 360),
+            "status": memory.get("status"),
+            "task_status": memory.get("task_status"),
+            "updated_at": memory.get("updated_at"),
+            "source_note_ids": [source.get("note_id") for source in (memory.get("sources") or [])[:8]],
+        }
+        for memory in memories[:limit]
+    ]
+
+
 def _stats(notes: list[dict[str, Any]]) -> dict[str, Any]:
     type_counter = Counter(str(note.get("type") or "未分类") for note in notes)
     tag_counter: Counter[str] = Counter()
@@ -164,8 +195,8 @@ def _stats(notes: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _fallback_summary(range_label: str, notes: list[dict[str, Any]]) -> str:
-    if not notes:
+def _fallback_summary(range_label: str, notes: list[dict[str, Any]], memories: list[dict[str, Any]] | None = None) -> str:
+    if not notes and not memories:
         return f"{range_label}没有记录到随心记笔记。"
 
     stats = _stats(notes)
@@ -173,16 +204,22 @@ def _fallback_summary(range_label: str, notes: list[dict[str, Any]]) -> str:
         f"## {range_label}随心记总结",
         "",
         f"共记录 {stats['note_count']} 条笔记。",
-        "",
-        "### 分类概览",
     ]
-    for note_type, count in stats["type_counts"].items():
-        lines.append(f"- {note_type}：{count} 条")
+    if notes:
+        lines.extend(["", "### 分类概览"])
+        for note_type, count in stats["type_counts"].items():
+            lines.append(f"- {note_type}：{count} 条")
 
-    lines.extend(["", "### 主要记录"])
-    for note in notes[:10]:
-        date = str(note.get("ts") or "")[:10]
-        lines.append(f"- {date}｜{note.get('title') or '无标题'}：{note.get('summary') or note.get('text') or ''}")
+        lines.extend(["", "### 主要记录"])
+        for note in notes[:10]:
+            date = str(note.get("ts") or "")[:10]
+            lines.append(f"- {date}｜{note.get('title') or '无标题'}：{note.get('summary') or note.get('text') or ''}")
+
+    if memories:
+        lines.extend(["", "### 长期状态变化"])
+        for memory in memories[:10]:
+            task_status = f"｜{memory.get('task_status')}" if memory.get("task_status") else ""
+            lines.append(f"- {memory.get('memory_type')}｜{memory.get('status')}{task_status}：{memory.get('content')}")
 
     return "\n".join(lines)
 
@@ -211,6 +248,7 @@ def save_summary(space_id: str, result: SummaryResult) -> None:
             "start": result.start,
             "end": result.end,
             "note_count": result.note_count,
+            "memory_count": result.memory_count,
             "path": result.path,
             "created_at": datetime.now().astimezone().isoformat(),
         }
@@ -220,14 +258,31 @@ def save_summary(space_id: str, result: SummaryResult) -> None:
         index_path.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def generate_summary(space_id: str, range_key: str) -> SummaryResult:
+def _summary_complete_json(
+    context: AgentRunContext | None,
+    *,
+    name: str,
+    system_prompt: str,
+    user_prompt: str,
+) -> dict[str, Any]:
+    if context is None:
+        return complete_json(system_prompt=system_prompt, user_prompt=user_prompt)
+    return get_default_hook_manager().run_llm(
+        context,
+        {"name": name, "system_prompt_len": len(system_prompt), "user_prompt": user_prompt},
+        lambda: complete_json(system_prompt=system_prompt, user_prompt=user_prompt),
+    )
+
+
+def _generate_summary_impl(space_id: str, range_key: str, context: AgentRunContext | None) -> SummaryResult:
     start, end = build_time_range(range_key)
     range_label = RANGE_LABELS[range_key]
     notes = load_notes_in_range(space_id, start, end)
+    memories = load_memory_changes(space_id, start, end)
     path = _summary_path(space_id, range_key, start, end)
 
     if not notes:
-        markdown = _fallback_summary(range_label, notes)
+        markdown = _fallback_summary(range_label, notes, memories)
     else:
         payload = {
             "range_label": range_label,
@@ -235,26 +290,31 @@ def generate_summary(space_id: str, range_key: str) -> SummaryResult:
             "end": end.isoformat(),
             "stats": _stats(notes),
             "notes": _brief_notes(notes),
+            "memory_changes": _brief_memories(memories),
         }
 
         try:
-            draft = complete_json(
+            draft = _summary_complete_json(
+                context,
+                name="summary_draft",
                 system_prompt=SUMMARY_SYSTEM_PROMPT,
                 user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
             ).get("summary_markdown", "")
 
-            reviewed = complete_json(
+            reviewed = _summary_complete_json(
+                context,
+                name="summary_review",
                 system_prompt=REFLECTION_SYSTEM_PROMPT,
                 user_prompt=json.dumps(
-                    {"notes": payload["notes"], "draft": draft},
+                    {"notes": payload["notes"], "memory_changes": payload["memory_changes"], "draft": draft},
                     ensure_ascii=False,
                     indent=2,
                 ),
             ).get("final_summary", "")
 
-            markdown = str(reviewed or draft).strip() or _fallback_summary(range_label, notes)
+            markdown = str(reviewed or draft).strip() or _fallback_summary(range_label, notes, memories)
         except Exception:
-            markdown = _fallback_summary(range_label, notes)
+            markdown = _fallback_summary(range_label, notes, memories)
 
     result = SummaryResult(
         range_key=range_key,
@@ -264,6 +324,37 @@ def generate_summary(space_id: str, range_key: str) -> SummaryResult:
         note_count=len(notes),
         markdown=markdown,
         path=str(path),
+        memory_count=len(memories),
     )
     save_summary(space_id, result)
     return result
+
+
+def generate_summary(
+    space_id: str,
+    range_key: str,
+    *,
+    tenant_id: str = "default",
+    user_id: str | None = None,
+    message_id: str | None = None,
+    task_id: str | None = None,
+) -> SummaryResult:
+    context = AgentRunContext.create(
+        space_id=space_id,
+        run_type="summary",
+        tenant_id=tenant_id,
+        user_id=user_id,
+        message_id=message_id,
+        task_id=task_id,
+        metadata={"range_key": range_key},
+    )
+    manager = get_default_hook_manager()
+    return manager.run_agent(
+        context,
+        lambda: manager.run_tool(
+            context,
+            "generate_summary",
+            {"range_key": range_key},
+            lambda: _generate_summary_impl(space_id, range_key, context),
+        ),
+    )

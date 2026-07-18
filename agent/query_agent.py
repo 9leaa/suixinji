@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timedelta
 from typing import Any
 
+from agent.hooks import AgentRunContext, get_default_hook_manager
 from core.llm_client import complete_json, embed_text
 from core.observability import log_event, observe
+from core.sensitive import mentions_sensitive_topic
 from core.settings import MEMORY_QUERY_MIN_SCORE, QUERY_MIN_SCORE, QUERY_TOP_K
 from core.taxonomy import is_valid_tag, is_valid_type, normalize_tag, normalize_type
 from memory.service import memory_search
 from memory.trace import add_step, finish_trace, start_trace
-from storage.note_storage import load_index
+from storage.note_storage import is_note_queryable, load_index
 from storage.vector_store import search_related
 
 
@@ -51,6 +54,8 @@ REACT_SYSTEM_PROMPT = f"""
 - 如果用户问“和某条笔记相关的有哪些”，先 semantic_search 找候选 note_id，再 follow_links。
 - 回答只能基于 observations，不要编造。
 - 如果没有找到相关笔记，要明确说没找到。
+- observations 中如果存在 session_context，它表示上一轮临时会话状态；可据此理解“一周”“这个”等承接回答。
+- 如果回答后需要等待用户补充信息，可额外输出 session_update，例如 {{"waiting_for":"summary_range","current_intent":"summary"}}；不再需要时输出空对象。
 - 回答要自然、简洁，必要时引用笔记标题或时间。
 """
 
@@ -199,11 +204,16 @@ def _note_brief(note: dict[str, Any], *, text_limit: int = 500) -> dict[str, Any
         "summary": note.get("summary"),
         "text": _clip(note.get("text"), text_limit),
         "related": note.get("related", []),
+        "enrichment_status": note.get("enrichment_status", "ready"),
     }
 
 
+def _safe_notes(space_id: str) -> list[dict[str, Any]]:
+    return [note for note in load_index(space_id) if is_note_queryable(note)]
+
+
 def _find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
-    for note in load_index(space_id):
+    for note in _safe_notes(space_id):
         if note.get("id") == note_id:
             return note
     return None
@@ -231,7 +241,7 @@ def filter_notes(
         return []
 
     results = []
-    for note in load_index(space_id):
+    for note in _safe_notes(space_id):
         if query_type and note.get("type") != query_type:
             continue
 
@@ -302,6 +312,71 @@ def semantic_search(
     ]
 
 
+_QUERY_FILLERS = (
+    "请问",
+    "帮我",
+    "告诉我",
+    "查一下",
+    "看一下",
+    "什么",
+    "哪个",
+    "哪些",
+    "是否",
+    "有没有",
+    "相关内容",
+    "相关记录",
+    "刚才",
+    "上次",
+)
+
+
+def _lexical_terms(text: str) -> set[str]:
+    value = str(text or "").casefold()
+    for filler in _QUERY_FILLERS:
+        value = value.replace(filler, "")
+    latin = set(re.findall(r"[a-z0-9][a-z0-9+#._-]*", value))
+    cjk_runs = re.findall(r"[\u3400-\u9fff]+", value)
+    terms = set(latin)
+    for run in cjk_runs:
+        if len(run) == 1:
+            terms.add(run)
+        else:
+            terms.update(run[index : index + 2] for index in range(len(run) - 1))
+    return {term for term in terms if term}
+
+
+def provisional_search(space_id: str, query: str, limit: int = 5) -> list[dict[str, Any]]:
+    """Search newly saved notes locally while LLM enrichment is still running."""
+    query_terms = _lexical_terms(query)
+    if not query_terms:
+        return []
+
+    scored: list[tuple[float, dict[str, Any]]] = []
+    for note in _safe_notes(space_id):
+        status = str(note.get("enrichment_status") or "ready")
+        if status not in {"provisional", "enriching", "failed"}:
+            continue
+        note_terms = _lexical_terms(
+            " ".join(
+                (
+                    str(note.get("title") or ""),
+                    str(note.get("summary") or ""),
+                    str(note.get("text") or ""),
+                )
+            )
+        )
+        overlap = len(query_terms & note_terms) / max(1, len(query_terms))
+        if overlap < 0.34:
+            continue
+        scored.append((overlap, note))
+
+    scored.sort(key=lambda item: (item[0], str(item[1].get("ts") or "")), reverse=True)
+    return [
+        {**_note_brief(note), "score": round(score, 4), "provisional": True}
+        for score, note in scored[: max(1, min(int(limit), 10))]
+    ]
+
+
 def get_note(space_id: str, note_id: str) -> dict[str, Any]:
     note = _find_note(space_id, note_id)
     if note is None:
@@ -317,7 +392,7 @@ def list_recent(space_id: str, days: int = 7, limit: int = 10) -> list[dict[str,
     cutoff = now - timedelta(days=days)
 
     notes = []
-    for note in load_index(space_id):
+    for note in _safe_notes(space_id):
         ts = _parse_ts(note.get("ts"))
         if ts is not None and ts >= cutoff:
             notes.append(note)
@@ -328,7 +403,7 @@ def list_recent(space_id: str, days: int = 7, limit: int = 10) -> list[dict[str,
 
 def follow_links(space_id: str, note_id: str, limit: int = 5) -> dict[str, Any]:
     limit = max(1, min(int(limit), 20))
-    notes = load_index(space_id)
+    notes = _safe_notes(space_id)
     note = next((item for item in notes if item.get("id") == note_id), None)
     if note is None:
         return {"error": f"note not found: {note_id}"}
@@ -447,13 +522,23 @@ def _execute_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
     return {"error": f"unknown tool: {action}"}
 
 
-def _run_tool(space_id: str, action: str, args: dict[str, Any], *, trace: dict[str, Any] | None = None) -> Any:
-    with observe(
-        "query.tool_call",
-        space_id=space_id,
-        extra=_safe_tool_args(action, args),
-    ):
-        result = _execute_tool(space_id, action, args)
+def _run_tool(
+    space_id: str,
+    action: str,
+    args: dict[str, Any],
+    *,
+    trace: dict[str, Any] | None = None,
+    hook_context: AgentRunContext | None = None,
+) -> Any:
+    def execute() -> Any:
+        with observe(
+            "query.tool_call",
+            space_id=space_id,
+            extra=_safe_tool_args(action, args),
+        ):
+            return _execute_tool(space_id, action, args)
+
+    result = get_default_hook_manager().run_tool(hook_context, action, args, execute) if hook_context else execute()
     step = "memory_search" if action == "memory_search" else "note_search"
     add_step(
         trace,
@@ -492,19 +577,50 @@ def _fallback_answer(observations: list[dict[str, Any]]) -> str:
     lines = ["我找到几条可能相关的记录："]
     for item in candidates[:3]:
         title = item.get("title") or item.get("id")
-        summary = item.get("summary") or item.get("text") or ""
+        summary = item.get("summary") or item.get("content") or item.get("text") or ""
         lines.append(f"- {title}：{summary}")
     return "\n".join(lines)
 
 
-def _synthesize_answer(question: str, observations: list[dict[str, Any]]) -> str:
+def _provisional_answer(notes: list[dict[str, Any]]) -> str:
+    lines = ["刚收到的记录还在后台完善分类，但已经可以查询："]
+    for note in notes[:3]:
+        content = note.get("text") or note.get("summary") or note.get("title") or ""
+        lines.append(f"- {_clip(str(content), 220)}")
+    return "\n".join(lines)
+
+
+def _complete_json_with_hooks(
+    context: AgentRunContext | None,
+    *,
+    name: str,
+    system_prompt: str,
+    user_prompt: str,
+) -> dict[str, Any]:
+    if context is None:
+        return complete_json(system_prompt=system_prompt, user_prompt=user_prompt)
+    request: dict[str, Any] = {
+        "name": name,
+        "system_prompt_len": len(system_prompt),
+        "user_prompt": user_prompt,
+    }
+    return get_default_hook_manager().run_llm(
+        context,
+        request,
+        lambda: complete_json(system_prompt=system_prompt, user_prompt=user_prompt),
+    )
+
+
+def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hook_context: AgentRunContext | None = None) -> str:
     payload = {
         "question": question,
         "observations": observations,
     }
 
     try:
-        data = complete_json(
+        data = _complete_json_with_hooks(
+            hook_context,
+            name="query_synthesis",
             system_prompt=FINAL_SYSTEM_PROMPT,
             user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
         )
@@ -514,7 +630,7 @@ def _synthesize_answer(question: str, observations: list[dict[str, Any]]) -> str
     return str(data.get("final_answer") or "").strip() or _fallback_answer(observations)
 
 
-def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
+def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_context: AgentRunContext | None) -> str:
     question = question.strip()
     trace = start_trace("memory_query", space_id, query_len=len(question))
     add_step(trace, "query_received", input_summary={"question_len": len(question), "max_steps": max_steps})
@@ -530,9 +646,57 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
             finish_trace(trace)
             return answer
 
+        if mentions_sensitive_topic(question):
+            answer = "为保护安全，随心记不会保存或检索密码、密钥、令牌、身份证号、银行卡号等敏感凭据。"
+            _log_final_answer(space_id, answer, source="sensitive_query_blocked")
+            add_step(
+                trace,
+                "query_blocked",
+                status="discarded",
+                output_summary={"reason": "sensitive_topic"},
+                reason="sensitive_topic",
+            )
+            add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+            finish_trace(trace)
+            return answer
+
         observations: list[dict[str, Any]] = []
+        if hook_context is not None and hook_context.session:
+            session_context = {
+                key: hook_context.session.get(key)
+                for key in ("current_intent", "waiting_for", "pending_operation", "conversation_summary")
+                if hook_context.session.get(key) is not None
+            }
+            if session_context:
+                observations.append({"thought": "恢复上一轮临时会话。", "tool": "session_context", "args": {}, "result": session_context})
 
         try:
+            provisional = provisional_search(space_id, question, limit=5)
+            if provisional:
+                observations.append(
+                    {
+                        "thought": "新笔记已本地落库，后台增强尚未结束。",
+                        "tool": "provisional_search",
+                        "args": {"query_len": len(question), "limit": 5},
+                        "result": provisional,
+                    }
+                )
+                add_step(
+                    trace,
+                    "query_routed",
+                    output_summary={"tool": "provisional_search", "safe_args": {"query_len": len(question), "limit": 5}},
+                    reason="read_after_write",
+                )
+                add_step(trace, "note_search", output_summary={"result_count": len(provisional), "ids": _result_ids(provisional)})
+                add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(provisional)})
+                add_step(trace, "rerank", output_summary={"strategy": "local_lexical_recency", "ids": _result_ids(provisional)})
+                answer = _with_sources(_provisional_answer(provisional), observations)
+                _log_final_answer(space_id, answer, source="provisional_read_after_write", observations=observations)
+                add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="no_llm_wait")
+                add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                finish_trace(trace)
+                return answer
+
             add_step(
                 trace,
                 "query_routed",
@@ -542,7 +706,13 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
                 },
                 reason="prefetch_active_memory",
             )
-            memory_prefetch = _run_tool(space_id, "memory_search", {"query": question, "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE}, trace=trace)
+            memory_prefetch = _run_tool(
+                space_id,
+                "memory_search",
+                {"query": question, "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
+                trace=trace,
+                hook_context=hook_context,
+            )
             if memory_prefetch:
                 observations.append(
                     {
@@ -561,12 +731,35 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
                     "observations": observations,
                 }
 
-                decision = complete_json(
-                    system_prompt=REACT_SYSTEM_PROMPT,
-                    user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
-                )
+                try:
+                    decision = _complete_json_with_hooks(
+                        hook_context,
+                        name="query_react",
+                        system_prompt=REACT_SYSTEM_PROMPT,
+                        user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
+                    )
+                except Exception as exc:
+                    if not observations:
+                        raise
+                    answer = _with_sources(_fallback_answer(observations), observations)
+                    _log_final_answer(space_id, answer, source="react_fallback_after_error", observations=observations)
+                    add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="react_fallback_after_error")
+                    add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                    finish_trace(trace)
+                    log_event(
+                        "query.react_fallback",
+                        level="warning",
+                        status="success",
+                        space_id=space_id,
+                        error=f"{type(exc).__name__}: {exc}",
+                        extra={"observation_count": len(observations)},
+                    )
+                    return answer
 
                 final_answer = str(decision.get("final_answer") or "").strip()
+                if hook_context is not None and "session_update" in decision:
+                    update = decision.get("session_update")
+                    hook_context.metadata["session_update"] = update if isinstance(update, dict) else {}
                 if final_answer and observations:
                     answer = _with_sources(final_answer, observations)
                     _log_final_answer(space_id, answer, source="react_final", observations=observations)
@@ -597,7 +790,7 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
                     reason=str(decision.get("thought") or ""),
                 )
 
-                result = _run_tool(space_id, str(action), args, trace=trace)
+                result = _run_tool(space_id, str(action), args, trace=trace, hook_context=hook_context)
                 observations.append(
                     {
                         "thought": decision.get("thought"),
@@ -609,7 +802,7 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
                 add_step(trace, "rerank", output_summary={"strategy": "tool_order", "ids": _result_ids(result)})
 
-            answer = _with_sources(_synthesize_answer(question, observations), observations)
+            answer = _with_sources(_synthesize_answer(question, observations, hook_context=hook_context), observations)
             _log_final_answer(space_id, answer, source="synthesized", observations=observations)
             add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="synthesized")
             add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
@@ -619,3 +812,28 @@ def answer_question(space_id: str, question: str, max_steps: int = 4) -> str:
             add_step(trace, "answer_failed", status="failed", error=str(exc))
             finish_trace(trace, status="failed")
             raise
+
+
+def answer_question(
+    space_id: str,
+    question: str,
+    max_steps: int = 4,
+    *,
+    tenant_id: str = "default",
+    user_id: str | None = None,
+    message_id: str | None = None,
+    task_id: str | None = None,
+) -> str:
+    context = AgentRunContext.create(
+        space_id=space_id,
+        run_type="query",
+        tenant_id=tenant_id,
+        user_id=user_id,
+        message_id=message_id,
+        task_id=task_id,
+        metadata={"question_len": len(question), "max_steps": max_steps},
+    )
+    return get_default_hook_manager().run_agent(
+        context,
+        lambda: _answer_question_impl(space_id, question, max_steps, context),
+    )

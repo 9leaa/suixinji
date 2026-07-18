@@ -2,3 +2,11 @@ python-dotenv==1.1.1
 openai==1.93.0
 lark-oapi==1.4.22
 pydantic==2.11.7
+SQLAlchemy==2.0.41
+psycopg[binary]==3.2.9
+alembic==1.16.2
+pgvector==0.4.1
+redis==5.2.1
+fastapi==0.136.3
+starlette==1.1.0
+uvicorn==0.47.0

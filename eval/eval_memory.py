@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from eval.common import aggregate_boolean_scores, load_jsonl, write_json
+from memory.adjudicator import adjudicate_memory
 from memory.extractor import extract_candidates
 from memory.models import MemoryCandidate
 from memory import repository as memory_repository
@@ -34,7 +35,6 @@ from memory.repository import (
     search_memories,
     soft_delete_memory,
 )
-from memory.relation_classifier import classify_relation
 from memory.service import process_note_memory
 
 DATA_DIR = Path("eval/memory")
@@ -76,11 +76,40 @@ def _score_relation(cases: list[dict[str, Any]]) -> dict[str, Any]:
         old = MemoryCandidate("semantic" if "学习" in case["old"] else "preference", case["old"], 0.8, 0.9)
         old_memory = insert_memory(f"eval-rel-{idx}", old, source_note_id=f"old-{idx}")
         new = MemoryCandidate(old.memory_type, case["new"], 0.8, 0.9)
-        decision = classify_relation(new, [old_memory])
+        decision = adjudicate_memory(new, [old_memory])
         expected = str(case.get("expected_relation"))
-        passed = decision.relation == expected or (expected == "new" and decision.action == "insert")
-        results.append({"case_id": case.get("case_id"), "passed": passed, "relation": decision.relation, "action": decision.action})
-    return {"summary": aggregate_boolean_scores(results), "results": results}
+        passed = decision.relation == expected
+        results.append(
+            {
+                "case_id": case.get("case_id"),
+                "passed": passed,
+                "expected_relation": expected,
+                "relation": decision.relation,
+                "action": decision.recommended_action,
+                "confidence": decision.confidence,
+            }
+        )
+    per_relation = {}
+    for relation in {str(item["expected_relation"]) for item in results}:
+        relation_results = [item for item in results if item["expected_relation"] == relation]
+        per_relation[relation] = aggregate_boolean_scores(relation_results)["pass_rate"]
+    false_merge_rate = round(
+        sum(1 for item in results if item["relation"] == "merge" and item["expected_relation"] != "merge")
+        / max(1, sum(1 for item in results if item["relation"] == "merge")),
+        4,
+    )
+    false_supersede_rate = round(
+        sum(1 for item in results if item["relation"] == "supersede" and item["expected_relation"] != "supersede")
+        / max(1, sum(1 for item in results if item["relation"] == "supersede")),
+        4,
+    )
+    return {
+        "summary": aggregate_boolean_scores(results),
+        "per_relation_accuracy": per_relation,
+        "false_merge_rate": false_merge_rate,
+        "false_supersede_rate": false_supersede_rate,
+        "results": results,
+    }
 
 
 def _note(space_id: str, note_id: str, text: str) -> dict[str, str]:
@@ -245,7 +274,12 @@ def run(*, dry_run: bool = False, output_dir: Path = Path("eval/results")) -> di
         "extraction_f1": reports["extraction"]["summary"]["pass_rate"],
         "memory_type_accuracy": reports["extraction"]["summary"]["pass_rate"],
         "false_memory_rate": reports["filtering"]["false_memory_rate"],
-        "merge_accuracy": reports["relation"]["summary"]["pass_rate"],
+        "adjudication_accuracy": reports["relation"]["summary"]["pass_rate"],
+        "new_accuracy": reports["relation"]["per_relation_accuracy"].get("new", 0.0),
+        "merge_accuracy": reports["relation"]["per_relation_accuracy"].get("merge", 0.0),
+        "supersede_accuracy": reports["relation"]["per_relation_accuracy"].get("supersede", 0.0),
+        "false_merge_rate": reports["relation"]["false_merge_rate"],
+        "false_supersede_rate": reports["relation"]["false_supersede_rate"],
         "conflict_accuracy": reports["conflict"]["summary"]["pass_rate"],
         "stale_memory_usage_rate": round(1 - reports["conflict"]["summary"]["pass_rate"], 4),
         "retrieval_recall_at_5": reports["retrieval"]["summary"]["pass_rate"],

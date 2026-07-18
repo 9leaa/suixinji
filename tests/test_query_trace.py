@@ -40,3 +40,31 @@ def test_answer_question_writes_query_trace_with_safe_steps(monkeypatch):
     assert "answer_generated" in steps
     assert "answer_returned" in steps
     assert "我喜欢什么评价" not in trace_text
+
+
+def test_answer_question_falls_back_when_react_llm_fails_after_prefetch(monkeypatch):
+    def fail_complete_json(system_prompt, user_prompt):
+        raise RuntimeError("LLM returned no message content")
+
+    monkeypatch.setattr(query_agent, "complete_json", fail_complete_json)
+    monkeypatch.setattr(
+        query_agent,
+        "memory_search",
+        lambda space_id, query, memory_type=None, min_score=query_agent.DEFAULT_MEMORY_MIN_SCORE, limit=8: [
+            {
+                "id": "mem-1",
+                "memory_type": "preference",
+                "content": "用户讨厌喝牛奶",
+                "sources": [{"note_id": "note-1"}],
+            }
+        ],
+    )
+
+    answer = query_agent.answer_question("space-1", "我讨厌喝什么？", max_steps=2)
+    trace = latest_trace()
+    steps = [step["step"] for step in trace["steps"]]
+
+    assert "用户讨厌喝牛奶" in answer
+    assert "来源：" in answer
+    assert "answer_failed" not in steps
+    assert "answer_returned" in steps

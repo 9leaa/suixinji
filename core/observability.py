@@ -13,9 +13,23 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterator
 
+from core.sensitive import assess_sensitive_text, redact_sensitive_text
+
 LOG_DIR = Path("data/logs")
 _LOCK = threading.RLock()
 LOGGER = logging.getLogger(__name__)
+
+
+def _safe_log_value(value: Any) -> Any:
+    if isinstance(value, str):
+        if assess_sensitive_text(value).blocks_storage:
+            return "[sensitive content redacted]"
+        return redact_sensitive_text(value)
+    if isinstance(value, dict):
+        return {str(key): _safe_log_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_safe_log_value(item) for item in value]
+    return value
 
 
 def now_iso() -> str:
@@ -55,8 +69,8 @@ def log_event(
         "message_id": message_id,
         "record_id": record_id,
         "duration_ms": duration_ms,
-        "error": error,
-        "extra": extra or {},
+        "error": _safe_log_value(error),
+        "extra": _safe_log_value(extra or {}),
     }
 
     try:

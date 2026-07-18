@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import datetime
 from typing import Any
 
 from core.settings import MEMORY_EXTRACTION_LEASE_SECONDS
+from memory.adjudicator import adjudicate_memory
 from memory.candidate_retriever import retrieve_candidates
+from memory.evolution import evolve_memory
 from memory.models import MemoryCandidate, utc_now_iso
-from memory.repository import add_source, get_extraction_state, insert_memory, list_memories, mark_extraction_failed, update_memory
-from memory.relation_classifier import classify_relation
+from memory.repository import add_memory_relation, add_source, get_extraction_state, list_memories, mark_extraction_failed, update_memory
 from memory.retriever import score_memory
 from memory.trace import add_step
-from storage.note_storage import load_index
+from storage.note_storage import is_note_queryable, load_index
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,104 +33,43 @@ def _is_processing_stale(updated_at: str | None) -> bool:
 
 
 def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidate, *, trace: dict[str, Any] | None = None) -> dict[str, Any]:
-    if not candidate.should_store:
-        add_step(
-            trace,
-            "memory_discarded",
-            input_summary={"candidate_id": candidate.candidate_id, "memory_type": candidate.memory_type},
-            reason=candidate.reason or "candidate_should_not_store",
-        )
-        return {"action": "discarded", "candidate_id": candidate.candidate_id}
-
+    add_step(
+        trace,
+        "retrieval_started",
+        input_summary={"candidate_id": candidate.candidate_id, "memory_type": candidate.memory_type},
+    )
+    retrieval_started = time.perf_counter()
     similar = retrieve_candidates(space_id, candidate)
     add_step(
         trace,
-        "similar_memories_retrieved",
+        "candidate_memories_found",
         input_summary={"candidate_id": candidate.candidate_id, "memory_type": candidate.memory_type},
         output_summary={"retrieved_count": len(similar), "memory_ids": [memory.id for memory in similar]},
+        duration_ms=int((time.perf_counter() - retrieval_started) * 1000),
     )
-    decision = classify_relation(candidate, similar)
+    adjudication_started = time.perf_counter()
+    decision = adjudicate_memory(candidate, similar)
     add_step(
         trace,
-        "relation_classified",
+        "relation_decided",
         input_summary={"candidate_id": candidate.candidate_id},
-        output_summary={"relation": decision.relation, "target_memory_id": decision.target_memory_id, "action": decision.action},
+        output_summary={
+            "decision_id": decision.decision_id,
+            "relation": decision.relation,
+            "target_memory_ids": decision.target_memory_ids,
+            "action": decision.recommended_action,
+            "confidence": decision.confidence,
+        },
+        duration_ms=int((time.perf_counter() - adjudication_started) * 1000),
         reason=decision.reason,
     )
-
-    if decision.action == "add_source" and decision.target_memory_id:
-        add_source(decision.target_memory_id, note_id, "supported_by")
-        add_step(trace, "memory_source_added", output_summary={"memory_id": decision.target_memory_id}, reason=decision.reason)
-        return {"action": "add_source", "memory_id": decision.target_memory_id, "relation": decision.relation}
-
-    if decision.action == "merge" and decision.target_memory_id:
-        add_source(decision.target_memory_id, note_id, "supported_by")
-        add_step(trace, "memory_merged", output_summary={"memory_id": decision.target_memory_id}, reason=decision.reason)
-        return {"action": "merge", "memory_id": decision.target_memory_id, "relation": decision.relation}
-
-    if decision.action == "update_task" and decision.target_memory_id:
-        add_source(decision.target_memory_id, note_id, "updated_by")
-        updated = update_memory(
-            decision.target_memory_id,
-            content=candidate.content,
-            task_status=candidate.task_status,
-            reason=decision.reason or "task_status_changed",
-            source_note_id=note_id,
-        )
-        add_step(
-            trace,
-            "memory_updated",
-            output_summary={"memory_id": decision.target_memory_id, "task_status": candidate.task_status},
-            reason=decision.reason,
-        )
-        return {"action": "update_task", "memory_id": decision.target_memory_id, "task_status": updated.task_status if updated else candidate.task_status}
-
-    if decision.action == "supersede" and decision.target_memory_id:
-        update_memory(
-            decision.target_memory_id,
-            status="superseded",
-            valid_until=utc_now_iso(),
-            reason=decision.reason or "superseded_by_new_note",
-            source_note_id=note_id,
-        )
-        new_memory = insert_memory(space_id, candidate, source_note_id=note_id, source_relation="updated_by")
-        add_step(
-            trace,
-            "memory_superseded",
-            output_summary={"target_memory_id": decision.target_memory_id, "memory_id": new_memory.id},
-            reason=decision.reason,
-        )
-        return {"action": "supersede", "memory_id": new_memory.id, "target_memory_id": decision.target_memory_id}
-
-    if decision.action == "conflict" and decision.target_memory_id:
-        update_memory(
-            decision.target_memory_id,
-            status="conflicted",
-            reason=decision.reason or "ambiguous_conflict",
-            source_note_id=note_id,
-        )
-        conflicted = MemoryCandidate(
-            memory_type=candidate.memory_type,
-            content=candidate.content,
-            importance=candidate.importance,
-            confidence=min(candidate.confidence, 0.6),
-            entities=candidate.entities,
-            should_store=candidate.should_store,
-            task_status=candidate.task_status,
-            reason=candidate.reason,
-        )
-        new_memory = insert_memory(space_id, conflicted, source_note_id=note_id, source_relation="contradicted_by", status="conflicted")
-        add_step(
-            trace,
-            "memory_conflicted",
-            output_summary={"target_memory_id": decision.target_memory_id, "memory_id": new_memory.id},
-            reason=decision.reason,
-        )
-        return {"action": "conflict", "memory_id": new_memory.id, "target_memory_id": decision.target_memory_id}
-
-    memory = insert_memory(space_id, candidate, source_note_id=note_id)
-    add_step(trace, "memory_inserted", output_summary={"memory_id": memory.id, "memory_type": memory.memory_type}, reason=decision.reason)
-    return {"action": "insert", "memory_id": memory.id, "relation": decision.relation}
+    return evolve_memory(
+        space_id=space_id,
+        note_id=note_id,
+        candidate=candidate,
+        decision=decision,
+        trace=trace,
+    )
 
 
 def process_unextracted_notes(space_id: str, *, limit: int = 100) -> dict[str, Any]:
@@ -139,6 +80,9 @@ def process_unextracted_notes(space_id: str, *, limit: int = 100) -> dict[str, A
     failed = []
     skipped = 0
     for note in load_index(space_id)[: max(1, min(int(limit), 500))]:
+        if not is_note_queryable(note):
+            skipped += 1
+            continue
         note_id = str(note.get("id") or "")
         if not note_id:
             skipped += 1
@@ -224,9 +168,24 @@ def generate_stable_semantic(space_id: str, *, min_sources: int = 3) -> dict[str
         confidence=0.82,
         entities=["Agent", "RAG"],
         reason="monthly_stable_semantic_consolidation",
+        space_id=space_id,
+        subject="用户",
+        predicate="learning_focus",
+        object_value="Agent/RAG 系统",
     )
     first_source = source_note_ids[0] if source_note_ids else episodic[0].id
-    memory = insert_memory(space_id, candidate, source_note_id=first_source)
+    result = consolidate_candidate(space_id, first_source, candidate)
+    memory_id = str(result.get("memory_id") or "")
+    if not memory_id:
+        return {"space_id": space_id, "created": False, "reason": "candidate_not_applied", "source_count": len(source_note_ids)}
     for note_id in source_note_ids[1:]:
-        add_source(memory.id, note_id, "supported_by")
-    return {"space_id": space_id, "created": True, "memory_id": memory.id, "source_count": len(source_note_ids)}
+        add_source(memory_id, note_id, "summarized_from")
+    for source_memory in episodic:
+        add_memory_relation(space_id, memory_id, source_memory.id, "summarized_from", decision_id=result.get("decision_id"))
+    return {
+        "space_id": space_id,
+        "created": result.get("action") == "insert",
+        "action": result.get("action"),
+        "memory_id": memory_id,
+        "source_count": len(source_note_ids),
+    }
