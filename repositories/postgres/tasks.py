@@ -26,7 +26,7 @@ def create_task(task: dict[str, Any]) -> bool:
     space_id = str(task["space_id"])
     tenant_id = str(task.get("tenant_id") or DEFAULT_TENANT_ID)
     with session_scope() as session:
-        ensure_tenant_space(session, space_id, tenant_id=tenant_id)
+        space_id = ensure_tenant_space(session, space_id, tenant_id=tenant_id)
         created = session.execute(
             insert(Task)
             .values(

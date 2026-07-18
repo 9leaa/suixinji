@@ -93,7 +93,7 @@ class InboxMessage(Base):
     note_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     memory_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     __table_args__ = (
-        UniqueConstraint("source", "source_message_id", name="uq_inbox_source_message"),
+        UniqueConstraint("tenant_id", "source", "source_message_id", name="uq_inbox_tenant_source_message"),
         UniqueConstraint("space_id", "sequence_no", name="uq_inbox_space_sequence"),
         Index("ix_inbox_space_status_sequence", "space_id", "status", "sequence_no"),
         Index("ix_inbox_space_note_sequence", "space_id", "note_status", "sequence_no"),
@@ -241,12 +241,12 @@ class Memory(Base):
     memory_key: Mapped[str | None] = mapped_column(String(512))
     polarity: Mapped[str | None] = mapped_column(String(32))
     scope_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
-    valid_from: Mapped[str | None] = mapped_column(String(64))
-    valid_until: Mapped[str | None] = mapped_column(String(64))
-    last_confirmed_at: Mapped[str | None] = mapped_column(String(64))
-    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
-    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
-    last_accessed_at: Mapped[str | None] = mapped_column(String(64))
+    valid_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_accessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     access_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     current_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     __table_args__ = (
@@ -273,8 +273,8 @@ class MemoryCandidateRow(Base):
     polarity: Mapped[str | None] = mapped_column(String(32))
     scope_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     entities_json: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
-    valid_from: Mapped[str | None] = mapped_column(String(64))
-    valid_until: Mapped[str | None] = mapped_column(String(64))
+    valid_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     importance: Mapped[float] = mapped_column(Float, nullable=False)
     evidence_span: Mapped[str | None] = mapped_column(Text)
@@ -301,7 +301,7 @@ class MemorySource(Base):
     memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), primary_key=True)
     note_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     relation: Mapped[str] = mapped_column(String(64), primary_key=True)
-    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class MemoryVersion(Base):
@@ -314,11 +314,11 @@ class MemoryVersion(Base):
     task_status: Mapped[str | None] = mapped_column(String(64))
     confidence: Mapped[float | None] = mapped_column(Float)
     importance: Mapped[float | None] = mapped_column(Float)
-    valid_from: Mapped[str | None] = mapped_column(String(64))
-    valid_until: Mapped[str | None] = mapped_column(String(64))
+    valid_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     reason: Mapped[str | None] = mapped_column(Text)
     source_note_id: Mapped[str | None] = mapped_column(String(255))
-    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     __table_args__ = (UniqueConstraint("memory_id", "version", name="uq_memory_version"),)
 
 
@@ -327,8 +327,8 @@ class MemoryVector(Base):
     memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), primary_key=True)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(1024))
     model: Mapped[str | None] = mapped_column(String(255))
-    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
-    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class MemoryExtractionState(Base):
@@ -340,9 +340,9 @@ class MemoryExtractionState(Base):
     processed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     last_error: Mapped[str | None] = mapped_column(Text)
-    started_at: Mapped[str | None] = mapped_column(String(64))
-    completed_at: Mapped[str | None] = mapped_column(String(64))
-    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class MemoryConsolidationRun(Base):
@@ -352,8 +352,8 @@ class MemoryConsolidationRun(Base):
     cadence: Mapped[str] = mapped_column(String(32), nullable=False)
     period_key: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
-    started_at: Mapped[str] = mapped_column(String(64), nullable=False)
-    completed_at: Mapped[str | None] = mapped_column(String(64))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     error: Mapped[str | None] = mapped_column(Text)
     result_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     __table_args__ = (UniqueConstraint("space_id", "cadence", "period_key", name="uq_memory_consolidation_period"),)
@@ -381,8 +381,8 @@ class MemoryDecision(Base):
     input_hash: Mapped[str | None] = mapped_column(String(128))
     target_snapshot_version: Mapped[int | None] = mapped_column(Integer)
     retry_of_decision_id: Mapped[str | None] = mapped_column(String(255))
-    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
-    applied_at: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class MemoryRelation(Base):
@@ -393,7 +393,7 @@ class MemoryRelation(Base):
     target_memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), nullable=False)
     relation: Mapped[str] = mapped_column(String(64), nullable=False)
     decision_id: Mapped[str | None] = mapped_column(String(255))
-    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     __table_args__ = (UniqueConstraint("source_memory_id", "target_memory_id", "relation", "decision_id", name="uq_memory_relation"),)
 
 
@@ -405,8 +405,8 @@ class MemoryTrace(Base):
     trace_type: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     payload_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
-    started_at: Mapped[str] = mapped_column(String(64), nullable=False)
-    finished_at: Mapped[str | None] = mapped_column(String(64))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class SummarySubscriptionRow(Base):
@@ -444,10 +444,10 @@ class Delivery(Base):
     space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
     message_id: Mapped[str | None] = mapped_column(String(255))
     status: Mapped[str] = mapped_column(String(32), nullable=False)
-    created_at: Mapped[str] = mapped_column(String(64), nullable=False)
-    updated_at: Mapped[str] = mapped_column(String(64), nullable=False)
-    reserved_at: Mapped[str | None] = mapped_column(String(64))
-    lease_expires_at: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reserved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     error: Mapped[str | None] = mapped_column(Text)
 
@@ -458,8 +458,8 @@ class DeliveryAttempt(Base):
     delivery_key: Mapped[str] = mapped_column(ForeignKey("deliveries.delivery_key", ondelete="CASCADE"), nullable=False)
     attempt_no: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
-    started_at: Mapped[str] = mapped_column(String(64), nullable=False)
-    finished_at: Mapped[str | None] = mapped_column(String(64))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     error: Mapped[str | None] = mapped_column(Text)
     __table_args__ = (UniqueConstraint("delivery_key", "attempt_no", name="uq_delivery_attempt_no"),)
 

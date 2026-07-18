@@ -100,7 +100,7 @@ def enqueue_task(
     publish: bool = True,
 ) -> tuple[str, bool]:
     with session_scope() as session:
-        ensure_tenant_space(session, space_id, tenant_id=tenant_id)
+        space_id = ensure_tenant_space(session, space_id, tenant_id=tenant_id)
         return _enqueue_task_in_session(
             session,
             task_type=task_type,
@@ -135,17 +135,20 @@ def receive_command(
 ) -> DispatchResult:
     tenant_id = tenant_id or DEFAULT_TENANT_ID
     with session_scope() as session:
-        ensure_tenant_space(session, space_id, tenant_id=tenant_id, source=source)
-        session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:space_id))"), {"space_id": space_id})
+        source_space_id = space_id
+        space_id = ensure_tenant_space(session, source_space_id, tenant_id=tenant_id, source=source)
+        lock_key = f"{tenant_id}:{space_id}"
+        session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:space_id))"), {"space_id": lock_key})
         existing = session.execute(
             select(InboxMessage).where(
+                InboxMessage.tenant_id == tenant_id,
                 InboxMessage.source == source,
                 InboxMessage.source_message_id == source_message_id,
             )
         ).scalar_one_or_none()
         if existing is not None:
             task = session.execute(
-                select(Task.id).where(Task.idempotency_key == f"{task_type}:{source}:{source_message_id}")
+                select(Task.id).where(Task.idempotency_key == f"{tenant_id}:{task_type}:{source}:{source_message_id}")
             ).scalar_one_or_none()
             return DispatchResult(existing.id, str(task) if task else None, False, True)
 
@@ -186,6 +189,7 @@ def receive_command(
         initial_status = "blocked" if consistency in {"note", "memory"} and current_watermark < required_watermark else "queued"
         task_payload = {
             **task_payload,
+            "source_space_id": source_space_id,
             "inbox_id": inbox_id,
             "sequence_no": sequence_no,
             "consistency": consistency,
@@ -197,7 +201,7 @@ def receive_command(
             tenant_id=tenant_id,
             space_id=space_id,
             source_message_id=source_message_id,
-            idempotency_key=f"{task_type}:{source}:{source_message_id}",
+            idempotency_key=f"{tenant_id}:{task_type}:{source}:{source_message_id}",
             payload=task_payload,
             max_attempts=max_attempts,
             initial_status=initial_status,
@@ -412,7 +416,10 @@ def finalize_inbox_in_session(
     initial = session.get(InboxMessage, inbox_id)
     if initial is None:
         raise ValueError(f"inbox record not found: {inbox_id}")
-    session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:space_id))"), {"space_id": initial.space_id})
+    session.execute(
+        text("SELECT pg_advisory_xact_lock(hashtext(:space_id))"),
+        {"space_id": f"{initial.tenant_id}:{initial.space_id}"},
+    )
     inbox = session.execute(
         select(InboxMessage).where(InboxMessage.id == inbox_id).with_for_update()
     ).scalar_one()

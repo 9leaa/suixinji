@@ -53,6 +53,7 @@ def _note_value(note: Any, key: str, default: Any = None) -> Any:
 def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None = None) -> dict[str, Any]:
     note_id = str(_note_value(note, "id", ""))
     space_id = str(_note_value(note, "space_id", ""))
+    tenant_id = str(_note_value(note, "tenant_id", "default") or "default")
     text = str(_note_value(note, "text", "") or "")
     trace = start_trace("memory_write", space_id, note_id=note_id)
     add_step(trace, "note_saved", output_summary={"note_id": note_id, "text_len": len(text)})
@@ -176,7 +177,7 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
                 mark_memory_candidate(candidate.candidate_id, "validated")
                 mark_memory_candidate(candidate.candidate_id, "processing")
                 with coordinated_lock(
-                    KEYS.lock_memory_key(space_id, candidate.effective_memory_key),
+                    KEYS.lock_memory_key(tenant_id, space_id, candidate.effective_memory_key),
                     critical=True,
                 ):
                     results.append(consolidate_candidate(space_id, note_id, candidate, trace=trace))

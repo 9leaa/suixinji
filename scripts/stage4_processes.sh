@@ -62,6 +62,8 @@ start_all() {
   export SUIXINJI_ENV="stage4-$run_id"
   export SUIXINJI_FAKE_EXTERNALS=true
   export SUIXINJI_STAGE4_MODE=true
+  export SUIXINJI_TEST_API_ENABLED=true
+  export SUIXINJI_TEST_API_TOKEN="stage4-$run_id-local-token"
   export SUIXINJI_AGENT_HOOKS_ENABLED=true
   export SUIXINJI_STREAM_BLOCK_MS=200
   export SUIXINJI_STREAM_BATCH_SIZE=50
@@ -79,6 +81,7 @@ start_all() {
 RUN_ID=$run_id
 TENANT_ID=load-$run_id
 REDIS_ENV=stage4-$run_id
+SUIXINJI_TEST_API_TOKEN=stage4-$run_id-local-token
 RECEIVER_1=http://127.0.0.1:18101
 RECEIVER_2=http://127.0.0.1:18102
 STARTED_AT=$(date --iso-8601=seconds)

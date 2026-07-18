@@ -31,5 +31,5 @@ start_role worker-memory env SUIXINJI_PROCESS_ROLE=worker-memory "$PYTHON" -m ap
 start_role worker-enrichment env SUIXINJI_PROCESS_ROLE=worker-enrichment "$PYTHON" -m apps.worker enrichment
 start_role worker-delivery env SUIXINJI_PROCESS_ROLE=worker-delivery "$PYTHON" -m apps.worker delivery
 start_role scheduler env SUIXINJI_PROCESS_ROLE=scheduler "$PYTHON" -m apps.scheduler
-start_role api env SUIXINJI_PROCESS_ROLE=receiver "$PYTHON" -m uvicorn apps.api:app --host 0.0.0.0 --port 8000
+start_role api env SUIXINJI_PROCESS_ROLE=receiver "$PYTHON" -m uvicorn apps.api:app --host 127.0.0.1 --port 8000
 start_role receiver env SUIXINJI_PROCESS_ROLE=receiver "$PYTHON" -m bot.feishu_bot

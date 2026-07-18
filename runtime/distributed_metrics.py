@@ -51,7 +51,8 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
             task
             for task in tasks
             if task.source_message_id
-            and task.idempotency_key == f"{task.task_type}:{source_by_message.get(task.source_message_id, '')}:{task.source_message_id}"
+            and task.idempotency_key
+            == f"{task.tenant_id}:{task.task_type}:{source_by_message.get(task.source_message_id, '')}:{task.source_message_id}"
         ]
         task_ids = [task.id for task in tasks]
         attempts = list(session.execute(select(TaskAttempt).where(TaskAttempt.task_id.in_(task_ids))).scalars()) if task_ids else []

@@ -24,6 +24,10 @@ def _payload(task: dict[str, Any]) -> dict[str, Any]:
     return dict(task.get("payload_json") or {})
 
 
+def _tenant_id(task: dict[str, Any]) -> str:
+    return str(task.get("tenant_id") or "default")
+
+
 def _enqueue_delivery(task: dict[str, Any], *, text: str, payload: dict[str, Any]) -> None:
     delivery_key = str(payload["delivery_key"])
     followup = {
@@ -36,7 +40,7 @@ def _enqueue_delivery(task: dict[str, Any], *, text: str, payload: dict[str, Any
     }
     enqueue_task(
         task_type="delivery",
-        tenant_id=str(task.get("tenant_id") or "default"),
+        tenant_id=_tenant_id(task),
         space_id=str(task["space_id"]),
         source_message_id=task.get("source_message_id"),
         idempotency_key=f"delivery:{delivery_key}",
@@ -54,14 +58,14 @@ def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
         raise ValueError(f"inbox record not found: {inbox_id}")
 
     critical_task_id: str | None = None
-    with coordinated_lock(KEYS.lock_space(str(task["space_id"])), critical=True):
+    with coordinated_lock(KEYS.lock_space(_tenant_id(task), str(task["space_id"])), critical=True):
         note = process_record(record, defer_memory=True, defer_wal_completion=True)
         if note is not None:
             note_data = asdict(note) if is_dataclass(note) else dict(note)
             note_id = str(note_data["id"])
             critical_task_id, _ = enqueue_task(
                 task_type="memory",
-                tenant_id=str(task.get("tenant_id") or "default"),
+                    tenant_id=_tenant_id(task),
                 space_id=str(task["space_id"]),
                 source_message_id=task.get("source_message_id"),
                 idempotency_key=f"memory:extract:{note_id}",
@@ -77,7 +81,7 @@ def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
             )
             enqueue_task(
                 task_type="enrichment",
-                tenant_id=str(task.get("tenant_id") or "default"),
+                tenant_id=_tenant_id(task),
                 space_id=str(task["space_id"]),
                 source_message_id=task.get("source_message_id"),
                 idempotency_key=f"enrichment:{note_id}",
@@ -108,7 +112,7 @@ def handle_query(task: dict[str, Any]) -> TaskOutcome:
         answer = answer_question(
             str(task["space_id"]),
             str(payload["question"]),
-            tenant_id=str(task.get("tenant_id") or "default"),
+            tenant_id=_tenant_id(task),
             user_id=str(payload.get("user_id") or "") or None,
             message_id=task.get("source_message_id"),
             task_id=str(task["id"]),
@@ -128,7 +132,7 @@ def handle_summary(task: dict[str, Any]) -> TaskOutcome:
         result = generate_summary(
             str(task["space_id"]),
             str(payload["range_key"]),
-            tenant_id=str(task.get("tenant_id") or "default"),
+            tenant_id=_tenant_id(task),
             user_id=str(payload.get("user_id") or "") or None,
             message_id=task.get("source_message_id"),
             task_id=str(task["id"]),
@@ -166,7 +170,7 @@ def handle_enrichment(task: dict[str, Any]) -> None:
     note = find_note(str(task["space_id"]), note_id)
     if note is None:
         raise ValueError(f"note not found: {note_id}")
-    with coordinated_lock(KEYS.lock_space(str(task["space_id"])), critical=True):
+    with coordinated_lock(KEYS.lock_space(_tenant_id(task), str(task["space_id"])), critical=True):
         enrich_note(str(task["space_id"]), note_id)
 
 
@@ -176,7 +180,7 @@ def handle_delivery(task: dict[str, Any]) -> None:
     reservation = reserve_delivery(
         key,
         delivery_type=str(payload.get("delivery_type") or "message"),
-        tenant_id=str(task.get("tenant_id") or "default"),
+        tenant_id=_tenant_id(task),
         space_id=str(task["space_id"]),
         message_id=payload.get("message_id"),
     )

@@ -48,10 +48,24 @@ from memory.models import (
     normalize_content,
     utc_now_iso,
 )
-from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space
+from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space, parse_datetime
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _iso(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return str(value)
+
+
+def _dt(value: Any) -> datetime | None:
+    if value is None:
+        return None
+    return parse_datetime(value)
 
 
 def init_db(db_path: Any = None) -> None:
@@ -62,7 +76,7 @@ def _sources(session: Any, memory_id: str) -> list[MemorySource]:
     rows = session.execute(
         select(MemorySourceRow).where(MemorySourceRow.memory_id == memory_id).order_by(MemorySourceRow.created_at)
     ).scalars()
-    return [MemorySource(row.memory_id, row.note_id, row.relation, row.created_at) for row in rows]
+    return [MemorySource(row.memory_id, row.note_id, row.relation, _iso(row.created_at) or "") for row in rows]
 
 
 def _versions(session: Any, memory_id: str) -> list[MemoryVersion]:
@@ -78,12 +92,12 @@ def _versions(session: Any, memory_id: str) -> list[MemoryVersion]:
             status=row.status,
             reason=row.reason,
             source_note_id=row.source_note_id,
-            created_at=row.created_at,
+            created_at=_iso(row.created_at) or "",
             task_status=row.task_status,
             confidence=row.confidence,
             importance=row.importance,
-            valid_from=row.valid_from,
-            valid_until=row.valid_until,
+            valid_from=_iso(row.valid_from),
+            valid_until=_iso(row.valid_until),
         )
         for row in rows
     ]
@@ -99,7 +113,7 @@ def _source_map(session: Any, memory_ids: list[str]) -> dict[str, list[MemorySou
         .order_by(MemorySourceRow.memory_id, MemorySourceRow.created_at)
     ).scalars()
     for row in rows:
-        result[row.memory_id].append(MemorySource(row.memory_id, row.note_id, row.relation, row.created_at))
+        result[row.memory_id].append(MemorySource(row.memory_id, row.note_id, row.relation, _iso(row.created_at) or ""))
     return result
 
 
@@ -121,17 +135,17 @@ def _record(
         confidence=float(row.confidence),
         status=row.status,
         task_status=row.task_status,
-        valid_from=row.valid_from,
-        valid_until=row.valid_until,
-        created_at=row.created_at,
-        updated_at=row.updated_at,
-        last_accessed_at=row.last_accessed_at,
+        valid_from=_iso(row.valid_from),
+        valid_until=_iso(row.valid_until),
+        created_at=_iso(row.created_at) or "",
+        updated_at=_iso(row.updated_at) or "",
+        last_accessed_at=_iso(row.last_accessed_at),
         access_count=row.access_count,
         current_version=row.current_version,
         subject=row.subject,
         predicate=row.predicate,
         object_value=row.object_value,
-        last_confirmed_at=row.last_confirmed_at,
+        last_confirmed_at=_iso(row.last_confirmed_at),
         memory_key=row.memory_key,
         polarity=row.polarity,
         scope=dict(row.scope_json or {}),
@@ -156,7 +170,7 @@ def _records(session: Any, rows: list[Memory], *, include_sources: bool = True) 
 def _state(row: MemoryExtractionStateRow) -> MemoryExtractionState:
     return MemoryExtractionState(
         row.note_id, row.space_id, row.status, row.candidate_count, row.processed_count,
-        row.attempt_count, row.last_error, row.started_at, row.completed_at, row.updated_at,
+        row.attempt_count, row.last_error, _iso(row.started_at), _iso(row.completed_at), _iso(row.updated_at) or "",
     )
 
 
@@ -167,8 +181,8 @@ def _run(row: MemoryConsolidationRun) -> ConsolidationRun:
         row.cadence,
         row.period_key,
         row.status,
-        row.started_at,
-        row.completed_at,
+        _iso(row.started_at) or "",
+        _iso(row.completed_at),
         row.error,
         json.dumps(row.result_json, ensure_ascii=False) if row.result_json is not None else None,
     )
@@ -179,7 +193,7 @@ def _add_source(session: Any, memory_id: str, note_id: str, relation: str, *, no
         raise ValueError(f"invalid source relation: {relation}")
     created = session.execute(
         insert(MemorySourceRow)
-        .values(memory_id=memory_id, note_id=note_id, relation=relation, created_at=now or utc_now_iso())
+        .values(memory_id=memory_id, note_id=note_id, relation=relation, created_at=_dt(now or utc_now_iso()))
         .on_conflict_do_nothing()
         .returning(MemorySourceRow.memory_id)
     ).scalar_one_or_none()
@@ -197,11 +211,11 @@ def _add_version(session: Any, row: Memory, *, reason: str | None, source_note_i
             task_status=row.task_status,
             confidence=row.confidence,
             importance=row.importance,
-            valid_from=row.valid_from,
-            valid_until=row.valid_until,
+            valid_from=_dt(row.valid_from),
+            valid_until=_dt(row.valid_until),
             reason=reason,
             source_note_id=source_note_id,
-            created_at=utc_now_iso(),
+            created_at=_dt(utc_now_iso()),
         )
     )
 
@@ -221,7 +235,7 @@ def _insert_memory(
         raise ValueError(f"invalid memory status: {status}")
     space = session.get(Space, space_id)
     tenant_id = str(space.tenant_id) if space is not None else DEFAULT_TENANT_ID
-    ensure_tenant_space(session, space_id, tenant_id=tenant_id)
+    space_id = ensure_tenant_space(session, space_id, tenant_id=tenant_id)
     timestamp = now or utc_now_iso()
     row = Memory(
         id=memory_id or new_id("mem"),
@@ -240,11 +254,11 @@ def _insert_memory(
         memory_key=candidate.effective_memory_key,
         polarity=candidate.polarity,
         scope_json=dict(candidate.scope),
-        valid_from=candidate.valid_from or timestamp,
-        valid_until=candidate.valid_until,
-        last_confirmed_at=timestamp,
-        created_at=timestamp,
-        updated_at=timestamp,
+        valid_from=_dt(candidate.valid_from or timestamp),
+        valid_until=_dt(candidate.valid_until),
+        last_confirmed_at=_dt(timestamp),
+        created_at=_dt(timestamp),
+        updated_at=_dt(timestamp),
         current_version=1,
     )
     session.add(row)
@@ -285,14 +299,14 @@ def _versioned_update(
     if task_status is not None:
         row.task_status = task_status
     if valid_until is not None:
-        row.valid_until = valid_until
+        row.valid_until = _dt(valid_until)
     if confidence is not None:
         row.confidence = float(confidence)
     if importance is not None:
         row.importance = float(importance)
     if last_confirmed_at is not None:
-        row.last_confirmed_at = last_confirmed_at
-    row.updated_at = utc_now_iso()
+        row.last_confirmed_at = _dt(last_confirmed_at)
+    row.updated_at = _dt(utc_now_iso())
     row.current_version += 1
     session.flush()
     _add_version(session, row, reason=reason, source_note_id=source_note_id)
@@ -305,7 +319,7 @@ def _add_relation(session: Any, space_id: str, source_id: str, target_id: str, r
         insert(MemoryRelationRow)
         .values(
             id=new_id("rel"), space_id=space_id, source_memory_id=source_id,
-            target_memory_id=target_id, relation=relation, decision_id=decision_id, created_at=now,
+            target_memory_id=target_id, relation=relation, decision_id=decision_id, created_at=_dt(now),
         )
         .on_conflict_do_nothing()
     )
@@ -345,8 +359,8 @@ def _save_decision(
             input_hash=decision.input_hash,
             target_snapshot_version=decision.target_snapshot_version,
             retry_of_decision_id=decision.retry_of_decision_id,
-            created_at=now,
-            applied_at=now if status == "applied" else None,
+            created_at=_dt(now),
+            applied_at=_dt(now) if status == "applied" else None,
         )
         .on_conflict_do_update(
             index_elements=[MemoryDecisionRow.id],
@@ -397,7 +411,7 @@ def list_memories(
     if memory_key:
         statement = statement.where(Memory.memory_key == memory_key)
     if status == "active" and not include_expired:
-        statement = statement.where((Memory.valid_until.is_(None)) | (Memory.valid_until > utc_now_iso()))
+        statement = statement.where((Memory.valid_until.is_(None)) | (Memory.valid_until > _dt(utc_now_iso())))
     statement = statement.order_by(Memory.updated_at.desc(), Memory.id.desc()).limit(max(1, min(int(limit), 100)))
     with session_scope() as session:
         rows = list(session.execute(statement).scalars())
@@ -420,7 +434,7 @@ def list_adjudication_candidates(
             Memory.space_id == space_id,
             Memory.status == "active",
             Memory.memory_type == memory_type,
-            (Memory.valid_until.is_(None)) | (Memory.valid_until > utc_now_iso()),
+            (Memory.valid_until.is_(None)) | (Memory.valid_until > _dt(utc_now_iso())),
         )
         .order_by(
             case((Memory.memory_key == memory_key, 0), else_=1),
@@ -440,7 +454,7 @@ def expire_due_memories(space_id: str | None = None, *, limit: int = 500, db_pat
         statement = select(Memory).where(
             Memory.status == "active",
             Memory.valid_until.is_not(None),
-            Memory.valid_until <= utc_now_iso(),
+            Memory.valid_until <= _dt(utc_now_iso()),
         )
         if space_id:
             statement = statement.where(Memory.space_id == space_id)
@@ -473,8 +487,8 @@ def _candidate_record(row: MemoryCandidateRow) -> MemoryCandidate:
         subject=row.subject,
         predicate=row.predicate,
         object_value=row.object_value,
-        valid_from=row.valid_from,
-        valid_until=row.valid_until,
+        valid_from=_iso(row.valid_from),
+        valid_until=_iso(row.valid_until),
         evidence_span=row.evidence_span,
         memory_key=row.memory_key,
         polarity=row.polarity,
@@ -499,7 +513,7 @@ def save_memory_candidate(
     with session_scope() as session:
         space = session.get(Space, space_id)
         tenant_id = str(space.tenant_id) if space is not None else DEFAULT_TENANT_ID
-        ensure_tenant_space(session, space_id, tenant_id=tenant_id)
+        space_id = ensure_tenant_space(session, space_id, tenant_id=tenant_id)
         values = {
             "candidate_id": candidate.candidate_id,
             "tenant_id": tenant_id,
@@ -516,8 +530,8 @@ def save_memory_candidate(
             "polarity": candidate.polarity,
             "scope_json": dict(candidate.scope),
             "entities_json": list(candidate.entities),
-            "valid_from": candidate.valid_from,
-            "valid_until": candidate.valid_until,
+            "valid_from": _dt(candidate.valid_from),
+            "valid_until": _dt(candidate.valid_until),
             "confidence": float(candidate.confidence),
             "importance": float(candidate.importance),
             "evidence_span": candidate.evidence_span,
@@ -626,7 +640,7 @@ def apply_memory_decision(
     del db_path
     try:
         with session_scope() as session:
-            ensure_tenant_space(session, space_id)
+            space_id = ensure_tenant_space(session, space_id)
             action = decision.recommended_action
             now = utc_now_iso()
             target_id = decision.target_memory_ids[0] if decision.target_memory_ids else None
@@ -653,8 +667,8 @@ def apply_memory_decision(
                 if added:
                     old = float(target.confidence)
                     target.confidence = min(0.99, max(old, old + (candidate.confidence - old) * 0.25 + 0.02))
-                    target.last_confirmed_at = now
-                    target.updated_at = now
+                    target.last_confirmed_at = _dt(now)
+                    target.updated_at = _dt(now)
                 result_ids.append(target.id)
                 result.update({"memory_id": target.id, "source_added": added})
             elif action in {"merge", "update_task"} and target is not None:
@@ -704,7 +718,7 @@ def apply_memory_decision(
     except Exception as exc:
         try:
             with session_scope() as session:
-                ensure_tenant_space(session, space_id)
+                space_id = ensure_tenant_space(session, space_id)
                 _save_decision(session, space_id, note_id, decision, status="failed", error=type(exc).__name__)
         except Exception:
             pass
@@ -719,7 +733,14 @@ def mark_accessed(memory_ids: list[str], db_path: Any = None) -> None:
     if COORDINATION_BACKEND == "redis" and MEMORY_ACCESS_BUFFER_ENABLED:
         try:
             from infrastructure.redis_cache import MemoryAccessBuffer
-            MemoryAccessBuffer().increment(memory_ids, seen_at=now)
+            with session_scope() as session:
+                rows = session.execute(select(Memory.id, Memory.tenant_id).where(Memory.id.in_(set(memory_ids)))).all()
+            by_tenant: dict[str, list[str]] = {}
+            for memory_id, tenant_id in rows:
+                by_tenant.setdefault(str(tenant_id or DEFAULT_TENANT_ID), []).append(str(memory_id))
+            buffer = MemoryAccessBuffer()
+            for tenant_id, tenant_memory_ids in by_tenant.items():
+                buffer.increment(tenant_memory_ids, seen_at=now, tenant_id=tenant_id)
         except Exception as exc:
             LOGGER.debug("memory access counter buffering failed: %s", type(exc).__name__)
         return
@@ -727,11 +748,16 @@ def mark_accessed(memory_ids: list[str], db_path: Any = None) -> None:
         session.execute(
             update(Memory)
             .where(Memory.id.in_(set(memory_ids)))
-            .values(last_accessed_at=now, access_count=Memory.access_count + 1)
+            .values(last_accessed_at=_dt(now), access_count=Memory.access_count + 1)
         )
 
 
-def flush_access_counts(*, limit: int = MEMORY_ACCESS_FLUSH_BATCH_SIZE, db_path: Any = None) -> int:
+def flush_access_counts(
+    *,
+    limit: int = MEMORY_ACCESS_FLUSH_BATCH_SIZE,
+    tenant_id: str = DEFAULT_TENANT_ID,
+    db_path: Any = None,
+) -> int:
     del db_path
     if COORDINATION_BACKEND != "redis" or not MEMORY_ACCESS_BUFFER_ENABLED:
         return 0
@@ -739,7 +765,7 @@ def flush_access_counts(*, limit: int = MEMORY_ACCESS_FLUSH_BATCH_SIZE, db_path:
     from infrastructure.redis_cache import MemoryAccessBuffer
 
     buffer = MemoryAccessBuffer()
-    entries = buffer.drain(limit=max(1, int(limit)))
+    entries = buffer.drain(limit=max(1, int(limit)), tenant_id=tenant_id)
     if not entries:
         return 0
     updates = values(
@@ -751,14 +777,14 @@ def flush_access_counts(*, limit: int = MEMORY_ACCESS_FLUSH_BATCH_SIZE, db_path:
         with session_scope() as session:
             session.execute(
                 update(Memory)
-                .where(Memory.id == updates.c.memory_id)
+                .where(Memory.id == updates.c.memory_id, Memory.tenant_id == tenant_id)
                 .values(
-                    last_accessed_at=utc_now_iso(),
+                    last_accessed_at=_dt(utc_now_iso()),
                     access_count=Memory.access_count + updates.c.increment,
                 )
             )
     except Exception:
-        buffer.restore(entries)
+        buffer.restore(entries, tenant_id=tenant_id)
         raise
     return len(entries)
 
@@ -850,7 +876,7 @@ def approve_pending_memory(memory_id: str, db_path: Any = None) -> MemoryRecord 
         decision.recommended_action = {"new": "insert", "merge": "merge", "update_task": "update_task", "supersede": "supersede", "conflict": "conflict"}[relation]
         decision.result_memory_ids_json = result_ids
         decision.reason += "; user_approved"
-        decision.applied_at = now
+        decision.applied_at = _dt(now)
         session.flush()
         return _record(session, result)
 
@@ -936,7 +962,7 @@ def list_memory_decisions(space_id: str, *, note_id: str | None = None, status: 
                 "confidence": float(row.confidence), "reason": row.reason, "evidence": list(row.evidence_json or []),
                 "recommended_action": row.recommended_action, "status": row.status,
                 "result_memory_ids": list(row.result_memory_ids_json or []), "error": row.error,
-                "created_at": row.created_at, "applied_at": row.applied_at,
+                "created_at": _iso(row.created_at), "applied_at": _iso(row.applied_at),
             }
             for row in session.execute(statement).scalars()
         ]
@@ -950,7 +976,10 @@ def list_memory_relations(memory_id: str, *, db_path: Any = None) -> list[Memory
             .where(or_(MemoryRelationRow.source_memory_id == memory_id, MemoryRelationRow.target_memory_id == memory_id))
             .order_by(MemoryRelationRow.created_at)
         ).scalars()
-        return [MemoryRelation(row.id, row.space_id, row.source_memory_id, row.target_memory_id, row.relation, row.decision_id, row.created_at) for row in rows]
+        return [
+            MemoryRelation(row.id, row.space_id, row.source_memory_id, row.target_memory_id, row.relation, row.decision_id, _iso(row.created_at) or "")
+            for row in rows
+        ]
 
 
 def add_memory_relation(space_id: str, source_memory_id: str, target_memory_id: str, relation: str, *, decision_id: str | None = None, db_path: Any = None) -> None:
@@ -963,15 +992,15 @@ def save_memory_trace(trace: dict[str, Any], db_path: Any = None) -> None:
     del db_path
     space_id = str(trace.get("space_id") or "unknown")
     with session_scope() as session:
-        ensure_tenant_space(session, space_id)
+        space_id = ensure_tenant_space(session, space_id)
         values = {
             "space_id": space_id,
             "note_id": trace.get("note_id"),
             "trace_type": str(trace.get("trace_type") or "unknown"),
             "status": str(trace.get("status") or "unknown"),
             "payload_json": trace,
-            "started_at": str(trace.get("started_at") or utc_now_iso()),
-            "finished_at": trace.get("finished_at"),
+            "started_at": _dt(trace.get("started_at") or utc_now_iso()),
+            "finished_at": _dt(trace.get("finished_at")),
         }
         session.execute(
             insert(MemoryTrace)
@@ -1020,7 +1049,7 @@ def _mark_extraction_state(
         raise ValueError(f"invalid memory extraction status: {status}")
     now = utc_now_iso()
     with session_scope() as session:
-        ensure_tenant_space(session, space_id)
+        space_id = ensure_tenant_space(session, space_id)
         old = session.execute(
             select(MemoryExtractionStateRow).where(MemoryExtractionStateRow.note_id == note_id).with_for_update()
         ).scalar_one_or_none()
@@ -1032,9 +1061,9 @@ def _mark_extraction_state(
             "processed_count": max(0, int(processed_count)),
             "attempt_count": attempt_count,
             "last_error": error,
-            "started_at": now if status == "processing" else (old.started_at if old else None),
-            "completed_at": now if status in {"completed", "empty", "partial", "failed"} else None,
-            "updated_at": now,
+            "started_at": _dt(now) if status == "processing" else (old.started_at if old else None),
+            "completed_at": _dt(now) if status in {"completed", "empty", "partial", "failed"} else None,
+            "updated_at": _dt(now),
         }
         session.execute(
             insert(MemoryExtractionStateRow)
@@ -1089,10 +1118,10 @@ def consolidation_period_key(cadence: str, day: date) -> str:
     raise ValueError(f"unknown memory consolidation cadence: {cadence}")
 
 
-def _stale(value: str | None) -> bool:
+def _stale(value: str | datetime | None) -> bool:
     if not value:
         return True
-    parsed = datetime.fromisoformat(value)
+    parsed = value if isinstance(value, datetime) else datetime.fromisoformat(value)
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=datetime.now().astimezone().tzinfo)
     return (datetime.now().astimezone() - parsed).total_seconds() > MEMORY_CONSOLIDATION_RUN_LEASE_SECONDS
@@ -1102,7 +1131,7 @@ def reserve_consolidation_run(space_id: str, cadence: str, period_key: str, db_p
     del db_path
     cadence = cadence.strip().lower()
     with session_scope() as session:
-        ensure_tenant_space(session, space_id)
+        space_id = ensure_tenant_space(session, space_id)
         old = session.execute(
             select(MemoryConsolidationRun)
             .where(MemoryConsolidationRun.space_id == space_id, MemoryConsolidationRun.cadence == cadence, MemoryConsolidationRun.period_key == period_key)
@@ -1110,7 +1139,7 @@ def reserve_consolidation_run(space_id: str, cadence: str, period_key: str, db_p
         ).scalar_one_or_none()
         if old is not None and (old.status == "completed" or (old.status == "running" and not _stale(old.started_at))):
             return None
-        values = {"status": "running", "started_at": utc_now_iso(), "completed_at": None, "error": None, "result_json": None}
+        values = {"status": "running", "started_at": _dt(utc_now_iso()), "completed_at": None, "error": None, "result_json": None}
         if old is None:
             old = MemoryConsolidationRun(id=new_id("run"), space_id=space_id, cadence=cadence, period_key=period_key, **values)
             session.add(old)
@@ -1134,7 +1163,7 @@ def mark_consolidation_completed(run_id: str, result: dict[str, Any], db_path: A
     with session_scope() as session:
         row = session.execute(select(MemoryConsolidationRun).where(MemoryConsolidationRun.id == run_id).with_for_update()).scalar_one_or_none()
         if row is not None:
-            row.status, row.completed_at, row.error, row.result_json = "completed", utc_now_iso(), None, result
+            row.status, row.completed_at, row.error, row.result_json = "completed", _dt(utc_now_iso()), None, result
 
 
 def mark_consolidation_failed(run_id: str, error: str, db_path: Any = None) -> None:
@@ -1142,7 +1171,7 @@ def mark_consolidation_failed(run_id: str, error: str, db_path: Any = None) -> N
     with session_scope() as session:
         row = session.execute(select(MemoryConsolidationRun).where(MemoryConsolidationRun.id == run_id).with_for_update()).scalar_one_or_none()
         if row is not None:
-            row.status, row.completed_at, row.error = "failed", utc_now_iso(), error
+            row.status, row.completed_at, row.error = "failed", _dt(utc_now_iso()), error
 
 
 def search_memories(

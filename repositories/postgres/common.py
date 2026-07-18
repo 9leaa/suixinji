@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+import hashlib
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -31,21 +33,56 @@ def ensure_tenant_space(
     tenant_id: str = DEFAULT_TENANT_ID,
     source: str = "feishu",
     metadata: dict[str, Any] | None = None,
-) -> None:
+) -> str:
+    source_space_id = str(space_id)
     session.execute(
         insert(Tenant).values(id=tenant_id, name=tenant_id).on_conflict_do_nothing()
     )
-    session.execute(
-        insert(Space)
-        .values(
-            id=space_id,
-            tenant_id=tenant_id,
-            source=source,
-            source_space_id=space_id,
-            metadata_json=metadata or {},
+    internal_existing = session.get(Space, source_space_id)
+    if internal_existing is not None and internal_existing.tenant_id == tenant_id:
+        return str(internal_existing.id)
+    existing = session.execute(
+        select(Space.id).where(
+            Space.tenant_id == tenant_id,
+            Space.source == source,
+            Space.source_space_id == source_space_id,
         )
-        .on_conflict_do_nothing()
-    )
+    ).scalar_one_or_none()
+    if existing:
+        return str(existing)
+
+    def _insert(preferred_id: str) -> str | None:
+        return session.execute(
+            insert(Space)
+            .values(
+                id=preferred_id,
+                tenant_id=tenant_id,
+                source=source,
+                source_space_id=source_space_id,
+                metadata_json=metadata or {},
+            )
+            .on_conflict_do_nothing()
+            .returning(Space.id)
+        ).scalar_one_or_none()
+
+    created = _insert(source_space_id)
+    if created:
+        return str(created)
+
+    digest = hashlib.sha256(f"{tenant_id}:{source}:{source_space_id}".encode("utf-8")).hexdigest()[:32]
+    internal_id = f"space_{digest}"
+    created = _insert(internal_id)
+    if created:
+        return str(created)
+
+    existing = session.execute(
+        select(Space.id).where(
+            Space.tenant_id == tenant_id,
+            Space.source == source,
+            Space.source_space_id == source_space_id,
+        )
+    ).scalar_one()
+    return str(existing)
 
 
 def ensure_user(

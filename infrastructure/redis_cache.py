@@ -18,28 +18,37 @@ class RedisCache:
         self.enabled = enabled
         self.keys = keys
 
-    def version(self, space_id: str) -> int:
+    def version(self, space_id: str, *, tenant_id: str = "default") -> int:
         if not self.enabled:
             return 0
-        value = self.client.get(self.keys.cache_version(space_id))
+        value = self.client.get(self.keys.cache_version(tenant_id, space_id))
         return int(value or 0)
 
-    def bump_version(self, space_id: str) -> int:
+    def bump_version(self, space_id: str, *, tenant_id: str = "default") -> int:
         if not self.enabled:
             return 0
-        return int(self.client.incr(self.keys.cache_version(space_id)))
+        return int(self.client.incr(self.keys.cache_version(tenant_id, space_id)))
 
-    def get(self, kind: str, space_id: str, query_payload: str) -> Any | None:
+    def get(self, kind: str, space_id: str, query_payload: str, *, tenant_id: str = "default") -> Any | None:
         if not self.enabled:
             return None
-        key = self.keys.cache_search(kind, space_id, self.version(space_id), query_payload)
+        key = self.keys.cache_search(tenant_id, kind, space_id, self.version(space_id, tenant_id=tenant_id), query_payload)
         raw = self.client.get(key)
         return json.loads(raw) if raw else None
 
-    def set(self, kind: str, space_id: str, query_payload: str, value: Any, ttl_seconds: int = CACHE_SEARCH_TTL_SECONDS) -> None:
+    def set(
+        self,
+        kind: str,
+        space_id: str,
+        query_payload: str,
+        value: Any,
+        ttl_seconds: int = CACHE_SEARCH_TTL_SECONDS,
+        *,
+        tenant_id: str = "default",
+    ) -> None:
         if not self.enabled:
             return
-        key = self.keys.cache_search(kind, space_id, self.version(space_id), query_payload)
+        key = self.keys.cache_search(tenant_id, kind, space_id, self.version(space_id, tenant_id=tenant_id), query_payload)
         self.client.set(key, json.dumps(value, ensure_ascii=False, default=str), ex=max(1, int(ttl_seconds)))
 
 
@@ -95,22 +104,22 @@ return result
         self.client = client or get_redis()
         self.keys = keys
 
-    def increment(self, memory_ids: list[str], *, seen_at: str) -> None:
+    def increment(self, memory_ids: list[str], *, seen_at: str, tenant_id: str = "default") -> None:
         unique_ids = list(dict.fromkeys(str(memory_id) for memory_id in memory_ids if memory_id))
         if not unique_ids:
             return
         pipeline = self.client.pipeline(transaction=False)
         for memory_id in unique_ids:
-            pipeline.hincrby(self.keys.memory_access_counts(), memory_id, 1)
-            pipeline.hset(self.keys.memory_access_last_seen(), memory_id, seen_at)
+            pipeline.hincrby(self.keys.memory_access_counts(tenant_id), memory_id, 1)
+            pipeline.hset(self.keys.memory_access_last_seen(tenant_id), memory_id, seen_at)
         pipeline.execute()
 
-    def drain(self, *, limit: int) -> dict[str, tuple[int, str]]:
+    def drain(self, *, limit: int, tenant_id: str = "default") -> dict[str, tuple[int, str]]:
         raw = self.client.eval(
             self._DRAIN_SCRIPT,
             2,
-            self.keys.memory_access_counts(),
-            self.keys.memory_access_last_seen(),
+            self.keys.memory_access_counts(tenant_id),
+            self.keys.memory_access_last_seen(tenant_id),
             max(1, int(limit)),
         )
         result: dict[str, tuple[int, str]] = {}
@@ -118,21 +127,21 @@ return result
             result[str(raw[index])] = (int(raw[index + 1]), str(raw[index + 2]))
         return result
 
-    def restore(self, entries: dict[str, tuple[int, str]]) -> None:
+    def restore(self, entries: dict[str, tuple[int, str]], *, tenant_id: str = "default") -> None:
         if not entries:
             return
         pipeline = self.client.pipeline(transaction=False)
         for memory_id, (count, last_seen) in entries.items():
-            pipeline.hincrby(self.keys.memory_access_counts(), memory_id, count)
+            pipeline.hincrby(self.keys.memory_access_counts(tenant_id), memory_id, count)
             if last_seen:
-                pipeline.hset(self.keys.memory_access_last_seen(), memory_id, last_seen)
+                pipeline.hset(self.keys.memory_access_last_seen(tenant_id), memory_id, last_seen)
         pipeline.execute()
 
 
-def invalidate_space_cache(space_id: str) -> None:
+def invalidate_space_cache(space_id: str, *, tenant_id: str = "default") -> None:
     if COORDINATION_BACKEND != "redis" or not CACHE_ENABLED:
         return
     try:
-        RedisCache().bump_version(space_id)
+        RedisCache().bump_version(space_id, tenant_id=tenant_id)
     except Exception:
         return

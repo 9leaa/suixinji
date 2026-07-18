@@ -1,0 +1,54 @@
+{
+  "schema_version": "stage-metrics-v1",
+  "stage": 4,
+  "stage_name": "tenant-security-migration",
+  "date": "2026-07-18",
+  "branch": "optimize/stage4-tenant-security-migration",
+  "base_commit": "6eaccea",
+  "head_revision": "20260718_0006",
+  "acceptance": {
+    "same_source_space_id_two_tenants_no_collision": true,
+    "same_source_message_id_two_tenants_no_collision": true,
+    "redis_business_keys_tenant_isolated": true,
+    "test_api_disabled_returns_404": true,
+    "test_api_unauthenticated_returns_401": true,
+    "test_api_ignores_body_tenant": true,
+    "downgrade_upgrade_round_trip_passed": true,
+    "foundation_baseline_fingerprint_guarded": true,
+    "tenant_delete_business_orphans": 0
+  },
+  "verification": {
+    "ruff": "passed",
+    "full_pytest": {
+      "status": "passed",
+      "passed": 253,
+      "warnings": 5,
+      "duration_seconds": 300.23
+    },
+    "targeted_pytest": {
+      "status": "passed",
+      "passed": 30,
+      "warnings": 5
+    },
+    "migration_round_trip": {
+      "status": "passed",
+      "path": "20260718_0006 -> 20260718_0005 -> 20260718_0006"
+    }
+  },
+  "comparison": {
+    "stage3_full_pytest_passed": 249,
+    "stage4_full_pytest_passed": 253,
+    "additional_regression_tests": 4,
+    "tenant_collision_before": "possible because Inbox idempotency and Redis idempotency were not tenant-scoped",
+    "tenant_collision_after": 0,
+    "capacity_remeasured": false,
+    "capacity_note": "Stage 4 targets isolation, security, and migration correctness; throughput was not remeasured in this stage."
+  },
+  "constraints": {
+    "docker_invoked": false,
+    "docker_host_used": false,
+    "database_connection": "DATABASE_URL via existing reverse port",
+    "redis_connection": "REDIS_URL via existing reverse port",
+    "cleanup_policy": "Only isolated test tenant rows are deleted; containers and volumes are untouched."
+  }
+}

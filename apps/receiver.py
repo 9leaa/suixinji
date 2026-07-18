@@ -31,7 +31,7 @@ class InboxCommand:
 
 def receive(command: InboxCommand) -> DispatchResult:
     store = None
-    idem_key = KEYS.idempotency(command.source, command.message_id)
+    idem_key = KEYS.idempotency(command.tenant_id, command.source, command.message_id)
     if COORDINATION_BACKEND == "redis":
         try:
             store = IdempotencyStore()

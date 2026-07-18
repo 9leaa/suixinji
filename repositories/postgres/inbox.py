@@ -35,10 +35,10 @@ def append_message_once(record: Any) -> bool:
     source = str(values.get("source") or "feishu")
     space_id = str(values["space_id"])
     sender = dict(values.get("sender") or {})
-    tenant_id = str(sender.get("tenant_key") or DEFAULT_TENANT_ID)
+    tenant_id = str(values.get("tenant_id") or sender.get("tenant_key") or DEFAULT_TENANT_ID)
     with session_scope() as session:
-        ensure_tenant_space(session, space_id, tenant_id=tenant_id, source=source)
-        session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:space_id))"), {"space_id": space_id})
+        space_id = ensure_tenant_space(session, space_id, tenant_id=tenant_id, source=source)
+        session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:space_id))"), {"space_id": f"{tenant_id}:{space_id}"})
         next_sequence = int(
             session.execute(
                 select(func.coalesce(func.max(InboxMessage.sequence_no), 0) + 1).where(InboxMessage.space_id == space_id)
@@ -62,7 +62,7 @@ def append_message_once(record: Any) -> bool:
                 sensitivity=str(values.get("sensitivity") or "normal"),
                 sequence_no=next_sequence,
             )
-            .on_conflict_do_nothing(constraint="uq_inbox_source_message")
+            .on_conflict_do_nothing(constraint="uq_inbox_tenant_source_message")
             .returning(InboxMessage.id)
         ).scalar_one_or_none()
         return result is not None
@@ -87,9 +87,10 @@ def load_records(space_id: str) -> list[dict[str, Any]]:
 
 def message_exists(space_id: str, message_id: str) -> bool:
     with session_scope() as session:
+        resolved_space_id = ensure_tenant_space(session, space_id)
         return session.execute(
             select(InboxMessage.id).where(
-                InboxMessage.space_id == space_id,
+                InboxMessage.space_id == resolved_space_id,
                 InboxMessage.source_message_id == message_id,
             ).limit(1)
         ).scalar_one_or_none() is not None

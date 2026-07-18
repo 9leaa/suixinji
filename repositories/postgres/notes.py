@@ -68,7 +68,7 @@ def save_note(meta: Any) -> bool:
     }
     metadata = {key: value for key, value in values.items() if key not in standard_keys}
     with session_scope() as session:
-        ensure_tenant_space(session, space_id, tenant_id=tenant_id)
+        space_id = ensure_tenant_space(session, space_id, tenant_id=tenant_id)
         note_id = session.execute(
             insert(Note)
             .values(
