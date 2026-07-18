@@ -10,12 +10,23 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("spaces", sa.Column("processed_sequence_no", sa.BigInteger(), server_default="0", nullable=False))
-    op.add_column("spaces", sa.Column("memory_watermark", sa.BigInteger(), server_default="0", nullable=False))
-    op.add_column("spaces", sa.Column("memory_gap_sequence_no", sa.BigInteger(), nullable=True))
-    op.add_column("tasks", sa.Column("failure_count", sa.Integer(), server_default="0", nullable=False))
-    op.add_column("tasks", sa.Column("defer_count", sa.Integer(), server_default="0", nullable=False))
-    op.create_index("ix_tasks_space_status_created", "tasks", ["space_id", "status", "created_at"])
+    inspector = sa.inspect(op.get_bind())
+    space_columns = {column["name"] for column in inspector.get_columns("spaces")}
+    task_columns = {column["name"] for column in inspector.get_columns("tasks")}
+    task_indexes = {index["name"] for index in inspector.get_indexes("tasks")}
+
+    if "processed_sequence_no" not in space_columns:
+        op.add_column("spaces", sa.Column("processed_sequence_no", sa.BigInteger(), server_default="0", nullable=False))
+    if "memory_watermark" not in space_columns:
+        op.add_column("spaces", sa.Column("memory_watermark", sa.BigInteger(), server_default="0", nullable=False))
+    if "memory_gap_sequence_no" not in space_columns:
+        op.add_column("spaces", sa.Column("memory_gap_sequence_no", sa.BigInteger(), nullable=True))
+    if "failure_count" not in task_columns:
+        op.add_column("tasks", sa.Column("failure_count", sa.Integer(), server_default="0", nullable=False))
+    if "defer_count" not in task_columns:
+        op.add_column("tasks", sa.Column("defer_count", sa.Integer(), server_default="0", nullable=False))
+    if "ix_tasks_space_status_created" not in task_indexes:
+        op.create_index("ix_tasks_space_status_created", "tasks", ["space_id", "status", "created_at"])
     op.execute(
         """
         UPDATE spaces AS s
@@ -48,9 +59,20 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_tasks_space_status_created", table_name="tasks")
-    op.drop_column("tasks", "defer_count")
-    op.drop_column("tasks", "failure_count")
-    op.drop_column("spaces", "memory_gap_sequence_no")
-    op.drop_column("spaces", "memory_watermark")
-    op.drop_column("spaces", "processed_sequence_no")
+    inspector = sa.inspect(op.get_bind())
+    space_columns = {column["name"] for column in inspector.get_columns("spaces")}
+    task_columns = {column["name"] for column in inspector.get_columns("tasks")}
+    task_indexes = {index["name"] for index in inspector.get_indexes("tasks")}
+
+    if "ix_tasks_space_status_created" in task_indexes:
+        op.drop_index("ix_tasks_space_status_created", table_name="tasks")
+    if "defer_count" in task_columns:
+        op.drop_column("tasks", "defer_count")
+    if "failure_count" in task_columns:
+        op.drop_column("tasks", "failure_count")
+    if "memory_gap_sequence_no" in space_columns:
+        op.drop_column("spaces", "memory_gap_sequence_no")
+    if "memory_watermark" in space_columns:
+        op.drop_column("spaces", "memory_watermark")
+    if "processed_sequence_no" in space_columns:
+        op.drop_column("spaces", "processed_sequence_no")
