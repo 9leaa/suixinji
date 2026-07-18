@@ -47,8 +47,10 @@ def reserve_delivery(
     delivery_type: str,
     space_id: str,
     message_id: str | None = None,
+    tenant_id: str = "default",
 ) -> DeliveryRecord | None:
     """Reserve a send operation if it is safe to attempt."""
+    del tenant_id
     with _LOCK:
         items = _load_raw()
         old = items.get(delivery_key)

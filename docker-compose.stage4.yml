@@ -1,0 +1,67 @@
+x-stage4-common: &stage4-common
+  build: .
+  environment:
+    STORAGE_BACKEND: postgres
+    COORDINATION_BACKEND: redis
+    TASK_QUEUE_BACKEND: redis_streams
+    DATABASE_URL: "${STAGE4_DATABASE_URL:-${DATABASE_URL}}"
+    REDIS_URL: "${STAGE4_REDIS_URL:-${REDIS_URL}}"
+    CACHE_ENABLED: "true"
+    SUIXINJI_ENV: stage4
+    SUIXINJI_FAKE_EXTERNALS: "true"
+    SUIXINJI_AGENT_HOOKS_ENABLED: "true"
+  volumes:
+    - ./data:/app/data
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  restart: unless-stopped
+
+services:
+  receiver:
+    <<: *stage4-common
+    command: ["uvicorn", "apps.api:app", "--host", "0.0.0.0", "--port", "8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  outbox-relay:
+    <<: *stage4-common
+    command: ["python", "-m", "apps.outbox_relay"]
+
+  ingest-worker:
+    <<: *stage4-common
+    command: ["python", "-m", "apps.worker", "ingest"]
+
+  query-worker:
+    <<: *stage4-common
+    command: ["python", "-m", "apps.worker", "query"]
+
+  summary-worker:
+    <<: *stage4-common
+    command: ["python", "-m", "apps.worker", "summary"]
+
+  memory-worker:
+    <<: *stage4-common
+    command: ["python", "-m", "apps.worker", "memory"]
+
+  delivery-worker:
+    <<: *stage4-common
+    command: ["python", "-m", "apps.worker", "delivery"]
+
+  scheduler:
+    <<: *stage4-common
+    command: ["python", "-m", "apps.scheduler"]
+
+  load-test:
+    <<: *stage4-common
+    profiles: ["tools"]
+    restart: "no"
+    command: ["python", "scripts/load_test_multi_users.py", "--profile", "smoke", "--endpoint", "http://receiver:8000"]
+
+  metrics:
+    <<: *stage4-common
+    profiles: ["tools"]
+    restart: "no"
+    command: ["python", "scripts/collect_distributed_metrics.py", "--help"]

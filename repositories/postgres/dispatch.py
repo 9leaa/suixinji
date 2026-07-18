@@ -176,6 +176,7 @@ def load_inbox_record(inbox_id: str) -> dict[str, Any] | None:
             "source": row.source,
             "event_id": row.source_event_id,
             "message_id": row.source_message_id,
+            "tenant_id": row.tenant_id,
             "space_id": row.space_id,
             "chat_id": row.chat_id,
             "chat_type": row.chat_type,

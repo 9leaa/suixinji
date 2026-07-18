@@ -7,6 +7,7 @@ from typing import Any
 
 from agent.query_agent import answer_question
 from bot.feishu_bot import send_text
+from core.settings import FAKE_EXTERNALS
 from core.worker import enrich_note, process_record
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock
@@ -42,6 +43,7 @@ def _enqueue_delivery(task: dict[str, Any], *, text: str, payload: dict[str, Any
     }
     enqueue_task(
         task_type="delivery",
+        tenant_id=str(task.get("tenant_id") or "default"),
         space_id=str(task["space_id"]),
         source_message_id=task.get("source_message_id"),
         idempotency_key=f"delivery:{delivery_key}",
@@ -62,6 +64,7 @@ def handle_ingest(task: dict[str, Any]) -> None:
             note_id = str(note_data["id"])
             enqueue_task(
                 task_type="memory",
+                tenant_id=str(task.get("tenant_id") or "default"),
                 space_id=str(task["space_id"]),
                 source_message_id=task.get("source_message_id"),
                 idempotency_key=f"memory:extract:{note_id}",
@@ -69,6 +72,7 @@ def handle_ingest(task: dict[str, Any]) -> None:
             )
             enqueue_task(
                 task_type="memory",
+                tenant_id=str(task.get("tenant_id") or "default"),
                 space_id=str(task["space_id"]),
                 source_message_id=task.get("source_message_id"),
                 idempotency_key=f"memory:enrich:{note_id}",
@@ -88,13 +92,17 @@ def handle_ingest(task: dict[str, Any]) -> None:
 def handle_query(task: dict[str, Any]) -> None:
     payload = _payload(task)
     inbox_id = _require_turn(payload)
-    answer = answer_question(
-        str(task["space_id"]),
-        str(payload["question"]),
-        tenant_id=str(task.get("tenant_id") or "default"),
-        message_id=task.get("source_message_id"),
-        task_id=str(task["id"]),
-    )
+    if FAKE_EXTERNALS:
+        answer = f"[stage4 fake answer] {str(payload['question'])[:120]}"
+    else:
+        answer = answer_question(
+            str(task["space_id"]),
+            str(payload["question"]),
+            tenant_id=str(task.get("tenant_id") or "default"),
+            user_id=str(payload.get("user_id") or "") or None,
+            message_id=task.get("source_message_id"),
+            task_id=str(task["id"]),
+        )
     _enqueue_delivery(task, text=answer, payload=payload)
     if inbox_id:
         mark_inbox_processed(inbox_id)
@@ -103,14 +111,19 @@ def handle_query(task: dict[str, Any]) -> None:
 def handle_summary(task: dict[str, Any]) -> None:
     payload = _payload(task)
     inbox_id = _require_turn(payload)
-    result = generate_summary(
-        str(task["space_id"]),
-        str(payload["range_key"]),
-        tenant_id=str(task.get("tenant_id") or "default"),
-        message_id=task.get("source_message_id"),
-        task_id=str(task["id"]),
-    )
-    _enqueue_delivery(task, text=result.markdown, payload=payload)
+    if FAKE_EXTERNALS:
+        summary_text = f"[stage4 fake summary] range={str(payload['range_key'])}"
+    else:
+        result = generate_summary(
+            str(task["space_id"]),
+            str(payload["range_key"]),
+            tenant_id=str(task.get("tenant_id") or "default"),
+            user_id=str(payload.get("user_id") or "") or None,
+            message_id=task.get("source_message_id"),
+            task_id=str(task["id"]),
+        )
+        summary_text = result.markdown
+    _enqueue_delivery(task, text=summary_text, payload=payload)
     if inbox_id:
         mark_inbox_processed(inbox_id)
 
@@ -128,6 +141,8 @@ def handle_memory(task: dict[str, Any]) -> None:
     if note is None:
         raise ValueError(f"note not found: {note_id}")
     if operation == "enrich":
+        if FAKE_EXTERNALS:
+            return
         with coordinated_lock(KEYS.lock_space(str(task["space_id"])), critical=True):
             enrich_note(str(task["space_id"]), note_id)
         return
@@ -140,6 +155,7 @@ def handle_delivery(task: dict[str, Any]) -> None:
     reservation = reserve_delivery(
         key,
         delivery_type=str(payload.get("delivery_type") or "message"),
+        tenant_id=str(task.get("tenant_id") or "default"),
         space_id=str(task["space_id"]),
         message_id=payload.get("message_id"),
     )
@@ -148,6 +164,11 @@ def handle_delivery(task: dict[str, Any]) -> None:
         if existing is not None and existing.status in {"sent", "unknown"}:
             return
         raise RetryLater("delivery is already reserved", delay_seconds=1.0)
+    if FAKE_EXTERNALS:
+        mark_sent(key)
+        if payload.get("delivery_type") == "auto_summary" and payload.get("sent_date"):
+            mark_summary_sent(str(task["space_id"]), str(payload["sent_date"]))
+        return
     try:
         send_text(str(payload["chat_id"]), str(payload["text"]))
     except TimeoutError as exc:

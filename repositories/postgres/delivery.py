@@ -55,8 +55,14 @@ def is_reservation_expired(record, now: datetime | None = None) -> bool:
     return _parse_iso(record.lease_expires_at) <= (now or datetime.now().astimezone())
 
 
-def reserve_delivery(delivery_key: str, *, delivery_type: str, space_id: str, message_id: str | None = None):
-    tenant_id = DEFAULT_TENANT_ID
+def reserve_delivery(
+    delivery_key: str,
+    *,
+    delivery_type: str,
+    space_id: str,
+    message_id: str | None = None,
+    tenant_id: str = DEFAULT_TENANT_ID,
+):
     with session_scope() as session:
         ensure_tenant_space(session, space_id, tenant_id=tenant_id)
         session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:delivery_key))"), {"delivery_key": delivery_key})

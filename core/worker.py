@@ -172,6 +172,7 @@ def process_record(record: dict[str, Any], *, defer_memory: bool = False) -> Not
             enrichment_status="provisional",
             enrichment_attempts=0,
             sensitivity="normal",
+            tenant_id=str(record.get("tenant_id") or "default"),
         )
 
         with observe("worker.write_note", extra={"note_id": record_id}, **ctx):

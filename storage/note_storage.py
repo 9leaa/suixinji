@@ -53,6 +53,7 @@ class NoteMetadata:
     enrichment_started_at: str | None = None
     enrichment_updated_at: str | None = None
     sensitivity: str = "normal"
+    tenant_id: str = "default"
 
 
 def note_dir(space_id: str) -> Path:

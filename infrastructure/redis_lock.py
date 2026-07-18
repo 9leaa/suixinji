@@ -10,6 +10,7 @@ from typing import Iterator
 
 from redis import Redis
 
+from core.observability import log_event
 from core.settings import COORDINATION_BACKEND, SPACE_LOCK_TTL_MS, SPACE_LOCK_WAIT_SECONDS
 from infrastructure.database import get_engine
 from infrastructure.redis_client import get_redis
@@ -76,10 +77,22 @@ def postgres_advisory_lock(key: str) -> Iterator[None]:
 
 @contextmanager
 def coordinated_lock(key: str, *, critical: bool = True, wait_seconds: float = SPACE_LOCK_WAIT_SECONDS) -> Iterator[str]:
+    started = time.monotonic()
+
+    def record(backend: str) -> None:
+        wait_ms = int((time.monotonic() - started) * 1000)
+        log_event(
+            "runtime.lock_acquired",
+            status="completed",
+            duration_ms=wait_ms,
+            extra={"backend": backend, "lock_wait_ms": wait_ms},
+        )
+
     if COORDINATION_BACKEND == "redis":
         lock = RedisDistributedLock(key)
         try:
             if lock.acquire(wait_seconds):
+                record("redis")
                 stop_renewal = threading.Event()
 
                 def renew_loop() -> None:
@@ -105,10 +118,12 @@ def coordinated_lock(key: str, *, critical: bool = True, wait_seconds: float = S
             if not critical:
                 raise
         with postgres_advisory_lock(key):
+            record("postgres")
             yield "postgres"
         return
 
     with _LOCAL_GUARD:
         local_lock = _LOCAL_LOCKS.setdefault(key, threading.RLock())
     with local_lock:
+        record("local")
         yield "local"

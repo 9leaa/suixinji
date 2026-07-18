@@ -24,6 +24,7 @@ def _as_note(row: Note, tags: list[str], related: list[str]) -> dict[str, Any]:
         "id": row.id,
         "message_id": row.message_id,
         "space_id": row.space_id,
+        "tenant_id": row.tenant_id,
         "ts": row.created_at.isoformat(),
         "title": row.title,
         "tags": tags,

@@ -20,6 +20,7 @@ from infrastructure.schema import (
     MemorySource as MemorySourceRow,
     MemoryTrace,
     MemoryVersion as MemoryVersionRow,
+    Space,
 )
 from memory.models import (
     MEMORY_EXTRACTION_STATUSES,
@@ -169,11 +170,13 @@ def _insert_memory(
 ) -> Memory:
     if status not in MEMORY_STATUSES:
         raise ValueError(f"invalid memory status: {status}")
-    ensure_tenant_space(session, space_id, tenant_id=DEFAULT_TENANT_ID)
+    space = session.get(Space, space_id)
+    tenant_id = str(space.tenant_id) if space is not None else DEFAULT_TENANT_ID
+    ensure_tenant_space(session, space_id, tenant_id=tenant_id)
     timestamp = now or utc_now_iso()
     row = Memory(
         id=memory_id or new_id("mem"),
-        tenant_id=DEFAULT_TENANT_ID,
+        tenant_id=tenant_id,
         space_id=space_id,
         memory_type=candidate.memory_type,
         content=candidate.content,

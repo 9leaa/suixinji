@@ -92,6 +92,47 @@ make distributed-down
 
 本机测试用 Redis profile 明确关闭 AOF 和 RDB 快照，不做持久化写盘；使用外部 Redis 时无需启动该 profile。
 
+## 第四阶段分布式验收
+
+第四阶段提供独立的 `docker-compose.stage4.yml`，固定使用 PostgreSQL、Redis Streams 和 Fake 外部调用。它只启动应用角色，不会创建、重启或修改 PostgreSQL/Redis，因此可以连接 `.env` 中已经配置的外部服务。
+
+容器不能使用宿主机的 `127.0.0.1`。启动前需在 `.env` 设置容器可达的 `STAGE4_DATABASE_URL` 和 `STAGE4_REDIS_URL`（通常使用 Mac 局域网地址或 `host.docker.internal`）；预检只检查主机名，不会输出连接串或密钥。Stage 4 容器也不会注入飞书、OpenAI、Embedding 密钥。
+
+```bash
+make stage4-up                 # receiver x2, relay x2, ingest x4, 其余 worker/scheduler x2
+make stage4-load-smoke         # 10 用户安全冒烟
+make stage4-load-basic         # 100 用户、1000 请求
+make stage4-status
+make stage4-down
+```
+
+宿主机直接生成压测计划不会发送请求：
+
+```bash
+python scripts/load_test_multi_users.py --profile basic
+```
+
+只有显式增加 `--execute` 才会提交。流量模型覆盖普通、活跃、突发和恶意用户，默认比例为 70% 写入、20% 查询、5% 总结、5% Memory 命令。每次执行在 `data/load-tests/` 生成报告，再通过 `scripts/collect_distributed_metrics.py` 汇总任务状态、Streams lag/pending、重试、死信、p50/p95/p99、LLM token/cost 和守恒关系。
+
+Chaos 工具同样默认只预览命令：
+
+```bash
+python scripts/chaos_test_distributed.py
+python scripts/chaos_test_distributed.py --execute
+```
+
+应用级演练覆盖 Worker 崩溃接管、Outbox Relay 重启、Delivery/Query 积压和 Scheduler Leader 切换。它绝不会隐式重启外部 Redis/PostgreSQL；基础设施演练必须额外提供 `--include-infrastructure --infra-compose <path>`。正式切换前运行 `make cutover-check`，完整步骤见 `docs/distributed_cutover_runbook.md`。
+
+需要实际执行 1000 请求验收但不写外部服务时，使用临时环境：
+
+```bash
+make stage4-ephemeral-up
+make stage4-ephemeral-load-basic
+make stage4-ephemeral-down
+```
+
+临时 PostgreSQL 与 Redis 都使用 `tmpfs`；Redis 关闭 AOF/RDB，`down -v` 后数据消失。该模式不会连接 `.env` 中的 Mac PostgreSQL/Redis。
+
 ## 使用示例
 
 ```text
@@ -192,4 +233,5 @@ message_received
 ## Roadmap
 
 - 已完成：WAL、固定 taxonomy 分类、embedding 相关笔记、ReAct 查询、手动/自动总结、有界任务执行器、pending drainer、发送幂等、可审计核心记忆链路、CI 和 dry-run 评测。
-- 下一阶段：在真实反馈集上评测后启用 `hybrid` 抽取、接入 memory embedding、补充冲突人工裁决界面、真实截图/GIF 展示和跨进程锁。
+- 已完成：PostgreSQL 共享数据底座、Redis Hooks、Transactional Outbox、Redis Streams、多角色部署和第四阶段分布式验收工具。
+- 下一阶段：在隔离环境完成持续 10～30 分钟和 5000+ 虚拟用户实测，再基于真实反馈集评估 `hybrid` 抽取与 memory embedding。

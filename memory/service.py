@@ -253,6 +253,7 @@ def process_note_memory(note: Any, classification: dict[str, Any] | None = None)
     context = AgentRunContext.create(
         space_id=space_id,
         run_type="memory",
+        tenant_id=str(_note_value(note, "tenant_id", "default") or "default"),
         message_id=str(_note_value(note, "message_id", "")) or None,
         task_id=note_id or None,
         metadata={"note_id": note_id},
