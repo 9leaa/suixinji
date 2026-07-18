@@ -14,6 +14,7 @@ from memory.consolidator import generate_stable_semantic, merge_duplicate_episod
 from memory.expiry import run_expiry_once
 from memory.repository import (
     consolidation_period_key,
+    flush_access_counts,
     mark_consolidation_completed,
     mark_consolidation_failed,
     reserve_consolidation_run,
@@ -167,7 +168,17 @@ def run_memory_scheduler_tick(last_run_dates: dict[str, str] | None = None, *, t
                 cadence,
                 current_day.isoformat(),
             )
-    return {"date": current_day.isoformat(), "ran": [report["cadence"] for report in reports], "reports": reports}
+    try:
+        flushed_access_counts = flush_access_counts()
+    except Exception:
+        LOGGER.warning("Memory access counter flush failed", exc_info=True)
+        flushed_access_counts = 0
+    return {
+        "date": current_day.isoformat(),
+        "ran": [report["cadence"] for report in reports],
+        "reports": reports,
+        "flushed_access_counts": flushed_access_counts,
+    }
 
 
 def start_memory_scheduler(interval_seconds: int = DEFAULT_MEMORY_SCHEDULER_INTERVAL_SECONDS) -> threading.Thread:

@@ -6,7 +6,7 @@ from core.settings import MEMORY_ADJUDICATION_TOP_K
 from memory.models import MemoryCandidate, MemoryRecord, normalize_content
 from memory.policies import preference as preference_policy
 from memory.policies import task as task_policy
-from memory.repository import list_memories
+from memory.repository import list_adjudication_candidates
 
 
 def _char_similarity(left: str, right: str) -> float:
@@ -59,15 +59,12 @@ def retrieve_candidates(space_id: str, candidate: MemoryCandidate, *, limit: int
     this deterministic path remains the safe fallback when no vector is available.
     """
     top_k = limit if limit is not None else MEMORY_ADJUDICATION_TOP_K
-    structured = list_memories(
+    memories = list_adjudication_candidates(
         space_id,
-        status="active",
         memory_type=candidate.memory_type,
         memory_key=candidate.effective_memory_key,
-        limit=20,
+        limit=200,
     )
-    lexical = list_memories(space_id, status="active", memory_type=candidate.memory_type, limit=100)
-    memories = list({memory.id: memory for memory in [*structured, *lexical]}.values())
     scored = [(memory, candidate_similarity(candidate, memory)) for memory in memories]
     scored.sort(key=lambda item: (item[1], item[0].updated_at), reverse=True)
     return [memory for memory, score in scored[: max(1, min(int(top_k), 20))] if score >= 0.18]

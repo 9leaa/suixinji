@@ -11,12 +11,22 @@ from agent.hooks import AgentRunContext, get_default_hook_manager
 from core.llm_client import complete_json, embed_text
 from core.observability import log_event, observe
 from core.sensitive import mentions_sensitive_topic
-from core.settings import MEMORY_QUERY_MIN_SCORE, QUERY_MIN_SCORE, QUERY_TOP_K
+from core.settings import MEMORY_QUERY_MIN_SCORE, QUERY_MIN_SCORE, QUERY_TOP_K, STORAGE_BACKEND
 from core.taxonomy import is_valid_tag, is_valid_type, normalize_tag, normalize_type
 from memory.service import memory_search
 from memory.trace import add_step, finish_trace, start_trace
 from storage.note_storage import is_note_queryable, load_index
 from storage.vector_store import search_related
+
+if STORAGE_BACKEND == "postgres":
+    from repositories.postgres.notes import (
+        find_note as _postgres_find_note,
+        get_note_relations as _postgres_get_note_relations,
+        list_provisional_notes as _postgres_list_provisional_notes,
+        list_recent_notes as _postgres_list_recent_notes,
+        query_notes_by_tags as _postgres_query_notes_by_tags,
+        query_notes_by_type as _postgres_query_notes_by_type,
+    )
 
 
 DEFAULT_QUERY_MIN_SCORE = QUERY_MIN_SCORE
@@ -67,6 +77,11 @@ FINAL_SYSTEM_PROMPT = """
 {"final_answer":"..."}
 """
 
+_COMPLEX_QUERY_MARKERS = ("比较", "为什么", "结合", "关联", "之间", "变化", "趋势", "总结", "归纳", "多次")
+_CURRENT_PREFERENCE_MARKERS = ("喜欢", "讨厌", "偏好", "习惯", "过敏", "避开")
+_CURRENT_TASK_MARKERS = ("当前待办", "现在的任务", "有哪些任务", "要做什么", "任务进度", "待办是什么")
+_CURRENT_FACT_MARKERS = ("住在哪里", "住哪", "现在住", "目前住", "正在学习", "重点做什么", "当前项目")
+
 
 def _clip(text: str | None, limit: int = 500) -> str:
     if not text:
@@ -111,6 +126,92 @@ def _coerce_bool(value: Any, default: bool = True) -> bool:
         if lowered in {"1", "true", "yes", "y", "是"}:
             return True
     return bool(value)
+
+
+def _normalized_query(value: str) -> str:
+    return " ".join(value.strip().casefold().rstrip("?？").split())
+
+
+def _deterministic_route(question: str) -> dict[str, Any] | None:
+    normalized = _normalized_query(question)
+    type_match = re.fullmatch(r"/(?:type|类型)\s+(.+)", normalized)
+    tag_match = re.fullmatch(r"/(?:tag|标签)\s+(.+)", normalized)
+    if type_match:
+        return {
+            "action": "filter_notes",
+            "args": {"type": type_match.group(1).strip(), "limit": 30},
+            "synthesize": False,
+            "reason": "explicit_type_filter",
+        }
+    if tag_match:
+        return {
+            "action": "filter_notes",
+            "args": {"tags": [tag_match.group(1).strip()], "limit": 30},
+            "synthesize": False,
+            "reason": "explicit_tag_filter",
+        }
+
+    natural_type = re.search(r"(?:type|类型)\s*(?:是|=|:|：)?\s*([^\s，。？?]+)", normalized)
+    natural_tag = re.search(r"(?:tag|标签)\s*(?:是|=|:|：)?\s*([^\s，。？?]+)", normalized)
+    if natural_type and is_valid_type(natural_type.group(1)):
+        return {
+            "action": "filter_notes",
+            "args": {"type": natural_type.group(1), "limit": 30},
+            "synthesize": False,
+            "reason": "structured_type_filter",
+        }
+    if natural_tag and is_valid_tag(natural_tag.group(1)):
+        return {
+            "action": "filter_notes",
+            "args": {"tags": [natural_tag.group(1)], "limit": 30},
+            "synthesize": False,
+            "reason": "structured_tag_filter",
+        }
+    if "最近" in normalized and any(marker in normalized for marker in ("笔记", "记录", "记了", "写了")):
+        return {
+            "action": "list_recent",
+            "args": {"days": 7, "limit": 10},
+            "synthesize": False,
+            "reason": "recent_notes",
+        }
+    if any(marker in normalized for marker in _CURRENT_PREFERENCE_MARKERS):
+        return {
+            "action": "memory_search",
+            "args": {"query": normalized, "memory_type": "preference", "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
+            "fallback": {
+                "action": "semantic_search",
+                "args": {"query": normalized, "top_k": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE},
+            },
+            "synthesize": True,
+            "reason": "current_preference",
+        }
+    if any(marker in normalized for marker in _CURRENT_TASK_MARKERS):
+        return {
+            "action": "memory_search",
+            "args": {"query": normalized, "memory_type": "task", "limit": 8, "min_score": DEFAULT_MEMORY_MIN_SCORE},
+            "fallback": {"action": "filter_notes", "args": {"type": "任务", "limit": 8}},
+            "synthesize": True,
+            "reason": "current_task",
+        }
+    if any(marker in normalized for marker in _CURRENT_FACT_MARKERS):
+        return {
+            "action": "memory_search",
+            "args": {"query": normalized, "memory_type": "semantic", "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
+            "fallback": {
+                "action": "semantic_search",
+                "args": {"query": normalized, "top_k": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE},
+            },
+            "synthesize": True,
+            "reason": "current_fact",
+        }
+    if len(normalized) <= 60 and not any(marker in normalized for marker in _COMPLEX_QUERY_MARKERS):
+        return {
+            "action": "semantic_search",
+            "args": {"query": normalized, "top_k": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE},
+            "synthesize": True,
+            "reason": "single_hop_semantic",
+        }
+    return None
 
 
 def _safe_tool_args(action: str, args: dict[str, Any]) -> dict[str, Any]:
@@ -240,6 +341,25 @@ def filter_notes(
     if query_tags and not all(is_valid_tag(tag) for tag in query_tags):
         return []
 
+    if STORAGE_BACKEND == "postgres":
+        if query_tags:
+            results = _postgres_query_notes_by_tags(
+                space_id,
+                query_tags,
+                note_type=query_type or None,
+                match_all_tags=match_all_tags,
+                limit=limit,
+            )
+        elif query_type:
+            results = _postgres_query_notes_by_type(space_id, query_type, limit=limit)
+        else:
+            results = _postgres_list_recent_notes(
+                space_id,
+                created_after=datetime(1970, 1, 1).astimezone(),
+                limit=limit,
+            )
+        return [_note_brief(note) for note in results]
+
     results = []
     for note in _safe_notes(space_id):
         if query_type and note.get("type") != query_type:
@@ -351,8 +471,13 @@ def provisional_search(space_id: str, query: str, limit: int = 5) -> list[dict[s
     if not query_terms:
         return []
 
+    candidates = (
+        _postgres_list_provisional_notes(space_id, limit=max(100, min(int(limit) * 20, 500)))
+        if STORAGE_BACKEND == "postgres"
+        else _safe_notes(space_id)
+    )
     scored: list[tuple[float, dict[str, Any]]] = []
-    for note in _safe_notes(space_id):
+    for note in candidates:
         status = str(note.get("enrichment_status") or "ready")
         if status not in {"provisional", "enriching", "failed"}:
             continue
@@ -378,7 +503,9 @@ def provisional_search(space_id: str, query: str, limit: int = 5) -> list[dict[s
 
 
 def get_note(space_id: str, note_id: str) -> dict[str, Any]:
-    note = _find_note(space_id, note_id)
+    note = _postgres_find_note(space_id, note_id) if STORAGE_BACKEND == "postgres" else _find_note(space_id, note_id)
+    if note is not None and not is_note_queryable(note):
+        note = None
     if note is None:
         return {"error": f"note not found: {note_id}"}
     return _note_brief(note, text_limit=1200)
@@ -390,6 +517,9 @@ def list_recent(space_id: str, days: int = 7, limit: int = 10) -> list[dict[str,
 
     now = datetime.now().astimezone()
     cutoff = now - timedelta(days=days)
+
+    if STORAGE_BACKEND == "postgres":
+        return [_note_brief(note) for note in _postgres_list_recent_notes(space_id, created_after=cutoff, limit=limit)]
 
     notes = []
     for note in _safe_notes(space_id):
@@ -403,6 +533,19 @@ def list_recent(space_id: str, days: int = 7, limit: int = 10) -> list[dict[str,
 
 def follow_links(space_id: str, note_id: str, limit: int = 5) -> dict[str, Any]:
     limit = max(1, min(int(limit), 20))
+    if STORAGE_BACKEND == "postgres":
+        relations = _postgres_get_note_relations(space_id, note_id, limit=limit)
+        if relations is None or relations.get("source") is None:
+            return {"error": f"note not found: {note_id}"}
+        source = _note_brief(relations["source"])
+        outbound = [_note_brief(note) for note in relations["outbound"]]
+        inbound = [_note_brief(note) for note in relations["inbound"]]
+        return {
+            "source": source,
+            "outbound_related": outbound,
+            "inbound_related": inbound,
+            "related": outbound + inbound,
+        }
     notes = _safe_notes(space_id)
     note = next((item for item in notes if item.get("id") == note_id), None)
     if note is None:
@@ -596,18 +739,20 @@ def _complete_json_with_hooks(
     name: str,
     system_prompt: str,
     user_prompt: str,
+    model_role: str = "balanced",
 ) -> dict[str, Any]:
     if context is None:
-        return complete_json(system_prompt=system_prompt, user_prompt=user_prompt)
+        return complete_json(system_prompt=system_prompt, user_prompt=user_prompt, model_role=model_role)
     request: dict[str, Any] = {
         "name": name,
         "system_prompt_len": len(system_prompt),
         "user_prompt": user_prompt,
+        "model_role": model_role,
     }
     return get_default_hook_manager().run_llm(
         context,
         request,
-        lambda: complete_json(system_prompt=system_prompt, user_prompt=user_prompt),
+        lambda: complete_json(system_prompt=system_prompt, user_prompt=user_prompt, model_role=model_role),
     )
 
 
@@ -632,6 +777,7 @@ def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hoo
 
 def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_context: AgentRunContext | None) -> str:
     question = question.strip()
+    max_steps = max(1, min(int(max_steps), 4))
     trace = start_trace("memory_query", space_id, query_len=len(question))
     add_step(trace, "query_received", input_summary={"question_len": len(question), "max_steps": max_steps})
     with observe(
@@ -693,6 +839,60 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 answer = _with_sources(_provisional_answer(provisional), observations)
                 _log_final_answer(space_id, answer, source="provisional_read_after_write", observations=observations)
                 add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="no_llm_wait")
+                add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                finish_trace(trace)
+                return answer
+
+            fast_route = _deterministic_route(question)
+            if fast_route is not None:
+                action = str(fast_route["action"])
+                args = dict(fast_route["args"])
+                add_step(
+                    trace,
+                    "query_routed",
+                    output_summary={"tool": action, "safe_args": _safe_tool_args(action, args)},
+                    reason=f"fast_path:{fast_route['reason']}",
+                )
+                result = _run_tool(space_id, action, args, trace=trace, hook_context=hook_context)
+                observations.append(
+                    {
+                        "thought": f"确定性快速路由：{fast_route['reason']}",
+                        "tool": action,
+                        "args": _safe_tool_args(action, args),
+                        "result": result,
+                    }
+                )
+                fallback = fast_route.get("fallback")
+                if not result and isinstance(fallback, dict):
+                    fallback_action = str(fallback["action"])
+                    fallback_args = dict(fallback["args"])
+                    fallback_result = _run_tool(
+                        space_id,
+                        fallback_action,
+                        fallback_args,
+                        trace=trace,
+                        hook_context=hook_context,
+                    )
+                    observations.append(
+                        {
+                            "thought": "快速路径主存储无结果，使用受限降级查询。",
+                            "tool": fallback_action,
+                            "args": _safe_tool_args(fallback_action, fallback_args),
+                            "result": fallback_result,
+                        }
+                    )
+                    result = fallback_result
+                add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
+                add_step(trace, "rerank", output_summary={"strategy": "fast_path_tool_order", "ids": _result_ids(result)})
+                if fast_route["synthesize"] and result:
+                    answer = _synthesize_answer(question, observations, hook_context=hook_context)
+                    reason = "fast_path_single_synthesis"
+                else:
+                    answer = _fallback_answer(observations)
+                    reason = "fast_path_deterministic_answer"
+                answer = _with_sources(answer, observations)
+                _log_final_answer(space_id, answer, source=reason, observations=observations)
+                add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason=reason)
                 add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
                 finish_trace(trace)
                 return answer

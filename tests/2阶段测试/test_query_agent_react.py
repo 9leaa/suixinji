@@ -28,25 +28,13 @@ def test_answer_question_empty_question_does_not_call_llm(monkeypatch):
     assert "你想问什么" in answer
 
 
-def test_answer_question_runs_filter_tool_then_returns_final_answer(monkeypatch):
-    decisions = iter(
-        [
-            {
-                "thought": "用户问任务，先按固定 type 筛选。",
-                "action": "filter_notes",
-                "args": {"type": "任务", "limit": 5},
-            },
-            {
-                "thought": "已经找到任务笔记。",
-                "final_answer": "你现在有 1 个任务：测试任务。",
-            },
-        ]
-    )
+def test_answer_question_fast_routes_current_task_then_synthesizes_once(monkeypatch):
     prompts = []
 
-    def fake_complete_json(system_prompt, user_prompt):
+    def fake_complete_json(system_prompt, user_prompt, model_role=None):
         prompts.append(json.loads(user_prompt))
-        return next(decisions)
+        assert model_role == "balanced"
+        return {"final_answer": "你现在有 1 个任务：测试任务。"}
 
     monkeypatch.setattr(query_agent, "complete_json", fake_complete_json)
     monkeypatch.setattr(query_agent, "load_index", lambda space_id: list(NOTES))
@@ -56,9 +44,10 @@ def test_answer_question_runs_filter_tool_then_returns_final_answer(monkeypatch)
     assert answer.startswith("你现在有 1 个任务：测试任务。")
     assert "来源：" in answer
     assert "note:task-1" in answer
-    assert prompts[0]["observations"] == []
-    assert prompts[1]["observations"][0]["tool"] == "filter_notes"
-    assert prompts[1]["observations"][0]["result"][0]["id"] == "task-1"
+    assert len(prompts) == 1
+    assert prompts[0]["observations"][0]["tool"] == "memory_search"
+    assert prompts[0]["observations"][1]["tool"] == "filter_notes"
+    assert prompts[0]["observations"][1]["result"][0]["id"] == "task-1"
 
 
 def test_answer_question_defaults_to_semantic_search_when_llm_returns_no_action(monkeypatch):
@@ -70,7 +59,7 @@ def test_answer_question_defaults_to_semantic_search_when_llm_returns_no_action(
         ]
     )
 
-    monkeypatch.setattr(query_agent, "complete_json", lambda system_prompt, user_prompt: next(decisions))
+    monkeypatch.setattr(query_agent, "complete_json", lambda system_prompt, user_prompt, model_role=None: next(decisions))
     monkeypatch.setattr(
         query_agent,
         "semantic_search",

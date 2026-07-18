@@ -896,6 +896,25 @@ def list_memories(
         return [_memory_from_row(row, sources=_load_sources(conn, row["id"])) for row in rows]
 
 
+def list_adjudication_candidates(
+    space_id: str,
+    *,
+    memory_type: str,
+    memory_key: str,
+    limit: int = 200,
+    db_path: str | Path | None = None,
+) -> list[MemoryRecord]:
+    memories = list_memories(
+        space_id,
+        status="active",
+        memory_type=memory_type,
+        limit=min(int(limit), 100),
+        db_path=db_path,
+    )
+    memories.sort(key=lambda memory: (memory.effective_memory_key == memory_key, memory.updated_at), reverse=True)
+    return memories
+
+
 def expire_due_memories(
     space_id: str | None = None,
     *,
@@ -1295,6 +1314,11 @@ def mark_accessed(memory_ids: list[str], db_path: str | Path | None = None) -> N
             )
 
     _run_write(_operation)
+
+
+def flush_access_counts(*, limit: int = 1000, db_path: str | Path | None = None) -> int:
+    del limit, db_path
+    return 0
 
 
 def soft_delete_memory(memory_id: str, *, reason: str = "user_forget", db_path: str | Path | None = None) -> MemoryRecord | None:
@@ -2089,10 +2113,12 @@ if _STORAGE_BACKEND == "postgres":
         "list_retryable_memory_candidates",
         "get_memory",
         "list_memories",
+        "list_adjudication_candidates",
         "expire_due_memories",
         "update_memory",
         "apply_memory_decision",
         "mark_accessed",
+        "flush_access_counts",
         "soft_delete_memory",
         "correct_memory",
         "purge_memory",

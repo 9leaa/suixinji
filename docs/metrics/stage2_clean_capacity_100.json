@@ -1,0 +1,166 @@
+{
+  "measurement_status": "measured",
+  "submitted": 1000,
+  "accepted": 988,
+  "client_confirmed_accepted": 935,
+  "accepted_after_client_timeout": 53,
+  "submission_failed_unaccepted": 6,
+  "rate_limited": 0,
+  "duplicate": 6,
+  "blocked": 0,
+  "queued": 0,
+  "running": 0,
+  "completed": 988,
+  "cancelled": 0,
+  "failed": 6,
+  "pending": 0,
+  "dead_letter": 0,
+  "all_task_status": {
+    "completed": 2656
+  },
+  "all_task_pending": 0,
+  "all_task_dead_letter": 0,
+  "retry_count": 0,
+  "failure_count": 0,
+  "defer_count": 0,
+  "memory_gap_spaces": 0,
+  "max_memory_watermark_lag": 0,
+  "stream_lag": 0,
+  "stream_pending": 0,
+  "p50_latency_ms": 305292,
+  "p95_latency_ms": 815361,
+  "p99_latency_ms": 884405,
+  "p50_queue_wait_ms": 303859,
+  "p95_queue_wait_ms": 813221,
+  "p99_queue_wait_ms": 880363,
+  "p50_execution_ms": 3461,
+  "p95_execution_ms": 4949,
+  "p99_execution_ms": 6463,
+  "p50_outbox_publish_ms": 1546,
+  "p95_outbox_publish_ms": 2802,
+  "p99_outbox_publish_ms": 4142,
+  "segmented_latency": {
+    "receiver_acceptance": {
+      "p50_ms": 6404,
+      "p95_ms": 10009,
+      "p99_ms": 10011
+    },
+    "outbox_publish": {
+      "p50_ms": 1546,
+      "p95_ms": 2802,
+      "p99_ms": 4142
+    },
+    "queue_wait": {
+      "p50_ms": 303859,
+      "p95_ms": 813221,
+      "p99_ms": 880363
+    },
+    "worker_execution": {
+      "p50_ms": 3461,
+      "p95_ms": 4949,
+      "p99_ms": 6463
+    },
+    "task_end_to_end": {
+      "p50_ms": 305292,
+      "p95_ms": 815361,
+      "p99_ms": 884405
+    },
+    "agent_steps": {
+      "tool": {
+        "count": 683,
+        "p50": 2770,
+        "p95": 3869,
+        "p99": 5792
+      }
+    }
+  },
+  "p50_lock_wait_ms": 75,
+  "p95_lock_wait_ms": 133,
+  "p99_lock_wait_ms": 248,
+  "llm_tokens": 0,
+  "estimated_cost": 0.0,
+  "failure_rate": 0.006,
+  "conservation_delta": 0,
+  "conservation_ok": true,
+  "database": {
+    "accepted": 988,
+    "inbox_pending": 0,
+    "root_task_status": {
+      "completed": 988
+    },
+    "all_task_status": {
+      "completed": 2656
+    },
+    "task_count": 2656,
+    "retry_count": 0,
+    "failure_count": 0,
+    "defer_count": 0,
+    "outbox_unpublished": 0,
+    "memory_gap_spaces": 0,
+    "max_memory_watermark_lag": 0,
+    "delivery_status": {
+      "sent": 308
+    },
+    "p50_queue_wait_ms": 303859,
+    "p95_queue_wait_ms": 813221,
+    "p99_queue_wait_ms": 880363,
+    "p50_execution_ms": 3461,
+    "p95_execution_ms": 4949,
+    "p99_execution_ms": 6463,
+    "p50_latency_ms": 305292,
+    "p95_latency_ms": 815361,
+    "p99_latency_ms": 884405,
+    "p50_outbox_publish_ms": 1546,
+    "p95_outbox_publish_ms": 2802,
+    "p99_outbox_publish_ms": 4142,
+    "agent_step_latency_ms": {
+      "tool": {
+        "count": 683,
+        "p50": 2770,
+        "p95": 3869,
+        "p99": 5792
+      }
+    },
+    "llm_requests": 0,
+    "llm_tokens": 0,
+    "estimated_cost": 0.0
+  },
+  "redis": {
+    "stream_lag": 0,
+    "stream_pending": 0,
+    "dead_letter_stream": 0,
+    "streams": {
+      "ingest": {
+        "lag": 0,
+        "pending": 0,
+        "length": 680
+      },
+      "query": {
+        "lag": 0,
+        "pending": 0,
+        "length": 244
+      },
+      "summary": {
+        "lag": 0,
+        "pending": 0,
+        "length": 64
+      },
+      "memory": {
+        "lag": 0,
+        "pending": 0,
+        "length": 680
+      },
+      "enrichment": {
+        "lag": 0,
+        "pending": 0,
+        "length": 680
+      },
+      "delivery": {
+        "lag": 0,
+        "pending": 0,
+        "length": 308
+      }
+    }
+  },
+  "tenant_id": "load-stage2-clean-20260718-r2"
+}

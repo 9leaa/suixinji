@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 
 import pytest
 from sqlalchemy import delete, inspect, select
@@ -14,6 +15,7 @@ from memory.models import MemoryCandidate
 from repositories.postgres import delivery, inbox, memory, notes, summary, tasks, vectors
 from storage.note_storage import NoteMetadata
 from storage.vector_store import VectorItem
+from runtime.query_metrics import capture_sql_queries
 
 
 def _postgres_ready() -> bool:
@@ -152,6 +154,69 @@ def test_postgres_memory_candidate_lifecycle(pg_space):
     assert memory.mark_memory_candidate(candidate.candidate_id, "applied", decision_id="decision-test") is True
     assert memory.get_memory_candidate_status(candidate.candidate_id) == "applied"
     assert memory.list_retryable_memory_candidates(pg_space) == []
+
+
+def test_postgres_memory_list_and_adjudication_query_budgets(pg_space):
+    for index in range(5):
+        memory.insert_memory(
+            pg_space,
+            MemoryCandidate(
+                "semantic",
+                f"用户正在学习数据库性能 {index}",
+                0.8,
+                0.9,
+                subject="user",
+                predicate="learning_focus",
+                object_value=f"数据库性能 {index}",
+            ),
+            source_note_id=f"note-{index}",
+        )
+
+    with capture_sql_queries(get_engine()) as list_stats:
+        listed = memory.list_memories(pg_space, limit=100)
+    assert len(listed) == 5
+    assert list_stats.count <= 2
+
+    with capture_sql_queries(get_engine()) as candidate_stats:
+        candidates = memory.list_adjudication_candidates(
+            pg_space,
+            memory_type="semantic",
+            memory_key=listed[0].effective_memory_key,
+            limit=200,
+        )
+    assert len(candidates) == 5
+    assert all(not item.sources and not item.versions for item in candidates)
+    assert candidate_stats.count <= 1
+
+
+def test_postgres_note_specialized_query_budgets(pg_space):
+    for index in range(8):
+        note = NoteMetadata(
+            id=f"note-{uuid.uuid4().hex}",
+            message_id=f"message-{uuid.uuid4().hex}",
+            space_id=pg_space,
+            ts=f"2026-07-17T12:{index:02d}:00+08:00",
+            title=f"Query {index}",
+            tags=["笔记", "重要"] if index % 2 == 0 else ["饮食"],
+            type="学习" if index % 2 == 0 else "生活",
+            summary="bounded query",
+            text="bounded query",
+            related=[],
+            enrichment_status="provisional" if index == 0 else "ready",
+        )
+        assert notes.save_note(note) is True
+
+    operations = (
+        lambda: notes.query_notes_by_type(pg_space, "学习", limit=3),
+        lambda: notes.query_notes_by_tags(pg_space, ["笔记", "重要"], limit=3),
+        lambda: notes.list_recent_notes(pg_space, created_after=datetime.fromisoformat("2026-07-01T00:00:00+08:00"), limit=3),
+        lambda: notes.list_provisional_notes(pg_space, limit=3),
+    )
+    for operation in operations:
+        with capture_sql_queries(get_engine()) as stats:
+            result = operation()
+        assert result
+        assert stats.count <= 3
 
 
 def test_postgres_same_message_is_inserted_once_under_concurrency(pg_space):

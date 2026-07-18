@@ -166,6 +166,8 @@ class Note(Base):
     __table_args__ = (
         UniqueConstraint("space_id", "message_id", name="uq_notes_space_message"),
         Index("ix_notes_space_created", "space_id", "created_at"),
+        Index("ix_notes_space_type_created", "space_id", "note_type", "created_at"),
+        Index("ix_notes_space_enrichment_created", "space_id", "enrichment_status", "created_at"),
     )
 
 
@@ -173,6 +175,7 @@ class NoteTag(Base):
     __tablename__ = "note_tags"
     note_id: Mapped[str] = mapped_column(ForeignKey("notes.id", ondelete="CASCADE"), primary_key=True)
     tag: Mapped[str] = mapped_column(String(255), primary_key=True)
+    __table_args__ = (Index("ix_note_tags_tag_note", "tag", "note_id"),)
 
 
 class NoteRelation(Base):
@@ -181,6 +184,7 @@ class NoteRelation(Base):
     target_note_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     relation: Mapped[str] = mapped_column(String(64), primary_key=True, default="related")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    __table_args__ = (Index("ix_note_relations_target", "target_note_id"),)
 
 
 class NoteEmbedding(Base):
@@ -223,6 +227,7 @@ class Memory(Base):
     __table_args__ = (
         Index("ix_memories_space_status_type", "space_id", "status", "memory_type"),
         Index("ix_memories_space_key_status", "space_id", "memory_key", "status"),
+        Index("ix_memories_space_status_updated", "space_id", "status", "updated_at"),
     )
 
 

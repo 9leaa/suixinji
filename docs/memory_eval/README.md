@@ -6,6 +6,8 @@ and evaluator in these directly comparable reports:
 
 - `baseline_v2.json`: commit `deda2b3`, before Stage 1 implementation;
 - `stage1.json`: Stage 1 working tree on `optimize/stage1-memory-correctness`.
+- `stage2.json`: Stage 2 performance working tree; correctness gates remain
+  comparable with Stage 1 after repository query-path changes.
 
 All reports use the rules extractor and adjudicator without GPT or embedding
 calls, so model latency, cost, and API noise do not affect the comparison.

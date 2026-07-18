@@ -50,6 +50,12 @@ class RedisKeys:
     def cache_embedding(self, model: str, text: str) -> str:
         return f"{self.prefix}:cache:embedding:{_part(model)}:{_hash(text)}"
 
+    def memory_access_counts(self) -> str:
+        return f"{self.prefix}:memory:access:counts"
+
+    def memory_access_last_seen(self) -> str:
+        return f"{self.prefix}:memory:access:last-seen"
+
     def session(self, tenant_id: str, user_id: str) -> str:
         return f"{self.prefix}:session:{_part(tenant_id)}:{_part(user_id)}"
 

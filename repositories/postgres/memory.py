@@ -3,13 +3,20 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import case, delete, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 
-from core.settings import MEMORY_CONSOLIDATION_RUN_LEASE_SECONDS, MEMORY_QUERY_MIN_SCORE
+from core.settings import (
+    COORDINATION_BACKEND,
+    MEMORY_ACCESS_BUFFER_ENABLED,
+    MEMORY_ACCESS_FLUSH_BATCH_SIZE,
+    MEMORY_CONSOLIDATION_RUN_LEASE_SECONDS,
+    MEMORY_QUERY_MIN_SCORE,
+)
 from infrastructure.database import session_scope
 from infrastructure.schema import (
     Memory,
@@ -42,6 +49,9 @@ from memory.models import (
     utc_now_iso,
 )
 from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def init_db(db_path: Any = None) -> None:
@@ -79,7 +89,28 @@ def _versions(session: Any, memory_id: str) -> list[MemoryVersion]:
     ]
 
 
-def _record(session: Any, row: Memory, *, include_versions: bool = True) -> MemoryRecord:
+def _source_map(session: Any, memory_ids: list[str]) -> dict[str, list[MemorySource]]:
+    result: dict[str, list[MemorySource]] = {memory_id: [] for memory_id in memory_ids}
+    if not memory_ids:
+        return result
+    rows = session.execute(
+        select(MemorySourceRow)
+        .where(MemorySourceRow.memory_id.in_(memory_ids))
+        .order_by(MemorySourceRow.memory_id, MemorySourceRow.created_at)
+    ).scalars()
+    for row in rows:
+        result[row.memory_id].append(MemorySource(row.memory_id, row.note_id, row.relation, row.created_at))
+    return result
+
+
+def _record(
+    session: Any,
+    row: Memory,
+    *,
+    include_versions: bool = True,
+    sources: list[MemorySource] | None = None,
+    versions: list[MemoryVersion] | None = None,
+) -> MemoryRecord:
     return MemoryRecord(
         id=row.id,
         space_id=row.space_id,
@@ -104,9 +135,22 @@ def _record(session: Any, row: Memory, *, include_versions: bool = True) -> Memo
         memory_key=row.memory_key,
         polarity=row.polarity,
         scope=dict(row.scope_json or {}),
-        sources=_sources(session, row.id),
-        versions=_versions(session, row.id) if include_versions else [],
+        sources=_sources(session, row.id) if sources is None else sources,
+        versions=(_versions(session, row.id) if versions is None else versions) if include_versions else [],
     )
+
+
+def _records(session: Any, rows: list[Memory], *, include_sources: bool = True) -> list[MemoryRecord]:
+    source_map = _source_map(session, [row.id for row in rows]) if include_sources else {}
+    return [
+        _record(
+            session,
+            row,
+            include_versions=False,
+            sources=source_map.get(row.id, []),
+        )
+        for row in rows
+    ]
 
 
 def _state(row: MemoryExtractionStateRow) -> MemoryExtractionState:
@@ -356,7 +400,38 @@ def list_memories(
         statement = statement.where((Memory.valid_until.is_(None)) | (Memory.valid_until > utc_now_iso()))
     statement = statement.order_by(Memory.updated_at.desc(), Memory.id.desc()).limit(max(1, min(int(limit), 100)))
     with session_scope() as session:
-        return [_record(session, row, include_versions=False) for row in session.execute(statement).scalars()]
+        rows = list(session.execute(statement).scalars())
+        return _records(session, rows)
+
+
+def list_adjudication_candidates(
+    space_id: str,
+    *,
+    memory_type: str,
+    memory_key: str,
+    limit: int = 200,
+    db_path: Any = None,
+) -> list[MemoryRecord]:
+    """Load lightweight candidate rows without sources or versions."""
+    del db_path
+    statement = (
+        select(Memory)
+        .where(
+            Memory.space_id == space_id,
+            Memory.status == "active",
+            Memory.memory_type == memory_type,
+            (Memory.valid_until.is_(None)) | (Memory.valid_until > utc_now_iso()),
+        )
+        .order_by(
+            case((Memory.memory_key == memory_key, 0), else_=1),
+            Memory.updated_at.desc(),
+            Memory.id.desc(),
+        )
+        .limit(max(1, min(int(limit), 500)))
+    )
+    with session_scope() as session:
+        rows = list(session.execute(statement).scalars())
+        return _records(session, rows, include_sources=False)
 
 
 def expire_due_memories(space_id: str | None = None, *, limit: int = 500, db_path: Any = None) -> int:
@@ -641,11 +716,51 @@ def mark_accessed(memory_ids: list[str], db_path: Any = None) -> None:
     if not memory_ids:
         return
     now = utc_now_iso()
+    if COORDINATION_BACKEND == "redis" and MEMORY_ACCESS_BUFFER_ENABLED:
+        try:
+            from infrastructure.redis_cache import MemoryAccessBuffer
+            MemoryAccessBuffer().increment(memory_ids, seen_at=now)
+        except Exception as exc:
+            LOGGER.debug("memory access counter buffering failed: %s", type(exc).__name__)
+        return
     with session_scope() as session:
-        rows = session.execute(select(Memory).where(Memory.id.in_(memory_ids)).with_for_update()).scalars()
-        for row in rows:
-            row.last_accessed_at = now
-            row.access_count += 1
+        session.execute(
+            update(Memory)
+            .where(Memory.id.in_(set(memory_ids)))
+            .values(last_accessed_at=now, access_count=Memory.access_count + 1)
+        )
+
+
+def flush_access_counts(*, limit: int = MEMORY_ACCESS_FLUSH_BATCH_SIZE, db_path: Any = None) -> int:
+    del db_path
+    if COORDINATION_BACKEND != "redis" or not MEMORY_ACCESS_BUFFER_ENABLED:
+        return 0
+    from sqlalchemy import Integer, String, column, values
+    from infrastructure.redis_cache import MemoryAccessBuffer
+
+    buffer = MemoryAccessBuffer()
+    entries = buffer.drain(limit=max(1, int(limit)))
+    if not entries:
+        return 0
+    updates = values(
+        column("memory_id", String),
+        column("increment", Integer),
+        name="memory_access_updates",
+    ).data([(memory_id, count) for memory_id, (count, _last_seen) in entries.items()])
+    try:
+        with session_scope() as session:
+            session.execute(
+                update(Memory)
+                .where(Memory.id == updates.c.memory_id)
+                .values(
+                    last_accessed_at=utc_now_iso(),
+                    access_count=Memory.access_count + updates.c.increment,
+                )
+            )
+    except Exception:
+        buffer.restore(entries)
+        raise
+    return len(entries)
 
 
 def soft_delete_memory(memory_id: str, *, reason: str = "user_forget", db_path: Any = None) -> MemoryRecord | None:
