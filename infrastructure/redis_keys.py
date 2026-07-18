@@ -38,6 +38,9 @@ class RedisKeys:
     def lock_memory(self, memory_id: str) -> str:
         return f"{self.prefix}:lock:memory:{_part(memory_id)}"
 
+    def lock_memory_key(self, space_id: str, memory_key: str) -> str:
+        return f"{self.prefix}:lock:memory-key:{_part(space_id)}:{_hash(memory_key)}"
+
     def lock_scheduler(self, job_name: str) -> str:
         return f"{self.prefix}:lock:scheduler:{_part(job_name)}"
 

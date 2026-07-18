@@ -10,6 +10,7 @@ from core.settings import COORDINATION_BACKEND, WORKER_MAX_ATTEMPTS
 from infrastructure.redis_idempotency import IdempotencyStore
 from infrastructure.redis_keys import KEYS
 from repositories.postgres.dispatch import DispatchResult, receive_command
+from runtime.consistency import task_consistency
 
 
 @dataclass(frozen=True)
@@ -34,12 +35,18 @@ def receive(command: InboxCommand) -> DispatchResult:
     if COORDINATION_BACKEND == "redis":
         try:
             store = IdempotencyStore()
-            if store.get(idem_key) == "completed":
+            state = store.get(idem_key)
+            if state == "completed":
                 return DispatchResult("redis-completed", None, False, True)
-            store.begin(idem_key)
+            if state == "processing":
+                return DispatchResult("redis-processing", None, False, False, True)
+            if not store.begin(idem_key):
+                return DispatchResult("redis-processing", None, False, False, True)
         except Exception:
             store = None
     try:
+        task_payload = dict(command.task_payload)
+        task_payload["consistency"] = task_consistency(command.task_type, task_payload)
         result = receive_command(
             source=command.source,
             source_message_id=command.message_id,
@@ -52,7 +59,7 @@ def receive(command: InboxCommand) -> DispatchResult:
             text_value=command.text,
             received_at=command.received_at,
             task_type=command.task_type,
-            task_payload=command.task_payload,
+            task_payload=task_payload,
             max_attempts=WORKER_MAX_ATTEMPTS,
         )
     except Exception:

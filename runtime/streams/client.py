@@ -33,6 +33,7 @@ class StreamClient:
     def __init__(self, client: Redis | None = None, *, keys: RedisKeys = KEYS) -> None:
         self.client = client or get_redis()
         self.keys = keys
+        self._reclaim_cursors: dict[tuple[str, str], str] = {}
 
     def ensure_group(self, task_type: str) -> tuple[str, str]:
         stream = self.keys.stream(task_type)
@@ -62,16 +63,21 @@ class StreamClient:
 
     def reclaim(self, task_type: str, consumer: str, *, min_idle_ms: int = STREAM_CLAIM_IDLE_MS, count: int = STREAM_BATCH_SIZE) -> list[StreamMessage]:
         stream, group = self.ensure_group(task_type)
+        cursor_key = (task_type, consumer)
         response = self.client.xautoclaim(
             stream,
             group,
             consumer,
             min_idle_time=max(1, min_idle_ms),
-            start_id="0-0",
+            start_id=self._reclaim_cursors.get(cursor_key, "0-0"),
             count=max(1, count),
         )
+        self._reclaim_cursors[cursor_key] = str(response[0] or "0-0")
         entries = response[1] if len(response) > 1 else []
         return [StreamMessage(stream, str(message_id), {str(key): str(value) for key, value in fields.items()}) for message_id, fields in entries]
+
+    def reclaim_cursor(self, task_type: str, consumer: str) -> str:
+        return self._reclaim_cursors.get((task_type, consumer), "0-0")
 
     def ack(self, task_type: str, message_id: str) -> int:
         stream, group = self.ensure_group(task_type)

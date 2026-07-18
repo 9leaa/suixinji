@@ -12,7 +12,7 @@ from core.worker import enrich_note, process_record
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock
 from memory.service import process_note_memory
-from repositories.postgres.dispatch import enqueue_task, load_inbox_record
+from repositories.postgres.dispatch import enqueue_task, load_inbox_record, task_watermark_ready
 from runtime.delivery_store import get_delivery, mark_failed, mark_sent, mark_unknown, reserve_delivery
 from runtime.streams.worker import RetryLater, TaskOutcome
 from storage.note_storage import find_note
@@ -46,6 +46,8 @@ def _enqueue_delivery(task: dict[str, Any], *, text: str, payload: dict[str, Any
 
 def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
     payload = _payload(task)
+    if not task_watermark_ready(task):
+        raise RetryLater("waiting for note watermark", delay_seconds=0.2)
     inbox_id = str(payload.get("inbox_id") or "")
     record = load_inbox_record(inbox_id)
     if record is None:
@@ -68,9 +70,10 @@ def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
                     "note_id": note_id,
                     "barrier_inbox_id": inbox_id,
                     "parent_task_id": str(task["id"]),
+                    "sequence_no": int(payload.get("sequence_no") or 0),
                 },
-                initial_status="blocked",
-                publish=False,
+                initial_status="queued",
+                publish=True,
             )
             enqueue_task(
                 task_type="enrichment",
@@ -90,12 +93,14 @@ def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
         )
 
     if critical_task_id:
-        return TaskOutcome(activate_task_id=critical_task_id)
-    return TaskOutcome(release_inbox_id=inbox_id)
+        return TaskOutcome(note_ready_inbox_id=inbox_id)
+    return TaskOutcome(ingest_complete_inbox_id=inbox_id)
 
 
 def handle_query(task: dict[str, Any]) -> TaskOutcome:
     payload = _payload(task)
+    if not task_watermark_ready(task):
+        raise RetryLater("waiting for query consistency watermark", delay_seconds=0.2)
     inbox_id = str(payload.get("inbox_id") or "")
     if FAKE_EXTERNALS:
         answer = f"[stage4 fake answer] {str(payload['question'])[:120]}"
@@ -114,6 +119,8 @@ def handle_query(task: dict[str, Any]) -> TaskOutcome:
 
 def handle_summary(task: dict[str, Any]) -> TaskOutcome:
     payload = _payload(task)
+    if not task_watermark_ready(task):
+        raise RetryLater("waiting for note watermark", delay_seconds=0.2)
     inbox_id = str(payload.get("inbox_id") or "")
     if FAKE_EXTERNALS:
         summary_text = f"[stage4 fake summary] range={str(payload['range_key'])}"
@@ -148,7 +155,7 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
         return None
     process_note_memory(note)
     barrier_inbox_id = str(payload.get("barrier_inbox_id") or "")
-    return TaskOutcome(release_inbox_id=barrier_inbox_id or None)
+    return TaskOutcome(memory_ready_inbox_id=barrier_inbox_id or None)
 
 
 def handle_enrichment(task: dict[str, Any]) -> None:

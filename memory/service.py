@@ -8,6 +8,8 @@ from typing import Any
 
 from agent.hooks import AgentRunContext, get_default_hook_manager
 from core.settings import MEMORY_EXTRACTOR_MODE, MEMORY_QUERY_MIN_SCORE
+from infrastructure.redis_keys import KEYS
+from infrastructure.redis_lock import coordinated_lock
 from memory.consolidator import consolidate_candidate
 from memory.candidate_validator import contains_sensitive_data, validate_candidates
 from memory.extractor import extract_candidates
@@ -173,7 +175,11 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
             try:
                 mark_memory_candidate(candidate.candidate_id, "validated")
                 mark_memory_candidate(candidate.candidate_id, "processing")
-                results.append(consolidate_candidate(space_id, note_id, candidate, trace=trace))
+                with coordinated_lock(
+                    KEYS.lock_memory_key(space_id, candidate.effective_memory_key),
+                    critical=True,
+                ):
+                    results.append(consolidate_candidate(space_id, note_id, candidate, trace=trace))
                 result = results[-1]
                 final_status = "pending_review" if result.get("action") == "pending_review" else "discarded" if result.get("action") == "discard" else "applied"
                 mark_memory_candidate(candidate.candidate_id, final_status, decision_id=result.get("decision_id"))

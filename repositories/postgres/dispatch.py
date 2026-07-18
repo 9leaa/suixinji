@@ -13,6 +13,7 @@ from infrastructure.database import session_scope
 from infrastructure.schema import InboxMessage, OutboxEvent, Space, Task
 from memory.models import new_id
 from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space, parse_datetime
+from runtime.consistency import task_consistency
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,7 @@ class DispatchResult:
     task_id: str | None
     created: bool
     duplicate: bool
+    in_progress: bool = False
 
 
 def _publish_task_request(session: Any, task: Task | str, task_type: str | None = None, *, attempt: int = 1) -> str:
@@ -147,17 +149,15 @@ def receive_command(
             ).scalar_one_or_none()
             return DispatchResult(existing.id, str(task) if task else None, False, True)
 
-        has_pending = session.execute(
-            select(InboxMessage.id)
-            .where(InboxMessage.space_id == space_id, InboxMessage.status == "pending")
-            .limit(1)
-        ).scalar_one_or_none() is not None
         sequence_no = int(
             session.execute(
                 select(func.coalesce(func.max(InboxMessage.sequence_no), 0) + 1).where(InboxMessage.space_id == space_id)
             ).scalar_one()
         )
         inbox_id = new_id("inbox")
+        consistency = task_consistency(task_type, task_payload)
+        now = parse_datetime(received_at)
+        is_ingest = task_type == "ingest"
         session.add(
             InboxMessage(
                 id=inbox_id,
@@ -174,10 +174,23 @@ def receive_command(
                 status="pending",
                 sensitivity=sensitivity,
                 sequence_no=sequence_no,
+                note_status="pending" if is_ingest else "completed",
+                memory_status="pending" if is_ingest else "completed",
+                note_completed_at=None if is_ingest else now,
+                memory_completed_at=None if is_ingest else now,
             )
         )
-        initial_status = "blocked" if has_pending else "queued"
-        task_payload = {**task_payload, "inbox_id": inbox_id, "sequence_no": sequence_no}
+        space = session.execute(select(Space).where(Space.id == space_id).with_for_update()).scalar_one()
+        required_watermark = max(0, sequence_no - 1)
+        current_watermark = int(space.memory_watermark if consistency == "memory" else space.note_watermark)
+        initial_status = "blocked" if consistency in {"note", "memory"} and current_watermark < required_watermark else "queued"
+        task_payload = {
+            **task_payload,
+            "inbox_id": inbox_id,
+            "sequence_no": sequence_no,
+            "consistency": consistency,
+            "required_watermark": required_watermark,
+        }
         task_id, _ = _enqueue_task_in_session(
             session,
             task_type=task_type,
@@ -188,8 +201,11 @@ def receive_command(
             payload=task_payload,
             max_attempts=max_attempts,
             initial_status=initial_status,
-            publish=not has_pending,
+            publish=initial_status == "queued",
         )
+        session.flush()
+        if not is_ingest:
+            _advance_watermarks_in_session(session, space)
         return DispatchResult(inbox_id, task_id, True, False)
 
 
@@ -241,8 +257,136 @@ def activate_task_in_session(session: Any, task_id: str) -> str | None:
         return None
     row.status = "queued"
     row.next_retry_at = None
+    row.claimed_by = None
+    row.lease_token = None
+    row.lease_expires_at = None
     _publish_task_request(session, row, attempt=row.attempt_count + 1)
     return row.id
+
+
+def _activate_ready_tasks_in_session(session: Any, space: Space) -> int:
+    rows = list(
+        session.execute(
+            select(Task)
+            .where(Task.space_id == space.id, Task.status == "blocked")
+            .order_by(Task.created_at, Task.id)
+            .with_for_update()
+        ).scalars()
+    )
+    activated = 0
+    for row in rows:
+        payload = dict(row.payload_json or {})
+        consistency = str(payload.get("consistency") or "weak")
+        required = int(payload.get("required_watermark") or 0)
+        current = int(space.memory_watermark if consistency == "memory" else space.note_watermark)
+        if consistency not in {"note", "memory"} or current < required:
+            continue
+        if activate_task_in_session(session, row.id):
+            activated += 1
+    return activated
+
+
+def _advance_one_watermark(
+    session: Any,
+    space: Space,
+    *,
+    watermark_field: str,
+    status_field: str,
+) -> int:
+    current = int(getattr(space, watermark_field) or 0)
+    while True:
+        rows = list(
+            session.execute(
+                select(InboxMessage.sequence_no, getattr(InboxMessage, status_field))
+                .where(InboxMessage.space_id == space.id, InboxMessage.sequence_no > current)
+                .order_by(InboxMessage.sequence_no)
+                .limit(1000)
+            )
+        )
+        if not rows:
+            break
+        progressed = False
+        for sequence_no, status in rows:
+            if int(sequence_no) != current + 1 or str(status) not in {"completed", "failed"}:
+                setattr(space, watermark_field, current)
+                return current
+            current = int(sequence_no)
+            progressed = True
+        if not progressed or len(rows) < 1000:
+            break
+    setattr(space, watermark_field, current)
+    return current
+
+
+def _advance_watermarks_in_session(session: Any, space: Space) -> None:
+    _advance_one_watermark(
+        session,
+        space,
+        watermark_field="note_watermark",
+        status_field="note_status",
+    )
+    _advance_one_watermark(
+        session,
+        space,
+        watermark_field="memory_watermark",
+        status_field="memory_status",
+    )
+    _activate_ready_tasks_in_session(session, space)
+
+
+def mark_inbox_note_completed_in_session(
+    session: Any,
+    inbox_id: str,
+    *,
+    success: bool = True,
+    error: str | None = None,
+) -> None:
+    inbox = session.execute(select(InboxMessage).where(InboxMessage.id == inbox_id).with_for_update()).scalar_one()
+    space = session.execute(select(Space).where(Space.id == inbox.space_id).with_for_update()).scalar_one()
+    inbox.note_status = "completed" if success else "failed"
+    inbox.note_completed_at = datetime.now().astimezone()
+    if not success:
+        metadata = dict(space.metadata_json or {})
+        metadata["last_note_gap"] = {"sequence_no": int(inbox.sequence_no), "inbox_id": inbox.id, "error": str(error or "unknown")[:256]}
+        space.metadata_json = metadata
+    _advance_watermarks_in_session(session, space)
+
+
+def mark_inbox_memory_completed_in_session(
+    session: Any,
+    inbox_id: str,
+    *,
+    success: bool = True,
+    error: str | None = None,
+) -> None:
+    inbox = session.execute(select(InboxMessage).where(InboxMessage.id == inbox_id).with_for_update()).scalar_one()
+    space = session.execute(select(Space).where(Space.id == inbox.space_id).with_for_update()).scalar_one()
+    inbox.memory_status = "completed" if success else "failed"
+    inbox.memory_completed_at = datetime.now().astimezone()
+    if not success:
+        space.memory_gap_sequence_no = int(inbox.sequence_no)
+        metadata = dict(space.metadata_json or {})
+        metadata["last_memory_gap"] = {
+            "sequence_no": int(inbox.sequence_no),
+            "inbox_id": inbox.id,
+            "error_type": str(error or "unknown").split(":", 1)[0][:128],
+        }
+        space.metadata_json = metadata
+    _advance_watermarks_in_session(session, space)
+
+
+def task_watermark_ready(task: dict[str, Any]) -> bool:
+    payload = dict(task.get("payload_json") or {})
+    consistency = str(payload.get("consistency") or "weak")
+    if consistency not in {"note", "memory"}:
+        return True
+    required = int(payload.get("required_watermark") or 0)
+    with session_scope() as session:
+        space = session.get(Space, str(task["space_id"]))
+        if space is None:
+            return False
+        current = int(space.memory_watermark if consistency == "memory" else space.note_watermark)
+        return current >= required
 
 
 def _root_task_for_inbox(session: Any, inbox: InboxMessage) -> Task | None:
@@ -278,31 +422,23 @@ def finalize_inbox_in_session(
     inbox.status = "processed" if success else "failed"
     space = session.execute(select(Space).where(Space.id == inbox.space_id).with_for_update()).scalar_one()
     space.processed_sequence_no = max(int(space.processed_sequence_no or 0), int(inbox.sequence_no))
-    if success:
-        space.memory_watermark = max(int(space.memory_watermark or 0), int(inbox.sequence_no))
-    else:
-        space.memory_gap_sequence_no = int(inbox.sequence_no)
-        metadata = dict(space.metadata_json or {})
-        metadata["last_memory_gap"] = {
-            "sequence_no": int(inbox.sequence_no),
-            "inbox_id": inbox.id,
-            "error_type": str(error or "unknown").split(":", 1)[0][:128],
-        }
-        space.metadata_json = metadata
-
-    next_inbox = session.execute(
-        select(InboxMessage)
-        .where(InboxMessage.space_id == inbox.space_id, InboxMessage.status == "pending")
-        .order_by(InboxMessage.sequence_no)
-        .limit(1)
-        .with_for_update()
-    ).scalar_one_or_none()
-    if next_inbox is None:
-        return None
-    next_task = _root_task_for_inbox(session, next_inbox)
-    if next_task is None:
-        raise RuntimeError(f"root task not found for inbox: {next_inbox.id}")
-    return activate_task_in_session(session, next_task.id)
+    if not success:
+        if inbox.note_status == "pending":
+            inbox.note_status = "failed"
+            inbox.note_completed_at = datetime.now().astimezone()
+        if inbox.memory_status == "pending":
+            inbox.memory_status = "failed"
+            inbox.memory_completed_at = datetime.now().astimezone()
+            space.memory_gap_sequence_no = int(inbox.sequence_no)
+            metadata = dict(space.metadata_json or {})
+            metadata["last_memory_gap"] = {
+                "sequence_no": int(inbox.sequence_no),
+                "inbox_id": inbox.id,
+                "error_type": str(error or "unknown").split(":", 1)[0][:128],
+            }
+            space.metadata_json = metadata
+    _advance_watermarks_in_session(session, space)
+    return None
 
 
 def mark_inbox_processed(inbox_id: str) -> str | None:
@@ -322,6 +458,7 @@ def get_space_progress(space_id: str) -> dict[str, int | None] | None:
             return None
         return {
             "processed_sequence_no": int(row.processed_sequence_no or 0),
+            "note_watermark": int(row.note_watermark or 0),
             "memory_watermark": int(row.memory_watermark or 0),
             "memory_gap_sequence_no": int(row.memory_gap_sequence_no) if row.memory_gap_sequence_no is not None else None,
         }

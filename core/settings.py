@@ -71,6 +71,21 @@ DATABASE_POOL_SIZE = _int_env("SUIXINJI_DATABASE_POOL_SIZE", 3)
 DATABASE_MAX_OVERFLOW = _int_env("SUIXINJI_DATABASE_MAX_OVERFLOW", 2)
 DATABASE_POOL_TIMEOUT_SECONDS = _int_env("SUIXINJI_DATABASE_POOL_TIMEOUT_SECONDS", 10)
 DATABASE_POOL_RECYCLE_SECONDS = _int_env("SUIXINJI_DATABASE_POOL_RECYCLE_SECONDS", 1800)
+DATABASE_GLOBAL_BUDGET = _int_env("SUIXINJI_DATABASE_GLOBAL_BUDGET", 40)
+PROCESS_ROLE = os.getenv("SUIXINJI_PROCESS_ROLE", "default").strip().lower()
+
+
+def database_pool_budget(role: str | None = None) -> tuple[int, int]:
+    resolved = (role or PROCESS_ROLE or "default").lower()
+    if resolved == "receiver":
+        return 2, 1
+    if resolved == "outbox-relay":
+        return 1, 1
+    if resolved == "worker-query":
+        return 2, 1
+    if resolved.startswith("worker-") or resolved == "scheduler":
+        return 1, 0
+    return max(1, DATABASE_POOL_SIZE), max(0, DATABASE_MAX_OVERFLOW)
 
 if STORAGE_BACKEND not in {"local", "postgres"}:
     raise ValueError("STORAGE_BACKEND must be 'local' or 'postgres'")
@@ -112,6 +127,10 @@ OUTBOX_BATCH_SIZE = _int_env("SUIXINJI_OUTBOX_BATCH_SIZE", 50)
 OUTBOX_POLL_INTERVAL_SECONDS = _float_env("SUIXINJI_OUTBOX_POLL_INTERVAL_SECONDS", 1.0)
 WORKER_MAX_ATTEMPTS = _int_env("SUIXINJI_WORKER_MAX_ATTEMPTS", 5)
 WORKER_RETRY_BASE_SECONDS = _float_env("SUIXINJI_WORKER_RETRY_BASE_SECONDS", 2.0)
+TASK_LEASE_SECONDS = _int_env("SUIXINJI_TASK_LEASE_SECONDS", 60)
+OUTBOX_LEASE_SECONDS = _int_env("SUIXINJI_OUTBOX_LEASE_SECONDS", 30)
+OUTBOX_MAX_ATTEMPTS = _int_env("SUIXINJI_OUTBOX_MAX_ATTEMPTS", 10)
+STREAM_RECLAIM_INTERVAL_SECONDS = _float_env("SUIXINJI_STREAM_RECLAIM_INTERVAL_SECONDS", 10.0)
 SCHEDULER_LEADER_TTL_MS = _int_env("SUIXINJI_SCHEDULER_LEADER_TTL_MS", 30000)
 
 if COORDINATION_BACKEND not in {"local", "redis"}:

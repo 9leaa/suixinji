@@ -4,15 +4,22 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 from typing import Any
+import uuid
 
 from sqlalchemy import or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database import session_scope
+from core.settings import TASK_LEASE_SECONDS
 from infrastructure.schema import OutboxEvent, Task, TaskAttempt
 from memory.models import new_id
 from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space, parse_datetime
-from repositories.postgres.dispatch import activate_task_in_session, finalize_inbox_in_session
+from repositories.postgres.dispatch import (
+    activate_task_in_session,
+    finalize_inbox_in_session,
+    mark_inbox_memory_completed_in_session,
+    mark_inbox_note_completed_in_session,
+)
 
 
 def create_task(task: dict[str, Any]) -> bool:
@@ -68,20 +75,33 @@ def update_task_status(task_id: str, status: str, **updates: Any) -> None:
         session.execute(update(Task).where(Task.id == task_id).values(**values))
 
 
-def claim_task(task_id: str, worker_id: str, *, stale_after_seconds: int = 60) -> dict[str, Any] | None:
+def claim_task(task_id: str, worker_id: str, *, stale_after_seconds: int = TASK_LEASE_SECONDS) -> dict[str, Any] | None:
     now = datetime.now().astimezone()
     stale_before = now - timedelta(seconds=max(1, stale_after_seconds))
     with session_scope() as session:
         row = session.execute(select(Task).where(Task.id == task_id).with_for_update()).scalar_one_or_none()
         if row is None or row.status in {"blocked", "cancelled", "completed", "dead_letter"}:
             return None
-        if row.status == "running" and row.started_at is not None and row.started_at > stale_before:
-            return None
+        if row.status == "running":
+            lease_is_live = row.lease_expires_at is not None and row.lease_expires_at > now
+            legacy_claim_is_live = row.lease_expires_at is None and row.started_at is not None and row.started_at > stale_before
+            if lease_is_live or legacy_claim_is_live:
+                return None
+            session.execute(
+                update(TaskAttempt)
+                .where(TaskAttempt.task_id == row.id, TaskAttempt.attempt_no == row.attempt_count, TaskAttempt.status == "running")
+                .values(status="lease_expired", finished_at=now)
+            )
         if row.next_retry_at is not None and row.next_retry_at > now:
             return None
+        lease_seconds = max(1, int(stale_after_seconds))
         row.status = "running"
         row.started_at = now
         row.attempt_count += 1
+        row.claimed_by = worker_id
+        row.lease_token = uuid.uuid4().hex
+        row.lease_expires_at = now + timedelta(seconds=lease_seconds)
+        row.claim_version += 1
         session.add(
             TaskAttempt(
                 task_id=row.id,
@@ -95,23 +115,82 @@ def claim_task(task_id: str, worker_id: str, *, stale_after_seconds: int = 60) -
         return {column.name: getattr(row, column.name) for column in Task.__table__.columns}
 
 
+def renew_task_lease(
+    task_id: str,
+    *,
+    lease_token: str,
+    claim_version: int,
+    lease_seconds: int = TASK_LEASE_SECONDS,
+) -> bool:
+    now = datetime.now().astimezone()
+    with session_scope() as session:
+        renewed = session.execute(
+            update(Task)
+            .where(
+                Task.id == task_id,
+                Task.status == "running",
+                Task.lease_token == lease_token,
+                Task.claim_version == int(claim_version),
+            )
+            .values(lease_expires_at=now + timedelta(seconds=max(1, int(lease_seconds))))
+            .returning(Task.id)
+        ).scalar_one_or_none()
+        return renewed is not None
+
+
+def _owned_running_task(
+    session: Any,
+    task_id: str,
+    *,
+    lease_token: str,
+    claim_version: int,
+    now: datetime,
+) -> Task | None:
+    return session.execute(
+        select(Task)
+        .where(
+            Task.id == task_id,
+            Task.status == "running",
+            Task.lease_token == lease_token,
+            Task.claim_version == int(claim_version),
+            Task.lease_expires_at > now,
+        )
+        .with_for_update()
+    ).scalar_one_or_none()
+
+
 def complete_task(
     task_id: str,
     *,
+    lease_token: str,
+    claim_version: int,
     release_inbox_id: str | None = None,
     activate_task_id: str | None = None,
-) -> None:
-    if release_inbox_id and activate_task_id:
-        raise ValueError("a task cannot release an Inbox message and activate a dependent task together")
+    note_ready_inbox_id: str | None = None,
+    memory_ready_inbox_id: str | None = None,
+    ingest_complete_inbox_id: str | None = None,
+) -> bool:
+    outcomes = [release_inbox_id, activate_task_id, note_ready_inbox_id, memory_ready_inbox_id, ingest_complete_inbox_id]
+    if sum(value is not None for value in outcomes) > 1:
+        raise ValueError("a task may produce only one Inbox/dependency outcome")
     now = datetime.now().astimezone()
     with session_scope() as session:
-        row = session.execute(select(Task).where(Task.id == task_id).with_for_update()).scalar_one_or_none()
-        if row is None or row.status in {"cancelled", "completed", "dead_letter"}:
-            return
+        row = _owned_running_task(
+            session,
+            task_id,
+            lease_token=lease_token,
+            claim_version=claim_version,
+            now=now,
+        )
+        if row is None:
+            return False
         row.status = "completed"
         row.completed_at = now
         row.next_retry_at = None
         row.last_error = None
+        row.claimed_by = None
+        row.lease_token = None
+        row.lease_expires_at = None
         session.execute(
             update(TaskAttempt)
             .where(TaskAttempt.task_id == task_id, TaskAttempt.attempt_no == row.attempt_count)
@@ -119,8 +198,18 @@ def complete_task(
         )
         if activate_task_id:
             activate_task_in_session(session, activate_task_id)
+        elif note_ready_inbox_id:
+            mark_inbox_note_completed_in_session(session, note_ready_inbox_id)
+        elif memory_ready_inbox_id:
+            mark_inbox_memory_completed_in_session(session, memory_ready_inbox_id)
+            finalize_inbox_in_session(session, memory_ready_inbox_id, success=True)
+        elif ingest_complete_inbox_id:
+            mark_inbox_note_completed_in_session(session, ingest_complete_inbox_id)
+            mark_inbox_memory_completed_in_session(session, ingest_complete_inbox_id)
+            finalize_inbox_in_session(session, ingest_complete_inbox_id, success=True)
         elif release_inbox_id:
             finalize_inbox_in_session(session, release_inbox_id, success=True)
+        return True
 
 
 def _barrier_inbox_id(row: Task) -> str | None:
@@ -146,20 +235,34 @@ def _cancel_blocked_dependents(session: Any, parent_task_id: str, error: str, no
         dependent.last_error = f"parent task failed: {error}"[:2000]
 
 
-def fail_task(task_id: str, error: str, *, retry_delay_seconds: float) -> str:
+def fail_task(
+    task_id: str,
+    error: str,
+    *,
+    retry_delay_seconds: float,
+    lease_token: str,
+    claim_version: int,
+) -> str:
     now = datetime.now().astimezone()
     with session_scope() as session:
-        row = session.execute(select(Task).where(Task.id == task_id).with_for_update()).scalar_one_or_none()
+        row = _owned_running_task(
+            session,
+            task_id,
+            lease_token=lease_token,
+            claim_version=claim_version,
+            now=now,
+        )
         if row is None:
-            return "missing"
-        if row.status in {"cancelled", "completed", "dead_letter"}:
-            return row.status
+            return "stale"
         row.failure_count += 1
         exhausted = row.failure_count >= row.max_attempts
         row.status = "dead_letter" if exhausted else "retry"
         row.last_error = error[:2000]
         row.next_retry_at = None if exhausted else now + timedelta(seconds=max(0.1, retry_delay_seconds))
         row.completed_at = now if exhausted else None
+        row.claimed_by = None
+        row.lease_token = None
+        row.lease_expires_at = None
         session.execute(
             update(TaskAttempt)
             .where(TaskAttempt.task_id == task_id, TaskAttempt.attempt_no == row.attempt_count)
@@ -176,25 +279,49 @@ def fail_task(task_id: str, error: str, *, retry_delay_seconds: float) -> str:
                 _cancel_blocked_dependents(session, row.id, error, now)
             barrier_inbox_id = _barrier_inbox_id(row)
             if barrier_inbox_id:
+                if row.task_type == "memory":
+                    mark_inbox_memory_completed_in_session(
+                        session,
+                        barrier_inbox_id,
+                        success=False,
+                        error=error,
+                    )
                 finalize_inbox_in_session(session, barrier_inbox_id, success=False, error=error)
         return row.status
 
 
-def defer_task(task_id: str, reason: str, *, retry_delay_seconds: float) -> None:
+def defer_task(
+    task_id: str,
+    reason: str,
+    *,
+    retry_delay_seconds: float,
+    lease_token: str,
+    claim_version: int,
+) -> bool:
     now = datetime.now().astimezone()
     with session_scope() as session:
-        row = session.execute(select(Task).where(Task.id == task_id).with_for_update()).scalar_one_or_none()
-        if row is None or row.status in {"cancelled", "completed", "dead_letter"}:
-            return
+        row = _owned_running_task(
+            session,
+            task_id,
+            lease_token=lease_token,
+            claim_version=claim_version,
+            now=now,
+        )
+        if row is None:
+            return False
         row.status = "retry"
         row.defer_count += 1
         row.last_error = reason[:2000]
         row.next_retry_at = now + timedelta(seconds=max(0.1, retry_delay_seconds))
+        row.claimed_by = None
+        row.lease_token = None
+        row.lease_expires_at = None
         session.execute(
             update(TaskAttempt)
             .where(TaskAttempt.task_id == task_id, TaskAttempt.attempt_no == row.attempt_count)
             .values(status="deferred", finished_at=now, error_summary=reason[:2000])
         )
+        return True
 
 
 def enqueue_due_retries(*, limit: int = 50, task_ids: list[str] | None = None) -> int:
@@ -224,5 +351,8 @@ def enqueue_due_retries(*, limit: int = 50, task_ids: list[str] | None = None) -
             )
             row.status = "queued"
             row.next_retry_at = None
+            row.claimed_by = None
+            row.lease_token = None
+            row.lease_expires_at = None
             count += 1
     return count

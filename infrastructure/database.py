@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from contextlib import contextmanager
 from typing import Iterator
 
@@ -9,11 +10,12 @@ from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from core.settings import (
-    DATABASE_MAX_OVERFLOW,
     DATABASE_POOL_RECYCLE_SECONDS,
-    DATABASE_POOL_SIZE,
     DATABASE_POOL_TIMEOUT_SECONDS,
     DATABASE_URL,
+    PROCESS_ROLE,
+    SUIXINJI_ENV,
+    database_pool_budget,
 )
 
 _engine: Engine | None = None
@@ -34,13 +36,15 @@ def get_engine() -> Engine:
         return _engine
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL is not configured")
+    pool_size, max_overflow = database_pool_budget()
     _engine = create_engine(
         _normalized_database_url(DATABASE_URL),
         pool_pre_ping=True,
-        pool_size=max(1, DATABASE_POOL_SIZE),
-        max_overflow=max(0, DATABASE_MAX_OVERFLOW),
+        pool_size=pool_size,
+        max_overflow=max_overflow,
         pool_timeout=max(1, DATABASE_POOL_TIMEOUT_SECONDS),
         pool_recycle=max(60, DATABASE_POOL_RECYCLE_SECONDS),
+        connect_args={"application_name": f"suixinji:{SUIXINJI_ENV}:{PROCESS_ROLE}:{os.getpid()}"},
         future=True,
     )
     _session_factory = sessionmaker(bind=_engine, expire_on_commit=False, future=True)

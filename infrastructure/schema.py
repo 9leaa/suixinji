@@ -56,6 +56,7 @@ class Space(Base):
     space_type: Mapped[str] = mapped_column(String(64), nullable=False, default="chat")
     metadata_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     processed_sequence_no: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
+    note_watermark: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
     memory_watermark: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
     memory_gap_sequence_no: Mapped[int | None] = mapped_column(BigInteger)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -87,10 +88,16 @@ class InboxMessage(Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
     sensitivity: Mapped[str] = mapped_column(String(64), nullable=False, default="normal")
     sequence_no: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    note_status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending", server_default="pending")
+    memory_status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending", server_default="pending")
+    note_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    memory_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     __table_args__ = (
         UniqueConstraint("source", "source_message_id", name="uq_inbox_source_message"),
         UniqueConstraint("space_id", "sequence_no", name="uq_inbox_space_sequence"),
         Index("ix_inbox_space_status_sequence", "space_id", "status", "sequence_no"),
+        Index("ix_inbox_space_note_sequence", "space_id", "note_status", "sequence_no"),
+        Index("ix_inbox_space_memory_sequence", "space_id", "memory_status", "sequence_no"),
     )
 
 
@@ -105,7 +112,18 @@ class OutboxEvent(Base):
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     publish_attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     last_error: Mapped[str | None] = mapped_column(Text)
-    __table_args__ = (Index("ix_outbox_unpublished", "published_at", "created_at"),)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending", server_default="pending")
+    claimed_by: Mapped[str | None] = mapped_column(String(255))
+    lease_token: Mapped[str | None] = mapped_column(String(64))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=10, server_default="10")
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    failed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (
+        Index("ix_outbox_unpublished", "published_at", "created_at"),
+        Index("ix_outbox_status_next_created", "status", "next_attempt_at", "created_at"),
+    )
 
 
 class Task(Base):
@@ -128,7 +146,14 @@ class Task(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error: Mapped[str | None] = mapped_column(Text)
-    __table_args__ = (Index("ix_tasks_space_status_created", "space_id", "status", "created_at"),)
+    claimed_by: Mapped[str | None] = mapped_column(String(255))
+    lease_token: Mapped[str | None] = mapped_column(String(64))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    claim_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    __table_args__ = (
+        Index("ix_tasks_space_status_created", "space_id", "status", "created_at"),
+        Index("ix_tasks_status_lease", "status", "lease_expires_at"),
+    )
 
 
 class TaskAttempt(Base):

@@ -10,8 +10,9 @@ from pathlib import Path
 from typing import Any
 
 from redis.exceptions import RedisError, ResponseError
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
+from core.settings import DATABASE_GLOBAL_BUDGET
 from infrastructure.database import session_scope
 from infrastructure.redis_client import get_redis
 from infrastructure.redis_keys import KEYS, RedisKeys
@@ -61,6 +62,15 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
         usage = list(session.execute(select(LlmUsage).where(LlmUsage.run_id.in_(run_ids))).scalars()) if run_ids else []
         steps = list(session.execute(select(AgentStep).where(AgentStep.run_id.in_(run_ids))).scalars()) if run_ids else []
         spaces = list(session.execute(select(Space).where(Space.tenant_id == tenant_id)).scalars())
+        connection_rows = list(
+            session.execute(
+                text(
+                    "SELECT COALESCE(state, 'unknown') AS state, COUNT(*) AS count "
+                    "FROM pg_stat_activity WHERE datname = current_database() "
+                    "AND application_name LIKE 'suixinji:%' GROUP BY COALESCE(state, 'unknown')"
+                )
+            )
+        )
 
     root_status = _status_counts(root_tasks)
     all_status = _status_counts(tasks)
@@ -87,6 +97,12 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
         max(0, latest_sequence_by_space.get(space.id, 0) - int(space.memory_watermark or 0))
         for space in spaces
     ]
+    note_watermark_lags = [
+        max(0, latest_sequence_by_space.get(space.id, 0) - int(space.note_watermark or 0))
+        for space in spaces
+    ]
+    connections_by_state = {str(state): int(count) for state, count in connection_rows}
+    total_connections = sum(connections_by_state.values())
     return {
         "accepted": len(inbox),
         "inbox_pending": sum(1 for row in inbox if row.status == "pending"),
@@ -96,9 +112,17 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
         "retry_count": sum(1 for attempt in attempts if attempt.status in {"failed", "deferred"}),
         "failure_count": sum(int(task.failure_count or 0) for task in tasks),
         "defer_count": sum(int(task.defer_count or 0) for task in tasks),
-        "outbox_unpublished": sum(1 for event in outbox if event.published_at is None),
+        "outbox_unpublished": sum(1 for event in outbox if event.published_at is None and event.status != "dead"),
         "memory_gap_spaces": sum(1 for space in spaces if space.memory_gap_sequence_no is not None),
         "max_memory_watermark_lag": max(watermark_lags, default=0),
+        "max_note_watermark_lag": max(note_watermark_lags, default=0),
+        "outbox_dead": sum(1 for event in outbox if event.status == "dead"),
+        "database_connections": {
+            "by_state": connections_by_state,
+            "total": total_connections,
+            "global_budget": DATABASE_GLOBAL_BUDGET,
+            "within_budget": total_connections <= DATABASE_GLOBAL_BUDGET,
+        },
         "delivery_status": _status_counts(deliveries),
         "p50_queue_wait_ms": percentile(queue_wait_values, 0.50),
         "p95_queue_wait_ms": percentile(queue_wait_values, 0.95),
@@ -154,6 +178,7 @@ def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
                 Task.tenant_id == tenant_id,
                 OutboxEvent.aggregate_type == "task",
                 OutboxEvent.published_at.is_(None),
+                OutboxEvent.status != "dead",
             )
         ).scalar_one()
         latest_inbox = (
@@ -165,7 +190,7 @@ def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
             .group_by(InboxMessage.space_id)
             .subquery()
         )
-        space_count, memory_gap_spaces, max_watermark_lag = session.execute(
+        space_count, memory_gap_spaces, max_watermark_lag, max_note_watermark_lag = session.execute(
             select(
                 func.count(Space.id),
                 func.count(Space.id).filter(Space.memory_gap_sequence_no.is_not(None)),
@@ -178,11 +203,28 @@ def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
                     ),
                     0,
                 ),
+                func.coalesce(
+                    func.max(
+                        func.greatest(
+                            func.coalesce(latest_inbox.c.latest_sequence_no, 0) - Space.note_watermark,
+                            0,
+                        )
+                    ),
+                    0,
+                ),
             )
             .select_from(Space)
             .outerjoin(latest_inbox, latest_inbox.c.space_id == Space.id)
             .where(Space.tenant_id == tenant_id)
         ).one()
+        connection_count = int(
+            session.execute(
+                text(
+                    "SELECT COUNT(*) FROM pg_stat_activity WHERE datname = current_database() "
+                    "AND application_name LIKE 'suixinji:%'"
+                )
+            ).scalar_one()
+        )
 
     return {
         "accepted": sum(inbox_status.values()),
@@ -196,6 +238,9 @@ def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
         "space_count": int(space_count or 0),
         "memory_gap_spaces": int(memory_gap_spaces or 0),
         "max_memory_watermark_lag": int(max_watermark_lag or 0),
+        "max_note_watermark_lag": int(max_note_watermark_lag or 0),
+        "database_connections": connection_count,
+        "database_connection_budget": DATABASE_GLOBAL_BUDGET,
     }
 
 

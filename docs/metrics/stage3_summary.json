@@ -1,0 +1,122 @@
+{
+  "schema_version": "stage-metrics-v1",
+  "stage": 3,
+  "name": "concurrency_and_task_ownership",
+  "generated_at": "2026-07-18T19:46:35+08:00",
+  "branch": "optimize/stage3-concurrency-ownership",
+  "baseline_commit": "86526eb",
+  "storage": {
+    "postgres": "existing service through DATABASE_URL",
+    "redis": "existing service through REDIS_URL",
+    "docker_controlled": false,
+    "docker_host_used": false,
+    "test_data_cleaned": true
+  },
+  "implementation": {
+    "task_lease_fencing": true,
+    "outbox_publish_outside_transaction": true,
+    "outbox_lease_fencing": true,
+    "periodic_stream_reclaim_with_cursor": true,
+    "redis_outage_backpressure": true,
+    "role_based_database_connection_budget": true,
+    "dual_watermark": true,
+    "intent_based_consistency": true,
+    "space_memory_key_lock": true,
+    "receiver_pool_timeout_is_retryable_503": true
+  },
+  "clean_capacity_100_users": {
+    "report": "docs/metrics/stage3_clean_capacity_100.json",
+    "submitted": 1000,
+    "eventually_accepted_and_completed": 697,
+    "all_tasks_completed": 2079,
+    "pending": 0,
+    "failure_count": 0,
+    "defer_count": 0,
+    "memory_gap_spaces": 0,
+    "stream_lag": 0,
+    "database_connections_peak_observed": 27,
+    "database_connection_budget": 40,
+    "p95_receiver_acceptance_ms": {
+      "stage2": 10009,
+      "stage3": 9207,
+      "improvement": 0.0801
+    },
+    "p95_worker_execution_ms": {
+      "stage2": 4949,
+      "stage3": 6077,
+      "regression": 0.2279
+    },
+    "p95_queue_wait_ms": {
+      "stage2": 813221,
+      "stage3": 997662,
+      "regression": 0.2268
+    },
+    "p95_end_to_end_ms": {
+      "stage2": 815361,
+      "stage3": 1003616,
+      "regression": 0.2309
+    },
+    "capacity_target_passed": false
+  },
+  "cross_space_1000": {
+    "report": "docs/metrics/stage3_cross_space_1000.json",
+    "logical_requests": 1000,
+    "unique_users": 1000,
+    "unique_spaces": 1000,
+    "initial_burst_concurrency": 64,
+    "initial_accepted": 676,
+    "initial_database_pool_timeout_500": 313,
+    "initial_overload_503": 11,
+    "retry_concurrency": 8,
+    "retry_accepted": 324,
+    "retry_duplicates": 676,
+    "retry_failed": 0,
+    "eventually_accepted_and_completed": 1000,
+    "all_tasks_completed": 2692,
+    "duplicate_business_side_effects": 0,
+    "pending": 0,
+    "dead_letter": 0,
+    "failure_count": 0,
+    "defer_count": 0,
+    "memory_gap_spaces": 0,
+    "stream_lag": 0,
+    "database_connections_peak_observed": 27,
+    "database_connection_budget": 40,
+    "p95_queue_wait_ms": 790596,
+    "p95_end_to_end_ms": 796390,
+    "target_seconds": 120,
+    "target_overrun_ratio": 6.6366,
+    "final_conservation_passed": true,
+    "initial_burst_capacity_passed": false
+  },
+  "quality_regression": {
+    "dataset_cases": 360,
+    "exact_store_rate": 0.8167,
+    "relation_accuracy": 1.0,
+    "relation_macro_f1": 1.0,
+    "false_destructive_rate": 0.0,
+    "recall_at_20": 1.0,
+    "mrr": 0.9417,
+    "end_to_end_accuracy": 0.8333,
+    "external_llm_calls": 0,
+    "measured_api_cost": 0.0
+  },
+  "verification": {
+    "targeted_concurrency_suite": "14 passed",
+    "full_test_suite": "249 passed",
+    "ruff": "passed",
+    "migration_round_trip": "20260718_0005 -> 20260718_0004 -> 20260718_0005 passed",
+    "final_migration": "20260718_0005 (head)"
+  },
+  "acceptance": {
+    "stale_worker_fenced": true,
+    "worker_and_redis_jitter_no_duplicate_side_effect": true,
+    "cross_space_1000_final_conservation": true,
+    "single_space_required_order_preserved": true,
+    "unrelated_spaces_not_memory_globally_blocked": true,
+    "database_connection_budget_respected": true,
+    "stage_functional_acceptance_passed": true,
+    "capacity_target_passed": false,
+    "next_stage": "Stage 4 tenant isolation, security, and migration hardening"
+  }
+}
