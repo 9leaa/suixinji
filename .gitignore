@@ -1,4 +1,6 @@
 .env
+.env.bak.*
+*.bak.*
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -16,6 +18,7 @@ data/memory/
 data/load-tests/
 data/stage4/
 data/stage5/
+data/pids/
 data/suixinji.pid
 data/logs/runtime.log
 backups/

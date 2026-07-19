@@ -89,34 +89,47 @@ def coordinated_lock(key: str, *, critical: bool = True, wait_seconds: float = S
         )
 
     if COORDINATION_BACKEND == "redis":
-        lock = RedisDistributedLock(key)
+        lock: RedisDistributedLock | None = None
+        acquired = False
         try:
-            if lock.acquire(wait_seconds):
-                record("redis")
-                stop_renewal = threading.Event()
-
-                def renew_loop() -> None:
-                    interval = max(0.1, lock.ttl_ms / 3000)
-                    while not stop_renewal.wait(interval):
-                        try:
-                            if not lock.renew():
-                                return
-                        except Exception:
-                            return
-
-                renewal = threading.Thread(target=renew_loop, name="redis-lock-renewal", daemon=True)
-                renewal.start()
-                try:
-                    yield "redis"
-                finally:
-                    stop_renewal.set()
-                    lock.release()
-                return
-            if not critical:
-                raise TimeoutError(f"could not acquire Redis lock: {key}")
+            lock = RedisDistributedLock(key)
+            acquired = lock.acquire(wait_seconds)
         except Exception:
             if not critical:
                 raise
+        if acquired:
+            assert lock is not None
+            record("redis")
+            stop_renewal = threading.Event()
+
+            def renew_loop() -> None:
+                interval = max(0.1, lock.ttl_ms / 3000)
+                while not stop_renewal.wait(interval):
+                    try:
+                        if not lock.renew():
+                            return
+                    except Exception:
+                        return
+
+            renewal = threading.Thread(target=renew_loop, name="redis-lock-renewal", daemon=True)
+            renewal.start()
+            try:
+                yield "redis"
+            finally:
+                stop_renewal.set()
+                try:
+                    lock.release()
+                except Exception as exc:
+                    log_event(
+                        "runtime.lock_release_failed",
+                        level="warning",
+                        status="degraded",
+                        error=type(exc).__name__,
+                        extra={"backend": "redis", "key": key},
+                    )
+            return
+        if not critical:
+            raise TimeoutError(f"could not acquire Redis lock: {key}")
         with postgres_advisory_lock(key):
             record("postgres")
             yield "postgres"
