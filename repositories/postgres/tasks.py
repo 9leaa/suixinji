@@ -149,9 +149,10 @@ def renew_task_lease(
     lease_token: str,
     claim_version: int,
     lease_seconds: int = TASK_LEASE_SECONDS,
+    session_role: str | None = None,
 ) -> bool:
     now = datetime.now().astimezone()
-    with session_scope() as session:
+    with session_scope(role=session_role) as session:
         renewed = session.execute(
             update(Task)
             .where(

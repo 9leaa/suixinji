@@ -23,6 +23,7 @@ from repositories.postgres.tasks import claim_task, complete_task, defer_task, f
 from runtime.streams.client import StreamClient, StreamMessage
 
 LOGGER = logging.getLogger(__name__)
+HEARTBEAT_SESSION_ROLE = "worker-heartbeat"
 
 
 @dataclass(frozen=True)
@@ -156,6 +157,7 @@ class StreamWorker:
                         lease_token=lease_token,
                         claim_version=claim_version,
                         lease_seconds=TASK_LEASE_SECONDS,
+                        session_role=HEARTBEAT_SESSION_ROLE,
                     ):
                         ownership_lost.set()
                         return

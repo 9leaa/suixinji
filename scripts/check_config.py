@@ -113,6 +113,32 @@ def check_storage_backend() -> None:
         ok("local storage backend selected")
 
 
+def check_database_budget() -> None:
+    backend = os.getenv("STORAGE_BACKEND", "local").strip().lower()
+    if backend != "postgres":
+        ok("database connection budget skipped for local storage")
+        return
+    from core.settings import DATABASE_GLOBAL_BUDGET, database_pool_budget
+
+    process_counts = {
+        "receiver": 2,
+        "outbox-relay": 1,
+        "worker-ingest": 1,
+        "worker-query": 1,
+        "worker-summary": 1,
+        "worker-memory": 1,
+        "worker-enrichment": 1,
+        "worker-delivery": 1,
+        "scheduler": 1,
+    }
+    worker_count = sum(count for role, count in process_counts.items() if role.startswith("worker-"))
+    total = sum(count * sum(database_pool_budget(role)) for role, count in process_counts.items())
+    total += worker_count * sum(database_pool_budget("worker-heartbeat"))
+    if total > DATABASE_GLOBAL_BUDGET:
+        fail(f"数据库连接预算超限: theoretical_peak={total}, global_budget={DATABASE_GLOBAL_BUDGET}")
+    ok(f"database connection budget is within limit ({total}/{DATABASE_GLOBAL_BUDGET})")
+
+
 def check_coordination_backend() -> None:
     coordination = os.getenv("COORDINATION_BACKEND", "local").strip().lower()
     queue = os.getenv("TASK_QUEUE_BACKEND", "local").strip().lower()
@@ -141,6 +167,7 @@ def main() -> None:
     check_required_env()
     check_memory_config()
     check_storage_backend()
+    check_database_budget()
     check_coordination_backend()
     check_data_dir()
     print("配置检查通过。")

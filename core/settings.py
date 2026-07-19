@@ -80,14 +80,16 @@ PROCESS_ROLE = os.getenv("SUIXINJI_PROCESS_ROLE", "default").strip().lower()
 
 def database_pool_budget(role: str | None = None) -> tuple[int, int]:
     resolved = (role or PROCESS_ROLE or "default").lower()
+    if resolved == "worker-heartbeat":
+        return 1, 0
     if resolved == "receiver":
-        return 2, 1
+        return 1, 0
     if resolved == "outbox-relay":
-        return 1, 1
-    if resolved == "worker-query":
-        return 2, 1
+        return 1, 0
     if resolved == "worker-adaptive":
         return 1, 1
+    if resolved == "worker-ingest":
+        return 3, 1
     if resolved.startswith("worker-") or resolved == "scheduler":
         return 1, 0
     return max(1, DATABASE_POOL_SIZE), max(0, DATABASE_MAX_OVERFLOW)

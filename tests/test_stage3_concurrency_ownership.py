@@ -24,7 +24,7 @@ def test_stage4_role_connection_plan_stays_within_global_budget() -> None:
         "scheduler": 2,
     }
     theoretical_peak = sum(count * sum(database_pool_budget(role)) for role, count in roles.items())
-    assert theoretical_peak == 36
+    assert theoretical_peak == 38
     assert theoretical_peak <= DATABASE_GLOBAL_BUDGET
 
 
