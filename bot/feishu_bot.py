@@ -466,6 +466,24 @@ def _handle_trace_command(text: str) -> str | None:
         return format_trace_memory(memory_id)
     return format_trace_id(raw)
 
+
+def _log_duplicate_event(
+    *,
+    space_id: str,
+    message_id: str | None,
+    task_type: str,
+    command: str,
+    in_progress: bool = False,
+) -> None:
+    log_event(
+        "feishu.message.duplicate",
+        status="in_progress" if in_progress else "duplicate",
+        space_id=space_id,
+        message_id=message_id,
+        extra={"task_type": task_type, "command": command},
+    )
+
+
 def handle_text_message(data: P2ImMessageReceiveV1) -> None:
     """Handle a Feishu im.message.receive_v1 event."""
     event = data.event
@@ -549,7 +567,12 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
         if appended:
             safe_send_text(chat_id, "检测到疑似密码、密钥或高风险身份信息：这条内容未保存，也未发送给模型。")
         else:
-            safe_send_text(chat_id, "这条敏感消息已经拦截过了，未重复处理。")
+            _log_duplicate_event(
+                space_id=space_id,
+                message_id=message_id,
+                task_type="sensitive",
+                command="sensitive_rejected",
+            )
         return
 
     summary_auto_reply = _handle_summary_auto_command(space_id, chat_id, text)
@@ -655,7 +678,6 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
             safe_send_text(chat_id, "暂不支持这个总结范围。可用：今天、昨天、一周、一个月、半年、一年")
             return
 
-        safe_send_text(chat_id, "我来整理这段时间的随心记。")
         if TASK_QUEUE_BACKEND == "redis_streams":
             result = receive(
                 InboxCommand(
@@ -677,9 +699,18 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
                     },
                 )
             )
-            if result.duplicate:
-                safe_send_text(chat_id, "这条总结请求已经收到过了。")
+            if result.duplicate or result.in_progress:
+                _log_duplicate_event(
+                    space_id=space_id,
+                    message_id=message_id,
+                    task_type="summary",
+                    command="summary",
+                    in_progress=result.in_progress,
+                )
+                return
+            safe_send_text(chat_id, "我来整理这段时间的随心记。")
             return
+        safe_send_text(chat_id, "我来整理这段时间的随心记。")
         task = get_task_executor(safe_send_text).submit_summary(
             space_id,
             range_key,
@@ -711,7 +742,6 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
             safe_send_text(chat_id, "用法：/ask 上次说的那家咖啡店在哪")
             return
 
-        safe_send_text(chat_id, "我去翻一下随心记。")
         if TASK_QUEUE_BACKEND == "redis_streams":
             result = receive(
                 InboxCommand(
@@ -733,9 +763,18 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
                     },
                 )
             )
-            if result.duplicate:
-                safe_send_text(chat_id, "这条查询已经收到过了。")
+            if result.duplicate or result.in_progress:
+                _log_duplicate_event(
+                    space_id=space_id,
+                    message_id=message_id,
+                    task_type="query",
+                    command="ask",
+                    in_progress=result.in_progress,
+                )
+                return
+            safe_send_text(chat_id, "我去翻一下随心记。")
             return
+        safe_send_text(chat_id, "我去翻一下随心记。")
         task = get_task_executor(safe_send_text).submit_query(
             space_id,
             question,
@@ -762,10 +801,16 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
                 task_payload={"chat_id": chat_id, "notify_on_success": True, "source": "feishu_realtime"},
             )
         )
-        if result.duplicate:
-            safe_send_text(chat_id, "这条消息已经收到过了，已跳过重复处理。")
-        else:
-            safe_send_text(chat_id, "已收到，正在整理到随心记。")
+        if result.duplicate or result.in_progress:
+            _log_duplicate_event(
+                space_id=space_id,
+                message_id=message_id,
+                task_type="ingest",
+                command="ingest",
+                in_progress=result.in_progress,
+            )
+            return
+        safe_send_text(chat_id, "已收到，正在整理到随心记。")
         return
 
     record = create_pending_record(
@@ -780,7 +825,12 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
 
     appended = append_message_once(record)
     if not appended:
-        safe_send_text(chat_id, "这条消息已经收到过了，已跳过重复处理。")
+        _log_duplicate_event(
+            space_id=space_id,
+            message_id=message_id,
+            task_type="ingest",
+            command="ingest_local",
+        )
         return
 
     safe_send_text(chat_id, "已收到，正在整理到随心记。")
