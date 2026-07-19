@@ -220,7 +220,7 @@ def test_ingest_memory_barrier_blocks_query_but_not_enrichment(distributed_scope
         "process_record",
         lambda _record, defer_memory, defer_wal_completion: {"id": note_id},
     )
-    monkeypatch.setattr(handlers, "extract_candidates", lambda *_args, **_kwargs: ["candidate"])
+    monkeypatch.setattr(handlers, "may_contain_memory", lambda *_args, **_kwargs: True)
 
     outcome = handlers.handle_ingest(root)
     assert isinstance(outcome, TaskOutcome)

@@ -7,12 +7,12 @@ from typing import Any
 
 from agent.query_agent import answer_question
 from bot.feishu_bot import send_text
-from core.settings import FAKE_EXTERNALS, MEMORY_EXTRACTOR_MODE
+from core.settings import FAKE_EXTERNALS
 from core.worker import enrich_note, process_record
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock
 from memory.service import process_note_memory
-from memory.extractor import extract_candidates
+from memory.extractor import may_contain_memory
 from repositories.postgres.dispatch import enqueue_task, load_inbox_record
 from repositories.postgres.notes import find_note_content
 from runtime.delivery_store import get_delivery, mark_failed, mark_sent, mark_unknown, reserve_delivery
@@ -69,14 +69,7 @@ def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
                 "type": note_data.get("type"),
                 "summary": note_data.get("summary"),
             }
-            deterministic_candidates = None
-            if MEMORY_EXTRACTOR_MODE == "rules":
-                deterministic_candidates = extract_candidates(
-                    note_id,
-                    str(note_data.get("text") or ""),
-                    classification=classification,
-                )
-            if deterministic_candidates == []:
+            if not may_contain_memory(str(note_data.get("text") or ""), classification=classification):
                 process_note_memory(note_data, classification=classification)
             else:
                 critical_task_id, _ = enqueue_task(

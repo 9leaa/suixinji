@@ -1,0 +1,77 @@
+{
+  "stage": "stage6_memory_hybrid_retrieval",
+  "date": "2026-07-18",
+  "branch": "optimize/stage6-memory-hybrid-retrieval",
+  "baseline": "main@9977ac5",
+  "implemented": {
+    "memory_key_v2": true,
+    "postgres_candidate_hybrid_retrieval": true,
+    "postgres_query_hybrid_retrieval": true,
+    "fixed_100_query_scan_removed_in_postgres": true,
+    "fixed_200_candidate_scan_removed_in_postgres": true,
+    "rules_ingest_full_extraction_removed": true,
+    "multi_candidate_rules_extraction": true,
+    "memory_vector_metadata": true,
+    "fts_index": true,
+    "vector_index": true,
+    "rollback_mode": "SUIXINJI_MEMORY_RETRIEVAL_MODE=legacy"
+  },
+  "verification": {
+    "targeted_memory_tests": {
+      "command": "conda run -n zcj_hello python -m pytest tests/test_memory_hybrid_retrieval_stage6.py tests/test_memory_extractor.py tests/test_memory_service.py tests/test_memory_extraction_state.py tests/test_memory_stage1_correctness.py -q",
+      "passed": 44,
+      "failed": 0
+    },
+    "stage5_dispatch_regression": {
+      "command": "conda run -n zcj_hello python -m pytest tests/test_stage5_dispatch_performance.py -q",
+      "passed": 6,
+      "failed": 0
+    },
+    "postgres_integration": {
+      "command": "conda run -n zcj_hello python -m pytest tests/test_postgres_repositories.py tests/test_streams_outbox.py::test_ingest_memory_barrier_blocks_query_but_not_enrichment -q",
+      "passed": 10,
+      "failed": 0
+    },
+    "full_suite": {
+      "command": "conda run -n zcj_hello python -m pytest -q",
+      "passed": 268,
+      "failed": 0,
+      "warnings": 5
+    },
+    "ruff": {
+      "passed": true
+    },
+    "alembic_head": "20260718_0007"
+  },
+  "quality_metrics": {
+    "extraction_type_macro_f1": null,
+    "candidate_storage_f1": null,
+    "relation_macro_f1": null,
+    "destructive_false_positive_rate": null,
+    "candidate_recall_at_20_10k_memory": null,
+    "retrieval_mrr": null,
+    "end_to_end_accuracy": null
+  },
+  "performance_metrics": {
+    "hybrid_retrieval_p95_ms_10k_memory": null,
+    "cached_hybrid_retrieval_p95_ms": null,
+    "sql_count_target": 6,
+    "sql_count_measured": null
+  },
+  "cost_metrics": {
+    "llm_requests_per_1000_notes": null,
+    "embedding_requests_per_1000_notes": null,
+    "input_tokens": null,
+    "output_tokens": null,
+    "cache_hit_rate": null,
+    "estimated_cost": null,
+    "note": "Real LLM and embedding baselines were not run in this implementation pass."
+  },
+  "open_items": [
+    "Build and run the 1000-case realistic quality dataset.",
+    "Run rules, llm, and hybrid comparisons with real model and embedding telemetry.",
+    "Implement Monthly semantic clustering consolidation.",
+    "Implement Memory embedding backfill and refresh lifecycle.",
+    "Run 10K-memory p95 benchmark for cached and uncached hybrid retrieval."
+  ]
+}

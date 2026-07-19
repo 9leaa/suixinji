@@ -100,11 +100,10 @@ def test_rules_empty_memory_uses_inline_causal_fast_path(monkeypatch) -> None:
         "type": "other",
         "summary": "ordinary note",
     }
-    monkeypatch.setattr(handlers, "MEMORY_EXTRACTOR_MODE", "rules")
     monkeypatch.setattr(handlers, "load_inbox_record", lambda _inbox_id: {"id": "inbox-stage5"})
     monkeypatch.setattr(handlers, "coordinated_lock", lambda *_args, **_kwargs: nullcontext())
     monkeypatch.setattr(handlers, "process_record", lambda *_args, **_kwargs: note)
-    monkeypatch.setattr(handlers, "extract_candidates", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(handlers, "may_contain_memory", lambda *_args, **_kwargs: False)
     monkeypatch.setattr(
         handlers,
         "process_note_memory",
