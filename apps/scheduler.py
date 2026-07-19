@@ -6,7 +6,7 @@ import logging
 import time
 from datetime import date
 
-from core.observability import log_event
+from core.observability import log_event, log_process_started
 from core.settings import SCHEDULER_LEADER_TTL_MS, STAGE4_MODE
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import RedisDistributedLock
@@ -43,7 +43,13 @@ def run_once() -> bool:
                     idempotency_key=f"memory:consolidate:{space_id}:{cadence}:{period_key}",
                     payload={"operation": "consolidate", "cadence": cadence, "period_key": period_key},
                 )
-        enqueue_due_retries()
+        retry_count = enqueue_due_retries()
+        if retry_count:
+            log_event(
+                "runtime.task_retry_published",
+                status="queued",
+                extra={"retry_count": retry_count, "source": "scheduler"},
+            )
         return True
     finally:
         lock.release()
@@ -51,6 +57,7 @@ def run_once() -> bool:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+    log_process_started("scheduler")
     while True:
         try:
             run_once()

@@ -9,7 +9,7 @@ from redis import Redis
 from redis.exceptions import ResponseError
 
 from core.settings import STREAM_BATCH_SIZE, STREAM_BLOCK_MS, STREAM_CLAIM_IDLE_MS, STREAM_MAXLEN
-from infrastructure.redis_client import get_redis
+from infrastructure.redis_client import get_blocking_redis, get_redis
 from infrastructure.redis_keys import KEYS, RedisKeys
 
 GROUPS = {
@@ -30,8 +30,15 @@ class StreamMessage:
 
 
 class StreamClient:
-    def __init__(self, client: Redis | None = None, *, keys: RedisKeys = KEYS) -> None:
+    def __init__(
+        self,
+        client: Redis | None = None,
+        *,
+        blocking_client: Redis | None = None,
+        keys: RedisKeys = KEYS,
+    ) -> None:
         self.client = client or get_redis()
+        self.blocking_client = blocking_client or (client if client is not None else get_blocking_redis())
         self.keys = keys
         self._reclaim_cursors: dict[tuple[str, str], str] = {}
         self._ensured_groups: set[str] = set()
@@ -63,7 +70,7 @@ class StreamClient:
     def read(self, task_type: str, consumer: str, *, count: int = STREAM_BATCH_SIZE, block_ms: int = STREAM_BLOCK_MS) -> list[StreamMessage]:
         stream, group = self.ensure_group(task_type)
         try:
-            response = self.client.xreadgroup(
+            response = self.blocking_client.xreadgroup(
                 group,
                 consumer,
                 {stream: ">"},
@@ -75,7 +82,7 @@ class StreamClient:
                 raise
             self._ensured_groups.discard(task_type)
             stream, group = self.ensure_group(task_type)
-            response = self.client.xreadgroup(
+            response = self.blocking_client.xreadgroup(
                 group,
                 consumer,
                 {stream: ">"},

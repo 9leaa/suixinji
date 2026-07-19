@@ -27,7 +27,7 @@ def test_stage5_adaptive_process_matrix_stays_within_connection_budget() -> None
         "scheduler": 2,
     }
     theoretical_peak = sum(count * sum(database_pool_budget(role)) for role, count in roles.items())
-    assert theoretical_peak == 40
+    assert theoretical_peak == 32
     assert theoretical_peak <= DATABASE_GLOBAL_BUDGET
 
 

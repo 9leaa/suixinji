@@ -72,7 +72,7 @@ Outbox Relay -> Redis Streams
 Ingest / Query / Summary / Memory Worker
 Delivery Worker -> Feishu
 Leader-locked Scheduler
-FastAPI test receiver :8000
+FastAPI test receiver :${SUIXINJI_API_PORT:-8000}
 ```
 
 在已激活 `zcj_hello` 环境中启动：
@@ -81,6 +81,13 @@ FastAPI test receiver :8000
 make distributed-start
 make distributed-status
 make distributed-stop
+```
+
+API 默认监听 `127.0.0.1:8000`。如果端口被占用，在 `.env` 中设置：
+
+```dotenv
+SUIXINJI_API_HOST=127.0.0.1
+SUIXINJI_API_PORT=18000
 ```
 
 也可以使用 Docker：

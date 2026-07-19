@@ -76,18 +76,24 @@ DATABASE_POOL_TIMEOUT_SECONDS = _int_env("SUIXINJI_DATABASE_POOL_TIMEOUT_SECONDS
 DATABASE_POOL_RECYCLE_SECONDS = _int_env("SUIXINJI_DATABASE_POOL_RECYCLE_SECONDS", 1800)
 DATABASE_GLOBAL_BUDGET = _int_env("SUIXINJI_DATABASE_GLOBAL_BUDGET", 40)
 PROCESS_ROLE = os.getenv("SUIXINJI_PROCESS_ROLE", "default").strip().lower()
+API_HOST = os.getenv("SUIXINJI_API_HOST", "127.0.0.1").strip() or "127.0.0.1"
+API_PORT = _int_env("SUIXINJI_API_PORT", 8000)
 
 
 def database_pool_budget(role: str | None = None) -> tuple[int, int]:
     resolved = (role or PROCESS_ROLE or "default").lower()
+    if resolved == "worker-heartbeat":
+        return 1, 0
     if resolved == "receiver":
-        return 2, 1
+        return 1, 0
+    if resolved == "api":
+        return 1, 0
     if resolved == "outbox-relay":
-        return 1, 1
-    if resolved == "worker-query":
-        return 2, 1
+        return 1, 0
     if resolved == "worker-adaptive":
         return 1, 1
+    if resolved == "worker-ingest":
+        return 3, 1
     if resolved.startswith("worker-") or resolved == "scheduler":
         return 1, 0
     return max(1, DATABASE_POOL_SIZE), max(0, DATABASE_MAX_OVERFLOW)
@@ -96,6 +102,10 @@ if STORAGE_BACKEND not in {"local", "postgres"}:
     raise ValueError("STORAGE_BACKEND must be 'local' or 'postgres'")
 if STORAGE_BACKEND == "postgres" and not DATABASE_URL:
     raise ValueError("DATABASE_URL is required when STORAGE_BACKEND=postgres")
+if any(char.isspace() for char in API_HOST) or "/" in API_HOST:
+    raise ValueError("SUIXINJI_API_HOST must be a host name or IP address")
+if not 1 <= API_PORT <= 65535:
+    raise ValueError("SUIXINJI_API_PORT must be between 1 and 65535")
 
 SUIXINJI_ENV = os.getenv("SUIXINJI_ENV", "dev").strip().lower()
 COORDINATION_BACKEND = os.getenv("COORDINATION_BACKEND", "local").strip().lower()
@@ -130,6 +140,11 @@ MEMORY_ACCESS_FLUSH_BATCH_SIZE = _int_env("SUIXINJI_MEMORY_ACCESS_FLUSH_BATCH_SI
 
 STREAM_BLOCK_MS = _int_env("SUIXINJI_STREAM_BLOCK_MS", 5000)
 STREAM_BATCH_SIZE = _int_env("SUIXINJI_STREAM_BATCH_SIZE", 10)
+REDIS_BLOCKING_MAX_CONNECTIONS = _int_env("SUIXINJI_REDIS_BLOCKING_MAX_CONNECTIONS", 8)
+REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS = _float_env(
+    "SUIXINJI_REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS",
+    max(7.0, STREAM_BLOCK_MS / 1000 + 1.0),
+)
 STREAM_CLAIM_IDLE_MS = _int_env("SUIXINJI_STREAM_CLAIM_IDLE_MS", 60000)
 STREAM_MAXLEN = _int_env("SUIXINJI_STREAM_MAXLEN", 100000)
 OUTBOX_BATCH_SIZE = _int_env("SUIXINJI_OUTBOX_BATCH_SIZE", 50)
@@ -150,3 +165,10 @@ if TASK_QUEUE_BACKEND not in {"local", "redis_streams"}:
     raise ValueError("TASK_QUEUE_BACKEND must be 'local' or 'redis_streams'")
 if TASK_QUEUE_BACKEND == "redis_streams" and (STORAGE_BACKEND != "postgres" or COORDINATION_BACKEND != "redis"):
     raise ValueError("TASK_QUEUE_BACKEND=redis_streams requires PostgreSQL storage and Redis coordination")
+if TASK_QUEUE_BACKEND == "redis_streams":
+    required_blocking_timeout = STREAM_BLOCK_MS / 1000 + 1.0
+    if REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS < required_blocking_timeout:
+        raise ValueError(
+            "SUIXINJI_REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS must be at least "
+            "SUIXINJI_STREAM_BLOCK_MS / 1000 + 1 second"
+        )

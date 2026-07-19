@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import hashlib
+import os
 import socket
 import threading
 import time
@@ -14,15 +16,17 @@ from typing import Any
 
 from core.observability import log_event
 from core.settings import (
+    PROCESS_ROLE,
     STREAM_CLAIM_IDLE_MS,
     STREAM_RECLAIM_INTERVAL_SECONDS,
     TASK_LEASE_SECONDS,
     WORKER_RETRY_BASE_SECONDS,
 )
 from repositories.postgres.tasks import claim_task, complete_task, defer_task, fail_task, get_task, renew_task_lease
-from runtime.streams.client import StreamClient, StreamMessage
+from runtime.streams.client import GROUPS, StreamClient, StreamMessage
 
 LOGGER = logging.getLogger(__name__)
+HEARTBEAT_SESSION_ROLE = "worker-heartbeat"
 
 
 @dataclass(frozen=True)
@@ -53,6 +57,20 @@ def _elapsed_ms(start: datetime | None, end: datetime | None = None) -> int | No
         return None
     end = end or datetime.now().astimezone()
     return max(0, int((end - start).total_seconds() * 1000))
+
+
+def _safe_iso(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return str(value)
+
+
+def _lease_hash(value: str | None) -> str | None:
+    if not value:
+        return None
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
 
 
 def _default_outcome(task: dict[str, Any]) -> TaskOutcome:
@@ -111,6 +129,19 @@ class StreamWorker:
                 "min_idle_ms": STREAM_CLAIM_IDLE_MS,
             },
         )
+        if messages:
+            log_event(
+                "runtime.stream_pending_reclaimed",
+                status="reclaimed",
+                extra={
+                    "task_type": self.task_type,
+                    "worker_id": self.worker_id,
+                    "reclaim_count": len(messages),
+                    "next_start_id": self.client.reclaim_cursor(self.task_type, self.worker_id),
+                    "min_idle_ms": STREAM_CLAIM_IDLE_MS,
+                    "redis_message_ids": [message.message_id for message in messages],
+                },
+            )
         return messages
 
     def run_forever(self) -> None:
@@ -126,6 +157,24 @@ class StreamWorker:
 
     def _handle(self, message: StreamMessage) -> None:
         task_id = str(message.fields.get("task_id") or "")
+        stream_extra = {
+            "pid": os.getpid(),
+            "hostname": socket.gethostname(),
+            "process_role": PROCESS_ROLE,
+            "worker_id": self.worker_id,
+            "task_id": task_id or None,
+            "task_type": self.task_type,
+            "stream": message.stream,
+            "consumer_group": GROUPS.get(self.task_type),
+            "consumer": self.worker_id,
+            "redis_message_id": message.message_id,
+        }
+        log_event(
+            "runtime.stream_message_received",
+            status="received",
+            record_id=task_id or None,
+            extra=stream_extra,
+        )
         if not task_id:
             self.client.dead_letter(message, error="missing task_id")
             self.client.ack(self.task_type, message.message_id)
@@ -141,6 +190,12 @@ class StreamWorker:
                 "retry",
             }:
                 self.client.ack(self.task_type, message.message_id)
+            log_event(
+                "runtime.task_claim_skipped",
+                status=str((existing or {}).get("status") or "missing"),
+                record_id=task_id,
+                extra={**stream_extra, "previous_status": (existing or {}).get("status")},
+            )
             return
         lease_token = str(task["lease_token"])
         claim_version = int(task["claim_version"])
@@ -150,28 +205,56 @@ class StreamWorker:
         def renew_lease() -> None:
             interval = max(0.5, TASK_LEASE_SECONDS / 3)
             while not stop_heartbeat.wait(interval):
+                renew_started = time.perf_counter()
                 try:
-                    if not renew_task_lease(
+                    renewed = renew_task_lease(
                         task_id,
                         lease_token=lease_token,
                         claim_version=claim_version,
                         lease_seconds=TASK_LEASE_SECONDS,
-                    ):
+                        session_role=HEARTBEAT_SESSION_ROLE,
+                    )
+                    if renewed:
+                        log_event(
+                            "runtime.task_lease_renewed",
+                            status="success",
+                            space_id=str(task.get("space_id") or "") or None,
+                            message_id=task.get("source_message_id"),
+                            record_id=task_id,
+                            duration_ms=int((time.perf_counter() - renew_started) * 1000),
+                            extra=common_extra,
+                        )
+                    else:
                         ownership_lost.set()
+                        log_event(
+                            "runtime.task_lease_renew_failed",
+                            level="warning",
+                            status="stale",
+                            space_id=str(task.get("space_id") or "") or None,
+                            message_id=task.get("source_message_id"),
+                            record_id=task_id,
+                            duration_ms=int((time.perf_counter() - renew_started) * 1000),
+                            extra=common_extra,
+                        )
                         return
-                except Exception:
+                except Exception as exc:
+                    log_event(
+                        "runtime.task_lease_renew_failed",
+                        level="warning",
+                        status="failed",
+                        space_id=str(task.get("space_id") or "") or None,
+                        message_id=task.get("source_message_id"),
+                        record_id=task_id,
+                        duration_ms=int((time.perf_counter() - renew_started) * 1000),
+                        error=type(exc).__name__,
+                        extra=common_extra,
+                    )
                     LOGGER.warning("task lease renewal failed: task_id=%s", task_id, exc_info=True)
-
-        heartbeat = threading.Thread(target=renew_lease, name=f"task-lease-{task_id[-8:]}", daemon=True)
-        heartbeat.start()
-
-        def finish_heartbeat() -> None:
-            stop_heartbeat.set()
-            heartbeat.join(timeout=1)
 
         execution_started = time.perf_counter()
         queue_wait_ms = _elapsed_ms(task.get("created_at"), task.get("started_at"))
         common_extra = {
+            **stream_extra,
             "task_id": task_id,
             "task_type": self.task_type,
             "worker_id": self.worker_id,
@@ -179,7 +262,30 @@ class StreamWorker:
             "failure_count": int(task.get("failure_count") or 0),
             "defer_count": int(task.get("defer_count") or 0),
             "queue_wait_ms": queue_wait_ms,
+            "claim_version": claim_version,
+            "lease_token_hash": _lease_hash(lease_token),
+            "lease_expires_at": _safe_iso(task.get("lease_expires_at")),
+            "previous_status": task.get("previous_status"),
+            "previous_claimed_by": task.get("previous_claimed_by"),
+            "previous_lease_expires_at": _safe_iso(task.get("previous_lease_expires_at")),
         }
+        log_event(
+            "runtime.task_claimed",
+            status="running",
+            space_id=str(task.get("space_id") or "") or None,
+            message_id=task.get("source_message_id"),
+            record_id=task_id,
+            extra=common_extra,
+        )
+        if task.get("previous_status") == "running":
+            log_event(
+                "runtime.task_lease_reclaimed",
+                status="reclaimed",
+                space_id=str(task.get("space_id") or "") or None,
+                message_id=task.get("source_message_id"),
+                record_id=task_id,
+                extra={**common_extra, "reclaim_reason": "lease_expired"},
+            )
         log_event(
             "runtime.stream_task_started",
             status="running",
@@ -188,6 +294,14 @@ class StreamWorker:
             record_id=task_id,
             extra=common_extra,
         )
+
+        heartbeat = threading.Thread(target=renew_lease, name=f"task-lease-{task_id[-8:]}", daemon=True)
+        heartbeat.start()
+
+        def finish_heartbeat() -> None:
+            stop_heartbeat.set()
+            heartbeat.join(timeout=1)
+
         try:
             outcome = self.handler(task)
             if outcome is None:
@@ -220,6 +334,23 @@ class StreamWorker:
                     "defer_count": int(task.get("defer_count") or 0) + 1,
                     "execution_ms": execution_ms,
                     "retry_delay_seconds": exc.delay_seconds,
+                },
+            )
+            log_event(
+                "runtime.task_retry_scheduled",
+                level="warning",
+                status="retry" if deferred else "stale",
+                space_id=str(task.get("space_id") or "") or None,
+                message_id=task.get("source_message_id"),
+                record_id=task_id,
+                duration_ms=execution_ms,
+                error=type(exc).__name__,
+                extra={
+                    **common_extra,
+                    "defer_count": int(task.get("defer_count") or 0) + 1,
+                    "execution_ms": execution_ms,
+                    "retry_delay_seconds": exc.delay_seconds,
+                    "reclaim_reason": "handler_deferred",
                 },
             )
             return
@@ -256,6 +387,56 @@ class StreamWorker:
                     "retry_delay_seconds": delay,
                 },
             )
+            log_event(
+                "runtime.task_failed",
+                level="error",
+                status=status,
+                space_id=str(task.get("space_id") or "") or None,
+                message_id=task.get("source_message_id"),
+                record_id=task_id,
+                duration_ms=execution_ms,
+                error=type(exc).__name__,
+                extra={
+                    **common_extra,
+                    "failure_count": failure_no,
+                    "execution_ms": execution_ms,
+                    "retry_delay_seconds": delay,
+                },
+            )
+            if status == "retry":
+                log_event(
+                    "runtime.task_retry_scheduled",
+                    level="warning",
+                    status="retry",
+                    space_id=str(task.get("space_id") or "") or None,
+                    message_id=task.get("source_message_id"),
+                    record_id=task_id,
+                    duration_ms=execution_ms,
+                    error=type(exc).__name__,
+                    extra={
+                        **common_extra,
+                        "failure_count": failure_no,
+                        "execution_ms": execution_ms,
+                        "retry_delay_seconds": delay,
+                        "reclaim_reason": "handler_failed",
+                    },
+                )
+            elif status == "dead_letter":
+                log_event(
+                    "runtime.task_dead_lettered",
+                    level="error",
+                    status="dead_letter",
+                    space_id=str(task.get("space_id") or "") or None,
+                    message_id=task.get("source_message_id"),
+                    record_id=task_id,
+                    duration_ms=execution_ms,
+                    error=type(exc).__name__,
+                    extra={
+                        **common_extra,
+                        "failure_count": failure_no,
+                        "execution_ms": execution_ms,
+                    },
+                )
             LOGGER.exception("stream task failed: task_id=%s task_type=%s status=%s", task_id, self.task_type, status)
             return
         finish_heartbeat()
@@ -275,6 +456,21 @@ class StreamWorker:
         execution_ms = int((time.perf_counter() - execution_started) * 1000)
         log_event(
             "runtime.stream_task_completed",
+            status="completed" if completed else "stale",
+            space_id=str(task.get("space_id") or "") or None,
+            message_id=task.get("source_message_id"),
+            record_id=task_id,
+            duration_ms=execution_ms,
+            extra={
+                **common_extra,
+                "ownership_lost": ownership_lost.is_set() or not completed,
+                "execution_ms": execution_ms,
+                "total_duration_ms": _elapsed_ms(task.get("created_at"), finished_at),
+            },
+        )
+        log_event(
+            "runtime.task_completed" if completed else "runtime.task_stale_completion",
+            level="info" if completed else "warning",
             status="completed" if completed else "stale",
             space_id=str(task.get("space_id") or "") or None,
             message_id=task.get("source_message_id"),

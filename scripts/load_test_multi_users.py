@@ -5,15 +5,25 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from runtime.load_testing import PROFILES, execute_load, generate_requests, summarize_plan
+
+
+def default_endpoint() -> str:
+    values = dotenv_values(ROOT / ".env")
+    host = os.environ.get("SUIXINJI_API_HOST") or values.get("SUIXINJI_API_HOST") or "127.0.0.1"
+    port = os.environ.get("SUIXINJI_API_PORT") or values.get("SUIXINJI_API_PORT") or "8000"
+    return f"http://{str(host).strip() or '127.0.0.1'}:{str(port).strip() or '8000'}"
 
 
 def parse_args() -> argparse.Namespace:
@@ -51,7 +61,7 @@ def main() -> None:
             "started_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         }
     else:
-        endpoints = args.endpoints or ["http://127.0.0.1:8000"]
+        endpoints = args.endpoints or [default_endpoint()]
         report = execute_load(
             requests,
             endpoint=endpoints,
