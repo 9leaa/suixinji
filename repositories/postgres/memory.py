@@ -12,10 +12,14 @@ from sqlalchemy.dialects.postgresql import insert
 
 from core.settings import (
     COORDINATION_BACKEND,
+    FAKE_EXTERNALS,
     MEMORY_ACCESS_BUFFER_ENABLED,
     MEMORY_ACCESS_FLUSH_BATCH_SIZE,
     MEMORY_CONSOLIDATION_RUN_LEASE_SECONDS,
+    MEMORY_HYBRID_RRF_K,
+    MEMORY_HYBRID_VECTOR_ENABLED,
     MEMORY_QUERY_MIN_SCORE,
+    MEMORY_RETRIEVAL_MODE,
 )
 from infrastructure.database import session_scope
 from infrastructure.schema import (
@@ -27,11 +31,13 @@ from infrastructure.schema import (
     MemoryRelation as MemoryRelationRow,
     MemorySource as MemorySourceRow,
     MemoryTrace,
+    MemoryVector,
     MemoryVersion as MemoryVersionRow,
     Space,
 )
 from memory.models import (
     MEMORY_EXTRACTION_STATUSES,
+    MEMORY_KEY_VERSION,
     MEMORY_RELATION_TYPES,
     MEMORY_STATUSES,
     SOURCE_RELATIONS,
@@ -252,6 +258,7 @@ def _insert_memory(
         predicate=candidate.predicate,
         object_value=candidate.object_value,
         memory_key=candidate.effective_memory_key,
+        memory_key_version=MEMORY_KEY_VERSION,
         polarity=candidate.polarity,
         scope_json=dict(candidate.scope),
         valid_from=_dt(candidate.valid_from or timestamp),
@@ -448,6 +455,218 @@ def list_adjudication_candidates(
         return _records(session, rows, include_sources=False)
 
 
+def _base_memory_statement(
+    space_id: str,
+    *,
+    memory_type: str | None,
+    include_inactive: bool = False,
+) -> Any:
+    statement = select(Memory).where(Memory.space_id == space_id)
+    if memory_type:
+        statement = statement.where(Memory.memory_type == memory_type)
+    if include_inactive:
+        statement = statement.where(Memory.status != "forgotten")
+    else:
+        statement = statement.where(
+            Memory.status == "active",
+            (Memory.valid_until.is_(None)) | (Memory.valid_until > _dt(utc_now_iso())),
+        )
+    return statement
+
+
+def _text_document() -> Any:
+    return func.to_tsvector(
+        "simple",
+        func.concat_ws(
+            " ",
+            func.coalesce(Memory.content, ""),
+            func.coalesce(Memory.subject, ""),
+            func.coalesce(Memory.predicate, ""),
+            func.coalesce(Memory.object_value, ""),
+        ),
+    )
+
+
+def _query_terms(text: str, *, entities: list[str] | None = None) -> list[str]:
+    values = [str(text or "")]
+    values.extend(str(item or "") for item in entities or [])
+    terms: list[str] = []
+    for value in values:
+        for token in value.replace("：", " ").replace(":", " ").split():
+            token = token.strip()
+            if len(token) >= 2 and token not in terms:
+                terms.append(token)
+    compact = normalize_content(text)
+    if compact and compact not in terms:
+        terms.append(compact)
+    return terms[:12]
+
+
+def _rrf_fuse(
+    ranked_lists: list[list[Memory]],
+    *,
+    exact_key: str | None = None,
+    subject: str | None = None,
+    predicate: str | None = None,
+    limit: int = 20,
+) -> list[Memory]:
+    scores: dict[str, float] = {}
+    rows: dict[str, Memory] = {}
+    rrf_k = max(1, int(MEMORY_HYBRID_RRF_K))
+    for ranked in ranked_lists:
+        for rank, row in enumerate(ranked, start=1):
+            rows[row.id] = row
+            scores[row.id] = scores.get(row.id, 0.0) + 1.0 / (rrf_k + rank)
+    for memory_id, row in rows.items():
+        if exact_key and row.memory_key == exact_key:
+            scores[memory_id] += 0.08
+        if subject and row.subject and normalize_content(subject) == normalize_content(row.subject):
+            scores[memory_id] += 0.03
+        if predicate and row.predicate and normalize_content(predicate) == normalize_content(row.predicate):
+            scores[memory_id] += 0.03
+    return [
+        row
+        for row in sorted(
+            rows.values(),
+            key=lambda item: (scores.get(item.id, 0.0), item.updated_at, item.id),
+            reverse=True,
+        )[: max(1, min(int(limit), 50))]
+    ]
+
+
+def _ready_vector_count(space_id: str, memory_type: str | None = None) -> int:
+    with session_scope() as session:
+        statement = (
+            select(func.count())
+            .select_from(MemoryVector)
+            .join(Memory, Memory.id == MemoryVector.memory_id)
+            .where(
+                Memory.space_id == space_id,
+                Memory.status == "active",
+                MemoryVector.status == "ready",
+                MemoryVector.embedding.is_not(None),
+            )
+        )
+        if memory_type:
+            statement = statement.where(Memory.memory_type == memory_type)
+        return int(session.execute(statement).scalar_one() or 0)
+
+
+def _safe_embedding(space_id: str, text: str, *, memory_type: str | None = None) -> list[float] | None:
+    if not MEMORY_HYBRID_VECTOR_ENABLED or FAKE_EXTERNALS or not text.strip():
+        return None
+    try:
+        if _ready_vector_count(space_id, memory_type=memory_type) <= 0:
+            return None
+        from core.llm_client import embed_text
+
+        return embed_text(text)
+    except Exception as exc:
+        LOGGER.debug("memory hybrid vector retrieval disabled for request: %s", type(exc).__name__)
+        return None
+
+
+def hybrid_adjudication_candidates(
+    space_id: str,
+    candidate: MemoryCandidate,
+    *,
+    query_embedding: list[float] | None = None,
+    limit: int = 20,
+    db_path: Any = None,
+) -> list[MemoryRecord]:
+    """Retrieve adjudication targets through key, structured, lexical, and vector paths."""
+    del db_path
+    memory_type = candidate.memory_type
+    top = max(1, min(int(limit), 50))
+    retrieval_limit = max(30, top * 3)
+    embedding = query_embedding or _safe_embedding(space_id, candidate.content, memory_type=memory_type)
+    terms = _query_terms(candidate.content, entities=candidate.entities)
+
+    ranked_lists: list[list[Memory]] = []
+    with session_scope() as session:
+        base = _base_memory_statement(space_id, memory_type=memory_type)
+        if candidate.effective_memory_key:
+            ranked_lists.append(
+                list(
+                    session.execute(
+                        base.where(Memory.memory_key == candidate.effective_memory_key)
+                        .order_by(Memory.updated_at.desc(), Memory.id.desc())
+                        .limit(20)
+                    ).scalars()
+                )
+            )
+
+        structured_filters = []
+        if candidate.subject:
+            structured_filters.append(func.lower(Memory.subject) == candidate.subject.casefold())
+        if candidate.predicate:
+            structured_filters.append(func.lower(Memory.predicate) == candidate.predicate.casefold())
+        if candidate.object_value:
+            structured_filters.append(Memory.object_value.ilike(f"%{candidate.object_value[:120]}%"))
+        for entity in candidate.entities[:5]:
+            structured_filters.append(Memory.content.ilike(f"%{str(entity)[:120]}%"))
+        if structured_filters:
+            ranked_lists.append(
+                list(
+                    session.execute(
+                        base.where(or_(*structured_filters))
+                        .order_by(
+                            case((Memory.memory_key == candidate.effective_memory_key, 0), else_=1),
+                            Memory.updated_at.desc(),
+                            Memory.id.desc(),
+                        )
+                        .limit(retrieval_limit)
+                    ).scalars()
+                )
+            )
+
+        query_text = " ".join(terms) or candidate.content
+        if query_text.strip():
+            document = _text_document()
+            tsquery = func.plainto_tsquery("simple", query_text[:500])
+            ranked_lists.append(
+                list(
+                    session.execute(
+                        base.where(document.op("@@")(tsquery))
+                        .order_by(func.ts_rank_cd(document, tsquery).desc(), Memory.updated_at.desc())
+                        .limit(retrieval_limit)
+                    ).scalars()
+                )
+            )
+            lexical_filters = [Memory.content.ilike(f"%{term[:120]}%") for term in terms[:8]]
+            if lexical_filters:
+                ranked_lists.append(
+                    list(
+                        session.execute(
+                            base.where(or_(*lexical_filters))
+                            .order_by(Memory.updated_at.desc(), Memory.id.desc())
+                            .limit(retrieval_limit)
+                        ).scalars()
+                    )
+                )
+
+        if embedding and len(embedding) == 1024:
+            ranked_lists.append(
+                list(
+                    session.execute(
+                        base.join(MemoryVector, MemoryVector.memory_id == Memory.id)
+                        .where(MemoryVector.status == "ready", MemoryVector.embedding.is_not(None))
+                        .order_by(MemoryVector.embedding.cosine_distance(embedding), Memory.updated_at.desc())
+                        .limit(retrieval_limit)
+                    ).scalars()
+                )
+            )
+
+        fused = _rrf_fuse(
+            ranked_lists,
+            exact_key=candidate.effective_memory_key,
+            subject=candidate.subject,
+            predicate=candidate.predicate,
+            limit=top,
+        )
+        return _records(session, fused, include_sources=False)
+
+
 def expire_due_memories(space_id: str | None = None, *, limit: int = 500, db_path: Any = None) -> int:
     del db_path
     with session_scope() as session:
@@ -523,6 +742,7 @@ def save_memory_candidate(
             "content": candidate.content,
             "normalized_content": candidate.normalized_content,
             "memory_key": candidate.effective_memory_key,
+            "memory_key_version": MEMORY_KEY_VERSION,
             "subject": candidate.subject,
             "predicate": candidate.predicate,
             "object_value": candidate.object_value,
@@ -1180,6 +1400,93 @@ def mark_consolidation_failed(run_id: str, error: str, db_path: Any = None) -> N
             row.status, row.completed_at, row.error = "failed", _dt(utc_now_iso()), error
 
 
+def hybrid_search_memories(
+    space_id: str,
+    query: str,
+    *,
+    memory_type: str | None = None,
+    include_inactive: bool = False,
+    query_embedding: list[float] | None = None,
+    limit: int = 40,
+    db_path: Any = None,
+) -> list[MemoryRecord]:
+    """Return memory search candidates without fixed 100-row pre-scans."""
+    del db_path
+    top = max(1, min(int(limit), 100))
+    retrieval_limit = max(30, min(120, top * 3))
+    terms = _query_terms(query)
+    embedding = query_embedding
+    ranked_lists: list[list[Memory]] = []
+    with session_scope() as session:
+        base = _base_memory_statement(space_id, memory_type=memory_type, include_inactive=include_inactive)
+        type_hints: list[str] = []
+        if any(marker in query for marker in ("喜欢", "偏好", "习惯", "讨厌", "避开", "过敏")):
+            type_hints.append("preference")
+        if any(marker in query for marker in ("任务", "待办", "要做", "进度", "完成", "取消")):
+            type_hints.append("task")
+        if any(marker in query for marker in ("住哪", "住在", "哪里", "项目", "学习", "研究")):
+            type_hints.append("semantic")
+        if type_hints and memory_type is None:
+            ranked_lists.append(
+                list(
+                    session.execute(
+                        base.where(Memory.memory_type.in_(type_hints))
+                        .order_by(Memory.updated_at.desc(), Memory.id.desc())
+                        .limit(retrieval_limit)
+                    ).scalars()
+                )
+            )
+
+        structured_filters = [Memory.content.ilike(f"%{term[:120]}%") for term in terms[:8]]
+        for term in terms[:8]:
+            structured_filters.extend(
+                [
+                    Memory.subject.ilike(f"%{term[:120]}%"),
+                    Memory.predicate.ilike(f"%{term[:120]}%"),
+                    Memory.object_value.ilike(f"%{term[:120]}%"),
+                ]
+            )
+        if structured_filters:
+            ranked_lists.append(
+                list(
+                    session.execute(
+                        base.where(or_(*structured_filters))
+                        .order_by(Memory.updated_at.desc(), Memory.id.desc())
+                        .limit(retrieval_limit)
+                    ).scalars()
+                )
+            )
+
+        query_text = " ".join(terms) or query
+        if query_text.strip():
+            document = _text_document()
+            tsquery = func.plainto_tsquery("simple", query_text[:500])
+            ranked_lists.append(
+                list(
+                    session.execute(
+                        base.where(document.op("@@")(tsquery))
+                        .order_by(func.ts_rank_cd(document, tsquery).desc(), Memory.updated_at.desc())
+                        .limit(retrieval_limit)
+                    ).scalars()
+                )
+            )
+
+        if embedding and len(embedding) == 1024:
+            ranked_lists.append(
+                list(
+                    session.execute(
+                        base.join(MemoryVector, MemoryVector.memory_id == Memory.id)
+                        .where(MemoryVector.status == "ready", MemoryVector.embedding.is_not(None))
+                        .order_by(MemoryVector.embedding.cosine_distance(embedding), Memory.updated_at.desc())
+                        .limit(retrieval_limit)
+                    ).scalars()
+                )
+            )
+
+        fused = _rrf_fuse(ranked_lists, limit=top)
+        return _records(session, fused, include_sources=True)
+
+
 def search_memories(
     space_id: str,
     query: str,
@@ -1192,7 +1499,18 @@ def search_memories(
     db_path: Any = None,
 ) -> list[tuple[MemoryRecord, float]]:
     from memory.retriever import score_memory
-    candidates = list_memories(space_id, status=None if include_inactive else "active", memory_type=memory_type, limit=100, db_path=db_path)
+    if MEMORY_RETRIEVAL_MODE != "hybrid":
+        candidates = list_memories(space_id, status=None if include_inactive else "active", memory_type=memory_type, limit=100, db_path=db_path)
+    else:
+        candidates = hybrid_search_memories(
+            space_id,
+            query,
+            memory_type=memory_type,
+            include_inactive=include_inactive,
+            query_embedding=_safe_embedding(space_id, query, memory_type=memory_type),
+            limit=max(limit * 4, 30),
+            db_path=db_path,
+        )
     scored = sorted(((item, score_memory(query, item)) for item in candidates), key=lambda item: item[1], reverse=True)
     limited = [(item, score) for item, score in scored if score >= min_score][: max(1, min(int(limit), 50))]
     if mark_access:

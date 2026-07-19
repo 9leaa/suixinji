@@ -97,6 +97,54 @@ def _should_skip_text(raw: str) -> bool:
     return any(token in raw for token in LOW_CONFIDENCE_HINTS) and "记住" not in raw
 
 
+def may_contain_memory(text: str, classification: dict[str, Any] | None = None) -> bool:
+    """Cheap admission check used before scheduling the Memory Worker."""
+    raw = str(text or "").strip()
+    if _should_skip_text(raw):
+        return False
+    metadata = classification or {}
+    tags = " ".join(str(item) for item in metadata.get("tags") or [])
+    searchable = " ".join([raw, str(metadata.get("title") or ""), str(metadata.get("summary") or ""), tags])
+    markers = (
+        "喜欢",
+        "不喜欢",
+        "更喜欢",
+        "讨厌",
+        "暂时不",
+        "不喝",
+        "不吃",
+        "不用",
+        "偏好",
+        "习惯",
+        "过敏",
+        "记得",
+        "需要",
+        "待办",
+        "todo",
+        "跟进",
+        "完成",
+        "提醒",
+        "计划",
+        "报名",
+        "正在",
+        "重点",
+        "学习",
+        "研究",
+        "开发",
+        "负责",
+        "住在",
+        "搬到",
+        "今天",
+        "昨天",
+        "刚才",
+        "参加",
+        "发布",
+    )
+    if any(marker in searchable for marker in markers):
+        return True
+    return len(raw) >= 24
+
+
 def _candidate(
     note_id: str,
     memory_type: str,
@@ -179,7 +227,7 @@ def extract_rule_candidates(note_id: str, text: str, classification: dict[str, A
         "重点放在",
         "过敏",
     )
-    task_markers = ("记得", "需要", "待办", "todo", "跟进", "修", "改", "实现", "完成", "提醒", "准备", "计划")
+    task_markers = ("记得", "需要", "待办", "todo", "跟进", "修", "改", "实现", "完成", "提醒", "准备", "计划", "报名")
     semantic_markers = ("正在", "重点", "学习", "研究", "开发", "负责", "住在", "搬到", "使用", "采用")
 
     if any(marker in raw for marker in preference_markers):
@@ -212,7 +260,7 @@ def extract_rule_candidates(note_id: str, text: str, classification: dict[str, A
             )
         )
 
-    if not has_task_marker and any(marker in raw for marker in semantic_markers):
+    if any(marker in raw for marker in semantic_markers) or ("项目" in raw and not has_task_marker):
         candidates.append(
             _candidate(
                 note_id,
@@ -226,7 +274,7 @@ def extract_rule_candidates(note_id: str, text: str, classification: dict[str, A
             )
         )
 
-    if not candidates and len(raw) >= 12 and any(marker in raw for marker in ("今天", "昨天", "刚才", "完成了", "去了", "参加", "发布")):
+    if len(raw) >= 12 and any(marker in raw for marker in ("今天", "昨天", "刚才", "完成了", "去了", "参加", "发布")):
         candidates.append(
             _candidate(
                 note_id,

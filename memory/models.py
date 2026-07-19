@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import uuid
+import hashlib
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -27,6 +28,17 @@ DECISION_ACTIONS = {"insert", "add_source", "merge", "update_task", "supersede",
 MEMORY_RELATION_TYPES = {"supersedes", "superseded_by", "conflicts_with", "supports", "summarized_from", "derived_from"}
 MEMORY_EXTRACTION_STATUSES = {"pending", "processing", "completed", "empty", "partial", "failed"}
 MEMORY_CONSOLIDATION_STATUSES = {"running", "completed", "failed"}
+MEMORY_KEY_VERSION = "memory-key-v2"
+SLOT_SEMANTIC_PREDICATES = {
+    "location",
+    "current_project",
+    "currentproject",
+    "current_employer",
+    "currentemployer",
+    "learning_focus",
+    "learningfocus",
+    "birthplace",
+}
 
 
 def utc_now_iso() -> str:
@@ -61,6 +73,8 @@ def memory_key_for(
 ) -> str:
     """Build a stable topic key used to scope destructive adjudication."""
     subject_key = normalize_content(subject or "用户") or "用户"
+    if subject_key in {"user", "me", "myself"}:
+        subject_key = "user"
     predicate_key = normalize_content(predicate or memory_type) or memory_type
     object_key = normalize_content(object_value or "")
     if memory_type == "preference":
@@ -73,7 +87,7 @@ def memory_key_for(
             topic,
         )
         topic = re.sub(r"^(?:喝|吃|用|使用|采用|选择|选|穿|看|听|玩|住|做|学习|学|买|去)", "", topic)
-        return f"preference:{subject_key}:{predicate_key}:{topic}"
+        return f"preference:{subject_key}:{topic or 'unspecified'}:global"
     if memory_type == "task":
         task_text = object_key or normalize_content(content)
         task_text = re.sub(
@@ -83,7 +97,13 @@ def memory_key_for(
         ).lstrip("是").rstrip("了")
         return f"task:{subject_key}:{predicate_key}:{task_text or 'unspecified'}"
     if memory_type == "semantic":
-        return f"semantic:{subject_key}:{predicate_key}"
+        if predicate_key in SLOT_SEMANTIC_PREDICATES:
+            return f"semantic:{subject_key}:{predicate_key}"
+        topic = object_key or normalize_content(content)
+        if not topic:
+            digest = hashlib.sha1(f"{subject_key}\x1f{predicate_key}\x1f{normalize_content(content)}".encode("utf-8")).hexdigest()
+            topic = digest[:16]
+        return f"semantic:{subject_key}:{predicate_key}:{topic[:96]}"
     return f"{memory_type}:{subject_key}:{predicate_key}:{object_key or normalize_content(content)}"
 
 

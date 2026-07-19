@@ -52,6 +52,7 @@ def test_partial_retry_skips_applied_candidate(monkeypatch) -> None:
     calls: list[str] = []
     failed_once = {"value": False}
 
+    monkeypatch.setattr(service, "may_contain_memory", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(service, "extract_candidates", lambda *args, **kwargs: [first, second])
 
     def consolidate(space_id, note_id, candidate, trace=None):

@@ -24,6 +24,7 @@ def test_process_note_memory_marks_completed_and_empty(monkeypatch):
     assert get_extraction_state("note-empty").status == "empty"
 
     candidate = MemoryCandidate("semantic", "用户正在学习 Agent", 0.8, 0.9)
+    monkeypatch.setattr(service, "may_contain_memory", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(service, "extract_candidates", lambda note_id, text, classification=None: [candidate])
     monkeypatch.setattr(service, "consolidate_candidate", lambda space_id, note_id, candidate, trace=None: {"action": "insert"})
 
@@ -41,6 +42,7 @@ def test_process_note_memory_marks_partial_and_failed(monkeypatch):
         MemoryCandidate("semantic", "用户学习 Agent", 0.8, 0.9),
         MemoryCandidate("preference", "用户喜欢咖啡", 0.7, 0.8),
     ]
+    monkeypatch.setattr(service, "may_contain_memory", lambda *_args, **_kwargs: True)
     monkeypatch.setattr(service, "extract_candidates", lambda note_id, text, classification=None: candidates)
 
     def partial_consolidate(space_id, note_id, candidate, trace=None):

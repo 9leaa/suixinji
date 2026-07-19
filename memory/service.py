@@ -12,7 +12,7 @@ from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock
 from memory.consolidator import consolidate_candidate
 from memory.candidate_validator import contains_sensitive_data, validate_candidates
-from memory.extractor import extract_candidates
+from memory.extractor import extract_candidates, may_contain_memory
 from memory.models import candidate_id_for
 from memory.repository import (
     approve_pending_memory,
@@ -101,10 +101,8 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
                 "extraction_status": existing_state.status,
                 "idempotent": True,
             }
-        prefetched_candidates = None
         if MEMORY_EXTRACTOR_MODE == "rules":
-            prefetched_candidates = extract_candidates(note_id, text, classification=classification)
-            if not prefetched_candidates:
+            if not may_contain_memory(text, classification=classification):
                 state = mark_extraction_empty_attempt(note_id, space_id)
                 add_step(
                     trace,
@@ -138,7 +136,7 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
             "extraction_state_processing",
             output_summary={"note_id": note_id, "attempt_count": state.attempt_count},
         )
-        extracted_candidates = prefetched_candidates or extract_candidates(note_id, text, classification=classification)
+        extracted_candidates = extract_candidates(note_id, text, classification=classification)
         enriched_candidates = [
             replace(
                 candidate,

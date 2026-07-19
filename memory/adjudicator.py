@@ -67,7 +67,7 @@ def _shares_topic(candidate: MemoryCandidate, memory: MemoryRecord, similarity: 
             )
             and preference_policy.scopes_compatible(candidate, memory)
         )
-    if candidate.memory_type in {"task", "semantic"}:
+    if candidate.memory_type == "task":
         return False
     if candidate.predicate and memory.predicate and candidate.predicate == memory.predicate:
         if candidate.predicate in {"location", "learning_focus", "current_project"}:
@@ -144,7 +144,7 @@ def adjudicate_memory(candidate: MemoryCandidate, memories: list[MemoryRecord]) 
             for memory in memories
             if preference_policy.is_comparative_alternative(candidate.content, memory.content)
         ]
-    if candidate.memory_type in {"preference", "task", "semantic"} and not keyed_memories:
+    if candidate.memory_type in {"preference", "task"} and not keyed_memories:
         return _decision(candidate, "new", "insert", max(0.8, candidate.confidence), "different_memory_key")
     if keyed_memories:
         memories = keyed_memories

@@ -915,6 +915,74 @@ def list_adjudication_candidates(
     return memories
 
 
+def hybrid_adjudication_candidates(
+    space_id: str,
+    candidate: MemoryCandidate,
+    *,
+    query_embedding: list[float] | None = None,
+    limit: int = 20,
+    db_path: str | Path | None = None,
+) -> list[MemoryRecord]:
+    del query_embedding
+    init_db(db_path)
+    now = utc_now_iso()
+    with _connect(db_path) as conn:
+        exact_rows = conn.execute(
+            """
+            SELECT * FROM memories
+            WHERE space_id = ? AND status = 'active' AND memory_type = ?
+              AND memory_key = ? AND (valid_until IS NULL OR valid_until > ?)
+            ORDER BY updated_at DESC
+            LIMIT 20
+            """,
+            (space_id, candidate.memory_type, candidate.effective_memory_key, now),
+        ).fetchall()
+        structured_params: list[Any] = [space_id, candidate.memory_type, now]
+        structured_clauses = [
+            "space_id = ?",
+            "status = 'active'",
+            "memory_type = ?",
+            "(valid_until IS NULL OR valid_until > ?)",
+        ]
+        optional = []
+        if candidate.subject:
+            optional.append("lower(subject) = ?")
+            structured_params.append(candidate.subject.casefold())
+        if candidate.predicate:
+            optional.append("lower(predicate) = ?")
+            structured_params.append(candidate.predicate.casefold())
+        if candidate.object_value:
+            optional.append("object_value LIKE ?")
+            structured_params.append(f"%{candidate.object_value[:120]}%")
+        for entity in candidate.entities[:5]:
+            optional.append("content LIKE ?")
+            structured_params.append(f"%{str(entity)[:120]}%")
+        structured_rows = []
+        if optional:
+            structured_sql = (
+                f"SELECT * FROM memories WHERE {' AND '.join(structured_clauses)} "
+                f"AND ({' OR '.join(optional)}) ORDER BY updated_at DESC LIMIT ?"
+            )
+            structured_params.append(max(30, min(int(limit) * 3, 200)))
+            structured_rows = conn.execute(structured_sql, structured_params).fetchall()
+        rows_by_id = {row["id"]: row for row in [*exact_rows, *structured_rows]}
+        memories = [_memory_from_row(row) for row in rows_by_id.values()]
+
+    def _matches(memory: MemoryRecord) -> bool:
+        if memory.effective_memory_key == candidate.effective_memory_key:
+            return True
+        if candidate.subject and memory.subject and normalize_content(candidate.subject) == normalize_content(memory.subject):
+            return True
+        if candidate.predicate and memory.predicate and normalize_content(candidate.predicate) == normalize_content(memory.predicate):
+            return True
+        if candidate.object_value and memory.object_value and normalize_content(candidate.object_value) in normalize_content(memory.object_value):
+            return True
+        return any(entity and entity.casefold() in memory.content.casefold() for entity in candidate.entities)
+
+    filtered = [memory for memory in memories if _matches(memory)]
+    return (filtered or memories)[: max(1, min(int(limit), 50))]
+
+
 def expire_due_memories(
     space_id: str | None = None,
     *,
@@ -2122,6 +2190,8 @@ if _STORAGE_BACKEND == "postgres":
         "get_memory",
         "list_memories",
         "list_adjudication_candidates",
+        "hybrid_adjudication_candidates",
+        "hybrid_search_memories",
         "expire_due_memories",
         "update_memory",
         "apply_memory_decision",

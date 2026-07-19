@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from core.settings import MEMORY_ADJUDICATION_TOP_K
+from core.settings import MEMORY_ADJUDICATION_TOP_K, MEMORY_RETRIEVAL_MODE
 from memory.models import MemoryCandidate, MemoryRecord, normalize_content
 from memory.policies import preference as preference_policy
 from memory.policies import task as task_policy
-from memory.repository import list_adjudication_candidates
+from memory.repository import hybrid_adjudication_candidates, list_adjudication_candidates
 
 
 def _char_similarity(left: str, right: str) -> float:
@@ -53,18 +53,17 @@ def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> fl
 
 
 def retrieve_candidates(space_id: str, candidate: MemoryCandidate, *, limit: int | None = None) -> list[MemoryRecord]:
-    """Use type/status filtering plus structured and lexical similarity.
-
-    The repository keeps a memory-vector table for an optional embedding provider;
-    this deterministic path remains the safe fallback when no vector is available.
-    """
+    """Use hybrid retrieval when available, with deterministic scoring as fallback."""
     top_k = limit if limit is not None else MEMORY_ADJUDICATION_TOP_K
-    memories = list_adjudication_candidates(
-        space_id,
-        memory_type=candidate.memory_type,
-        memory_key=candidate.effective_memory_key,
-        limit=200,
-    )
+    if MEMORY_RETRIEVAL_MODE == "hybrid":
+        memories = hybrid_adjudication_candidates(space_id, candidate, limit=max(top_k * 3, 20))
+    else:
+        memories = list_adjudication_candidates(
+            space_id,
+            memory_type=candidate.memory_type,
+            memory_key=candidate.effective_memory_key,
+            limit=200,
+        )
     scored = [(memory, candidate_similarity(candidate, memory)) for memory in memories]
     scored.sort(key=lambda item: (item[1], item[0].updated_at), reverse=True)
     return [memory for memory, score in scored[: max(1, min(int(top_k), 20))] if score >= 0.18]
