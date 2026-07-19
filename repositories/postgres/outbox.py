@@ -9,6 +9,7 @@ from typing import Any, Protocol
 
 from sqlalchemy import or_, select, update
 
+from core.observability import log_event
 from core.settings import OUTBOX_LEASE_SECONDS, OUTBOX_MAX_ATTEMPTS
 from infrastructure.database import session_scope
 from infrastructure.schema import OutboxEvent
@@ -129,8 +130,18 @@ def relay_outbox_batch(
     events = claim_outbox_batch(worker_id=relay_id, limit=limit, event_ids=event_ids)
     report = {"published": 0, "failed": 0, "dead": 0, "stale": 0}
     for event in events:
+        task_id = str((event.get("payload") or {}).get("task_id") or "")
+        task_type = str((event.get("payload") or {}).get("task_type") or "")
+        event_extra = {
+            "event_id": str(event["id"]),
+            "task_id": task_id or None,
+            "task_type": task_type or None,
+            "worker_id": relay_id,
+            "attempt": int(event.get("attempt") or 0),
+            "max_attempts": int(event.get("max_attempts") or 0),
+        }
         try:
-            publisher.publish_task(str(event["id"]), dict(event["payload"]))
+            redis_message_id = publisher.publish_task(str(event["id"]), dict(event["payload"]))
         except Exception as exc:
             status = mark_outbox_failed(
                 str(event["id"]),
@@ -144,9 +155,30 @@ def relay_outbox_batch(
                 report["failed"] += 1
             else:
                 report["failed"] += 1
+            log_event(
+                "runtime.outbox_publish_failed",
+                level="error" if status == "dead" else "warning",
+                status=status,
+                record_id=str(event["id"]),
+                error=type(exc).__name__,
+                extra=event_extra,
+            )
             continue
         if mark_outbox_published(str(event["id"]), str(event["lease_token"])):
             report["published"] += 1
+            log_event(
+                "runtime.outbox_published",
+                status="published",
+                record_id=str(event["id"]),
+                extra={**event_extra, "redis_message_id": redis_message_id},
+            )
         else:
             report["stale"] += 1
+            log_event(
+                "runtime.outbox_publish_failed",
+                level="warning",
+                status="stale",
+                record_id=str(event["id"]),
+                extra={**event_extra, "redis_message_id": redis_message_id},
+            )
     return report

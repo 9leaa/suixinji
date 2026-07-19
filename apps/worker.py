@@ -6,6 +6,7 @@ import argparse
 import logging
 
 from apps.handlers import HANDLERS
+from core.observability import log_process_started
 from runtime.delivery_store import recover_stale_reserved_deliveries
 from runtime.streams.worker import AdaptiveStreamWorker, StreamWorker
 
@@ -16,6 +17,7 @@ def main() -> None:
     parser.add_argument("--worker-id")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
+    log_process_started(f"worker-{args.task_type}", action="runtime.worker_started")
     if args.task_type in {"delivery", "adaptive"}:
         recover_stale_reserved_deliveries()
     if args.task_type == "adaptive":

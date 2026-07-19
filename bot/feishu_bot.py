@@ -26,7 +26,7 @@ from lark_oapi.api.im.v1 import (
     P2ImMessageReceiveV1,
 )
 from core.feedback import save_feedback
-from core.observability import latest_success, log_event, recent_errors
+from core.observability import latest_success, log_event, log_process_started, recent_errors
 from core.sensitive import assess_sensitive_text, safe_text_preview
 from core.settings import TASK_QUEUE_BACKEND
 from core.wal import (
@@ -836,6 +836,7 @@ def start() -> None:
         level=logging.INFO,
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
     )
+    log_process_started("receiver")
 
     if TASK_QUEUE_BACKEND == "local":
         executor = get_task_executor(safe_send_text)

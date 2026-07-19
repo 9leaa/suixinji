@@ -119,7 +119,10 @@ def claim_task(task_id: str, worker_id: str, *, stale_after_seconds: int = TASK_
                         claim_version = candidate.claim_version + 1
                     FROM candidate
                     WHERE task.id = candidate.id
-                    RETURNING task.*
+                    RETURNING task.*,
+                              candidate.status AS previous_status,
+                              candidate.claimed_by AS previous_claimed_by,
+                              candidate.lease_expires_at AS previous_lease_expires_at
                 ), recorded_attempt AS (
                     INSERT INTO task_attempts(task_id, worker_id, attempt_no, status, started_at)
                     SELECT id, :worker_id, attempt_count, 'running', :now

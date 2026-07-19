@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 
 from apps.receiver import InboxCommand, receive
-from core.observability import log_event
+from core.observability import log_event, log_process_started
 from core.settings import (
     COORDINATION_BACKEND,
     RATE_LIMIT_ASK_PER_MINUTE,
@@ -26,6 +26,11 @@ from infrastructure.overload import database_overload_snapshot
 from infrastructure.redis_rate_limit import LOCAL_RATE_LIMITER, RedisRateLimiter
 
 app = FastAPI(title="Suixinji Receiver", version="3")
+
+
+@app.on_event("startup")
+def _log_api_startup() -> None:
+    log_process_started("api")
 
 
 @dataclass(frozen=True)

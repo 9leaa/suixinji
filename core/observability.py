@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+import socket
+import subprocess
 import threading
 import time
 import traceback
@@ -80,6 +82,53 @@ def log_event(
                 f.write(json.dumps(item, ensure_ascii=False) + "\n")
     except Exception:
         LOGGER.exception("Failed to write observability event: %s", action)
+
+
+def _code_revision() -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            check=False,
+            text=True,
+            timeout=1,
+        )
+    except Exception:
+        return None
+    value = result.stdout.strip()
+    return value or None
+
+
+def log_process_started(role: str | None = None, *, action: str = "runtime.process_started") -> None:
+    from core.settings import (
+        PROCESS_ROLE,
+        REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS,
+        REDIS_SOCKET_TIMEOUT_SECONDS,
+        STREAM_BLOCK_MS,
+        database_pool_budget,
+    )
+    from infrastructure.redis_keys import KEYS
+
+    resolved_role = role or PROCESS_ROLE or "default"
+    pool_size, max_overflow = database_pool_budget(resolved_role)
+    log_event(
+        action,
+        status="started",
+        extra={
+            "pid": os.getpid(),
+            "hostname": socket.gethostname(),
+            "process_role": PROCESS_ROLE,
+            "role": resolved_role,
+            "database_pool_size": pool_size,
+            "database_max_overflow": max_overflow,
+            "redis_namespace": KEYS.prefix,
+            "stream_block_ms": STREAM_BLOCK_MS,
+            "redis_socket_timeout_seconds": REDIS_SOCKET_TIMEOUT_SECONDS,
+            "redis_blocking_socket_timeout_seconds": REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS,
+            "code_revision": _code_revision(),
+            "start_time": now_iso(),
+        },
+    )
 
 
 @contextmanager

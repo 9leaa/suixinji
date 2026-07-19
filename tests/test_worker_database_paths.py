@@ -99,10 +99,12 @@ def test_renew_task_lease_uses_requested_session_role(monkeypatch) -> None:
 def test_stream_worker_success_uses_heartbeat_role_and_completes(monkeypatch) -> None:
     heartbeat_roles: list[str | None] = []
     completed: list[str] = []
+    events: list[str] = []
     client = _FakeClient()
 
     monkeypatch.setattr(worker_module.threading, "Event", _FakeEvent)
     monkeypatch.setattr(worker_module.threading, "Thread", _ImmediateThread)
+    monkeypatch.setattr(worker_module, "log_event", lambda action, **_kwargs: events.append(action))
     monkeypatch.setattr(worker_module, "claim_task", lambda *_args, **_kwargs: _claimed_task())
     monkeypatch.setattr(
         worker_module,
@@ -126,15 +128,21 @@ def test_stream_worker_success_uses_heartbeat_role_and_completes(monkeypatch) ->
     assert heartbeat_roles == [HEARTBEAT_SESSION_ROLE]
     assert completed == ["task-worker-db"]
     assert client.acked == [("ingest", "1-0")]
+    assert "runtime.stream_message_received" in events
+    assert "runtime.task_claimed" in events
+    assert "runtime.task_lease_renewed" in events
+    assert "runtime.task_completed" in events
 
 
 def test_stream_worker_failure_uses_heartbeat_role_and_fails_task(monkeypatch) -> None:
     heartbeat_roles: list[str | None] = []
     failed: list[tuple[str, str]] = []
+    events: list[str] = []
     client = _FakeClient()
 
     monkeypatch.setattr(worker_module.threading, "Event", _FakeEvent)
     monkeypatch.setattr(worker_module.threading, "Thread", _ImmediateThread)
+    monkeypatch.setattr(worker_module, "log_event", lambda action, **_kwargs: events.append(action))
     monkeypatch.setattr(worker_module, "claim_task", lambda *_args, **_kwargs: _claimed_task())
     monkeypatch.setattr(
         worker_module,
@@ -156,3 +164,8 @@ def test_stream_worker_failure_uses_heartbeat_role_and_fails_task(monkeypatch) -
     assert heartbeat_roles == [HEARTBEAT_SESSION_ROLE]
     assert failed == [("task-worker-db", "RuntimeError: handler exploded")]
     assert client.acked == [("ingest", "1-0")]
+    assert "runtime.stream_message_received" in events
+    assert "runtime.task_claimed" in events
+    assert "runtime.task_lease_renewed" in events
+    assert "runtime.task_failed" in events
+    assert "runtime.task_retry_scheduled" in events
