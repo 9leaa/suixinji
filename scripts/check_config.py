@@ -121,7 +121,8 @@ def check_database_budget() -> None:
     from core.settings import DATABASE_GLOBAL_BUDGET, database_pool_budget
 
     process_counts = {
-        "receiver": 2,
+        "receiver": 1,
+        "api": 1,
         "outbox-relay": 1,
         "worker-ingest": 1,
         "worker-query": 1,
@@ -137,6 +138,18 @@ def check_database_budget() -> None:
     if total > DATABASE_GLOBAL_BUDGET:
         fail(f"数据库连接预算超限: theoretical_peak={total}, global_budget={DATABASE_GLOBAL_BUDGET}")
     ok(f"database connection budget is within limit ({total}/{DATABASE_GLOBAL_BUDGET})")
+
+
+def check_api_config() -> None:
+    from core.settings import API_HOST, API_PORT
+
+    if not API_HOST:
+        fail("SUIXINJI_API_HOST 不能为空")
+    if any(char.isspace() for char in API_HOST) or "/" in API_HOST:
+        fail("SUIXINJI_API_HOST 必须是 host name 或 IP 地址")
+    if not 1 <= API_PORT <= 65535:
+        fail("SUIXINJI_API_PORT 必须在 1 到 65535 之间")
+    ok(f"api bind config is valid ({API_HOST}:{API_PORT})")
 
 
 def check_coordination_backend() -> None:
@@ -166,6 +179,7 @@ def main() -> None:
     check_env_file()
     check_required_env()
     check_memory_config()
+    check_api_config()
     check_storage_backend()
     check_database_budget()
     check_coordination_backend()

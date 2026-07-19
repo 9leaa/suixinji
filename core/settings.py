@@ -76,6 +76,8 @@ DATABASE_POOL_TIMEOUT_SECONDS = _int_env("SUIXINJI_DATABASE_POOL_TIMEOUT_SECONDS
 DATABASE_POOL_RECYCLE_SECONDS = _int_env("SUIXINJI_DATABASE_POOL_RECYCLE_SECONDS", 1800)
 DATABASE_GLOBAL_BUDGET = _int_env("SUIXINJI_DATABASE_GLOBAL_BUDGET", 40)
 PROCESS_ROLE = os.getenv("SUIXINJI_PROCESS_ROLE", "default").strip().lower()
+API_HOST = os.getenv("SUIXINJI_API_HOST", "127.0.0.1").strip() or "127.0.0.1"
+API_PORT = _int_env("SUIXINJI_API_PORT", 8000)
 
 
 def database_pool_budget(role: str | None = None) -> tuple[int, int]:
@@ -83,6 +85,8 @@ def database_pool_budget(role: str | None = None) -> tuple[int, int]:
     if resolved == "worker-heartbeat":
         return 1, 0
     if resolved == "receiver":
+        return 1, 0
+    if resolved == "api":
         return 1, 0
     if resolved == "outbox-relay":
         return 1, 0
@@ -98,6 +102,10 @@ if STORAGE_BACKEND not in {"local", "postgres"}:
     raise ValueError("STORAGE_BACKEND must be 'local' or 'postgres'")
 if STORAGE_BACKEND == "postgres" and not DATABASE_URL:
     raise ValueError("DATABASE_URL is required when STORAGE_BACKEND=postgres")
+if any(char.isspace() for char in API_HOST) or "/" in API_HOST:
+    raise ValueError("SUIXINJI_API_HOST must be a host name or IP address")
+if not 1 <= API_PORT <= 65535:
+    raise ValueError("SUIXINJI_API_PORT must be between 1 and 65535")
 
 SUIXINJI_ENV = os.getenv("SUIXINJI_ENV", "dev").strip().lower()
 COORDINATION_BACKEND = os.getenv("COORDINATION_BACKEND", "local").strip().lower()
