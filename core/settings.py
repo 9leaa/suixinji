@@ -132,6 +132,11 @@ MEMORY_ACCESS_FLUSH_BATCH_SIZE = _int_env("SUIXINJI_MEMORY_ACCESS_FLUSH_BATCH_SI
 
 STREAM_BLOCK_MS = _int_env("SUIXINJI_STREAM_BLOCK_MS", 5000)
 STREAM_BATCH_SIZE = _int_env("SUIXINJI_STREAM_BATCH_SIZE", 10)
+REDIS_BLOCKING_MAX_CONNECTIONS = _int_env("SUIXINJI_REDIS_BLOCKING_MAX_CONNECTIONS", 8)
+REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS = _float_env(
+    "SUIXINJI_REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS",
+    max(7.0, STREAM_BLOCK_MS / 1000 + 1.0),
+)
 STREAM_CLAIM_IDLE_MS = _int_env("SUIXINJI_STREAM_CLAIM_IDLE_MS", 60000)
 STREAM_MAXLEN = _int_env("SUIXINJI_STREAM_MAXLEN", 100000)
 OUTBOX_BATCH_SIZE = _int_env("SUIXINJI_OUTBOX_BATCH_SIZE", 50)
@@ -152,3 +157,10 @@ if TASK_QUEUE_BACKEND not in {"local", "redis_streams"}:
     raise ValueError("TASK_QUEUE_BACKEND must be 'local' or 'redis_streams'")
 if TASK_QUEUE_BACKEND == "redis_streams" and (STORAGE_BACKEND != "postgres" or COORDINATION_BACKEND != "redis"):
     raise ValueError("TASK_QUEUE_BACKEND=redis_streams requires PostgreSQL storage and Redis coordination")
+if TASK_QUEUE_BACKEND == "redis_streams":
+    required_blocking_timeout = STREAM_BLOCK_MS / 1000 + 1.0
+    if REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS < required_blocking_timeout:
+        raise ValueError(
+            "SUIXINJI_REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS must be at least "
+            "SUIXINJI_STREAM_BLOCK_MS / 1000 + 1 second"
+        )
