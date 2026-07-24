@@ -11,7 +11,7 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
-FROZEN_SCHEMA_FINGERPRINT = "44799c6741957a953251793da412f7f6ae9aff147ae51643bb783c24f773b2dc"
+FROZEN_SCHEMA_FINGERPRINT = "090d67a70f352ef8592883de5129ae47d8820df6d25748d4be98b31f05345e36"
 
 
 def _metadata_fingerprint() -> str:
