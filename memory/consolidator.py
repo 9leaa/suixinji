@@ -7,8 +7,10 @@ import time
 from datetime import datetime
 from typing import Any
 
+from core import settings
 from core.settings import MEMORY_EXTRACTION_LEASE_SECONDS
 from memory.adjudicator import adjudicate_memory
+from memory.advisory import maybe_memory_relation_advisory
 from memory.candidate_retriever import retrieve_candidates
 from memory.evolution import evolve_memory
 from memory.models import MemoryCandidate, utc_now_iso
@@ -49,6 +51,7 @@ def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidat
     )
     adjudication_started = time.perf_counter()
     decision = adjudicate_memory(candidate, similar)
+    advisory = maybe_memory_relation_advisory(candidate, similar, decision)
     add_step(
         trace,
         "relation_decided",
@@ -59,6 +62,7 @@ def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidat
             "target_memory_ids": decision.target_memory_ids,
             "action": decision.recommended_action,
             "confidence": decision.confidence,
+            "strong_advisory": advisory,
         },
         duration_ms=int((time.perf_counter() - adjudication_started) * 1000),
         reason=decision.reason,
@@ -193,4 +197,71 @@ def generate_stable_semantic(space_id: str, *, min_sources: int = 3) -> dict[str
         "action": result.get("action"),
         "memory_id": memory_id,
         "source_count": len(source_note_ids),
+    }
+
+
+def run_monthly_semantic_consolidation(space_id: str, *, min_cluster_size: int = 3) -> dict[str, Any]:
+    """Monthly semantic consolidation with deterministic safety gates.
+
+    This pass is intentionally conservative: it groups active Memory by stable
+    semantic keys and only creates a summarized semantic Memory when sources are
+    sufficient and polarity/scope do not conflict.
+    """
+    memories = list_memories(space_id, status="active", limit=500)
+    groups: dict[tuple[str, str], list[Any]] = {}
+    for memory in memories:
+        if memory.memory_type == "task":
+            continue
+        key = memory.effective_memory_key or memory.predicate or memory.normalized_content[:48]
+        groups.setdefault((memory.memory_type, key), []).append(memory)
+
+    reviewed = 0
+    created = []
+    skipped = []
+    for (memory_type, key), cluster in groups.items():
+        if len(cluster) < min_cluster_size:
+            continue
+        reviewed += 1
+        polarities = {memory.polarity for memory in cluster if memory.polarity}
+        if len(polarities) > 1:
+            skipped.append({"memory_type": memory_type, "key": key, "reason": "polarity_conflict", "count": len(cluster)})
+            continue
+        source_note_ids = list(dict.fromkeys(source.note_id for memory in cluster for source in memory.sources))
+        if len(source_note_ids) < min_cluster_size:
+            skipped.append({"memory_type": memory_type, "key": key, "reason": "not_enough_sources", "count": len(source_note_ids)})
+            continue
+        contents = list(dict.fromkeys(memory.content for memory in cluster))[:5]
+        candidate = MemoryCandidate(
+            memory_type="semantic",
+            content="用户长期稳定主题：" + "；".join(contents),
+            importance=max(memory.importance for memory in cluster),
+            confidence=min(0.9, max(memory.confidence for memory in cluster)),
+            entities=[],
+            reason="monthly_semantic_cluster_consolidation",
+            space_id=space_id,
+            subject="用户",
+            predicate="stable_theme",
+            object_value=key[:120],
+        )
+        result = consolidate_candidate(space_id, source_note_ids[0], candidate)
+        memory_id = str(result.get("memory_id") or "")
+        if not memory_id:
+            skipped.append({"memory_type": memory_type, "key": key, "reason": "candidate_not_applied", "count": len(cluster)})
+            continue
+        for note_id in source_note_ids[1:]:
+            add_source(memory_id, note_id, "summarized_from")
+        for source_memory in cluster:
+            add_memory_relation(space_id, memory_id, source_memory.id, "summarized_from", decision_id=result.get("decision_id"))
+        created.append({"memory_id": memory_id, "memory_type": memory_type, "key": key, "source_count": len(source_note_ids)})
+
+    if not settings.MONTHLY_SEMANTIC_CONSOLIDATION_ENABLED:
+        fallback = generate_stable_semantic(space_id, min_sources=min_cluster_size)
+        return {"space_id": space_id, "mode": "legacy_fallback", "semantic_reviewed": reviewed, "fallback": fallback}
+    return {
+        "space_id": space_id,
+        "mode": "semantic_cluster",
+        "reviewed_clusters": reviewed,
+        "created_count": len(created),
+        "created": created,
+        "skipped": skipped[:50],
     }

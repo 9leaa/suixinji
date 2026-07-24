@@ -8,6 +8,7 @@ from typing import Any
 from agent.query_agent import answer_question
 from bot.feishu_bot import send_text
 from core.settings import FAKE_EXTERNALS
+from core.config import get_embedding_config
 from core.worker import enrich_note, process_record
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock
@@ -156,6 +157,8 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
 
         run_memory_consolidation_once(str(payload["cadence"]), space_ids=[str(task["space_id"])])
         return None
+    if operation == "memory_embedding":
+        return handle_memory_embedding(task)
     note = find_note_content(str(task["space_id"]), note_id)
     if note is None:
         raise ValueError(f"note not found: {note_id}")
@@ -173,6 +176,40 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
     )
     barrier_inbox_id = str(payload.get("barrier_inbox_id") or "")
     return TaskOutcome(memory_ready_inbox_id=barrier_inbox_id or None)
+
+
+def handle_memory_embedding(task: dict[str, Any]) -> TaskOutcome | None:
+    from repositories.postgres.memory import claim_memory_vector, complete_memory_vector, fail_memory_vector
+
+    payload = _payload(task)
+    memory_id = str(payload.get("memory_id") or "")
+    expected_hash = str(payload.get("content_hash") or "") or None
+    claim = claim_memory_vector(memory_id, expected_hash=expected_hash)
+    if claim is None:
+        return None
+    try:
+        if FAKE_EXTERNALS:
+            embedding = [0.0] * int(claim["dimension"])
+        else:
+            from core.llm_client import embed_text
+
+            embedding = embed_text(str(claim["text"]))
+        if len(embedding) != int(claim["dimension"]):
+            raise ValueError(
+                f"memory embedding dimension mismatch: expected {claim['dimension']}, got {len(embedding)}"
+            )
+        complete_memory_vector(
+            memory_id,
+            content_hash=str(claim["content_hash"]),
+            embedding=embedding,
+            model=str(claim["model"]),
+            dimension=int(claim["dimension"]),
+            embedding_version=str(claim["embedding_version"]),
+        )
+    except Exception as exc:
+        fail_memory_vector(memory_id, content_hash=str(claim["content_hash"]), error=f"{type(exc).__name__}: {exc}")
+        raise
+    return None
 
 
 def handle_enrichment(task: dict[str, Any]) -> None:
@@ -225,6 +262,7 @@ HANDLERS = {
     "query": handle_query,
     "summary": handle_summary,
     "memory": handle_memory,
+    "memory_embedding": handle_memory,
     "enrichment": handle_enrichment,
     "delivery": handle_delivery,
 }

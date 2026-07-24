@@ -1,0 +1,80 @@
+{
+  "schema_version": "stage7-memory-hybrid-model-routing-v1",
+  "date": "2026-07-23",
+  "branch": "fix/next-stage-stability",
+  "implemented_slice": [
+    "task_level_model_router",
+    "llm_route_observability",
+    "stage7_feature_flags",
+    "short_fact_admission_gate",
+    "clause_splitter",
+    "clause_level_candidate_ids",
+    "memory_vector_lifecycle",
+    "memory_embedding_worker",
+    "hybrid_retrieval_v2_hits",
+    "postgres_search_document_trigram",
+    "strong_memory_advisory",
+    "monthly_semantic_consolidation"
+  ],
+  "feature_flags": {
+    "SUIXINJI_MODEL_ROUTING_ENABLED": true,
+    "SUIXINJI_STRONG_ESCALATION_ENABLED": false,
+    "SUIXINJI_MEMORY_VECTOR_LIFECYCLE_ENABLED": false,
+    "SUIXINJI_MEMORY_TRIGRAM_ENABLED": false,
+    "SUIXINJI_MEMORY_UNIFIED_RERANK_ENABLED": false,
+    "SUIXINJI_MEMORY_CLAUSE_EXTRACTION_ENABLED": false,
+    "SUIXINJI_MONTHLY_SEMANTIC_CONSOLIDATION_ENABLED": false
+  },
+  "smoke_metrics": {
+    "model_routes_defined": 8,
+    "short_fact_admission_recall": 1.0,
+    "short_fact_admission_passed": 6,
+    "short_fact_admission_total": 6,
+    "clause_split_recall": 1.0,
+    "clause_split_passed": 3,
+    "clause_split_total": 3,
+    "clause_candidate_type_recall": 1.0,
+    "clause_candidate_types_passed": 3,
+    "clause_candidate_types_total": 3,
+    "memory_embedding_worker_registered": true,
+    "alembic_heads": 1,
+    "alembic_head": "20260723_0009",
+    "live_llm_calls": 0,
+    "live_embedding_calls": 0
+  },
+  "validation": [
+    {
+      "command": "conda run -n zcj_hello python -m pytest tests/test_stage7_model_routing_and_clause_extraction.py tests/test_memory_extractor.py -q",
+      "result": "17 passed in 0.15s"
+    },
+    {
+      "command": "conda run -n zcj_hello python -m pytest tests/2阶段测试/test_daily_summary_flow.py tests/2阶段测试/test_query_agent_react.py -q",
+      "result": "8 passed in 2.63s"
+    },
+    {
+      "command": "timeout 90s conda run -n zcj_hello python -m pytest tests/test_memory_service.py -q",
+      "result": "14 passed in 56.03s"
+    },
+    {
+      "command": "conda run -n zcj_hello python -m pytest tests/test_stage7_model_routing_and_clause_extraction.py tests/test_memory_extractor.py tests/test_memory_repository.py tests/test_memory_service.py tests/2阶段测试/test_daily_summary_flow.py tests/2阶段测试/test_query_agent_react.py tests/test_stage5_dispatch_performance.py::test_adaptive_worker_polls_and_handles_multiple_stream_groups tests/test_streams_outbox.py::test_multi_stream_read_recovers_only_missing_groups -q",
+      "result": "49 passed in 57.95s"
+    },
+    {
+      "command": "conda run -n zcj_hello python -m compileall -q core memory repositories apps runtime infrastructure scripts tests/test_stage7_model_routing_and_clause_extraction.py",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    },
+    {
+      "command": "conda run -n zcj_hello alembic heads",
+      "result": "20260723_0009 (head)"
+    }
+  ],
+  "limitations": [
+    "No live provider latency or token-cost benchmark was run in this slice.",
+    "Active Vector Coverage and Freshness p95 require migrated PostgreSQL/Redis workers and live embedding execution.",
+    "Strong escalation remains disabled by default and must be measured after enabling SUIXINJI_STRONG_ESCALATION_ENABLED."
+  ]
+}

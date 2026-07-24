@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from typing import Any
 
 from openai import OpenAI
 
+from core.model_router import route_model
+from core.observability import log_event
 from core.sensitive import safe_text_preview
 from core.config import (
     ChatConfig,
@@ -99,7 +102,14 @@ def extract_json_object(content: str) -> dict[str, Any]:
     return data
 
 
-def complete_json(system_prompt: str, user_prompt: str, *, model_role: str | None = None) -> dict[str, Any]:
+def complete_json(
+    system_prompt: str,
+    user_prompt: str,
+    *,
+    model_role: str | None = None,
+    llm_task: str | None = None,
+    route_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """调用 Chat Completions 并返回 JSON object。
 
     功能说明:
@@ -116,8 +126,10 @@ def complete_json(system_prompt: str, user_prompt: str, *, model_role: str | Non
     返回类型说明:
         dict[str, Any]: 从模型输出中解析出的 JSON object。
     """
-    config = get_chat_config(model_role)
+    route = route_model(task=llm_task, model_role=model_role, range_key=(route_context or {}).get("range_key"))
+    config = get_chat_config(route.role.value)
     client = build_openai_client(config)
+    start = time.perf_counter()
 
     try:
         response = client.chat.completions.create(
@@ -129,6 +141,21 @@ def complete_json(system_prompt: str, user_prompt: str, *, model_role: str | Non
             temperature=0,
         )
     except Exception as exc:
+        duration_ms = int((time.perf_counter() - start) * 1000)
+        log_event(
+            "llm.complete_json",
+            level="error",
+            status="failed",
+            duration_ms=duration_ms,
+            error=f"{type(exc).__name__}: {exc}",
+            extra={
+                "llm_task": route.task.value,
+                "model_role": route.role.value,
+                "model": config.model,
+                "route_reason": route.reason,
+                "fallback": False,
+            },
+        )
         preview = safe_text_preview(user_prompt)
         raise RuntimeError(
             "LLM chat completion failed; "
@@ -147,6 +174,22 @@ def complete_json(system_prompt: str, user_prompt: str, *, model_role: str | Non
             f"text_preview={preview!r}."
         )
 
+    usage = getattr(response, "usage", None)
+    log_event(
+        "llm.complete_json",
+        status="success",
+        duration_ms=int((time.perf_counter() - start) * 1000),
+        extra={
+            "llm_task": route.task.value,
+            "model_role": route.role.value,
+            "model": config.model,
+            "route_reason": route.reason,
+            "prompt_tokens": getattr(usage, "prompt_tokens", None),
+            "completion_tokens": getattr(usage, "completion_tokens", None),
+            "total_tokens": getattr(usage, "total_tokens", None),
+            "fallback": False,
+        },
+    )
     content = response.choices[0].message.content
 
     if content is None:

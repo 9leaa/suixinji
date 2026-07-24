@@ -85,7 +85,7 @@ def classify_text(text: str) -> NoteClassification:
     返回类型说明:
         NoteClassification: 包含标题、标签、主类型和摘要的分类结果。
     """
-    data = complete_json(system_prompt=SYSTEM_PROMPT, user_prompt=text)
+    data = complete_json(system_prompt=SYSTEM_PROMPT, user_prompt=text, llm_task="note_classification")
     data = normalize_classification_data(data)
     return NoteClassification.model_validate(data)
 
