@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import timedelta
 from datetime import date, datetime
 from typing import Any
 
@@ -18,8 +19,13 @@ from core.settings import (
     MEMORY_CONSOLIDATION_RUN_LEASE_SECONDS,
     MEMORY_HYBRID_RRF_K,
     MEMORY_HYBRID_VECTOR_ENABLED,
+    MEMORY_TRIGRAM_ENABLED,
+    MEMORY_UNIFIED_RERANK_ENABLED,
     MEMORY_QUERY_MIN_SCORE,
     MEMORY_RETRIEVAL_MODE,
+    MEMORY_VECTOR_LIFECYCLE_ENABLED,
+    MEMORY_VECTOR_MAX_ATTEMPTS,
+    MEMORY_VECTOR_RETRY_BASE_SECONDS,
 )
 from infrastructure.database import session_scope
 from infrastructure.schema import (
@@ -54,10 +60,104 @@ from memory.models import (
     normalize_content,
     utc_now_iso,
 )
+from memory.retrieval_models import MemoryRetrievalHit
+from memory.vector_lifecycle import (
+    EMBEDDING_VERSION,
+    current_embedding_contract,
+    memory_content_hash,
+    memory_embedding_text,
+)
 from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space, parse_datetime
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _schedule_memory_embedding(session: Any, row: Memory, *, force: bool = False) -> str | None:
+    """Mark a vector pending and enqueue one durable embedding task in-session."""
+    if not MEMORY_VECTOR_LIFECYCLE_ENABLED:
+        return None
+    model, dimension, version = current_embedding_contract()
+    content_hash = memory_content_hash(
+        memory_type=row.memory_type,
+        subject=row.subject,
+        predicate=row.predicate,
+        object_value=row.object_value,
+        content=row.content,
+        model=model,
+        dimension=dimension,
+        embedding_version=version,
+    )
+    existing = session.get(MemoryVector, row.id)
+    now = _dt(utc_now_iso())
+    if (
+        existing is not None
+        and not force
+        and existing.status == "ready"
+        and existing.content_hash == content_hash
+        and existing.model == model
+        and existing.dimension == dimension
+        and existing.embedding_version == version
+        and existing.embedding is not None
+    ):
+        return None
+    if existing is None:
+        existing = MemoryVector(
+            memory_id=row.id,
+            embedding=None,
+            model=model,
+            dimension=dimension,
+            content_hash=content_hash,
+            embedding_version=version,
+            status="pending",
+            attempt_count=0,
+            next_retry_at=None,
+            last_error=None,
+            created_at=now,
+            updated_at=now,
+        )
+        session.add(existing)
+    else:
+        existing.embedding = None
+        existing.model = model
+        existing.dimension = dimension
+        existing.content_hash = content_hash
+        existing.embedding_version = version
+        existing.status = "pending"
+        existing.attempt_count = 0
+        existing.next_retry_at = None
+        existing.last_error = None
+        existing.updated_at = now
+    session.flush()
+    from repositories.postgres.dispatch import _enqueue_task_in_session
+
+    task_id, _ = _enqueue_task_in_session(
+        session,
+        task_type="memory_embedding",
+        tenant_id=str(row.tenant_id),
+        space_id=str(row.space_id),
+        source_message_id=None,
+        idempotency_key=f"memory_embedding:{row.id}:{content_hash}",
+        payload={
+            "operation": "memory_embedding",
+            "memory_id": row.id,
+            "content_hash": content_hash,
+            "embedding_version": version,
+        },
+        priority=-1,
+        max_attempts=MEMORY_VECTOR_MAX_ATTEMPTS,
+        initial_status="queued",
+        publish=True,
+    )
+    return task_id
+
+
+def _schedule_memory_embedding_if_enabled(session: Any, row: Memory, *, force: bool = False) -> None:
+    try:
+        _schedule_memory_embedding(session, row, force=force)
+    except Exception:
+        LOGGER.exception("memory vector task scheduling failed memory_id=%s", row.id)
+        raise
 
 
 def _iso(value: Any) -> str | None:
@@ -272,6 +372,7 @@ def _insert_memory(
     session.flush()
     _add_source(session, row.id, source_note_id, source_relation, now=timestamp)
     _add_version(session, row, reason=candidate.effective_reason or "memory_created", source_note_id=source_note_id)
+    _schedule_memory_embedding_if_enabled(session, row)
     return row
 
 
@@ -291,7 +392,8 @@ def _versioned_update(
 ) -> None:
     if status is not None and status not in MEMORY_STATUSES:
         raise ValueError(f"invalid memory status: {status}")
-    if content is not None:
+    content_changed = content is not None
+    if content_changed:
         row.content = content
         row.normalized_content = normalize_content(content)
         row.memory_key = memory_key_for(
@@ -317,6 +419,8 @@ def _versioned_update(
     row.current_version += 1
     session.flush()
     _add_version(session, row, reason=reason, source_note_id=source_note_id)
+    if content_changed:
+        _schedule_memory_embedding_if_enabled(session, row)
 
 
 def _add_relation(session: Any, space_id: str, source_id: str, target_id: str, relation: str, decision_id: str | None, now: str) -> None:
@@ -475,6 +579,8 @@ def _base_memory_statement(
 
 
 def _text_document() -> Any:
+    if hasattr(Memory, "search_document"):
+        return Memory.search_document
     return func.to_tsvector(
         "simple",
         func.concat_ws(
@@ -502,36 +608,73 @@ def _query_terms(text: str, *, entities: list[str] | None = None) -> list[str]:
     return terms[:12]
 
 
-def _rrf_fuse(
-    ranked_lists: list[list[Memory]],
+def _rrf_hits(
+    channels: list[tuple[str, list[Memory]]],
     *,
     exact_key: str | None = None,
     subject: str | None = None,
     predicate: str | None = None,
     limit: int = 20,
-) -> list[Memory]:
+) -> list[MemoryRetrievalHit]:
     scores: dict[str, float] = {}
     rows: dict[str, Memory] = {}
+    ranks: dict[str, dict[str, int]] = {}
     rrf_k = max(1, int(MEMORY_HYBRID_RRF_K))
-    for ranked in ranked_lists:
+    for channel, ranked in channels:
         for rank, row in enumerate(ranked, start=1):
             rows[row.id] = row
+            ranks.setdefault(row.id, {})[channel] = rank
             scores[row.id] = scores.get(row.id, 0.0) + 1.0 / (rrf_k + rank)
+    hits: list[MemoryRetrievalHit] = []
     for memory_id, row in rows.items():
+        policy_score = 0.0
+        reasons = []
         if exact_key and row.memory_key == exact_key:
             scores[memory_id] += 0.08
+            policy_score += 0.08
+            reasons.append("exact_key_boost")
         if subject and row.subject and normalize_content(subject) == normalize_content(row.subject):
             scores[memory_id] += 0.03
+            policy_score += 0.03
+            reasons.append("subject_match")
         if predicate and row.predicate and normalize_content(predicate) == normalize_content(row.predicate):
             scores[memory_id] += 0.03
-    return [
-        row
-        for row in sorted(
-            rows.values(),
-            key=lambda item: (scores.get(item.id, 0.0), item.updated_at, item.id),
-            reverse=True,
-        )[: max(1, min(int(limit), 50))]
-    ]
+            policy_score += 0.03
+            reasons.append("predicate_match")
+        channel_ranks = ranks.get(memory_id, {})
+        hits.append(
+            MemoryRetrievalHit(
+                memory=_record(_NoSourceSession(), row, include_versions=False, sources=[]),
+                exact_rank=channel_ranks.get("exact"),
+                structured_rank=channel_ranks.get("structured"),
+                fts_rank=channel_ranks.get("fts"),
+                trigram_rank=channel_ranks.get("trigram"),
+                vector_rank=channel_ranks.get("vector"),
+                exact_score=1.0 / (rrf_k + channel_ranks["exact"]) if "exact" in channel_ranks else 0.0,
+                structured_score=1.0 / (rrf_k + channel_ranks["structured"]) if "structured" in channel_ranks else 0.0,
+                fts_score=1.0 / (rrf_k + channel_ranks["fts"]) if "fts" in channel_ranks else 0.0,
+                trigram_score=1.0 / (rrf_k + channel_ranks["trigram"]) if "trigram" in channel_ranks else 0.0,
+                vector_score=1.0 / (rrf_k + channel_ranks["vector"]) if "vector" in channel_ranks else 0.0,
+                rrf_score=scores.get(memory_id, 0.0) - policy_score,
+                policy_score=policy_score,
+                final_score=scores.get(memory_id, 0.0),
+                reasons=reasons + sorted(channel_ranks),
+            )
+        )
+    hits.sort(key=lambda hit: (hit.final_score, hit.memory.updated_at, hit.memory.id), reverse=True)
+    return hits[: max(1, min(int(limit), 50))]
+
+
+class _NoSourceSession:
+    def execute(self, *_args: Any, **_kwargs: Any) -> Any:
+        raise RuntimeError("sources unavailable in lightweight retrieval hit")
+
+
+def _rrf_fuse(*args: Any, **kwargs: Any) -> list[Memory]:
+    if args and args[0] and isinstance(args[0][0], list):
+        channels = [(f"channel_{index}", ranked) for index, ranked in enumerate(args[0])]
+        args = (channels, *args[1:])
+    return [hit.memory for hit in _rrf_hits(*args, **kwargs)]
 
 
 def _ready_vector_count(space_id: str, memory_type: str | None = None) -> int:
@@ -560,10 +703,182 @@ def _safe_embedding(space_id: str, text: str, *, memory_type: str | None = None)
             return None
         from core.llm_client import embed_text
 
-        return embed_text(text)
+        embedding = embed_text(text)
+        _, dimension, _ = current_embedding_contract()
+        return embedding if len(embedding) == dimension else None
     except Exception as exc:
         LOGGER.debug("memory hybrid vector retrieval disabled for request: %s", type(exc).__name__)
         return None
+
+
+def claim_memory_vector(memory_id: str, expected_hash: str | None = None) -> dict[str, Any] | None:
+    """Claim a pending vector only when it still matches the current Memory."""
+    if not MEMORY_VECTOR_LIFECYCLE_ENABLED:
+        return None
+    model, dimension, version = current_embedding_contract()
+    with session_scope() as session:
+        row = session.execute(
+            select(Memory).where(Memory.id == memory_id, Memory.status == "active").with_for_update()
+        ).scalar_one_or_none()
+        if row is None:
+            return None
+        content_hash = memory_content_hash(
+            memory_type=row.memory_type,
+            subject=row.subject,
+            predicate=row.predicate,
+            object_value=row.object_value,
+            content=row.content,
+            model=model,
+            dimension=dimension,
+            embedding_version=version,
+        )
+        if expected_hash and expected_hash != content_hash:
+            return None
+        vector = session.execute(
+            select(MemoryVector).where(MemoryVector.memory_id == memory_id).with_for_update()
+        ).scalar_one_or_none()
+        if vector is None:
+            vector = MemoryVector(
+                memory_id=memory_id,
+                embedding=None,
+                model=model,
+                dimension=dimension,
+                content_hash=content_hash,
+                embedding_version=version,
+                status="pending",
+                attempt_count=0,
+                next_retry_at=None,
+                last_error=None,
+                created_at=_dt(utc_now_iso()),
+                updated_at=_dt(utc_now_iso()),
+            )
+            session.add(vector)
+            session.flush()
+        if (
+            vector.status == "ready"
+            and vector.content_hash == content_hash
+            and vector.model == model
+            and vector.dimension == dimension
+            and vector.embedding_version == version
+            and vector.embedding is not None
+        ):
+            return None
+        if vector.status == "processing" and vector.content_hash == content_hash:
+            return None
+        vector.status = "processing"
+        vector.content_hash = content_hash
+        vector.model = model
+        vector.dimension = dimension
+        vector.embedding_version = version
+        vector.attempt_count = int(vector.attempt_count or 0) + 1
+        vector.next_retry_at = None
+        vector.last_error = None
+        vector.updated_at = _dt(utc_now_iso())
+        session.flush()
+        return {
+            "memory_id": memory_id,
+            "text": memory_embedding_text(
+                memory_type=row.memory_type,
+                subject=row.subject,
+                predicate=row.predicate,
+                object_value=row.object_value,
+                content=row.content,
+            ),
+            "content_hash": content_hash,
+            "model": model,
+            "dimension": dimension,
+            "embedding_version": version,
+            "attempt_count": int(vector.attempt_count),
+        }
+
+
+def complete_memory_vector(
+    memory_id: str,
+    *,
+    content_hash: str,
+    embedding: list[float],
+    model: str,
+    dimension: int,
+    embedding_version: str,
+) -> bool:
+    if len(embedding) != int(dimension):
+        raise ValueError(f"memory embedding dimension mismatch: expected {dimension}, got {len(embedding)}")
+    with session_scope() as session:
+        result = session.execute(
+            update(MemoryVector)
+            .where(
+                MemoryVector.memory_id == memory_id,
+                MemoryVector.status == "processing",
+                MemoryVector.content_hash == content_hash,
+            )
+            .values(
+                embedding=[float(value) for value in embedding],
+                model=model,
+                dimension=int(dimension),
+                embedding_version=embedding_version,
+                status="ready",
+                last_error=None,
+                next_retry_at=None,
+                updated_at=_dt(utc_now_iso()),
+            )
+            .returning(MemoryVector.memory_id)
+        ).scalar_one_or_none()
+        return result is not None
+
+
+def fail_memory_vector(memory_id: str, *, content_hash: str, error: str) -> bool:
+    with session_scope() as session:
+        row = session.execute(
+            select(MemoryVector)
+            .where(MemoryVector.memory_id == memory_id, MemoryVector.content_hash == content_hash)
+            .with_for_update()
+        ).scalar_one_or_none()
+        if row is None:
+            return False
+        delay = min(300.0, MEMORY_VECTOR_RETRY_BASE_SECONDS * (2 ** max(0, int(row.attempt_count or 1) - 1)))
+        row.status = "failed"
+        row.last_error = error[:2000]
+        row.next_retry_at = datetime.now().astimezone() + timedelta(seconds=delay)
+        row.updated_at = _dt(utc_now_iso())
+        return True
+
+
+def list_memory_vector_backfill_candidates(*, status: str = "active", limit: int = 10000) -> list[dict[str, Any]]:
+    model, dimension, version = current_embedding_contract()
+    with session_scope() as session:
+        rows = list(
+            session.execute(
+                select(Memory)
+                .where(Memory.status == status)
+                .order_by(Memory.updated_at, Memory.id)
+                .limit(max(1, min(int(limit), 100000)))
+            ).scalars()
+        )
+        result = []
+        for row in rows:
+            content_hash = memory_content_hash(
+                memory_type=row.memory_type,
+                subject=row.subject,
+                predicate=row.predicate,
+                object_value=row.object_value,
+                content=row.content,
+                model=model,
+                dimension=dimension,
+                embedding_version=version,
+            )
+            vector = session.get(MemoryVector, row.id)
+            if (
+                vector is not None
+                and vector.status == "ready"
+                and vector.content_hash == content_hash
+                and vector.model == model
+                and vector.dimension == dimension
+                and vector.embedding_version == version
+                and vector.embedding is not None
+            ):
+                continue
+            result.append({"memory_id": row.id, "space_id": row.space_id, "content_hash": content_hash})
+        return result
 
 
 def hybrid_adjudication_candidates(
@@ -582,11 +897,13 @@ def hybrid_adjudication_candidates(
     embedding = query_embedding or _safe_embedding(space_id, candidate.content, memory_type=memory_type)
     terms = _query_terms(candidate.content, entities=candidate.entities)
 
-    ranked_lists: list[list[Memory]] = []
+    channels: list[tuple[str, list[Memory]]] = []
+    _, embedding_dimension, embedding_version = current_embedding_contract()
     with session_scope() as session:
         base = _base_memory_statement(space_id, memory_type=memory_type)
         if candidate.effective_memory_key:
-            ranked_lists.append(
+            channels.append((
+                "exact",
                 list(
                     session.execute(
                         base.where(Memory.memory_key == candidate.effective_memory_key)
@@ -594,19 +911,22 @@ def hybrid_adjudication_candidates(
                         .limit(20)
                     ).scalars()
                 )
-            )
+            ))
 
         structured_filters = []
-        if candidate.subject:
-            structured_filters.append(func.lower(Memory.subject) == candidate.subject.casefold())
-        if candidate.predicate:
-            structured_filters.append(func.lower(Memory.predicate) == candidate.predicate.casefold())
+        if candidate.memory_type and candidate.predicate:
+            structured_filters.append((Memory.memory_type == candidate.memory_type) & (func.lower(Memory.predicate) == candidate.predicate.casefold()))
+        if candidate.subject and candidate.predicate:
+            structured_filters.append((func.lower(Memory.subject) == candidate.subject.casefold()) & (func.lower(Memory.predicate) == candidate.predicate.casefold()))
+        if candidate.predicate and candidate.object_value:
+            structured_filters.append((func.lower(Memory.predicate) == candidate.predicate.casefold()) & Memory.object_value.ilike(f"%{candidate.object_value[:120]}%"))
         if candidate.object_value:
             structured_filters.append(Memory.object_value.ilike(f"%{candidate.object_value[:120]}%"))
         for entity in candidate.entities[:5]:
-            structured_filters.append(Memory.content.ilike(f"%{str(entity)[:120]}%"))
+            structured_filters.append((Memory.memory_type == candidate.memory_type) & Memory.content.ilike(f"%{str(entity)[:120]}%"))
         if structured_filters:
-            ranked_lists.append(
+            channels.append((
+                "structured",
                 list(
                     session.execute(
                         base.where(or_(*structured_filters))
@@ -618,13 +938,14 @@ def hybrid_adjudication_candidates(
                         .limit(retrieval_limit)
                     ).scalars()
                 )
-            )
+            ))
 
         query_text = " ".join(terms) or candidate.content
         if query_text.strip():
             document = _text_document()
             tsquery = func.plainto_tsquery("simple", query_text[:500])
-            ranked_lists.append(
+            channels.append((
+                "fts",
                 list(
                     session.execute(
                         base.where(document.op("@@")(tsquery))
@@ -632,10 +953,11 @@ def hybrid_adjudication_candidates(
                         .limit(retrieval_limit)
                     ).scalars()
                 )
-            )
+            ))
             lexical_filters = [Memory.content.ilike(f"%{term[:120]}%") for term in terms[:8]]
             if lexical_filters:
-                ranked_lists.append(
+                channels.append((
+                    "structured",
                     list(
                         session.execute(
                             base.where(or_(*lexical_filters))
@@ -643,28 +965,55 @@ def hybrid_adjudication_candidates(
                             .limit(retrieval_limit)
                         ).scalars()
                     )
-                )
+                ))
+            if MEMORY_TRIGRAM_ENABLED:
+                trigram_filters = [Memory.content.op("%")(term[:120]) for term in terms[:8]]
+                trigram_filters.extend(Memory.object_value.op("%")(term[:120]) for term in terms[:8])
+                channels.append((
+                    "trigram",
+                    list(
+                        session.execute(
+                            base.where(or_(*trigram_filters))
+                            .order_by(
+                                func.greatest(
+                                    *[func.similarity(Memory.content, term[:120]) for term in terms[:8]],
+                                    *[func.similarity(func.coalesce(Memory.object_value, ""), term[:120]) for term in terms[:8]],
+                                ).desc(),
+                                Memory.updated_at.desc(),
+                            )
+                            .limit(retrieval_limit)
+                        ).scalars()
+                    ),
+                ))
 
-        if embedding and len(embedding) == 1024:
-            ranked_lists.append(
+        if embedding and len(embedding) == embedding_dimension:
+            model, dimension, version = current_embedding_contract()
+            channels.append((
+                "vector",
                 list(
                     session.execute(
                         base.join(MemoryVector, MemoryVector.memory_id == Memory.id)
-                        .where(MemoryVector.status == "ready", MemoryVector.embedding.is_not(None))
+                        .where(
+                            MemoryVector.status == "ready",
+                            MemoryVector.embedding.is_not(None),
+                            MemoryVector.model == model,
+                            MemoryVector.dimension == dimension,
+                            MemoryVector.embedding_version == version,
+                        )
                         .order_by(MemoryVector.embedding.cosine_distance(embedding), Memory.updated_at.desc())
                         .limit(retrieval_limit)
                     ).scalars()
                 )
-            )
+            ))
 
-        fused = _rrf_fuse(
-            ranked_lists,
+        hits = _rrf_hits(
+            channels,
             exact_key=candidate.effective_memory_key,
             subject=candidate.subject,
             predicate=candidate.predicate,
             limit=top,
         )
-        return _records(session, fused, include_sources=False)
+        return [hit.memory for hit in hits]
 
 
 def expire_due_memories(space_id: str | None = None, *, limit: int = 500, db_path: Any = None) -> int:
@@ -709,6 +1058,7 @@ def _candidate_record(row: MemoryCandidateRow) -> MemoryCandidate:
         valid_from=_iso(row.valid_from),
         valid_until=_iso(row.valid_until),
         evidence_span=row.evidence_span,
+        clause_index=row.clause_index,
         memory_key=row.memory_key,
         polarity=row.polarity,
         scope=dict(row.scope_json or {}),
@@ -755,6 +1105,7 @@ def save_memory_candidate(
             "confidence": float(candidate.confidence),
             "importance": float(candidate.importance),
             "evidence_span": candidate.evidence_span,
+            "clause_index": candidate.clause_index,
             "should_store": bool(candidate.should_store),
             "extractor_type": candidate.extractor_type,
             "extractor_version": candidate.extractor_version,
@@ -1416,7 +1767,8 @@ def hybrid_search_memories(
     retrieval_limit = max(30, min(120, top * 3))
     terms = _query_terms(query)
     embedding = query_embedding
-    ranked_lists: list[list[Memory]] = []
+    channels: list[tuple[str, list[Memory]]] = []
+    _, embedding_dimension, _ = current_embedding_contract()
     with session_scope() as session:
         base = _base_memory_statement(space_id, memory_type=memory_type, include_inactive=include_inactive)
         type_hints: list[str] = []
@@ -1427,7 +1779,8 @@ def hybrid_search_memories(
         if any(marker in query for marker in ("住哪", "住在", "哪里", "项目", "学习", "研究")):
             type_hints.append("semantic")
         if type_hints and memory_type is None:
-            ranked_lists.append(
+            channels.append((
+                "structured",
                 list(
                     session.execute(
                         base.where(Memory.memory_type.in_(type_hints))
@@ -1435,7 +1788,7 @@ def hybrid_search_memories(
                         .limit(retrieval_limit)
                     ).scalars()
                 )
-            )
+            ))
 
         structured_filters = [Memory.content.ilike(f"%{term[:120]}%") for term in terms[:8]]
         for term in terms[:8]:
@@ -1447,7 +1800,8 @@ def hybrid_search_memories(
                 ]
             )
         if structured_filters:
-            ranked_lists.append(
+            channels.append((
+                "structured",
                 list(
                     session.execute(
                         base.where(or_(*structured_filters))
@@ -1455,13 +1809,14 @@ def hybrid_search_memories(
                         .limit(retrieval_limit)
                     ).scalars()
                 )
-            )
+            ))
 
         query_text = " ".join(terms) or query
         if query_text.strip():
             document = _text_document()
             tsquery = func.plainto_tsquery("simple", query_text[:500])
-            ranked_lists.append(
+            channels.append((
+                "fts",
                 list(
                     session.execute(
                         base.where(document.op("@@")(tsquery))
@@ -1469,22 +1824,55 @@ def hybrid_search_memories(
                         .limit(retrieval_limit)
                     ).scalars()
                 )
-            )
+            ))
+            if MEMORY_TRIGRAM_ENABLED and terms:
+                trigram_filters = [Memory.content.op("%")(term[:120]) for term in terms[:8]]
+                trigram_filters.extend(Memory.object_value.op("%")(term[:120]) for term in terms[:8])
+                channels.append((
+                    "trigram",
+                    list(
+                        session.execute(
+                            base.where(or_(*trigram_filters))
+                            .order_by(
+                                func.greatest(
+                                    *[func.similarity(Memory.content, term[:120]) for term in terms[:8]],
+                                    *[func.similarity(func.coalesce(Memory.object_value, ""), term[:120]) for term in terms[:8]],
+                                ).desc(),
+                                Memory.updated_at.desc(),
+                            )
+                            .limit(retrieval_limit)
+                        ).scalars()
+                    ),
+                ))
 
-        if embedding and len(embedding) == 1024:
-            ranked_lists.append(
+        if embedding and len(embedding) == embedding_dimension:
+            model, dimension, version = current_embedding_contract()
+            channels.append((
+                "vector",
                 list(
                     session.execute(
                         base.join(MemoryVector, MemoryVector.memory_id == Memory.id)
-                        .where(MemoryVector.status == "ready", MemoryVector.embedding.is_not(None))
+                        .where(
+                            MemoryVector.status == "ready",
+                            MemoryVector.embedding.is_not(None),
+                            MemoryVector.model == model,
+                            MemoryVector.dimension == dimension,
+                            MemoryVector.embedding_version == version,
+                        )
                         .order_by(MemoryVector.embedding.cosine_distance(embedding), Memory.updated_at.desc())
                         .limit(retrieval_limit)
                     ).scalars()
                 )
-            )
+            ))
 
-        fused = _rrf_fuse(ranked_lists, limit=top)
-        return _records(session, fused, include_sources=True)
+        hits = _rrf_hits(channels, limit=top)
+        ids = [hit.memory.id for hit in hits]
+        if not ids:
+            return []
+        rows = list(session.execute(select(Memory).where(Memory.id.in_(ids))).scalars())
+        row_map = {row.id: row for row in rows}
+        ordered_rows = [row_map[memory_id] for memory_id in ids if memory_id in row_map]
+        return _records(session, ordered_rows, include_sources=True)
 
 
 def search_memories(
@@ -1499,7 +1887,7 @@ def search_memories(
     db_path: Any = None,
 ) -> list[tuple[MemoryRecord, float]]:
     from memory.retriever import score_memory
-    if MEMORY_RETRIEVAL_MODE != "hybrid":
+    if MEMORY_RETRIEVAL_MODE not in {"hybrid", "hybrid_v1", "hybrid_v2"}:
         candidates = list_memories(space_id, status=None if include_inactive else "active", memory_type=memory_type, limit=100, db_path=db_path)
     else:
         candidates = hybrid_search_memories(
@@ -1512,7 +1900,10 @@ def search_memories(
             db_path=db_path,
         )
     scored = sorted(((item, score_memory(query, item)) for item in candidates), key=lambda item: item[1], reverse=True)
-    limited = [(item, score) for item, score in scored if score >= min_score][: max(1, min(int(limit), 50))]
+    if MEMORY_RETRIEVAL_MODE == "hybrid_v2" or MEMORY_UNIFIED_RERANK_ENABLED:
+        limited = scored[: max(1, min(int(limit), 50))]
+    else:
+        limited = [(item, score) for item, score in scored if score >= min_score][: max(1, min(int(limit), 50))]
     if mark_access:
         mark_accessed([item.id for item, _ in limited])
     return limited

@@ -155,6 +155,7 @@ def _init_db(db_path: str | Path | None = None) -> None:
                 confidence REAL NOT NULL,
                 importance REAL NOT NULL,
                 evidence_span TEXT,
+                clause_index INTEGER,
                 should_store INTEGER NOT NULL DEFAULT 1,
                 extractor_type TEXT NOT NULL DEFAULT 'rules',
                 extractor_version TEXT NOT NULL DEFAULT 'memory-extractor-v1',
@@ -207,6 +208,13 @@ def _init_db(db_path: str | Path | None = None) -> None:
                 memory_id TEXT PRIMARY KEY,
                 embedding_json TEXT,
                 model TEXT,
+                dimension INTEGER,
+                content_hash TEXT,
+                embedding_version TEXT,
+                status TEXT NOT NULL DEFAULT 'ready',
+                attempt_count INTEGER NOT NULL DEFAULT 0,
+                next_retry_at TEXT,
+                last_error TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             );
@@ -324,6 +332,14 @@ def _init_db(db_path: str | Path | None = None) -> None:
         _ensure_column(conn, "memory_decisions", "target_snapshot_version", "INTEGER")
         _ensure_column(conn, "memory_decisions", "retry_of_decision_id", "TEXT")
         _ensure_column(conn, "memory_candidates", "task_status", "TEXT")
+        _ensure_column(conn, "memory_candidates", "clause_index", "INTEGER")
+        _ensure_column(conn, "memory_vectors", "dimension", "INTEGER")
+        _ensure_column(conn, "memory_vectors", "content_hash", "TEXT")
+        _ensure_column(conn, "memory_vectors", "embedding_version", "TEXT")
+        _ensure_column(conn, "memory_vectors", "status", "TEXT NOT NULL DEFAULT 'ready'")
+        _ensure_column(conn, "memory_vectors", "attempt_count", "INTEGER NOT NULL DEFAULT 0")
+        _ensure_column(conn, "memory_vectors", "next_retry_at", "TEXT")
+        _ensure_column(conn, "memory_vectors", "last_error", "TEXT")
 
 
 def _memory_from_row(row: sqlite3.Row, *, sources: list[MemorySource] | None = None, versions: list[MemoryVersion] | None = None) -> MemoryRecord:
@@ -386,6 +402,7 @@ def _candidate_from_row(row: sqlite3.Row) -> MemoryCandidate:
         valid_from=row["valid_from"],
         valid_until=row["valid_until"],
         evidence_span=row["evidence_span"],
+        clause_index=row["clause_index"] if "clause_index" in row.keys() else None,
         memory_key=row["memory_key"],
         polarity=row["polarity"],
         scope=scope if isinstance(scope, dict) else {},
@@ -422,9 +439,9 @@ def save_memory_candidate(
                         candidate_id, space_id, note_id, memory_type, content, normalized_content,
                         memory_key, subject, predicate, object_value, task_status, polarity,
                         scope_json, entities_json, valid_from, valid_until, confidence, importance,
-                        evidence_span, should_store, extractor_type, extractor_version, model,
+                        evidence_span, clause_index, should_store, extractor_type, extractor_version, model,
                         prompt_hash, status, attempt_count, last_error, decision_id, created_at, updated_at, applied_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
                     """,
                     (
                         candidate.candidate_id,
@@ -446,6 +463,7 @@ def save_memory_candidate(
                         float(candidate.confidence),
                         float(candidate.importance),
                         candidate.evidence_span,
+                        candidate.clause_index,
                         int(candidate.should_store),
                         candidate.extractor_type,
                         candidate.extractor_version,

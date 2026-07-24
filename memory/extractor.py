@@ -11,9 +11,10 @@ from typing import Any
 
 from core.llm_client import complete_json
 from core.config import get_chat_config
-from core.settings import MEMORY_EXTRACTOR_MODE
+from core import settings
 from memory.candidate_validator import contains_sensitive_data
-from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for, memory_key_for
+from memory.clause_splitter import split_clauses
+from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for, candidate_id_for_evidence, memory_key_for
 from memory.policies.preference import preference_polarity, preference_signature
 from memory.prompts import MEMORY_EXTRACTOR_PROMPT
 
@@ -21,6 +22,7 @@ LOGGER = logging.getLogger(__name__)
 EXTRACTOR_VERSION = "memory-extractor-v1"
 LLM_EXTRACTOR_VERSION = "memory-extractor-v1-llm"
 PROMPT_HASH = hashlib.sha256(MEMORY_EXTRACTOR_PROMPT.encode("utf-8")).hexdigest()[:16]
+MEMORY_EXTRACTOR_MODE = settings.MEMORY_EXTRACTOR_MODE
 
 LOW_VALUE_PATTERNS = {
     "你好",
@@ -35,6 +37,14 @@ LOW_VALUE_PATTERNS = {
     "今天天气不错",
 }
 LOW_CONFIDENCE_HINTS = ("可能", "也许", "大概", "好像", "猜一下")
+SHORT_FACT_PATTERNS = (
+    re.compile(r"^(?:我|本人|用户)是[^。！？!?；;，,]{1,40}$"),
+    re.compile(r"^(?:我|本人|用户)姓[^。！？!?；;，,]{1,12}$"),
+    re.compile(r"^(?:我|本人|用户)(?:来自|有|养了|会|不会)[^。！？!?；;，,]{1,40}$"),
+    re.compile(r"^(?:我|本人|用户)在[^。！？!?；;，,]{1,40}工作$"),
+    re.compile(r"^(?:我|本人|用户)的[^。！？!?；;，,]{1,30}是[^。！？!?；;，,]{1,40}$"),
+    re.compile(r"^[^。！？!?；;，,]{1,30}是(?:我|本人|用户)的[^。！？!?；;，,]{1,20}$"),
+)
 
 
 def _entities(text: str) -> list[str]:
@@ -142,6 +152,8 @@ def may_contain_memory(text: str, classification: dict[str, Any] | None = None) 
     )
     if any(marker in searchable for marker in markers):
         return True
+    if any(pattern.search(raw) for pattern in SHORT_FACT_PATTERNS):
+        return True
     return len(raw) >= 24
 
 
@@ -165,10 +177,18 @@ def _candidate(
     extractor_type: str = "rules",
     extractor_version: str = EXTRACTOR_VERSION,
     model: str | None = None,
+    clause_index: int | None = None,
 ) -> MemoryCandidate:
     if subject is None and predicate is None and object_value is None:
         subject, predicate, object_value = _structured_fields(memory_type, evidence_span or content, entities)
     polarity = preference_polarity(evidence_span or content) if memory_type == "preference" else None
+    resolved_memory_key = memory_key_for(
+        memory_type,
+        subject=subject,
+        predicate=predicate,
+        object_value=object_value,
+        content=content,
+    )
     return MemoryCandidate(
         memory_type=memory_type,
         content=content,
@@ -178,7 +198,18 @@ def _candidate(
         should_store=should_store,
         task_status=task_status,
         reason=reason,
-        candidate_id=candidate_id_for(note_id, memory_type, content),
+        candidate_id=(
+            candidate_id_for_evidence(
+                note_id,
+                memory_type,
+                content,
+                memory_key=resolved_memory_key,
+                evidence_span=evidence_span,
+                clause_index=clause_index,
+            )
+            if clause_index is not None
+            else candidate_id_for(note_id, memory_type, content)
+        ),
         note_id=note_id,
         subject=subject,
         predicate=predicate,
@@ -186,14 +217,9 @@ def _candidate(
         valid_from=valid_from,
         valid_until=valid_until,
         evidence_span=evidence_span,
+        clause_index=clause_index,
         extraction_reason=reason,
-        memory_key=memory_key_for(
-            memory_type,
-            subject=subject,
-            predicate=predicate,
-            object_value=object_value,
-            content=content,
-        ),
+        memory_key=resolved_memory_key,
         polarity=polarity,
         extractor_type=extractor_type,
         extractor_version=extractor_version,
@@ -206,6 +232,20 @@ def extract_rule_candidates(note_id: str, text: str, classification: dict[str, A
     """Extract candidates locally; this is also the model failure fallback."""
     del classification
     raw = str(text or "").strip()
+    if _should_skip_text(raw):
+        return []
+    if settings.MEMORY_CLAUSE_EXTRACTION_ENABLED:
+        return _dedupe(
+            candidate
+            for clause in split_clauses(raw)
+            for candidate in _extract_rule_candidates_for_clause(note_id, clause.text, clause.index)
+        )
+
+    return _extract_rule_candidates_for_clause(note_id, raw, None)
+
+
+def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: int | None) -> list[MemoryCandidate]:
+    raw = str(raw or "").strip()
     if _should_skip_text(raw):
         return []
 
@@ -241,6 +281,7 @@ def extract_rule_candidates(note_id: str, text: str, classification: dict[str, A
                 entities=entities,
                 reason="preference_marker",
                 evidence_span=raw,
+                clause_index=clause_index,
             )
         )
 
@@ -257,10 +298,13 @@ def extract_rule_candidates(note_id: str, text: str, classification: dict[str, A
                 task_status=_task_status(raw),
                 reason="task_marker",
                 evidence_span=raw,
+                clause_index=clause_index,
             )
         )
 
-    if any(marker in raw for marker in semantic_markers) or ("项目" in raw and not has_task_marker):
+    if any(marker in raw for marker in semantic_markers) or ("项目" in raw and not has_task_marker) or any(
+        pattern.search(raw) for pattern in SHORT_FACT_PATTERNS
+    ):
         candidates.append(
             _candidate(
                 note_id,
@@ -271,10 +315,13 @@ def extract_rule_candidates(note_id: str, text: str, classification: dict[str, A
                 entities=entities,
                 reason="semantic_marker",
                 evidence_span=raw,
+                clause_index=clause_index,
             )
         )
 
-    if len(raw) >= 12 and any(marker in raw for marker in ("今天", "昨天", "刚才", "完成了", "去了", "参加", "发布")):
+    if (len(raw) >= 12 or clause_index is not None) and any(
+        marker in raw for marker in ("今天", "昨天", "刚才", "完成了", "去了", "参加", "发布")
+    ):
         candidates.append(
             _candidate(
                 note_id,
@@ -285,6 +332,7 @@ def extract_rule_candidates(note_id: str, text: str, classification: dict[str, A
                 entities=entities,
                 reason="episodic_event",
                 evidence_span=raw,
+                clause_index=clause_index,
             )
         )
     return _dedupe(candidates)
@@ -316,7 +364,11 @@ def extract_llm_candidates(note_id: str, text: str, classification: dict[str, An
         "text": raw,
         "classification": classification or {},
     }
-    data = complete_json(system_prompt=MEMORY_EXTRACTOR_PROMPT, user_prompt=json.dumps(payload, ensure_ascii=False), model_role="fast")
+    data = complete_json(
+        system_prompt=MEMORY_EXTRACTOR_PROMPT,
+        user_prompt=json.dumps(payload, ensure_ascii=False),
+        llm_task="memory_extraction",
+    )
     rows = data.get("candidates") or []
     if not isinstance(rows, list):
         raise ValueError("memory extractor candidates must be a list")
@@ -354,6 +406,7 @@ def extract_llm_candidates(note_id: str, text: str, classification: dict[str, An
                 extractor_type="llm",
                 extractor_version=LLM_EXTRACTOR_VERSION,
                 model=get_chat_config("fast").model,
+                clause_index=int(row["clause_index"]) if str(row.get("clause_index") or "").isdigit() else None,
             )
         )
     return _dedupe(candidates)
@@ -361,9 +414,15 @@ def extract_llm_candidates(note_id: str, text: str, classification: dict[str, An
 
 def _dedupe(candidates: list[MemoryCandidate]) -> list[MemoryCandidate]:
     deduped: list[MemoryCandidate] = []
-    seen: set[tuple[str, str]] = set()
+    seen: set[tuple[Any, ...]] = set()
     for candidate in candidates:
-        key = (candidate.memory_type, candidate.normalized_content)
+        key = (
+            candidate.note_id,
+            candidate.clause_index,
+            candidate.memory_type,
+            candidate.effective_memory_key,
+            candidate.evidence_span or candidate.normalized_content,
+        )
         if key not in seen:
             deduped.append(candidate)
             seen.add(key)

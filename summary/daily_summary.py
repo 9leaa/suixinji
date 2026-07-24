@@ -264,13 +264,28 @@ def _summary_complete_json(
     name: str,
     system_prompt: str,
     user_prompt: str,
+    range_key: str,
 ) -> dict[str, Any]:
+    llm_task = "summary_review" if name == "summary_review" else "summary_draft"
+    def call() -> dict[str, Any]:
+        try:
+            return complete_json(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                llm_task=llm_task,
+                route_context={"range_key": range_key},
+            )
+        except TypeError as exc:
+            if "llm_task" not in str(exc) and "route_context" not in str(exc):
+                raise
+            return complete_json(system_prompt=system_prompt, user_prompt=user_prompt)
+
     if context is None:
-        return complete_json(system_prompt=system_prompt, user_prompt=user_prompt)
+        return call()
     return get_default_hook_manager().run_llm(
         context,
-        {"name": name, "system_prompt_len": len(system_prompt), "user_prompt": user_prompt},
-        lambda: complete_json(system_prompt=system_prompt, user_prompt=user_prompt),
+        {"name": name, "system_prompt_len": len(system_prompt), "user_prompt": user_prompt, "llm_task": llm_task},
+        call,
     )
 
 
@@ -299,6 +314,7 @@ def _generate_summary_impl(space_id: str, range_key: str, context: AgentRunConte
                 name="summary_draft",
                 system_prompt=SUMMARY_SYSTEM_PROMPT,
                 user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
+                range_key=range_key,
             ).get("summary_markdown", "")
 
             reviewed = _summary_complete_json(
@@ -310,6 +326,7 @@ def _generate_summary_impl(space_id: str, range_key: str, context: AgentRunConte
                     ensure_ascii=False,
                     indent=2,
                 ),
+                range_key=range_key,
             ).get("final_summary", "")
 
             markdown = str(reviewed or draft).strip() or _fallback_summary(range_label, notes, memories)

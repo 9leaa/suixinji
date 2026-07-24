@@ -55,6 +55,28 @@ def candidate_id_for(note_id: str, memory_type: str, content: str) -> str:
     return f"cand_{uuid.uuid5(uuid.NAMESPACE_URL, key).hex[:16]}"
 
 
+def candidate_id_for_evidence(
+    note_id: str,
+    memory_type: str,
+    content: str,
+    *,
+    memory_key: str | None = None,
+    evidence_span: str | None = None,
+    clause_index: int | None = None,
+) -> str:
+    """Return a stable id for clause-level candidate extraction."""
+    key = "\x1f".join(
+        [
+            str(note_id or ""),
+            str(clause_index if clause_index is not None else ""),
+            str(memory_type or ""),
+            str(memory_key or ""),
+            normalize_content(evidence_span or content),
+        ]
+    )
+    return f"cand_{uuid.uuid5(uuid.NAMESPACE_URL, key).hex[:16]}"
+
+
 def normalize_content(text: str) -> str:
     value = str(text or "").casefold()
     value = re.sub(r"[\s\W_]+", "", value, flags=re.UNICODE)
@@ -126,6 +148,7 @@ class MemoryCandidate:
     valid_from: str | None = None
     valid_until: str | None = None
     evidence_span: str | None = None
+    clause_index: int | None = None
     extraction_reason: str | None = None
     memory_key: str | None = None
     polarity: str | None = None

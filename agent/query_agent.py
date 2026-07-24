@@ -740,9 +740,18 @@ def _complete_json_with_hooks(
     system_prompt: str,
     user_prompt: str,
     model_role: str = "balanced",
+    llm_task: str | None = None,
 ) -> dict[str, Any]:
+    def call() -> dict[str, Any]:
+        try:
+            return complete_json(system_prompt=system_prompt, user_prompt=user_prompt, model_role=model_role, llm_task=llm_task)
+        except TypeError as exc:
+            if "llm_task" not in str(exc):
+                raise
+            return complete_json(system_prompt=system_prompt, user_prompt=user_prompt, model_role=model_role)
+
     if context is None:
-        return complete_json(system_prompt=system_prompt, user_prompt=user_prompt, model_role=model_role)
+        return call()
     request: dict[str, Any] = {
         "name": name,
         "system_prompt_len": len(system_prompt),
@@ -752,7 +761,7 @@ def _complete_json_with_hooks(
     return get_default_hook_manager().run_llm(
         context,
         request,
-        lambda: complete_json(system_prompt=system_prompt, user_prompt=user_prompt, model_role=model_role),
+        call,
     )
 
 
@@ -768,6 +777,7 @@ def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hoo
             name="query_synthesis",
             system_prompt=FINAL_SYSTEM_PROMPT,
             user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
+            llm_task="query_synthesis",
         )
     except Exception:
         return _fallback_answer(observations)
@@ -924,6 +934,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 )
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(memory_prefetch)})
 
+            react_llm_task = "query_complex_reasoning" if any(marker in question for marker in _COMPLEX_QUERY_MARKERS) or max_steps > 2 else "query_routing"
             for step in range(max_steps):
                 payload = {
                     "question": question,
@@ -937,6 +948,8 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                         name="query_react",
                         system_prompt=REACT_SYSTEM_PROMPT,
                         user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
+                        model_role="fast" if react_llm_task == "query_routing" else "strong",
+                        llm_task=react_llm_task,
                     )
                 except Exception as exc:
                     if not observations:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import os
 from decimal import Decimal
 from typing import Any
 
@@ -21,7 +22,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -250,6 +251,7 @@ class Memory(Base):
     last_accessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     access_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     current_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    search_document: Mapped[Any | None] = mapped_column(TSVECTOR)
     __table_args__ = (
         Index("ix_memories_space_status_type", "space_id", "status", "memory_type"),
         Index("ix_memories_space_key_status", "space_id", "memory_key", "status"),
@@ -280,6 +282,7 @@ class MemoryCandidateRow(Base):
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
     importance: Mapped[float] = mapped_column(Float, nullable=False)
     evidence_span: Mapped[str | None] = mapped_column(Text)
+    clause_index: Mapped[int | None] = mapped_column(Integer)
     should_store: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     extractor_type: Mapped[str] = mapped_column(String(32), nullable=False, default="rules")
     extractor_version: Mapped[str] = mapped_column(String(128), nullable=False, default="memory-extractor-v1")
@@ -327,12 +330,14 @@ class MemoryVersion(Base):
 class MemoryVector(Base):
     __tablename__ = "memory_vectors"
     memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), primary_key=True)
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(1024))
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(int(os.getenv("EMBEDDING_DIMENSION", "1024"))))
     model: Mapped[str | None] = mapped_column(String(255))
     dimension: Mapped[int | None] = mapped_column(Integer)
     content_hash: Mapped[str | None] = mapped_column(String(128))
     embedding_version: Mapped[str | None] = mapped_column(String(128))
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="ready", server_default="ready")
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

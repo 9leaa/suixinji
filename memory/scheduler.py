@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from core.file_lock import safe_space_id
-from memory.consolidator import generate_stable_semantic, merge_duplicate_episodic, process_unextracted_notes
+from memory.consolidator import generate_stable_semantic, merge_duplicate_episodic, process_unextracted_notes, run_monthly_semantic_consolidation
 from memory.expiry import run_expiry_once
 from memory.repository import (
     consolidation_period_key,
@@ -41,7 +41,7 @@ def run_memory_consolidation(space_id: str, cadence: str) -> dict[str, Any]:
     if cadence == "weekly":
         return merge_duplicate_episodic(space_id)
     if cadence == "monthly":
-        return generate_stable_semantic(space_id)
+        return run_monthly_semantic_consolidation(space_id)
     raise ValueError(f"unknown memory consolidation cadence: {cadence}")
 
 
