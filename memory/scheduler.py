@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from core.file_lock import safe_space_id
-from memory.consolidator import generate_stable_semantic, merge_duplicate_episodic, process_unextracted_notes, run_monthly_semantic_consolidation
+from memory.consolidator import merge_duplicate_episodic, process_unextracted_notes, run_monthly_semantic_consolidation
 from memory.expiry import run_expiry_once
 from memory.repository import (
     consolidation_period_key,

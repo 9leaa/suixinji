@@ -8,7 +8,6 @@ from typing import Any
 from agent.query_agent import answer_question
 from bot.feishu_bot import send_text
 from core.settings import FAKE_EXTERNALS
-from core.config import get_embedding_config
 from core.worker import enrich_note, process_record
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock

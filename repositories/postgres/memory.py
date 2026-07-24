@@ -62,7 +62,6 @@ from memory.models import (
 )
 from memory.retrieval_models import MemoryRetrievalHit
 from memory.vector_lifecycle import (
-    EMBEDDING_VERSION,
     current_embedding_contract,
     memory_content_hash,
     memory_embedding_text,
