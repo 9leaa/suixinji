@@ -28,7 +28,6 @@ from agent import query_agent
 from agent.query_planner import build_query_plan
 from core import llm_client
 from core.config import get_embedding_config
-from core.llm_client import embed_text
 from core.sensitive import mentions_sensitive_topic
 from eval.common import write_json
 from infrastructure.database import session_scope

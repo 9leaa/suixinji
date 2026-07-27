@@ -35,7 +35,7 @@ from repositories.postgres.memory import (
 )
 from repositories.postgres.notes import save_note
 from repositories.postgres.vectors import add_vector_item
-from sqlalchemy import delete, select
+from sqlalchemy import delete
 from storage.vector_store import VectorItem
 
 
