@@ -328,38 +328,37 @@ def _fuse_memory_results(groups: list[list[dict[str, Any]]], *, limit: int = 5) 
     return result
 
 
-def _source_lines(observations: list[dict[str, Any]], limit: int = 5) -> list[str]:
+def _source_lines(selected_evidence: Any, limit: int = 5) -> list[str]:
+    """Format only the evidence selected for the final answer."""
     lines: list[str] = []
     seen: set[str] = set()
-    for observation in observations:
-        result = observation.get("result")
-        items: list[dict[str, Any]] = []
-        if isinstance(result, list):
-            items.extend(item for item in result if isinstance(item, dict))
-        elif isinstance(result, dict):
-            items.append(result)
-            items.extend(item for item in result.get("related", []) if isinstance(item, dict))
-            items.extend(item for item in result.get("candidates", []) if isinstance(item, dict))
+    items: list[dict[str, Any]] = []
+    if isinstance(selected_evidence, list):
+        items.extend(item for item in selected_evidence if isinstance(item, dict))
+    elif isinstance(selected_evidence, dict):
+        items.append(selected_evidence)
+        items.extend(item for item in selected_evidence.get("related", []) if isinstance(item, dict))
+        items.extend(item for item in selected_evidence.get("candidates", []) if isinstance(item, dict))
 
-        for item in items:
-            item_id = str(item.get("id") or "")
-            if not item_id or item_id in seen:
-                continue
-            seen.add(item_id)
-            if item.get("memory_type"):
-                source_count = len(item.get("sources") or [])
-                lines.append(f"- memory:{item_id}｜{item.get('memory_type')}｜sources={source_count}")
-            else:
-                title = item.get("title") or item_id
-                time = item.get("time") or item.get("ts") or ""
-                lines.append(f"- note:{item_id}｜{title}｜{str(time)[:10]}")
-            if len(lines) >= limit:
-                return lines
+    for item in items:
+        item_id = str(item.get("id") or "")
+        if not item_id or item_id in seen:
+            continue
+        seen.add(item_id)
+        if item.get("memory_type"):
+            source_count = len(item.get("sources") or [])
+            lines.append(f"- memory:{item_id}｜{item.get('memory_type')}｜sources={source_count}")
+        else:
+            title = item.get("title") or item_id
+            time = item.get("time") or item.get("ts") or ""
+            lines.append(f"- note:{item_id}｜{title}｜{str(time)[:10]}")
+        if len(lines) >= limit:
+            return lines
     return lines
 
 
-def _with_sources(answer: str, observations: list[dict[str, Any]]) -> str:
-    sources = _source_lines(observations)
+def _with_sources(answer: str, selected_evidence: Any) -> str:
+    sources = _source_lines(selected_evidence)
     if not sources:
         return answer
     return answer.rstrip() + "\n\n来源：\n" + "\n".join(sources)
@@ -956,6 +955,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
             return answer
 
         observations: list[dict[str, Any]] = []
+        selected_evidence: Any = None
         query_plan = build_query_plan(question)
         add_step(
             trace,
@@ -1041,7 +1041,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 # question appear to have lost that message.
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(provisional)})
                 add_step(trace, "rerank", output_summary={"strategy": "local_lexical_recency", "ids": _result_ids(provisional)})
-                answer = _with_sources(_provisional_answer(provisional), observations)
+                answer = _with_sources(_provisional_answer(provisional), provisional)
                 _log_final_answer(space_id, answer, source="provisional_read_after_write", observations=observations)
                 add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="no_llm_wait")
                 add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
@@ -1097,7 +1097,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     )
                     result = fallback_result
                 if not result and barrier is not None and barrier.get("status") == "timeout":
-                    answer = _with_sources(_memory_still_updating_answer(provisional), observations)
+                    answer = _with_sources(_memory_still_updating_answer(provisional), selected_evidence)
                     _log_final_answer(space_id, answer, source="memory_barrier_timeout", observations=observations)
                     add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="memory_barrier_timeout")
                     add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
@@ -1105,6 +1105,8 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     return answer
                 if not result and provisional:
                     result = provisional
+                if result:
+                    selected_evidence = result
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
                 add_step(trace, "rerank", output_summary={"strategy": "fast_path_tool_order", "ids": _result_ids(result)})
                 if fast_route["synthesize"] and result:
@@ -1113,7 +1115,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 else:
                     answer = _fallback_answer(observations)
                     reason = "fast_path_deterministic_answer"
-                answer = _with_sources(answer, observations)
+                answer = _with_sources(answer, selected_evidence)
                 _log_final_answer(space_id, answer, source=reason, observations=observations)
                 add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason=reason)
                 add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
@@ -1208,6 +1210,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 reason="bounded_variant_execution",
             )
             if memory_prefetch:
+                selected_evidence = memory_prefetch
                 observations.append(
                     {
                         "thought": "先召回最新 active 长期记忆。",
@@ -1238,7 +1241,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 except Exception as exc:
                     if not observations:
                         raise
-                    answer = _with_sources(_fallback_answer(observations), observations)
+                    answer = _with_sources(_fallback_answer(observations), selected_evidence)
                     _log_final_answer(space_id, answer, source="react_fallback_after_error", observations=observations)
                     add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="react_fallback_after_error")
                     add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
@@ -1258,7 +1261,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     update = decision.get("session_update")
                     hook_context.metadata["session_update"] = update if isinstance(update, dict) else {}
                 if final_answer and observations:
-                    answer = _with_sources(final_answer, observations)
+                    answer = _with_sources(final_answer, selected_evidence)
                     _log_final_answer(space_id, answer, source="react_final", observations=observations)
                     add_step(trace, "answer_generated", output_summary={"answer_len": len(final_answer)}, reason="react_final")
                     add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
@@ -1296,10 +1299,12 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                         "result": result,
                     }
                 )
+                if result:
+                    selected_evidence = result
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
                 add_step(trace, "rerank", output_summary={"strategy": "tool_order", "ids": _result_ids(result)})
 
-            answer = _with_sources(_synthesize_answer(question, observations, hook_context=hook_context), observations)
+            answer = _with_sources(_synthesize_answer(question, observations, hook_context=hook_context), selected_evidence)
             _log_final_answer(space_id, answer, source="synthesized", observations=observations)
             add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="synthesized")
             add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})

@@ -1,7 +1,86 @@
 import json
 
 from agent import query_agent
+from agent.query_planner import QueryPlan
 from memory.trace import latest_trace
+
+
+def test_sources_render_only_final_selected_evidence():
+    selected = [
+        {
+            "id": "mem-garden",
+            "memory_type": "episodic",
+            "content": "今天逛了植物园。",
+            "sources": [{"note_id": "note-garden"}],
+        },
+        {
+            "id": "mem-agent-resume",
+            "memory_type": "task",
+            "content": "修改 Agent 简历。",
+            "sources": [{"note_id": "note-resume"}],
+        },
+    ]
+    answer = query_agent._with_sources("已找到相关记录。", selected)
+
+    assert answer.split("来源：\n", 1)[1].splitlines() == [
+        "- memory:mem-garden｜episodic｜sources=1",
+        "- memory:mem-agent-resume｜task｜sources=1",
+    ]
+
+
+def test_complex_query_sources_follow_fused_final_evidence(monkeypatch):
+    question = "我喜欢喝什么，我找什么工作，什么时候去的植物园？"
+    preferences = [
+        {
+            "id": f"mem-preference-{index}",
+            "memory_type": "preference",
+            "content": f"偏好 {index}",
+            "sources": [],
+        }
+        for index in range(5)
+    ]
+    selected = [
+        {
+            "id": "mem-garden",
+            "memory_type": "episodic",
+            "content": "今天逛了植物园。",
+            "sources": [{"note_id": "note-garden"}],
+        },
+        {
+            "id": "mem-agent-resume",
+            "memory_type": "task",
+            "content": "修改 Agent 简历。",
+            "sources": [{"note_id": "note-resume"}],
+        },
+    ]
+    plan = QueryPlan(
+        complexity="complex",
+        rewritten_query=question,
+        retrieval_queries=("植物园和 Agent 简历",),
+        use_query_rewrite=False,
+        use_decomposition=True,
+        use_step_back=False,
+        routing_state="complex",
+    )
+
+    monkeypatch.setattr(query_agent, "provisional_search", lambda *args, **kwargs: [])
+    monkeypatch.setattr(query_agent, "_intent_route", lambda *args, **kwargs: None)
+    monkeypatch.setattr(query_agent, "_deterministic_route", lambda *args, **kwargs: None)
+    monkeypatch.setattr(query_agent, "build_query_plan", lambda *args, **kwargs: plan)
+    monkeypatch.setattr(query_agent.settings, "QUERY_DECOMPOSITION_ENABLED", True)
+    monkeypatch.setattr(query_agent, "_fuse_memory_results", lambda *args, **kwargs: selected)
+    monkeypatch.setattr(
+        query_agent,
+        "_run_tool",
+        lambda space_id, action, args, **kwargs: preferences if args["query"] == question else selected,
+    )
+    monkeypatch.setattr(query_agent, "_complete_json_with_hooks", lambda *args, **kwargs: {"final_answer": "已找到三类信息。"})
+
+    answer = query_agent.answer_question("space-1", question, max_steps=1)
+
+    assert "memory:mem-garden｜episodic｜sources=1" in answer
+    assert "memory:mem-agent-resume｜task｜sources=1" in answer
+    assert "mem-preference-0" not in answer
 
 
 def test_answer_question_writes_query_trace_with_safe_steps(monkeypatch):
