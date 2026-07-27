@@ -6,12 +6,19 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
+import re
+
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database import session_scope
-from infrastructure.schema import Note, NoteRelation, NoteTag
+from infrastructure.schema import Note, NoteEmbedding, NoteRelation, NoteTag
 from core.sensitive import contains_sensitive_data
+from core.settings import (
+    NOTE_HYBRID_RRF_K,
+    NOTE_TRIGRAM_ENABLED,
+    RETRIEVAL_WEIGHTED_RRF_ENABLED,
+)
 from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space, parse_datetime
 
 
@@ -175,6 +182,220 @@ def list_provisional_notes(space_id: str, *, limit: int = 200) -> list[dict[str,
         enrichment_statuses=("provisional", "enriching", "failed"),
         limit=limit,
     )
+
+
+_NOTE_QUERY_FILLERS = (
+    "请问", "帮我", "告诉我", "查一下", "看一下", "什么", "哪个", "哪些",
+    "是否", "有没有", "相关内容", "相关记录", "刚才", "上次",
+)
+
+
+def _note_query_terms(text: str) -> list[str]:
+    """Create bounded sparse hints that work for both Latin and CJK text."""
+    value = " ".join(str(text or "").split()).strip().casefold()
+    for filler in _NOTE_QUERY_FILLERS:
+        value = value.replace(filler, " ")
+    terms: list[str] = []
+
+    def add(token: str) -> None:
+        token = str(token or "").strip()
+        if len(token) >= 2 and token not in terms:
+            terms.append(token)
+
+    for run in re.findall(r"[a-z0-9][a-z0-9+#._-]*|[\u3400-\u9fff]+", value):
+        add(run)
+        if re.fullmatch(r"[\u3400-\u9fff]+", run):
+            for width in (4, 3, 2):
+                if len(run) < width:
+                    continue
+                for start in range(len(run) - width + 1):
+                    add(run[start : start + width])
+    compact = re.sub(r"\s+", "", value)
+    add(compact)
+    return terms[:18]
+
+
+def _weighted_note_rrf(
+    channels: list[tuple[str, list[Note]]],
+    *,
+    limit: int,
+) -> list[tuple[Note, float, list[str]]]:
+    weights = {
+        "exact": 1.55,
+        "fts": 1.00,
+        "lexical": 0.85,
+        "trigram": 0.60,
+        "vector": 0.95,
+    }
+    rrf_k = max(1, int(NOTE_HYBRID_RRF_K))
+    rows: dict[str, Note] = {}
+    scores: dict[str, float] = {}
+    channels_by_id: dict[str, list[str]] = {}
+    for channel, ranked in channels:
+        weight = weights.get(channel, 1.0) if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0
+        for rank, row in enumerate(ranked, start=1):
+            rows[row.id] = row
+            scores[row.id] = scores.get(row.id, 0.0) + weight / (rrf_k + rank)
+            channels_by_id.setdefault(row.id, []).append(channel)
+    ordered = sorted(
+        rows.values(),
+        key=lambda row: (scores.get(row.id, 0.0), row.created_at, row.id),
+        reverse=True,
+    )
+    return [
+        (row, scores.get(row.id, 0.0), channels_by_id.get(row.id, []))
+        for row in ordered[: max(1, min(int(limit), 50))]
+    ]
+
+
+def hybrid_search_notes(
+    space_id: str,
+    query: str,
+    *,
+    query_embedding: list[float] | None = None,
+    limit: int = 8,
+) -> list[dict[str, Any]]:
+    """Hybrid evidence-layer retrieval: exact/sparse/dense -> weighted RRF.
+
+    The function is intentionally read-only and excludes sensitive notes at
+    the SQL boundary and again before returning.  A missing vector channel is
+    normal during embedding backfill; sparse channels remain sufficient.
+    """
+    cleaned = " ".join(str(query or "").split()).strip()
+    if not cleaned:
+        return []
+    bounded_limit = max(1, min(int(limit), 30))
+    retrieval_limit = max(20, min(100, bounded_limit * 4))
+    document = func.concat_ws(" ", Note.title, Note.summary, Note.text)
+    terms = _note_query_terms(cleaned)
+    channels: list[tuple[str, list[Note]]] = []
+    base = select(Note).where(Note.space_id == space_id, Note.sensitivity == "normal")
+
+    with session_scope() as session:
+        exact = list(
+            session.execute(
+                base.where(document.ilike(f"%{cleaned[:120]}%"))
+                .order_by(Note.created_at.desc(), Note.id.desc())
+                .limit(retrieval_limit)
+            ).scalars()
+        )
+        if exact:
+            channels.append(("exact", exact))
+
+        # FTS is useful for whitespace/tokenized text (especially English).
+        # For CJK it may be empty, so the bounded lexical channel below is
+        # always allowed to complement it.
+        fts_query = " ".join(terms) or cleaned
+        tsquery = func.websearch_to_tsquery("simple", fts_query[:500])
+        fts = list(
+            session.execute(
+                base.where(func.to_tsvector("simple", document).op("@@")(tsquery))
+                .order_by(
+                    func.ts_rank_cd(func.to_tsvector("simple", document), tsquery).desc(),
+                    Note.created_at.desc(),
+                )
+                .limit(retrieval_limit)
+            ).scalars()
+        )
+        if fts:
+            channels.append(("fts", fts))
+
+        if terms:
+            conditions = [document.ilike(f"%{term[:80]}%") for term in terms]
+            lexical = list(
+                session.execute(
+                    base.where(or_(*conditions))
+                    .order_by(Note.created_at.desc(), Note.id.desc())
+                    .limit(retrieval_limit)
+                ).scalars()
+            )
+            if lexical:
+                channels.append(("lexical", lexical))
+
+            if NOTE_TRIGRAM_ENABLED:
+                trigram_conditions = [Note.text.op("%") (term[:120]) for term in terms[:8]]
+                trigram = list(
+                    session.execute(
+                        base.where(or_(*trigram_conditions))
+                        .order_by(Note.created_at.desc(), Note.id.desc())
+                        .limit(retrieval_limit)
+                    ).scalars()
+                )
+                if trigram:
+                    channels.append(("trigram", trigram))
+
+        if query_embedding and len(query_embedding) == 1024:
+            distance = NoteEmbedding.embedding.cosine_distance(query_embedding)
+            vector = list(
+                session.execute(
+                    base.join(NoteEmbedding, NoteEmbedding.note_id == Note.id)
+                    .where(NoteEmbedding.dimensions == len(query_embedding))
+                    .order_by(distance, Note.created_at.desc())
+                    .limit(retrieval_limit)
+                ).scalars()
+            )
+            if vector:
+                channels.append(("vector", vector))
+
+        ranked = _weighted_note_rrf(channels, limit=bounded_limit * 2)
+        note_ids = [row.id for row, _score, _channels in ranked]
+        tags_by_id, related = _load_parts(session, note_ids)
+        output: list[dict[str, Any]] = []
+        for row, score, retrieval_channels in ranked:
+            if contains_sensitive_data(row.text):
+                continue
+            note = _as_note(row, tags_by_id[row.id], related[row.id])
+            note["score"] = round(float(score), 6)
+            note["retrieval_channels"] = retrieval_channels
+            output.append(note)
+        return output[:bounded_limit]
+
+
+def search_notes_memory_fallback(space_id: str, query: str, *, limit: int = 8) -> list[dict[str, Any]]:
+    """Bounded normal-note fallback for a fresh memory-oriented query.
+
+    PostgreSQL full-text search is attempted first for whitespace-tokenized
+    text, followed by a CJK-friendly lexical match.  This function is read
+    only and deliberately excludes sensitive notes.
+    """
+    cleaned = " ".join(str(query or "").split()).strip()
+    if not cleaned:
+        return []
+    bounded_limit = max(1, min(int(limit), 20))
+    document = func.concat_ws(" ", Note.title, Note.summary, Note.text)
+    tsquery = func.websearch_to_tsquery("simple", cleaned)
+    fts_condition = func.to_tsvector("simple", document).op("@@")(tsquery)
+    with session_scope() as session:
+        rows = list(
+            session.execute(
+                select(Note)
+                .where(Note.space_id == space_id, Note.sensitivity == "normal", fts_condition)
+                .order_by(Note.created_at.desc(), Note.id.desc())
+                .limit(bounded_limit * 3)
+            ).scalars()
+        )
+        if not rows:
+            # The simple dictionary does not segment Chinese.  Keep a small,
+            # deterministic lexical fallback rather than relying on an
+            # optional extension or emitting an empty result immediately.
+            fragments = [cleaned]
+            fragments.extend(part for part in cleaned.split() if len(part) >= 2)
+            conditions = [document.ilike(f"%{fragment[:80]}%") for fragment in dict.fromkeys(fragments) if fragment]
+            if conditions:
+                rows = list(
+                    session.execute(
+                        select(Note)
+                        .where(Note.space_id == space_id, Note.sensitivity == "normal", or_(*conditions))
+                        .order_by(Note.created_at.desc(), Note.id.desc())
+                        .limit(bounded_limit * 3)
+                    ).scalars()
+                )
+        tags_by_id, related = _load_parts(session, [row.id for row in rows])
+        return [
+            _as_note(row, tags_by_id[row.id], related[row.id])
+            for row in rows
+            if not contains_sensitive_data(row.text)
+        ][:bounded_limit]
 
 
 def get_note_relations(space_id: str, note_id: str, *, limit: int = 5) -> dict[str, Any] | None:

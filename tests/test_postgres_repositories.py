@@ -143,6 +143,33 @@ def test_postgres_memory_summary_and_delivery_contract(pg_space):
     assert tasks.get_task(task_id)["status"] == "running"
 
 
+def test_postgres_memory_search_tolerates_omitted_chinese_connectives(pg_space):
+    """Retrieval should not require an exact Chinese character sequence."""
+    created = memory.insert_memory(
+        pg_space,
+        MemoryCandidate(
+            "task",
+            "完成记忆验收 Zeta 的测试报告",
+            0.8,
+            0.9,
+            task_status="done",
+            subject="用户",
+            predicate="记忆验收Zeta的测试报告",
+            object_value="记忆验收Zeta的测试报告",
+        ),
+        source_note_id="note-zeta",
+    )
+
+    results = memory.search_memories(
+        pg_space,
+        "记忆验收Zeta测试报告",
+        memory_type="task",
+        min_score=0.1,
+    )
+
+    assert [record.id for record, _score in results] == [created.id]
+
+
 def test_postgres_memory_candidate_lifecycle(pg_space):
     candidate = MemoryCandidate(
         "preference",

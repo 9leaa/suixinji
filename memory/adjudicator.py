@@ -5,12 +5,14 @@ from __future__ import annotations
 import hashlib
 import re
 
+from core import settings
 from core.settings import MEMORY_AUTO_MUTATION_MIN_CONFIDENCE
 from memory.candidate_retriever import candidate_similarity
 from memory.models import MemoryCandidate, MemoryDecision, MemoryRecord
 from memory.policies import preference as preference_policy
 from memory.policies import semantic as semantic_policy
 from memory.policies import task as task_policy
+from memory.relation_guard import evaluate_relation, is_v3_candidate
 
 
 DESTRUCTIVE_ACTIONS = {"merge", "update_task", "supersede", "conflict"}
@@ -130,12 +132,48 @@ def _semantic_conflict(candidate: MemoryCandidate, memory: MemoryRecord) -> bool
     return candidate_negative != memory_negative
 
 
+def _adjudicate_v3(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> MemoryDecision:
+    """Use retrieval only to find targets; the guard owns mutation authority."""
+    exact = [memory for memory in memories if candidate.effective_memory_key == memory.effective_memory_key]
+    if not exact:
+        # Exact identity is the default.  The guard also permits one narrow
+        # exception: an active short task name may be refined by a later,
+        # strictly more specific suffix (for example “做简历” -> “做 Agent
+        # 开发简历”).  Retrieval merely supplies candidates; the local guard
+        # remains the authority that permits the mutation.
+        refinements = [
+            memory
+            for memory in memories
+            if (guarded := evaluate_relation(candidate, memory)).approved and guarded.action == "update_task"
+        ]
+        if not refinements:
+            return _decision(candidate, "new", "insert", max(0.8, candidate.confidence), "v3_no_exact_canonical_identity")
+        best = max(refinements, key=lambda memory: (candidate_similarity(candidate, memory), memory.updated_at, memory.current_version))
+        guarded = evaluate_relation(candidate, best)
+        confidence = _combined_confidence(candidate, max(0.82, candidate_similarity(candidate, best)))
+        return _decision(candidate, guarded.relation, guarded.action, confidence, guarded.reason, [best])
+
+    best = max(exact, key=lambda memory: (memory.updated_at, memory.current_version))
+    guarded = evaluate_relation(candidate, best)
+    similarity = candidate_similarity(candidate, best)
+    if guarded.action == "update_task":
+        confidence = _combined_confidence(candidate, max(0.82, similarity))
+    elif guarded.action in {"supersede", "pending_review"}:
+        confidence = _combined_confidence(candidate, max(0.8, similarity))
+    else:
+        confidence = max(candidate.confidence, 0.92 if guarded.action == "add_source" else 0.8)
+    return _decision(candidate, guarded.relation, guarded.action, confidence, guarded.reason, [best])
+
+
 def adjudicate_memory(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> MemoryDecision:
     """Return an explainable decision; this function never writes to storage."""
     if not candidate.should_store:
         return _decision(candidate, "new", "discard", candidate.confidence, candidate.effective_reason or "candidate_should_not_store")
     if not memories:
         return _decision(candidate, "new", "insert", max(0.8, candidate.confidence), "no_related_active_memory")
+
+    if settings.MEMORY_RELATION_GUARD_V3_ENABLED and is_v3_candidate(candidate):
+        return _adjudicate_v3(candidate, memories)
 
     keyed_memories = [memory for memory in memories if candidate.effective_memory_key == memory.effective_memory_key]
     if candidate.memory_type == "preference" and not keyed_memories:

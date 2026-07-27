@@ -330,6 +330,84 @@ def _advance_watermarks_in_session(session: Any, space: Space) -> None:
     _activate_ready_tasks_in_session(session, space)
 
 
+def skip_inbox_record(
+    inbox_id: str,
+    *,
+    final_status: str,
+    cancel_root_task: bool = False,
+) -> bool:
+    """Finalize a redacted or invalid ingress record without running workers.
+
+    Ordered ingestion assigns every inbound message a sequence number.  A
+    message that is deliberately skipped must still finish both watermarks;
+    otherwise every later task waits forever for an event that will never be
+    dispatched.  This function performs that completion atomically and is
+    idempotent for recovery jobs.
+    """
+    with session_scope() as session:
+        inbox = session.execute(select(InboxMessage).where(InboxMessage.id == inbox_id).with_for_update()).scalar_one_or_none()
+        if inbox is None:
+            return False
+        space = session.execute(select(Space).where(Space.id == inbox.space_id).with_for_update()).scalar_one()
+        now = datetime.now().astimezone()
+        inbox.status = final_status
+        inbox.note_status = "completed"
+        inbox.memory_status = "completed"
+        inbox.note_completed_at = now
+        inbox.memory_completed_at = now
+        if cancel_root_task:
+            session.execute(
+                text(
+                    "UPDATE tasks SET status = 'cancelled', completed_at = :now, last_error = :reason "
+                    "WHERE source_message_id = :message_id AND task_type = 'ingest' "
+                    "AND status IN ('blocked', 'queued', 'retry')"
+                ),
+                {"now": now, "reason": final_status, "message_id": inbox.source_message_id},
+            )
+        _advance_watermarks_in_session(session, space)
+        return True
+
+
+def complete_blocked_sensitive_inbox(inbox_id: str) -> bool:
+    """Advance ordering after a sensitive message was safely redacted."""
+    return skip_inbox_record(inbox_id, final_status="blocked_sensitive")
+
+
+def recover_skipped_ingress(*, limit: int = 500) -> dict[str, int]:
+    """Recover legacy redacted messages and old unknown slash-command ingests."""
+    with session_scope() as session:
+        sensitive_ids = list(
+            session.execute(
+                select(InboxMessage.id)
+                .where(
+                    InboxMessage.status == "blocked_sensitive",
+                    ~InboxMessage.note_status.in_(["completed", "failed"]),
+                )
+                .order_by(InboxMessage.received_at)
+                .limit(max(1, min(int(limit), 5000)))
+            ).scalars()
+        )
+        unknown_command_ids = list(
+            session.execute(
+                select(InboxMessage.id)
+                .join(Task, Task.source_message_id == InboxMessage.source_message_id)
+                .where(
+                    InboxMessage.status == "pending",
+                    InboxMessage.text.startswith("/"),
+                    Task.task_type == "ingest",
+                    Task.status.in_(("blocked", "queued", "retry")),
+                )
+                .order_by(InboxMessage.received_at)
+                .limit(max(1, min(int(limit), 5000)))
+            ).scalars()
+        )
+    for inbox_id in sensitive_ids:
+        complete_blocked_sensitive_inbox(str(inbox_id))
+    for inbox_id in unknown_command_ids:
+        skip_inbox_record(str(inbox_id), final_status="skipped_command", cancel_root_task=True)
+    return {"sensitive": len(sensitive_ids), "unknown_commands": len(unknown_command_ids)}
+
+
 def complete_inbox_stage_in_session(
     session: Any,
     inbox_id: str,

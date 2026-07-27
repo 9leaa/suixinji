@@ -97,6 +97,9 @@ def test_feishu_ingress_blocks_secret_before_command_or_wal_raw_text(monkeypatch
     monkeypatch.setattr(feishu_bot, "safe_send_text", lambda chat_id, text: replies.append(text) or True)
     monkeypatch.setattr(feishu_bot, "log_event", lambda *args, **kwargs: None)
     monkeypatch.setattr(feishu_bot, "get_task_executor", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("must not queue command")))
+    monkeypatch.setattr(feishu_bot, "TASK_QUEUE_BACKEND", "redis_streams")
+    completed = []
+    monkeypatch.setattr(feishu_bot, "complete_blocked_sensitive_inbox", lambda inbox_id: completed.append(inbox_id) or True)
 
     feishu_bot.handle_text_message(data)
 
@@ -104,3 +107,4 @@ def test_feishu_ingress_blocks_secret_before_command_or_wal_raw_text(monkeypatch
     assert records[0].text == "[敏感内容已拦截，原文未保存]"
     assert "Abcd1234" not in records[0].text
     assert "未发送给模型" in replies[0]
+    assert completed == [records[0].id]

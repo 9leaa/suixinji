@@ -105,3 +105,15 @@ def test_local_duplicate_ingest_event_is_silent(monkeypatch) -> None:
 
     assert sent == []
     assert any(action == "feishu.message.duplicate" for action, _kwargs in events)
+
+
+def test_unknown_slash_command_is_not_persisted_as_an_ingest(monkeypatch) -> None:
+    sent: list[str] = []
+    monkeypatch.setattr(feishu_bot, "TASK_QUEUE_BACKEND", "redis_streams")
+    monkeypatch.setattr(feishu_bot, "safe_send_text", lambda _chat_id, text: sent.append(text) or True)
+    monkeypatch.setattr(feishu_bot, "log_event", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(feishu_bot, "receive", lambda _command: (_ for _ in ()).throw(AssertionError("must not enqueue unknown command")))
+
+    feishu_bot.handle_text_message(_message_event("/statu", "unknown-command"))
+
+    assert sent and "未识别的命令" in sent[-1]

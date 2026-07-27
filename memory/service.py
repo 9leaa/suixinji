@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict, is_dataclass, replace
 from datetime import date
 from typing import Any
@@ -14,6 +15,7 @@ from memory.consolidator import consolidate_candidate
 from memory.candidate_validator import contains_sensitive_data, validate_candidates
 from memory.extractor import extract_candidates, may_contain_memory
 from memory.models import candidate_id_for
+from memory.shadow import build_shadow_report
 from memory.repository import (
     approve_pending_memory,
     correct_memory,
@@ -40,7 +42,11 @@ from memory.repository import (
     stats,
 )
 from memory.scheduler import run_memory_consolidation_once
+from memory.task_state import infer_task_status
 from memory.trace import add_step, find_traces_by_memory, finish_trace, get_trace, latest_trace, start_trace
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _note_value(note: Any, key: str, default: Any = None) -> Any:
@@ -137,6 +143,14 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
             output_summary={"note_id": note_id, "attempt_count": state.attempt_count},
         )
         extracted_candidates = extract_candidates(note_id, text, classification=classification)
+        shadow_report = build_shadow_report(extracted_candidates)
+        if shadow_report is not None:
+            add_step(
+                trace,
+                "v3_shadow_evaluated",
+                output_summary=shadow_report,
+                reason="read_only_canonical_identity_projection",
+            )
         enriched_candidates = [
             replace(
                 candidate,
@@ -434,7 +448,7 @@ def format_memory_purge(memory_id: str) -> str:
     return f"已彻底删除记忆：{memory_id}"
 
 
-def format_memory_correct(memory_id: str, content: str) -> str:
+def format_memory_correct(memory_id: str, content: str, task_status: str | None = None) -> str:
     existing = get_memory(memory_id)
     if existing is None:
         return f"没有找到记忆：{memory_id}"
@@ -454,14 +468,20 @@ def format_memory_correct(memory_id: str, content: str) -> str:
         )
         finish_trace(trace, status="rejected")
         return "修正内容为空或包含敏感凭据，未写入长期记忆。"
-    memory = correct_memory(memory_id, content)
+    try:
+        memory = correct_memory(memory_id, content, task_status=task_status)
+    except ValueError as exc:
+        add_step(trace, "memory_control_rejected", status="rejected", output_summary={"memory_id": memory_id, "action": "correct"}, reason=str(exc))
+        finish_trace(trace, status="rejected")
+        return f"记忆修正被拒绝：{exc}"
     if memory is None:
         add_step(trace, "memory_control_failed", status="failed", output_summary={"memory_id": memory_id, "action": "correct"})
         finish_trace(trace, status="failed")
         return f"没有找到记忆：{memory_id}"
     add_step(trace, "memory_corrected", output_summary={"memory_id": memory_id, "version": memory.current_version})
     finish_trace(trace)
-    return f"已修正记忆：{memory_id}\n{memory.content}"
+    status_line = f"\n任务状态：{memory.task_status}" if memory.memory_type == "task" else ""
+    return f"已修正记忆：{memory_id}{status_line}\n{memory.content}"
 
 
 def format_memory_conflicts(space_id: str) -> str:
@@ -539,6 +559,19 @@ def format_memory_profile(space_id: str) -> str:
     memories = list_memories(space_id, status="active", limit=100)
     if not memories:
         return "还没有足够的长期记忆生成用户画像。"
+    mismatches = []
+    for memory in memories:
+        if memory.memory_type != "task" or not memory.task_status:
+            continue
+        inferred_status = infer_task_status(memory.content)
+        if inferred_status and inferred_status != memory.task_status:
+            mismatches.append((memory.id, memory.task_status, inferred_status))
+    if mismatches:
+        LOGGER.warning(
+            "profile_task_state_mismatch space_id=%s memories=%s",
+            space_id,
+            [{"memory_id": memory_id, "stored": stored, "inferred": inferred} for memory_id, stored, inferred in mismatches],
+        )
     sections = [
         ("当前任务", [memory for memory in memories if memory.memory_type == "task" and memory.task_status not in {"done", "cancelled"}]),
         ("偏好与约束", [memory for memory in memories if memory.memory_type == "preference"]),

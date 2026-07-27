@@ -66,6 +66,7 @@ def evolve_memory(
         "target_memory_id": result.get("target_memory_id"),
         "action": result.get("action"),
         "relation": decision.relation,
+        "archived_duplicate_ids": result.get("archived_duplicate_ids"),
     }
     add_step(
         trace,

@@ -99,6 +99,31 @@ def preference_polarity(text: str) -> str:
     return "unknown"
 
 
+def preference_query_polarity(text: str) -> str:
+    """Return polarity only when a retrieval query makes an assertion.
+
+    Interrogative wording such as ``我喜欢咖啡吗`` contains a positive marker,
+    but it is asking which polarity is true. Treating that marker as evidence
+    used to suppress the actually relevant negative preference before ranking.
+    The write-side ``preference_polarity`` intentionally remains unchanged.
+    """
+    value = " ".join(str(text or "").split()).strip()
+    normalized = value.casefold()
+    informational_preference = (
+        any(marker in value for marker in ("偏好", "习惯"))
+        and any(marker in value for marker in ("对应", "是什么", "怎么", "如何", "记录", "查", "找", "最近", "关于"))
+    )
+    interrogative = (
+        "?" in value
+        or "？" in value
+        or informational_preference
+        or bool(re.search(r"(?:我|用户)?(?:是否|是不是|有没有)", value))
+        or bool(re.search(r"(?:哪种|哪个|什么偏好|偏好是什么|习惯是什么|吗|么|嘛|呢)$", value.rstrip("。！!")))
+        or normalized.startswith(("是否", "是不是", "do i ", "did i ", "what ", "which "))
+    )
+    return "unknown" if interrogative else preference_polarity(value)
+
+
 def _extract_scopes(text: str) -> tuple[str, ...]:
     found: list[str] = []
     for scope in _FIXED_SCOPES:

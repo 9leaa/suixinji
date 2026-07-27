@@ -11,6 +11,7 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    Computed,
     DateTime,
     Float,
     ForeignKey,
@@ -251,7 +252,17 @@ class Memory(Base):
     last_accessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     access_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     current_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
-    search_document: Mapped[Any | None] = mapped_column(TSVECTOR)
+    search_document: Mapped[Any | None] = mapped_column(
+        TSVECTOR,
+        Computed(
+            "to_tsvector('simple', "
+            "coalesce(content, '') || ' ' || "
+            "coalesce(subject, '') || ' ' || "
+            "coalesce(predicate, '') || ' ' || "
+            "coalesce(object_value, ''))",
+            persisted=True,
+        ),
+    )
     __table_args__ = (
         Index("ix_memories_space_status_type", "space_id", "status", "memory_type"),
         Index("ix_memories_space_key_status", "space_id", "memory_key", "status"),

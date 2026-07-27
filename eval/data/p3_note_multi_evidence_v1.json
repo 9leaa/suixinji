@@ -1,0 +1,4768 @@
+{
+  "version": "p3-note-multi-evidence-v1",
+  "group_count": 50,
+  "note_count": 200,
+  "case_count": 200,
+  "groups": [
+    {
+      "group_id": "P3-001",
+      "domain": "软件项目",
+      "topic": "版本灰度发布",
+      "alias": "版本灰度发布"
+    },
+    {
+      "group_id": "P3-002",
+      "domain": "软件项目",
+      "topic": "数据库备份演练",
+      "alias": "数据库备份演练"
+    },
+    {
+      "group_id": "P3-003",
+      "domain": "软件项目",
+      "topic": "接口兼容升级",
+      "alias": "接口兼容升级"
+    },
+    {
+      "group_id": "P3-004",
+      "domain": "软件项目",
+      "topic": "日志告警收敛",
+      "alias": "日志告警收敛"
+    },
+    {
+      "group_id": "P3-005",
+      "domain": "软件项目",
+      "topic": "账号权限审计",
+      "alias": "账号权限审计"
+    },
+    {
+      "group_id": "P3-006",
+      "domain": "工作协作",
+      "topic": "客户试用回访",
+      "alias": "客户试用回访"
+    },
+    {
+      "group_id": "P3-007",
+      "domain": "工作协作",
+      "topic": "季度目标复盘",
+      "alias": "季度目标复盘"
+    },
+    {
+      "group_id": "P3-008",
+      "domain": "工作协作",
+      "topic": "合同续签跟进",
+      "alias": "合同续签跟进"
+    },
+    {
+      "group_id": "P3-009",
+      "domain": "工作协作",
+      "topic": "供应商交付跟踪",
+      "alias": "供应商交付回访"
+    },
+    {
+      "group_id": "P3-010",
+      "domain": "工作协作",
+      "topic": "新人培训安排",
+      "alias": "新人培训计划"
+    },
+    {
+      "group_id": "P3-011",
+      "domain": "财务行政",
+      "topic": "年度预算编制",
+      "alias": "年度预算编制"
+    },
+    {
+      "group_id": "P3-012",
+      "domain": "财务行政",
+      "topic": "报销流程优化",
+      "alias": "报销流程优化"
+    },
+    {
+      "group_id": "P3-013",
+      "domain": "财务行政",
+      "topic": "付款节点核对",
+      "alias": "付款节点核对"
+    },
+    {
+      "group_id": "P3-014",
+      "domain": "财务行政",
+      "topic": "资料归档迁移",
+      "alias": "资料归档迁移"
+    },
+    {
+      "group_id": "P3-015",
+      "domain": "财务行政",
+      "topic": "保险续期办理",
+      "alias": "保险续期办理"
+    },
+    {
+      "group_id": "P3-016",
+      "domain": "出行活动",
+      "topic": "机场接送安排",
+      "alias": "机场接送计划"
+    },
+    {
+      "group_id": "P3-017",
+      "domain": "出行活动",
+      "topic": "展会展位筹备",
+      "alias": "展会展位准备"
+    },
+    {
+      "group_id": "P3-018",
+      "domain": "出行活动",
+      "topic": "城市短途行程",
+      "alias": "城市短途行程"
+    },
+    {
+      "group_id": "P3-019",
+      "domain": "出行活动",
+      "topic": "家庭假期计划",
+      "alias": "家庭假期计划"
+    },
+    {
+      "group_id": "P3-020",
+      "domain": "出行活动",
+      "topic": "车站换乘方案",
+      "alias": "车站换乘方案"
+    },
+    {
+      "group_id": "P3-021",
+      "domain": "家庭生活",
+      "topic": "厨房收纳调整",
+      "alias": "厨房收纳调整"
+    },
+    {
+      "group_id": "P3-022",
+      "domain": "家庭生活",
+      "topic": "家庭网络修复",
+      "alias": "家庭网络修复"
+    },
+    {
+      "group_id": "P3-023",
+      "domain": "家庭生活",
+      "topic": "宠物接种安排",
+      "alias": "宠物接种计划"
+    },
+    {
+      "group_id": "P3-024",
+      "domain": "家庭生活",
+      "topic": "阳台植物换位",
+      "alias": "阳台植物换位"
+    },
+    {
+      "group_id": "P3-025",
+      "domain": "家庭生活",
+      "topic": "药箱清点计划",
+      "alias": "药箱清点计划"
+    },
+    {
+      "group_id": "P3-026",
+      "domain": "个人学习",
+      "topic": "课程作业复盘",
+      "alias": "课程作业复盘"
+    },
+    {
+      "group_id": "P3-027",
+      "domain": "个人学习",
+      "topic": "证书材料准备",
+      "alias": "证书材料准备"
+    },
+    {
+      "group_id": "P3-028",
+      "domain": "个人学习",
+      "topic": "长文资料整理",
+      "alias": "长文资料整理"
+    },
+    {
+      "group_id": "P3-029",
+      "domain": "个人学习",
+      "topic": "语言练习计划",
+      "alias": "语言练习计划"
+    },
+    {
+      "group_id": "P3-030",
+      "domain": "个人学习",
+      "topic": "乐器保养安排",
+      "alias": "乐器保养计划"
+    },
+    {
+      "group_id": "P3-031",
+      "domain": "健康习惯",
+      "topic": "年度体检预约",
+      "alias": "年度体检预约"
+    },
+    {
+      "group_id": "P3-032",
+      "domain": "健康习惯",
+      "topic": "晚间拉伸计划",
+      "alias": "晚间拉伸计划"
+    },
+    {
+      "group_id": "P3-033",
+      "domain": "健康习惯",
+      "topic": "饮水习惯调整",
+      "alias": "饮水习惯调整"
+    },
+    {
+      "group_id": "P3-034",
+      "domain": "健康习惯",
+      "topic": "久坐提醒实验",
+      "alias": "久坐提醒实验"
+    },
+    {
+      "group_id": "P3-035",
+      "domain": "健康习惯",
+      "topic": "睡眠环境改善",
+      "alias": "睡眠环境改善"
+    },
+    {
+      "group_id": "P3-036",
+      "domain": "活动组织",
+      "topic": "生日聚餐筹备",
+      "alias": "生日聚餐准备"
+    },
+    {
+      "group_id": "P3-037",
+      "domain": "活动组织",
+      "topic": "社群活动报名",
+      "alias": "社群活动报名"
+    },
+    {
+      "group_id": "P3-038",
+      "domain": "活动组织",
+      "topic": "讲座物料准备",
+      "alias": "讲座物料准备"
+    },
+    {
+      "group_id": "P3-039",
+      "domain": "活动组织",
+      "topic": "志愿者排班安排",
+      "alias": "志愿者排班计划"
+    },
+    {
+      "group_id": "P3-040",
+      "domain": "活动组织",
+      "topic": "亲友聚会安排",
+      "alias": "亲友聚会计划"
+    },
+    {
+      "group_id": "P3-041",
+      "domain": "家居采购",
+      "topic": "床垫更换计划",
+      "alias": "床垫更换计划"
+    },
+    {
+      "group_id": "P3-042",
+      "domain": "家居采购",
+      "topic": "净水器滤芯采购",
+      "alias": "净水器滤芯采购"
+    },
+    {
+      "group_id": "P3-043",
+      "domain": "家居采购",
+      "topic": "窗帘遮光改造",
+      "alias": "窗帘遮光改造"
+    },
+    {
+      "group_id": "P3-044",
+      "domain": "家居采购",
+      "topic": "书桌走线整理",
+      "alias": "书桌走线整理"
+    },
+    {
+      "group_id": "P3-045",
+      "domain": "家居采购",
+      "topic": "家电保修续期",
+      "alias": "家电保修续期"
+    },
+    {
+      "group_id": "P3-046",
+      "domain": "休闲城市",
+      "topic": "周末展览选择",
+      "alias": "周末展览选择"
+    },
+    {
+      "group_id": "P3-047",
+      "domain": "休闲城市",
+      "topic": "公园散步路线",
+      "alias": "公园散步路线"
+    },
+    {
+      "group_id": "P3-048",
+      "domain": "休闲城市",
+      "topic": "夜骑照明准备",
+      "alias": "夜骑照明准备"
+    },
+    {
+      "group_id": "P3-049",
+      "domain": "休闲城市",
+      "topic": "桌游聚会安排",
+      "alias": "桌游聚会计划"
+    },
+    {
+      "group_id": "P3-050",
+      "domain": "休闲城市",
+      "topic": "手作材料采购",
+      "alias": "手作材料采购"
+    }
+  ],
+  "notes": [
+    {
+      "id": "n_P3-001_plan",
+      "title": "版本灰度发布执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "版本灰度发布：plan",
+      "text": "版本灰度发布的plan记录。安排在周三进行，先准备备份和回滚方案，避免影响现有工作。"
+    },
+    {
+      "id": "n_P3-001_risk",
+      "title": "版本灰度发布风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "版本灰度发布：risk",
+      "text": "版本灰度发布的risk记录。目前卡点在外部确认，若周五前没有回复就启用备用安排。"
+    },
+    {
+      "id": "n_P3-001_result",
+      "title": "版本灰度发布实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "版本灰度发布：result",
+      "text": "版本灰度发布的result记录。结果显示主方案可行，剩余问题集中在交接和后续维护。"
+    },
+    {
+      "id": "n_P3-001_background",
+      "title": "版本灰度发布背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "版本灰度发布：background",
+      "text": "版本灰度发布的background记录。这是早期参考资料，后续决策应以最新结果记录为准。"
+    },
+    {
+      "id": "n_P3-002_plan",
+      "title": "数据库备份演练执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "数据库备份演练：plan",
+      "text": "数据库备份演练的plan记录。负责人已经确认，下一步补齐材料并在截止日前发出通知。"
+    },
+    {
+      "id": "n_P3-002_risk",
+      "title": "数据库备份演练风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "数据库备份演练：risk",
+      "text": "数据库备份演练的risk记录。需要关注权限、隐私和版本差异，不能只看表面是否完成。"
+    },
+    {
+      "id": "n_P3-002_result",
+      "title": "数据库备份演练实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "数据库备份演练：result",
+      "text": "数据库备份演练的result记录。复盘后确认目标基本达成，下一次需要提前准备备用材料。"
+    },
+    {
+      "id": "n_P3-002_background",
+      "title": "数据库备份演练背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "数据库备份演练：background",
+      "text": "数据库备份演练的background记录。该条内容用于补充上下文，不能单独作为完成依据。"
+    },
+    {
+      "id": "n_P3-003_plan",
+      "title": "接口兼容升级执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "接口兼容升级：plan",
+      "text": "接口兼容升级的plan记录。按照两批执行，第一批完成后观察半天再推进第二批。"
+    },
+    {
+      "id": "n_P3-003_risk",
+      "title": "接口兼容升级风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "接口兼容升级：risk",
+      "text": "接口兼容升级的risk记录。如果临时变更没有留下记录，后续很难判断责任和影响。"
+    },
+    {
+      "id": "n_P3-003_result",
+      "title": "接口兼容升级实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "接口兼容升级：result",
+      "text": "接口兼容升级的result记录。最终结果已归档，仍有一个小问题等待外部确认。"
+    },
+    {
+      "id": "n_P3-003_background",
+      "title": "接口兼容升级背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "接口兼容升级：background",
+      "text": "接口兼容升级的background记录。这里记录了相关概念，和具体执行安排不是同一件事。"
+    },
+    {
+      "id": "n_P3-004_plan",
+      "title": "日志告警收敛执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "日志告警收敛：plan",
+      "text": "日志告警收敛的plan记录。本周先完成准备工作，下周再根据实际反馈调整。"
+    },
+    {
+      "id": "n_P3-004_risk",
+      "title": "日志告警收敛风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "日志告警收敛：risk",
+      "text": "日志告警收敛的risk记录。同类事项容易混淆，记录时必须写清范围和负责人。"
+    },
+    {
+      "id": "n_P3-004_result",
+      "title": "日志告警收敛实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "日志告警收敛：result",
+      "text": "日志告警收敛的result记录。实际执行与计划有偏差，已经补充原因和下一步安排。"
+    },
+    {
+      "id": "n_P3-004_background",
+      "title": "日志告警收敛背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "日志告警收敛：background",
+      "text": "日志告警收敛的background记录。这是同领域的参考信息，查询当前进度时不应优先返回。"
+    },
+    {
+      "id": "n_P3-005_plan",
+      "title": "账号权限审计执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "账号权限审计：plan",
+      "text": "账号权限审计的plan记录。先列出时间、负责人和验收条件，完成后在清单中打勾。"
+    },
+    {
+      "id": "n_P3-005_risk",
+      "title": "账号权限审计风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "账号权限审计：risk",
+      "text": "账号权限审计的risk记录。主要风险是时间不足和信息遗漏，需要保留一份可回退方案。"
+    },
+    {
+      "id": "n_P3-005_result",
+      "title": "账号权限审计实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "账号权限审计：result",
+      "text": "账号权限审计的result记录。已经完成第一轮，实际耗时比预估多半天，但没有影响关键节点。"
+    },
+    {
+      "id": "n_P3-005_background",
+      "title": "账号权限审计背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "软件项目",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "账号权限审计：background",
+      "text": "账号权限审计的background记录。这条记录只保存背景和相关联系人，不代表当前任务状态。"
+    },
+    {
+      "id": "n_P3-006_plan",
+      "title": "客户试用回访执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "客户试用回访：plan",
+      "text": "客户试用回访的plan记录。安排在周三进行，先准备备份和回滚方案，避免影响现有工作。"
+    },
+    {
+      "id": "n_P3-006_risk",
+      "title": "客户试用回访风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "客户试用回访：risk",
+      "text": "客户试用回访的risk记录。目前卡点在外部确认，若周五前没有回复就启用备用安排。"
+    },
+    {
+      "id": "n_P3-006_result",
+      "title": "客户试用回访实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "客户试用回访：result",
+      "text": "客户试用回访的result记录。结果显示主方案可行，剩余问题集中在交接和后续维护。"
+    },
+    {
+      "id": "n_P3-006_background",
+      "title": "客户试用回访背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "客户试用回访：background",
+      "text": "客户试用回访的background记录。这是早期参考资料，后续决策应以最新结果记录为准。"
+    },
+    {
+      "id": "n_P3-007_plan",
+      "title": "季度目标复盘执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "季度目标复盘：plan",
+      "text": "季度目标复盘的plan记录。负责人已经确认，下一步补齐材料并在截止日前发出通知。"
+    },
+    {
+      "id": "n_P3-007_risk",
+      "title": "季度目标复盘风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "季度目标复盘：risk",
+      "text": "季度目标复盘的risk记录。需要关注权限、隐私和版本差异，不能只看表面是否完成。"
+    },
+    {
+      "id": "n_P3-007_result",
+      "title": "季度目标复盘实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "季度目标复盘：result",
+      "text": "季度目标复盘的result记录。复盘后确认目标基本达成，下一次需要提前准备备用材料。"
+    },
+    {
+      "id": "n_P3-007_background",
+      "title": "季度目标复盘背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "季度目标复盘：background",
+      "text": "季度目标复盘的background记录。该条内容用于补充上下文，不能单独作为完成依据。"
+    },
+    {
+      "id": "n_P3-008_plan",
+      "title": "合同续签跟进执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "合同续签跟进：plan",
+      "text": "合同续签跟进的plan记录。按照两批执行，第一批完成后观察半天再推进第二批。"
+    },
+    {
+      "id": "n_P3-008_risk",
+      "title": "合同续签跟进风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "合同续签跟进：risk",
+      "text": "合同续签跟进的risk记录。如果临时变更没有留下记录，后续很难判断责任和影响。"
+    },
+    {
+      "id": "n_P3-008_result",
+      "title": "合同续签跟进实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "合同续签跟进：result",
+      "text": "合同续签跟进的result记录。最终结果已归档，仍有一个小问题等待外部确认。"
+    },
+    {
+      "id": "n_P3-008_background",
+      "title": "合同续签跟进背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "合同续签跟进：background",
+      "text": "合同续签跟进的background记录。这里记录了相关概念，和具体执行安排不是同一件事。"
+    },
+    {
+      "id": "n_P3-009_plan",
+      "title": "供应商交付跟踪执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "供应商交付跟踪：plan",
+      "text": "供应商交付跟踪的plan记录。本周先完成准备工作，下周再根据实际反馈调整。"
+    },
+    {
+      "id": "n_P3-009_risk",
+      "title": "供应商交付跟踪风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "供应商交付跟踪：risk",
+      "text": "供应商交付跟踪的risk记录。同类事项容易混淆，记录时必须写清范围和负责人。"
+    },
+    {
+      "id": "n_P3-009_result",
+      "title": "供应商交付跟踪实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "供应商交付跟踪：result",
+      "text": "供应商交付跟踪的result记录。实际执行与计划有偏差，已经补充原因和下一步安排。"
+    },
+    {
+      "id": "n_P3-009_background",
+      "title": "供应商交付跟踪背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "供应商交付跟踪：background",
+      "text": "供应商交付跟踪的background记录。这是同领域的参考信息，查询当前进度时不应优先返回。"
+    },
+    {
+      "id": "n_P3-010_plan",
+      "title": "新人培训安排执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "新人培训安排：plan",
+      "text": "新人培训安排的plan记录。先列出时间、负责人和验收条件，完成后在清单中打勾。"
+    },
+    {
+      "id": "n_P3-010_risk",
+      "title": "新人培训安排风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "新人培训安排：risk",
+      "text": "新人培训安排的risk记录。主要风险是时间不足和信息遗漏，需要保留一份可回退方案。"
+    },
+    {
+      "id": "n_P3-010_result",
+      "title": "新人培训安排实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "新人培训安排：result",
+      "text": "新人培训安排的result记录。已经完成第一轮，实际耗时比预估多半天，但没有影响关键节点。"
+    },
+    {
+      "id": "n_P3-010_background",
+      "title": "新人培训安排背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "工作协作",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "新人培训安排：background",
+      "text": "新人培训安排的background记录。这条记录只保存背景和相关联系人，不代表当前任务状态。"
+    },
+    {
+      "id": "n_P3-011_plan",
+      "title": "年度预算编制执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "年度预算编制：plan",
+      "text": "年度预算编制的plan记录。安排在周三进行，先准备备份和回滚方案，避免影响现有工作。"
+    },
+    {
+      "id": "n_P3-011_risk",
+      "title": "年度预算编制风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "年度预算编制：risk",
+      "text": "年度预算编制的risk记录。目前卡点在外部确认，若周五前没有回复就启用备用安排。"
+    },
+    {
+      "id": "n_P3-011_result",
+      "title": "年度预算编制实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "年度预算编制：result",
+      "text": "年度预算编制的result记录。结果显示主方案可行，剩余问题集中在交接和后续维护。"
+    },
+    {
+      "id": "n_P3-011_background",
+      "title": "年度预算编制背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "年度预算编制：background",
+      "text": "年度预算编制的background记录。这是早期参考资料，后续决策应以最新结果记录为准。"
+    },
+    {
+      "id": "n_P3-012_plan",
+      "title": "报销流程优化执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "报销流程优化：plan",
+      "text": "报销流程优化的plan记录。负责人已经确认，下一步补齐材料并在截止日前发出通知。"
+    },
+    {
+      "id": "n_P3-012_risk",
+      "title": "报销流程优化风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "报销流程优化：risk",
+      "text": "报销流程优化的risk记录。需要关注权限、隐私和版本差异，不能只看表面是否完成。"
+    },
+    {
+      "id": "n_P3-012_result",
+      "title": "报销流程优化实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "报销流程优化：result",
+      "text": "报销流程优化的result记录。复盘后确认目标基本达成，下一次需要提前准备备用材料。"
+    },
+    {
+      "id": "n_P3-012_background",
+      "title": "报销流程优化背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "报销流程优化：background",
+      "text": "报销流程优化的background记录。该条内容用于补充上下文，不能单独作为完成依据。"
+    },
+    {
+      "id": "n_P3-013_plan",
+      "title": "付款节点核对执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "付款节点核对：plan",
+      "text": "付款节点核对的plan记录。按照两批执行，第一批完成后观察半天再推进第二批。"
+    },
+    {
+      "id": "n_P3-013_risk",
+      "title": "付款节点核对风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "付款节点核对：risk",
+      "text": "付款节点核对的risk记录。如果临时变更没有留下记录，后续很难判断责任和影响。"
+    },
+    {
+      "id": "n_P3-013_result",
+      "title": "付款节点核对实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "付款节点核对：result",
+      "text": "付款节点核对的result记录。最终结果已归档，仍有一个小问题等待外部确认。"
+    },
+    {
+      "id": "n_P3-013_background",
+      "title": "付款节点核对背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "付款节点核对：background",
+      "text": "付款节点核对的background记录。这里记录了相关概念，和具体执行安排不是同一件事。"
+    },
+    {
+      "id": "n_P3-014_plan",
+      "title": "资料归档迁移执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "资料归档迁移：plan",
+      "text": "资料归档迁移的plan记录。本周先完成准备工作，下周再根据实际反馈调整。"
+    },
+    {
+      "id": "n_P3-014_risk",
+      "title": "资料归档迁移风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "资料归档迁移：risk",
+      "text": "资料归档迁移的risk记录。同类事项容易混淆，记录时必须写清范围和负责人。"
+    },
+    {
+      "id": "n_P3-014_result",
+      "title": "资料归档迁移实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "资料归档迁移：result",
+      "text": "资料归档迁移的result记录。实际执行与计划有偏差，已经补充原因和下一步安排。"
+    },
+    {
+      "id": "n_P3-014_background",
+      "title": "资料归档迁移背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "资料归档迁移：background",
+      "text": "资料归档迁移的background记录。这是同领域的参考信息，查询当前进度时不应优先返回。"
+    },
+    {
+      "id": "n_P3-015_plan",
+      "title": "保险续期办理执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "保险续期办理：plan",
+      "text": "保险续期办理的plan记录。先列出时间、负责人和验收条件，完成后在清单中打勾。"
+    },
+    {
+      "id": "n_P3-015_risk",
+      "title": "保险续期办理风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "保险续期办理：risk",
+      "text": "保险续期办理的risk记录。主要风险是时间不足和信息遗漏，需要保留一份可回退方案。"
+    },
+    {
+      "id": "n_P3-015_result",
+      "title": "保险续期办理实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "保险续期办理：result",
+      "text": "保险续期办理的result记录。已经完成第一轮，实际耗时比预估多半天，但没有影响关键节点。"
+    },
+    {
+      "id": "n_P3-015_background",
+      "title": "保险续期办理背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "财务行政",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "保险续期办理：background",
+      "text": "保险续期办理的background记录。这条记录只保存背景和相关联系人，不代表当前任务状态。"
+    },
+    {
+      "id": "n_P3-016_plan",
+      "title": "机场接送安排执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "机场接送安排：plan",
+      "text": "机场接送安排的plan记录。安排在周三进行，先准备备份和回滚方案，避免影响现有工作。"
+    },
+    {
+      "id": "n_P3-016_risk",
+      "title": "机场接送安排风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "机场接送安排：risk",
+      "text": "机场接送安排的risk记录。目前卡点在外部确认，若周五前没有回复就启用备用安排。"
+    },
+    {
+      "id": "n_P3-016_result",
+      "title": "机场接送安排实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "机场接送安排：result",
+      "text": "机场接送安排的result记录。结果显示主方案可行，剩余问题集中在交接和后续维护。"
+    },
+    {
+      "id": "n_P3-016_background",
+      "title": "机场接送安排背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "机场接送安排：background",
+      "text": "机场接送安排的background记录。这是早期参考资料，后续决策应以最新结果记录为准。"
+    },
+    {
+      "id": "n_P3-017_plan",
+      "title": "展会展位筹备执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "展会展位筹备：plan",
+      "text": "展会展位筹备的plan记录。负责人已经确认，下一步补齐材料并在截止日前发出通知。"
+    },
+    {
+      "id": "n_P3-017_risk",
+      "title": "展会展位筹备风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "展会展位筹备：risk",
+      "text": "展会展位筹备的risk记录。需要关注权限、隐私和版本差异，不能只看表面是否完成。"
+    },
+    {
+      "id": "n_P3-017_result",
+      "title": "展会展位筹备实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "展会展位筹备：result",
+      "text": "展会展位筹备的result记录。复盘后确认目标基本达成，下一次需要提前准备备用材料。"
+    },
+    {
+      "id": "n_P3-017_background",
+      "title": "展会展位筹备背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "展会展位筹备：background",
+      "text": "展会展位筹备的background记录。该条内容用于补充上下文，不能单独作为完成依据。"
+    },
+    {
+      "id": "n_P3-018_plan",
+      "title": "城市短途行程执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "城市短途行程：plan",
+      "text": "城市短途行程的plan记录。按照两批执行，第一批完成后观察半天再推进第二批。"
+    },
+    {
+      "id": "n_P3-018_risk",
+      "title": "城市短途行程风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "城市短途行程：risk",
+      "text": "城市短途行程的risk记录。如果临时变更没有留下记录，后续很难判断责任和影响。"
+    },
+    {
+      "id": "n_P3-018_result",
+      "title": "城市短途行程实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "城市短途行程：result",
+      "text": "城市短途行程的result记录。最终结果已归档，仍有一个小问题等待外部确认。"
+    },
+    {
+      "id": "n_P3-018_background",
+      "title": "城市短途行程背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "城市短途行程：background",
+      "text": "城市短途行程的background记录。这里记录了相关概念，和具体执行安排不是同一件事。"
+    },
+    {
+      "id": "n_P3-019_plan",
+      "title": "家庭假期计划执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "家庭假期计划：plan",
+      "text": "家庭假期计划的plan记录。本周先完成准备工作，下周再根据实际反馈调整。"
+    },
+    {
+      "id": "n_P3-019_risk",
+      "title": "家庭假期计划风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "家庭假期计划：risk",
+      "text": "家庭假期计划的risk记录。同类事项容易混淆，记录时必须写清范围和负责人。"
+    },
+    {
+      "id": "n_P3-019_result",
+      "title": "家庭假期计划实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "家庭假期计划：result",
+      "text": "家庭假期计划的result记录。实际执行与计划有偏差，已经补充原因和下一步安排。"
+    },
+    {
+      "id": "n_P3-019_background",
+      "title": "家庭假期计划背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "家庭假期计划：background",
+      "text": "家庭假期计划的background记录。这是同领域的参考信息，查询当前进度时不应优先返回。"
+    },
+    {
+      "id": "n_P3-020_plan",
+      "title": "车站换乘方案执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "车站换乘方案：plan",
+      "text": "车站换乘方案的plan记录。先列出时间、负责人和验收条件，完成后在清单中打勾。"
+    },
+    {
+      "id": "n_P3-020_risk",
+      "title": "车站换乘方案风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "车站换乘方案：risk",
+      "text": "车站换乘方案的risk记录。主要风险是时间不足和信息遗漏，需要保留一份可回退方案。"
+    },
+    {
+      "id": "n_P3-020_result",
+      "title": "车站换乘方案实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "车站换乘方案：result",
+      "text": "车站换乘方案的result记录。已经完成第一轮，实际耗时比预估多半天，但没有影响关键节点。"
+    },
+    {
+      "id": "n_P3-020_background",
+      "title": "车站换乘方案背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "出行活动",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "车站换乘方案：background",
+      "text": "车站换乘方案的background记录。这条记录只保存背景和相关联系人，不代表当前任务状态。"
+    },
+    {
+      "id": "n_P3-021_plan",
+      "title": "厨房收纳调整执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "厨房收纳调整：plan",
+      "text": "厨房收纳调整的plan记录。安排在周三进行，先准备备份和回滚方案，避免影响现有工作。"
+    },
+    {
+      "id": "n_P3-021_risk",
+      "title": "厨房收纳调整风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "厨房收纳调整：risk",
+      "text": "厨房收纳调整的risk记录。目前卡点在外部确认，若周五前没有回复就启用备用安排。"
+    },
+    {
+      "id": "n_P3-021_result",
+      "title": "厨房收纳调整实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "厨房收纳调整：result",
+      "text": "厨房收纳调整的result记录。结果显示主方案可行，剩余问题集中在交接和后续维护。"
+    },
+    {
+      "id": "n_P3-021_background",
+      "title": "厨房收纳调整背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "厨房收纳调整：background",
+      "text": "厨房收纳调整的background记录。这是早期参考资料，后续决策应以最新结果记录为准。"
+    },
+    {
+      "id": "n_P3-022_plan",
+      "title": "家庭网络修复执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "家庭网络修复：plan",
+      "text": "家庭网络修复的plan记录。负责人已经确认，下一步补齐材料并在截止日前发出通知。"
+    },
+    {
+      "id": "n_P3-022_risk",
+      "title": "家庭网络修复风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "家庭网络修复：risk",
+      "text": "家庭网络修复的risk记录。需要关注权限、隐私和版本差异，不能只看表面是否完成。"
+    },
+    {
+      "id": "n_P3-022_result",
+      "title": "家庭网络修复实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "家庭网络修复：result",
+      "text": "家庭网络修复的result记录。复盘后确认目标基本达成，下一次需要提前准备备用材料。"
+    },
+    {
+      "id": "n_P3-022_background",
+      "title": "家庭网络修复背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "家庭网络修复：background",
+      "text": "家庭网络修复的background记录。该条内容用于补充上下文，不能单独作为完成依据。"
+    },
+    {
+      "id": "n_P3-023_plan",
+      "title": "宠物接种安排执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "宠物接种安排：plan",
+      "text": "宠物接种安排的plan记录。按照两批执行，第一批完成后观察半天再推进第二批。"
+    },
+    {
+      "id": "n_P3-023_risk",
+      "title": "宠物接种安排风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "宠物接种安排：risk",
+      "text": "宠物接种安排的risk记录。如果临时变更没有留下记录，后续很难判断责任和影响。"
+    },
+    {
+      "id": "n_P3-023_result",
+      "title": "宠物接种安排实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "宠物接种安排：result",
+      "text": "宠物接种安排的result记录。最终结果已归档，仍有一个小问题等待外部确认。"
+    },
+    {
+      "id": "n_P3-023_background",
+      "title": "宠物接种安排背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "宠物接种安排：background",
+      "text": "宠物接种安排的background记录。这里记录了相关概念，和具体执行安排不是同一件事。"
+    },
+    {
+      "id": "n_P3-024_plan",
+      "title": "阳台植物换位执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "阳台植物换位：plan",
+      "text": "阳台植物换位的plan记录。本周先完成准备工作，下周再根据实际反馈调整。"
+    },
+    {
+      "id": "n_P3-024_risk",
+      "title": "阳台植物换位风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "阳台植物换位：risk",
+      "text": "阳台植物换位的risk记录。同类事项容易混淆，记录时必须写清范围和负责人。"
+    },
+    {
+      "id": "n_P3-024_result",
+      "title": "阳台植物换位实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "阳台植物换位：result",
+      "text": "阳台植物换位的result记录。实际执行与计划有偏差，已经补充原因和下一步安排。"
+    },
+    {
+      "id": "n_P3-024_background",
+      "title": "阳台植物换位背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "阳台植物换位：background",
+      "text": "阳台植物换位的background记录。这是同领域的参考信息，查询当前进度时不应优先返回。"
+    },
+    {
+      "id": "n_P3-025_plan",
+      "title": "药箱清点计划执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "药箱清点计划：plan",
+      "text": "药箱清点计划的plan记录。先列出时间、负责人和验收条件，完成后在清单中打勾。"
+    },
+    {
+      "id": "n_P3-025_risk",
+      "title": "药箱清点计划风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "药箱清点计划：risk",
+      "text": "药箱清点计划的risk记录。主要风险是时间不足和信息遗漏，需要保留一份可回退方案。"
+    },
+    {
+      "id": "n_P3-025_result",
+      "title": "药箱清点计划实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "药箱清点计划：result",
+      "text": "药箱清点计划的result记录。已经完成第一轮，实际耗时比预估多半天，但没有影响关键节点。"
+    },
+    {
+      "id": "n_P3-025_background",
+      "title": "药箱清点计划背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "家庭生活",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "药箱清点计划：background",
+      "text": "药箱清点计划的background记录。这条记录只保存背景和相关联系人，不代表当前任务状态。"
+    },
+    {
+      "id": "n_P3-026_plan",
+      "title": "课程作业复盘执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "课程作业复盘：plan",
+      "text": "课程作业复盘的plan记录。安排在周三进行，先准备备份和回滚方案，避免影响现有工作。"
+    },
+    {
+      "id": "n_P3-026_risk",
+      "title": "课程作业复盘风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "课程作业复盘：risk",
+      "text": "课程作业复盘的risk记录。目前卡点在外部确认，若周五前没有回复就启用备用安排。"
+    },
+    {
+      "id": "n_P3-026_result",
+      "title": "课程作业复盘实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "课程作业复盘：result",
+      "text": "课程作业复盘的result记录。结果显示主方案可行，剩余问题集中在交接和后续维护。"
+    },
+    {
+      "id": "n_P3-026_background",
+      "title": "课程作业复盘背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "课程作业复盘：background",
+      "text": "课程作业复盘的background记录。这是早期参考资料，后续决策应以最新结果记录为准。"
+    },
+    {
+      "id": "n_P3-027_plan",
+      "title": "证书材料准备执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "证书材料准备：plan",
+      "text": "证书材料准备的plan记录。负责人已经确认，下一步补齐材料并在截止日前发出通知。"
+    },
+    {
+      "id": "n_P3-027_risk",
+      "title": "证书材料准备风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "证书材料准备：risk",
+      "text": "证书材料准备的risk记录。需要关注权限、隐私和版本差异，不能只看表面是否完成。"
+    },
+    {
+      "id": "n_P3-027_result",
+      "title": "证书材料准备实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "证书材料准备：result",
+      "text": "证书材料准备的result记录。复盘后确认目标基本达成，下一次需要提前准备备用材料。"
+    },
+    {
+      "id": "n_P3-027_background",
+      "title": "证书材料准备背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "证书材料准备：background",
+      "text": "证书材料准备的background记录。该条内容用于补充上下文，不能单独作为完成依据。"
+    },
+    {
+      "id": "n_P3-028_plan",
+      "title": "长文资料整理执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "长文资料整理：plan",
+      "text": "长文资料整理的plan记录。按照两批执行，第一批完成后观察半天再推进第二批。"
+    },
+    {
+      "id": "n_P3-028_risk",
+      "title": "长文资料整理风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "长文资料整理：risk",
+      "text": "长文资料整理的risk记录。如果临时变更没有留下记录，后续很难判断责任和影响。"
+    },
+    {
+      "id": "n_P3-028_result",
+      "title": "长文资料整理实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "长文资料整理：result",
+      "text": "长文资料整理的result记录。最终结果已归档，仍有一个小问题等待外部确认。"
+    },
+    {
+      "id": "n_P3-028_background",
+      "title": "长文资料整理背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "长文资料整理：background",
+      "text": "长文资料整理的background记录。这里记录了相关概念，和具体执行安排不是同一件事。"
+    },
+    {
+      "id": "n_P3-029_plan",
+      "title": "语言练习计划执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "语言练习计划：plan",
+      "text": "语言练习计划的plan记录。本周先完成准备工作，下周再根据实际反馈调整。"
+    },
+    {
+      "id": "n_P3-029_risk",
+      "title": "语言练习计划风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "语言练习计划：risk",
+      "text": "语言练习计划的risk记录。同类事项容易混淆，记录时必须写清范围和负责人。"
+    },
+    {
+      "id": "n_P3-029_result",
+      "title": "语言练习计划实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "语言练习计划：result",
+      "text": "语言练习计划的result记录。实际执行与计划有偏差，已经补充原因和下一步安排。"
+    },
+    {
+      "id": "n_P3-029_background",
+      "title": "语言练习计划背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "语言练习计划：background",
+      "text": "语言练习计划的background记录。这是同领域的参考信息，查询当前进度时不应优先返回。"
+    },
+    {
+      "id": "n_P3-030_plan",
+      "title": "乐器保养安排执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "乐器保养安排：plan",
+      "text": "乐器保养安排的plan记录。先列出时间、负责人和验收条件，完成后在清单中打勾。"
+    },
+    {
+      "id": "n_P3-030_risk",
+      "title": "乐器保养安排风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "乐器保养安排：risk",
+      "text": "乐器保养安排的risk记录。主要风险是时间不足和信息遗漏，需要保留一份可回退方案。"
+    },
+    {
+      "id": "n_P3-030_result",
+      "title": "乐器保养安排实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "乐器保养安排：result",
+      "text": "乐器保养安排的result记录。已经完成第一轮，实际耗时比预估多半天，但没有影响关键节点。"
+    },
+    {
+      "id": "n_P3-030_background",
+      "title": "乐器保养安排背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "个人学习",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "乐器保养安排：background",
+      "text": "乐器保养安排的background记录。这条记录只保存背景和相关联系人，不代表当前任务状态。"
+    },
+    {
+      "id": "n_P3-031_plan",
+      "title": "年度体检预约执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "年度体检预约：plan",
+      "text": "年度体检预约的plan记录。安排在周三进行，先准备备份和回滚方案，避免影响现有工作。"
+    },
+    {
+      "id": "n_P3-031_risk",
+      "title": "年度体检预约风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "年度体检预约：risk",
+      "text": "年度体检预约的risk记录。目前卡点在外部确认，若周五前没有回复就启用备用安排。"
+    },
+    {
+      "id": "n_P3-031_result",
+      "title": "年度体检预约实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "年度体检预约：result",
+      "text": "年度体检预约的result记录。结果显示主方案可行，剩余问题集中在交接和后续维护。"
+    },
+    {
+      "id": "n_P3-031_background",
+      "title": "年度体检预约背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "年度体检预约：background",
+      "text": "年度体检预约的background记录。这是早期参考资料，后续决策应以最新结果记录为准。"
+    },
+    {
+      "id": "n_P3-032_plan",
+      "title": "晚间拉伸计划执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "晚间拉伸计划：plan",
+      "text": "晚间拉伸计划的plan记录。负责人已经确认，下一步补齐材料并在截止日前发出通知。"
+    },
+    {
+      "id": "n_P3-032_risk",
+      "title": "晚间拉伸计划风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "晚间拉伸计划：risk",
+      "text": "晚间拉伸计划的risk记录。需要关注权限、隐私和版本差异，不能只看表面是否完成。"
+    },
+    {
+      "id": "n_P3-032_result",
+      "title": "晚间拉伸计划实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "晚间拉伸计划：result",
+      "text": "晚间拉伸计划的result记录。复盘后确认目标基本达成，下一次需要提前准备备用材料。"
+    },
+    {
+      "id": "n_P3-032_background",
+      "title": "晚间拉伸计划背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "晚间拉伸计划：background",
+      "text": "晚间拉伸计划的background记录。该条内容用于补充上下文，不能单独作为完成依据。"
+    },
+    {
+      "id": "n_P3-033_plan",
+      "title": "饮水习惯调整执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "饮水习惯调整：plan",
+      "text": "饮水习惯调整的plan记录。按照两批执行，第一批完成后观察半天再推进第二批。"
+    },
+    {
+      "id": "n_P3-033_risk",
+      "title": "饮水习惯调整风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "饮水习惯调整：risk",
+      "text": "饮水习惯调整的risk记录。如果临时变更没有留下记录，后续很难判断责任和影响。"
+    },
+    {
+      "id": "n_P3-033_result",
+      "title": "饮水习惯调整实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "饮水习惯调整：result",
+      "text": "饮水习惯调整的result记录。最终结果已归档，仍有一个小问题等待外部确认。"
+    },
+    {
+      "id": "n_P3-033_background",
+      "title": "饮水习惯调整背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "饮水习惯调整：background",
+      "text": "饮水习惯调整的background记录。这里记录了相关概念，和具体执行安排不是同一件事。"
+    },
+    {
+      "id": "n_P3-034_plan",
+      "title": "久坐提醒实验执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "久坐提醒实验：plan",
+      "text": "久坐提醒实验的plan记录。本周先完成准备工作，下周再根据实际反馈调整。"
+    },
+    {
+      "id": "n_P3-034_risk",
+      "title": "久坐提醒实验风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "久坐提醒实验：risk",
+      "text": "久坐提醒实验的risk记录。同类事项容易混淆，记录时必须写清范围和负责人。"
+    },
+    {
+      "id": "n_P3-034_result",
+      "title": "久坐提醒实验实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "久坐提醒实验：result",
+      "text": "久坐提醒实验的result记录。实际执行与计划有偏差，已经补充原因和下一步安排。"
+    },
+    {
+      "id": "n_P3-034_background",
+      "title": "久坐提醒实验背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "久坐提醒实验：background",
+      "text": "久坐提醒实验的background记录。这是同领域的参考信息，查询当前进度时不应优先返回。"
+    },
+    {
+      "id": "n_P3-035_plan",
+      "title": "睡眠环境改善执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "睡眠环境改善：plan",
+      "text": "睡眠环境改善的plan记录。先列出时间、负责人和验收条件，完成后在清单中打勾。"
+    },
+    {
+      "id": "n_P3-035_risk",
+      "title": "睡眠环境改善风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "睡眠环境改善：risk",
+      "text": "睡眠环境改善的risk记录。主要风险是时间不足和信息遗漏，需要保留一份可回退方案。"
+    },
+    {
+      "id": "n_P3-035_result",
+      "title": "睡眠环境改善实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "睡眠环境改善：result",
+      "text": "睡眠环境改善的result记录。已经完成第一轮，实际耗时比预估多半天，但没有影响关键节点。"
+    },
+    {
+      "id": "n_P3-035_background",
+      "title": "睡眠环境改善背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "健康习惯",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "睡眠环境改善：background",
+      "text": "睡眠环境改善的background记录。这条记录只保存背景和相关联系人，不代表当前任务状态。"
+    },
+    {
+      "id": "n_P3-036_plan",
+      "title": "生日聚餐筹备执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "生日聚餐筹备：plan",
+      "text": "生日聚餐筹备的plan记录。安排在周三进行，先准备备份和回滚方案，避免影响现有工作。"
+    },
+    {
+      "id": "n_P3-036_risk",
+      "title": "生日聚餐筹备风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "生日聚餐筹备：risk",
+      "text": "生日聚餐筹备的risk记录。目前卡点在外部确认，若周五前没有回复就启用备用安排。"
+    },
+    {
+      "id": "n_P3-036_result",
+      "title": "生日聚餐筹备实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "生日聚餐筹备：result",
+      "text": "生日聚餐筹备的result记录。结果显示主方案可行，剩余问题集中在交接和后续维护。"
+    },
+    {
+      "id": "n_P3-036_background",
+      "title": "生日聚餐筹备背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "生日聚餐筹备：background",
+      "text": "生日聚餐筹备的background记录。这是早期参考资料，后续决策应以最新结果记录为准。"
+    },
+    {
+      "id": "n_P3-037_plan",
+      "title": "社群活动报名执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "社群活动报名：plan",
+      "text": "社群活动报名的plan记录。负责人已经确认，下一步补齐材料并在截止日前发出通知。"
+    },
+    {
+      "id": "n_P3-037_risk",
+      "title": "社群活动报名风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "社群活动报名：risk",
+      "text": "社群活动报名的risk记录。需要关注权限、隐私和版本差异，不能只看表面是否完成。"
+    },
+    {
+      "id": "n_P3-037_result",
+      "title": "社群活动报名实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "社群活动报名：result",
+      "text": "社群活动报名的result记录。复盘后确认目标基本达成，下一次需要提前准备备用材料。"
+    },
+    {
+      "id": "n_P3-037_background",
+      "title": "社群活动报名背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "社群活动报名：background",
+      "text": "社群活动报名的background记录。该条内容用于补充上下文，不能单独作为完成依据。"
+    },
+    {
+      "id": "n_P3-038_plan",
+      "title": "讲座物料准备执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "讲座物料准备：plan",
+      "text": "讲座物料准备的plan记录。按照两批执行，第一批完成后观察半天再推进第二批。"
+    },
+    {
+      "id": "n_P3-038_risk",
+      "title": "讲座物料准备风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "讲座物料准备：risk",
+      "text": "讲座物料准备的risk记录。如果临时变更没有留下记录，后续很难判断责任和影响。"
+    },
+    {
+      "id": "n_P3-038_result",
+      "title": "讲座物料准备实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "讲座物料准备：result",
+      "text": "讲座物料准备的result记录。最终结果已归档，仍有一个小问题等待外部确认。"
+    },
+    {
+      "id": "n_P3-038_background",
+      "title": "讲座物料准备背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "讲座物料准备：background",
+      "text": "讲座物料准备的background记录。这里记录了相关概念，和具体执行安排不是同一件事。"
+    },
+    {
+      "id": "n_P3-039_plan",
+      "title": "志愿者排班安排执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "志愿者排班安排：plan",
+      "text": "志愿者排班安排的plan记录。本周先完成准备工作，下周再根据实际反馈调整。"
+    },
+    {
+      "id": "n_P3-039_risk",
+      "title": "志愿者排班安排风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "志愿者排班安排：risk",
+      "text": "志愿者排班安排的risk记录。同类事项容易混淆，记录时必须写清范围和负责人。"
+    },
+    {
+      "id": "n_P3-039_result",
+      "title": "志愿者排班安排实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "志愿者排班安排：result",
+      "text": "志愿者排班安排的result记录。实际执行与计划有偏差，已经补充原因和下一步安排。"
+    },
+    {
+      "id": "n_P3-039_background",
+      "title": "志愿者排班安排背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "志愿者排班安排：background",
+      "text": "志愿者排班安排的background记录。这是同领域的参考信息，查询当前进度时不应优先返回。"
+    },
+    {
+      "id": "n_P3-040_plan",
+      "title": "亲友聚会安排执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "亲友聚会安排：plan",
+      "text": "亲友聚会安排的plan记录。先列出时间、负责人和验收条件，完成后在清单中打勾。"
+    },
+    {
+      "id": "n_P3-040_risk",
+      "title": "亲友聚会安排风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "亲友聚会安排：risk",
+      "text": "亲友聚会安排的risk记录。主要风险是时间不足和信息遗漏，需要保留一份可回退方案。"
+    },
+    {
+      "id": "n_P3-040_result",
+      "title": "亲友聚会安排实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "亲友聚会安排：result",
+      "text": "亲友聚会安排的result记录。已经完成第一轮，实际耗时比预估多半天，但没有影响关键节点。"
+    },
+    {
+      "id": "n_P3-040_background",
+      "title": "亲友聚会安排背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "活动组织",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "亲友聚会安排：background",
+      "text": "亲友聚会安排的background记录。这条记录只保存背景和相关联系人，不代表当前任务状态。"
+    },
+    {
+      "id": "n_P3-041_plan",
+      "title": "床垫更换计划执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "床垫更换计划：plan",
+      "text": "床垫更换计划的plan记录。安排在周三进行，先准备备份和回滚方案，避免影响现有工作。"
+    },
+    {
+      "id": "n_P3-041_risk",
+      "title": "床垫更换计划风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "床垫更换计划：risk",
+      "text": "床垫更换计划的risk记录。目前卡点在外部确认，若周五前没有回复就启用备用安排。"
+    },
+    {
+      "id": "n_P3-041_result",
+      "title": "床垫更换计划实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "床垫更换计划：result",
+      "text": "床垫更换计划的result记录。结果显示主方案可行，剩余问题集中在交接和后续维护。"
+    },
+    {
+      "id": "n_P3-041_background",
+      "title": "床垫更换计划背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "床垫更换计划：background",
+      "text": "床垫更换计划的background记录。这是早期参考资料，后续决策应以最新结果记录为准。"
+    },
+    {
+      "id": "n_P3-042_plan",
+      "title": "净水器滤芯采购执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "净水器滤芯采购：plan",
+      "text": "净水器滤芯采购的plan记录。负责人已经确认，下一步补齐材料并在截止日前发出通知。"
+    },
+    {
+      "id": "n_P3-042_risk",
+      "title": "净水器滤芯采购风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "净水器滤芯采购：risk",
+      "text": "净水器滤芯采购的risk记录。需要关注权限、隐私和版本差异，不能只看表面是否完成。"
+    },
+    {
+      "id": "n_P3-042_result",
+      "title": "净水器滤芯采购实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "净水器滤芯采购：result",
+      "text": "净水器滤芯采购的result记录。复盘后确认目标基本达成，下一次需要提前准备备用材料。"
+    },
+    {
+      "id": "n_P3-042_background",
+      "title": "净水器滤芯采购背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "净水器滤芯采购：background",
+      "text": "净水器滤芯采购的background记录。该条内容用于补充上下文，不能单独作为完成依据。"
+    },
+    {
+      "id": "n_P3-043_plan",
+      "title": "窗帘遮光改造执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "窗帘遮光改造：plan",
+      "text": "窗帘遮光改造的plan记录。按照两批执行，第一批完成后观察半天再推进第二批。"
+    },
+    {
+      "id": "n_P3-043_risk",
+      "title": "窗帘遮光改造风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "窗帘遮光改造：risk",
+      "text": "窗帘遮光改造的risk记录。如果临时变更没有留下记录，后续很难判断责任和影响。"
+    },
+    {
+      "id": "n_P3-043_result",
+      "title": "窗帘遮光改造实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "窗帘遮光改造：result",
+      "text": "窗帘遮光改造的result记录。最终结果已归档，仍有一个小问题等待外部确认。"
+    },
+    {
+      "id": "n_P3-043_background",
+      "title": "窗帘遮光改造背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "窗帘遮光改造：background",
+      "text": "窗帘遮光改造的background记录。这里记录了相关概念，和具体执行安排不是同一件事。"
+    },
+    {
+      "id": "n_P3-044_plan",
+      "title": "书桌走线整理执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "书桌走线整理：plan",
+      "text": "书桌走线整理的plan记录。本周先完成准备工作，下周再根据实际反馈调整。"
+    },
+    {
+      "id": "n_P3-044_risk",
+      "title": "书桌走线整理风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "书桌走线整理：risk",
+      "text": "书桌走线整理的risk记录。同类事项容易混淆，记录时必须写清范围和负责人。"
+    },
+    {
+      "id": "n_P3-044_result",
+      "title": "书桌走线整理实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "书桌走线整理：result",
+      "text": "书桌走线整理的result记录。实际执行与计划有偏差，已经补充原因和下一步安排。"
+    },
+    {
+      "id": "n_P3-044_background",
+      "title": "书桌走线整理背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "书桌走线整理：background",
+      "text": "书桌走线整理的background记录。这是同领域的参考信息，查询当前进度时不应优先返回。"
+    },
+    {
+      "id": "n_P3-045_plan",
+      "title": "家电保修续期执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "家电保修续期：plan",
+      "text": "家电保修续期的plan记录。先列出时间、负责人和验收条件，完成后在清单中打勾。"
+    },
+    {
+      "id": "n_P3-045_risk",
+      "title": "家电保修续期风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "家电保修续期：risk",
+      "text": "家电保修续期的risk记录。主要风险是时间不足和信息遗漏，需要保留一份可回退方案。"
+    },
+    {
+      "id": "n_P3-045_result",
+      "title": "家电保修续期实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "家电保修续期：result",
+      "text": "家电保修续期的result记录。已经完成第一轮，实际耗时比预估多半天，但没有影响关键节点。"
+    },
+    {
+      "id": "n_P3-045_background",
+      "title": "家电保修续期背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "家居采购",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "家电保修续期：background",
+      "text": "家电保修续期的background记录。这条记录只保存背景和相关联系人，不代表当前任务状态。"
+    },
+    {
+      "id": "n_P3-046_plan",
+      "title": "周末展览选择执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "周末展览选择：plan",
+      "text": "周末展览选择的plan记录。安排在周三进行，先准备备份和回滚方案，避免影响现有工作。"
+    },
+    {
+      "id": "n_P3-046_risk",
+      "title": "周末展览选择风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "周末展览选择：risk",
+      "text": "周末展览选择的risk记录。目前卡点在外部确认，若周五前没有回复就启用备用安排。"
+    },
+    {
+      "id": "n_P3-046_result",
+      "title": "周末展览选择实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "周末展览选择：result",
+      "text": "周末展览选择的result记录。结果显示主方案可行，剩余问题集中在交接和后续维护。"
+    },
+    {
+      "id": "n_P3-046_background",
+      "title": "周末展览选择背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "周末展览选择：background",
+      "text": "周末展览选择的background记录。这是早期参考资料，后续决策应以最新结果记录为准。"
+    },
+    {
+      "id": "n_P3-047_plan",
+      "title": "公园散步路线执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "公园散步路线：plan",
+      "text": "公园散步路线的plan记录。负责人已经确认，下一步补齐材料并在截止日前发出通知。"
+    },
+    {
+      "id": "n_P3-047_risk",
+      "title": "公园散步路线风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "公园散步路线：risk",
+      "text": "公园散步路线的risk记录。需要关注权限、隐私和版本差异，不能只看表面是否完成。"
+    },
+    {
+      "id": "n_P3-047_result",
+      "title": "公园散步路线实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "公园散步路线：result",
+      "text": "公园散步路线的result记录。复盘后确认目标基本达成，下一次需要提前准备备用材料。"
+    },
+    {
+      "id": "n_P3-047_background",
+      "title": "公园散步路线背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "公园散步路线：background",
+      "text": "公园散步路线的background记录。该条内容用于补充上下文，不能单独作为完成依据。"
+    },
+    {
+      "id": "n_P3-048_plan",
+      "title": "夜骑照明准备执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "夜骑照明准备：plan",
+      "text": "夜骑照明准备的plan记录。按照两批执行，第一批完成后观察半天再推进第二批。"
+    },
+    {
+      "id": "n_P3-048_risk",
+      "title": "夜骑照明准备风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "夜骑照明准备：risk",
+      "text": "夜骑照明准备的risk记录。如果临时变更没有留下记录，后续很难判断责任和影响。"
+    },
+    {
+      "id": "n_P3-048_result",
+      "title": "夜骑照明准备实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "夜骑照明准备：result",
+      "text": "夜骑照明准备的result记录。最终结果已归档，仍有一个小问题等待外部确认。"
+    },
+    {
+      "id": "n_P3-048_background",
+      "title": "夜骑照明准备背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "夜骑照明准备：background",
+      "text": "夜骑照明准备的background记录。这里记录了相关概念，和具体执行安排不是同一件事。"
+    },
+    {
+      "id": "n_P3-049_plan",
+      "title": "桌游聚会安排执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "桌游聚会安排：plan",
+      "text": "桌游聚会安排的plan记录。本周先完成准备工作，下周再根据实际反馈调整。"
+    },
+    {
+      "id": "n_P3-049_risk",
+      "title": "桌游聚会安排风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "桌游聚会安排：risk",
+      "text": "桌游聚会安排的risk记录。同类事项容易混淆，记录时必须写清范围和负责人。"
+    },
+    {
+      "id": "n_P3-049_result",
+      "title": "桌游聚会安排实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "桌游聚会安排：result",
+      "text": "桌游聚会安排的result记录。实际执行与计划有偏差，已经补充原因和下一步安排。"
+    },
+    {
+      "id": "n_P3-049_background",
+      "title": "桌游聚会安排背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "桌游聚会安排：background",
+      "text": "桌游聚会安排的background记录。这是同领域的参考信息，查询当前进度时不应优先返回。"
+    },
+    {
+      "id": "n_P3-050_plan",
+      "title": "手作材料采购执行安排",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "plan"
+      ],
+      "summary": "手作材料采购：plan",
+      "text": "手作材料采购的plan记录。先列出时间、负责人和验收条件，完成后在清单中打勾。"
+    },
+    {
+      "id": "n_P3-050_risk",
+      "title": "手作材料采购风险记录",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "risk"
+      ],
+      "summary": "手作材料采购：risk",
+      "text": "手作材料采购的risk记录。主要风险是时间不足和信息遗漏，需要保留一份可回退方案。"
+    },
+    {
+      "id": "n_P3-050_result",
+      "title": "手作材料采购实际结果",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "result"
+      ],
+      "summary": "手作材料采购：result",
+      "text": "手作材料采购的result记录。已经完成第一轮，实际耗时比预估多半天，但没有影响关键节点。"
+    },
+    {
+      "id": "n_P3-050_background",
+      "title": "手作材料采购背景参考",
+      "type": "p3_evidence",
+      "tags": [
+        "休闲城市",
+        "multi_evidence",
+        "background"
+      ],
+      "summary": "手作材料采购：background",
+      "text": "手作材料采购的background记录。这条记录只保存背景和相关联系人，不代表当前任务状态。"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "P3-001-Q1",
+      "group_id": "P3-001",
+      "style": "all_evidence",
+      "query": "关于版本灰度发布，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-001_plan",
+        "n_P3-001_risk",
+        "n_P3-001_result"
+      ]
+    },
+    {
+      "case_id": "P3-001-Q2",
+      "group_id": "P3-001",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了版本灰度发布的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-001_plan",
+        "n_P3-001_risk"
+      ]
+    },
+    {
+      "case_id": "P3-001-Q3",
+      "group_id": "P3-001",
+      "style": "plan_vs_result",
+      "query": "比较版本灰度发布的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-001_plan",
+        "n_P3-001_result"
+      ]
+    },
+    {
+      "case_id": "P3-001-Q4",
+      "group_id": "P3-001",
+      "style": "alias_change",
+      "query": "版本灰度发布最近有什么变化？",
+      "expected_ids": [
+        "n_P3-001_risk",
+        "n_P3-001_result"
+      ]
+    },
+    {
+      "case_id": "P3-002-Q1",
+      "group_id": "P3-002",
+      "style": "all_evidence",
+      "query": "关于数据库备份演练，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-002_plan",
+        "n_P3-002_risk",
+        "n_P3-002_result"
+      ]
+    },
+    {
+      "case_id": "P3-002-Q2",
+      "group_id": "P3-002",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了数据库备份演练的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-002_plan",
+        "n_P3-002_risk"
+      ]
+    },
+    {
+      "case_id": "P3-002-Q3",
+      "group_id": "P3-002",
+      "style": "plan_vs_result",
+      "query": "比较数据库备份演练的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-002_plan",
+        "n_P3-002_result"
+      ]
+    },
+    {
+      "case_id": "P3-002-Q4",
+      "group_id": "P3-002",
+      "style": "alias_change",
+      "query": "数据库备份演练最近有什么变化？",
+      "expected_ids": [
+        "n_P3-002_risk",
+        "n_P3-002_result"
+      ]
+    },
+    {
+      "case_id": "P3-003-Q1",
+      "group_id": "P3-003",
+      "style": "all_evidence",
+      "query": "关于接口兼容升级，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-003_plan",
+        "n_P3-003_risk",
+        "n_P3-003_result"
+      ]
+    },
+    {
+      "case_id": "P3-003-Q2",
+      "group_id": "P3-003",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了接口兼容升级的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-003_plan",
+        "n_P3-003_risk"
+      ]
+    },
+    {
+      "case_id": "P3-003-Q3",
+      "group_id": "P3-003",
+      "style": "plan_vs_result",
+      "query": "比较接口兼容升级的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-003_plan",
+        "n_P3-003_result"
+      ]
+    },
+    {
+      "case_id": "P3-003-Q4",
+      "group_id": "P3-003",
+      "style": "alias_change",
+      "query": "接口兼容升级最近有什么变化？",
+      "expected_ids": [
+        "n_P3-003_risk",
+        "n_P3-003_result"
+      ]
+    },
+    {
+      "case_id": "P3-004-Q1",
+      "group_id": "P3-004",
+      "style": "all_evidence",
+      "query": "关于日志告警收敛，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-004_plan",
+        "n_P3-004_risk",
+        "n_P3-004_result"
+      ]
+    },
+    {
+      "case_id": "P3-004-Q2",
+      "group_id": "P3-004",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了日志告警收敛的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-004_plan",
+        "n_P3-004_risk"
+      ]
+    },
+    {
+      "case_id": "P3-004-Q3",
+      "group_id": "P3-004",
+      "style": "plan_vs_result",
+      "query": "比较日志告警收敛的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-004_plan",
+        "n_P3-004_result"
+      ]
+    },
+    {
+      "case_id": "P3-004-Q4",
+      "group_id": "P3-004",
+      "style": "alias_change",
+      "query": "日志告警收敛最近有什么变化？",
+      "expected_ids": [
+        "n_P3-004_risk",
+        "n_P3-004_result"
+      ]
+    },
+    {
+      "case_id": "P3-005-Q1",
+      "group_id": "P3-005",
+      "style": "all_evidence",
+      "query": "关于账号权限审计，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-005_plan",
+        "n_P3-005_risk",
+        "n_P3-005_result"
+      ]
+    },
+    {
+      "case_id": "P3-005-Q2",
+      "group_id": "P3-005",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了账号权限审计的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-005_plan",
+        "n_P3-005_risk"
+      ]
+    },
+    {
+      "case_id": "P3-005-Q3",
+      "group_id": "P3-005",
+      "style": "plan_vs_result",
+      "query": "比较账号权限审计的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-005_plan",
+        "n_P3-005_result"
+      ]
+    },
+    {
+      "case_id": "P3-005-Q4",
+      "group_id": "P3-005",
+      "style": "alias_change",
+      "query": "账号权限审计最近有什么变化？",
+      "expected_ids": [
+        "n_P3-005_risk",
+        "n_P3-005_result"
+      ]
+    },
+    {
+      "case_id": "P3-006-Q1",
+      "group_id": "P3-006",
+      "style": "all_evidence",
+      "query": "关于客户试用回访，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-006_plan",
+        "n_P3-006_risk",
+        "n_P3-006_result"
+      ]
+    },
+    {
+      "case_id": "P3-006-Q2",
+      "group_id": "P3-006",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了客户试用回访的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-006_plan",
+        "n_P3-006_risk"
+      ]
+    },
+    {
+      "case_id": "P3-006-Q3",
+      "group_id": "P3-006",
+      "style": "plan_vs_result",
+      "query": "比较客户试用回访的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-006_plan",
+        "n_P3-006_result"
+      ]
+    },
+    {
+      "case_id": "P3-006-Q4",
+      "group_id": "P3-006",
+      "style": "alias_change",
+      "query": "客户试用回访最近有什么变化？",
+      "expected_ids": [
+        "n_P3-006_risk",
+        "n_P3-006_result"
+      ]
+    },
+    {
+      "case_id": "P3-007-Q1",
+      "group_id": "P3-007",
+      "style": "all_evidence",
+      "query": "关于季度目标复盘，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-007_plan",
+        "n_P3-007_risk",
+        "n_P3-007_result"
+      ]
+    },
+    {
+      "case_id": "P3-007-Q2",
+      "group_id": "P3-007",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了季度目标复盘的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-007_plan",
+        "n_P3-007_risk"
+      ]
+    },
+    {
+      "case_id": "P3-007-Q3",
+      "group_id": "P3-007",
+      "style": "plan_vs_result",
+      "query": "比较季度目标复盘的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-007_plan",
+        "n_P3-007_result"
+      ]
+    },
+    {
+      "case_id": "P3-007-Q4",
+      "group_id": "P3-007",
+      "style": "alias_change",
+      "query": "季度目标复盘最近有什么变化？",
+      "expected_ids": [
+        "n_P3-007_risk",
+        "n_P3-007_result"
+      ]
+    },
+    {
+      "case_id": "P3-008-Q1",
+      "group_id": "P3-008",
+      "style": "all_evidence",
+      "query": "关于合同续签跟进，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-008_plan",
+        "n_P3-008_risk",
+        "n_P3-008_result"
+      ]
+    },
+    {
+      "case_id": "P3-008-Q2",
+      "group_id": "P3-008",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了合同续签跟进的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-008_plan",
+        "n_P3-008_risk"
+      ]
+    },
+    {
+      "case_id": "P3-008-Q3",
+      "group_id": "P3-008",
+      "style": "plan_vs_result",
+      "query": "比较合同续签跟进的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-008_plan",
+        "n_P3-008_result"
+      ]
+    },
+    {
+      "case_id": "P3-008-Q4",
+      "group_id": "P3-008",
+      "style": "alias_change",
+      "query": "合同续签跟进最近有什么变化？",
+      "expected_ids": [
+        "n_P3-008_risk",
+        "n_P3-008_result"
+      ]
+    },
+    {
+      "case_id": "P3-009-Q1",
+      "group_id": "P3-009",
+      "style": "all_evidence",
+      "query": "关于供应商交付跟踪，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-009_plan",
+        "n_P3-009_risk",
+        "n_P3-009_result"
+      ]
+    },
+    {
+      "case_id": "P3-009-Q2",
+      "group_id": "P3-009",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了供应商交付跟踪的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-009_plan",
+        "n_P3-009_risk"
+      ]
+    },
+    {
+      "case_id": "P3-009-Q3",
+      "group_id": "P3-009",
+      "style": "plan_vs_result",
+      "query": "比较供应商交付跟踪的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-009_plan",
+        "n_P3-009_result"
+      ]
+    },
+    {
+      "case_id": "P3-009-Q4",
+      "group_id": "P3-009",
+      "style": "alias_change",
+      "query": "供应商交付回访最近有什么变化？",
+      "expected_ids": [
+        "n_P3-009_risk",
+        "n_P3-009_result"
+      ]
+    },
+    {
+      "case_id": "P3-010-Q1",
+      "group_id": "P3-010",
+      "style": "all_evidence",
+      "query": "关于新人培训安排，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-010_plan",
+        "n_P3-010_risk",
+        "n_P3-010_result"
+      ]
+    },
+    {
+      "case_id": "P3-010-Q2",
+      "group_id": "P3-010",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了新人培训安排的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-010_plan",
+        "n_P3-010_risk"
+      ]
+    },
+    {
+      "case_id": "P3-010-Q3",
+      "group_id": "P3-010",
+      "style": "plan_vs_result",
+      "query": "比较新人培训安排的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-010_plan",
+        "n_P3-010_result"
+      ]
+    },
+    {
+      "case_id": "P3-010-Q4",
+      "group_id": "P3-010",
+      "style": "alias_change",
+      "query": "新人培训计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-010_risk",
+        "n_P3-010_result"
+      ]
+    },
+    {
+      "case_id": "P3-011-Q1",
+      "group_id": "P3-011",
+      "style": "all_evidence",
+      "query": "关于年度预算编制，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-011_plan",
+        "n_P3-011_risk",
+        "n_P3-011_result"
+      ]
+    },
+    {
+      "case_id": "P3-011-Q2",
+      "group_id": "P3-011",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了年度预算编制的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-011_plan",
+        "n_P3-011_risk"
+      ]
+    },
+    {
+      "case_id": "P3-011-Q3",
+      "group_id": "P3-011",
+      "style": "plan_vs_result",
+      "query": "比较年度预算编制的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-011_plan",
+        "n_P3-011_result"
+      ]
+    },
+    {
+      "case_id": "P3-011-Q4",
+      "group_id": "P3-011",
+      "style": "alias_change",
+      "query": "年度预算编制最近有什么变化？",
+      "expected_ids": [
+        "n_P3-011_risk",
+        "n_P3-011_result"
+      ]
+    },
+    {
+      "case_id": "P3-012-Q1",
+      "group_id": "P3-012",
+      "style": "all_evidence",
+      "query": "关于报销流程优化，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-012_plan",
+        "n_P3-012_risk",
+        "n_P3-012_result"
+      ]
+    },
+    {
+      "case_id": "P3-012-Q2",
+      "group_id": "P3-012",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了报销流程优化的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-012_plan",
+        "n_P3-012_risk"
+      ]
+    },
+    {
+      "case_id": "P3-012-Q3",
+      "group_id": "P3-012",
+      "style": "plan_vs_result",
+      "query": "比较报销流程优化的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-012_plan",
+        "n_P3-012_result"
+      ]
+    },
+    {
+      "case_id": "P3-012-Q4",
+      "group_id": "P3-012",
+      "style": "alias_change",
+      "query": "报销流程优化最近有什么变化？",
+      "expected_ids": [
+        "n_P3-012_risk",
+        "n_P3-012_result"
+      ]
+    },
+    {
+      "case_id": "P3-013-Q1",
+      "group_id": "P3-013",
+      "style": "all_evidence",
+      "query": "关于付款节点核对，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-013_plan",
+        "n_P3-013_risk",
+        "n_P3-013_result"
+      ]
+    },
+    {
+      "case_id": "P3-013-Q2",
+      "group_id": "P3-013",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了付款节点核对的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-013_plan",
+        "n_P3-013_risk"
+      ]
+    },
+    {
+      "case_id": "P3-013-Q3",
+      "group_id": "P3-013",
+      "style": "plan_vs_result",
+      "query": "比较付款节点核对的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-013_plan",
+        "n_P3-013_result"
+      ]
+    },
+    {
+      "case_id": "P3-013-Q4",
+      "group_id": "P3-013",
+      "style": "alias_change",
+      "query": "付款节点核对最近有什么变化？",
+      "expected_ids": [
+        "n_P3-013_risk",
+        "n_P3-013_result"
+      ]
+    },
+    {
+      "case_id": "P3-014-Q1",
+      "group_id": "P3-014",
+      "style": "all_evidence",
+      "query": "关于资料归档迁移，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-014_plan",
+        "n_P3-014_risk",
+        "n_P3-014_result"
+      ]
+    },
+    {
+      "case_id": "P3-014-Q2",
+      "group_id": "P3-014",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了资料归档迁移的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-014_plan",
+        "n_P3-014_risk"
+      ]
+    },
+    {
+      "case_id": "P3-014-Q3",
+      "group_id": "P3-014",
+      "style": "plan_vs_result",
+      "query": "比较资料归档迁移的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-014_plan",
+        "n_P3-014_result"
+      ]
+    },
+    {
+      "case_id": "P3-014-Q4",
+      "group_id": "P3-014",
+      "style": "alias_change",
+      "query": "资料归档迁移最近有什么变化？",
+      "expected_ids": [
+        "n_P3-014_risk",
+        "n_P3-014_result"
+      ]
+    },
+    {
+      "case_id": "P3-015-Q1",
+      "group_id": "P3-015",
+      "style": "all_evidence",
+      "query": "关于保险续期办理，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-015_plan",
+        "n_P3-015_risk",
+        "n_P3-015_result"
+      ]
+    },
+    {
+      "case_id": "P3-015-Q2",
+      "group_id": "P3-015",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了保险续期办理的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-015_plan",
+        "n_P3-015_risk"
+      ]
+    },
+    {
+      "case_id": "P3-015-Q3",
+      "group_id": "P3-015",
+      "style": "plan_vs_result",
+      "query": "比较保险续期办理的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-015_plan",
+        "n_P3-015_result"
+      ]
+    },
+    {
+      "case_id": "P3-015-Q4",
+      "group_id": "P3-015",
+      "style": "alias_change",
+      "query": "保险续期办理最近有什么变化？",
+      "expected_ids": [
+        "n_P3-015_risk",
+        "n_P3-015_result"
+      ]
+    },
+    {
+      "case_id": "P3-016-Q1",
+      "group_id": "P3-016",
+      "style": "all_evidence",
+      "query": "关于机场接送安排，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-016_plan",
+        "n_P3-016_risk",
+        "n_P3-016_result"
+      ]
+    },
+    {
+      "case_id": "P3-016-Q2",
+      "group_id": "P3-016",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了机场接送安排的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-016_plan",
+        "n_P3-016_risk"
+      ]
+    },
+    {
+      "case_id": "P3-016-Q3",
+      "group_id": "P3-016",
+      "style": "plan_vs_result",
+      "query": "比较机场接送安排的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-016_plan",
+        "n_P3-016_result"
+      ]
+    },
+    {
+      "case_id": "P3-016-Q4",
+      "group_id": "P3-016",
+      "style": "alias_change",
+      "query": "机场接送计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-016_risk",
+        "n_P3-016_result"
+      ]
+    },
+    {
+      "case_id": "P3-017-Q1",
+      "group_id": "P3-017",
+      "style": "all_evidence",
+      "query": "关于展会展位筹备，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-017_plan",
+        "n_P3-017_risk",
+        "n_P3-017_result"
+      ]
+    },
+    {
+      "case_id": "P3-017-Q2",
+      "group_id": "P3-017",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了展会展位筹备的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-017_plan",
+        "n_P3-017_risk"
+      ]
+    },
+    {
+      "case_id": "P3-017-Q3",
+      "group_id": "P3-017",
+      "style": "plan_vs_result",
+      "query": "比较展会展位筹备的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-017_plan",
+        "n_P3-017_result"
+      ]
+    },
+    {
+      "case_id": "P3-017-Q4",
+      "group_id": "P3-017",
+      "style": "alias_change",
+      "query": "展会展位准备最近有什么变化？",
+      "expected_ids": [
+        "n_P3-017_risk",
+        "n_P3-017_result"
+      ]
+    },
+    {
+      "case_id": "P3-018-Q1",
+      "group_id": "P3-018",
+      "style": "all_evidence",
+      "query": "关于城市短途行程，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-018_plan",
+        "n_P3-018_risk",
+        "n_P3-018_result"
+      ]
+    },
+    {
+      "case_id": "P3-018-Q2",
+      "group_id": "P3-018",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了城市短途行程的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-018_plan",
+        "n_P3-018_risk"
+      ]
+    },
+    {
+      "case_id": "P3-018-Q3",
+      "group_id": "P3-018",
+      "style": "plan_vs_result",
+      "query": "比较城市短途行程的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-018_plan",
+        "n_P3-018_result"
+      ]
+    },
+    {
+      "case_id": "P3-018-Q4",
+      "group_id": "P3-018",
+      "style": "alias_change",
+      "query": "城市短途行程最近有什么变化？",
+      "expected_ids": [
+        "n_P3-018_risk",
+        "n_P3-018_result"
+      ]
+    },
+    {
+      "case_id": "P3-019-Q1",
+      "group_id": "P3-019",
+      "style": "all_evidence",
+      "query": "关于家庭假期计划，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-019_plan",
+        "n_P3-019_risk",
+        "n_P3-019_result"
+      ]
+    },
+    {
+      "case_id": "P3-019-Q2",
+      "group_id": "P3-019",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了家庭假期计划的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-019_plan",
+        "n_P3-019_risk"
+      ]
+    },
+    {
+      "case_id": "P3-019-Q3",
+      "group_id": "P3-019",
+      "style": "plan_vs_result",
+      "query": "比较家庭假期计划的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-019_plan",
+        "n_P3-019_result"
+      ]
+    },
+    {
+      "case_id": "P3-019-Q4",
+      "group_id": "P3-019",
+      "style": "alias_change",
+      "query": "家庭假期计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-019_risk",
+        "n_P3-019_result"
+      ]
+    },
+    {
+      "case_id": "P3-020-Q1",
+      "group_id": "P3-020",
+      "style": "all_evidence",
+      "query": "关于车站换乘方案，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-020_plan",
+        "n_P3-020_risk",
+        "n_P3-020_result"
+      ]
+    },
+    {
+      "case_id": "P3-020-Q2",
+      "group_id": "P3-020",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了车站换乘方案的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-020_plan",
+        "n_P3-020_risk"
+      ]
+    },
+    {
+      "case_id": "P3-020-Q3",
+      "group_id": "P3-020",
+      "style": "plan_vs_result",
+      "query": "比较车站换乘方案的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-020_plan",
+        "n_P3-020_result"
+      ]
+    },
+    {
+      "case_id": "P3-020-Q4",
+      "group_id": "P3-020",
+      "style": "alias_change",
+      "query": "车站换乘方案最近有什么变化？",
+      "expected_ids": [
+        "n_P3-020_risk",
+        "n_P3-020_result"
+      ]
+    },
+    {
+      "case_id": "P3-021-Q1",
+      "group_id": "P3-021",
+      "style": "all_evidence",
+      "query": "关于厨房收纳调整，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-021_plan",
+        "n_P3-021_risk",
+        "n_P3-021_result"
+      ]
+    },
+    {
+      "case_id": "P3-021-Q2",
+      "group_id": "P3-021",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了厨房收纳调整的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-021_plan",
+        "n_P3-021_risk"
+      ]
+    },
+    {
+      "case_id": "P3-021-Q3",
+      "group_id": "P3-021",
+      "style": "plan_vs_result",
+      "query": "比较厨房收纳调整的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-021_plan",
+        "n_P3-021_result"
+      ]
+    },
+    {
+      "case_id": "P3-021-Q4",
+      "group_id": "P3-021",
+      "style": "alias_change",
+      "query": "厨房收纳调整最近有什么变化？",
+      "expected_ids": [
+        "n_P3-021_risk",
+        "n_P3-021_result"
+      ]
+    },
+    {
+      "case_id": "P3-022-Q1",
+      "group_id": "P3-022",
+      "style": "all_evidence",
+      "query": "关于家庭网络修复，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-022_plan",
+        "n_P3-022_risk",
+        "n_P3-022_result"
+      ]
+    },
+    {
+      "case_id": "P3-022-Q2",
+      "group_id": "P3-022",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了家庭网络修复的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-022_plan",
+        "n_P3-022_risk"
+      ]
+    },
+    {
+      "case_id": "P3-022-Q3",
+      "group_id": "P3-022",
+      "style": "plan_vs_result",
+      "query": "比较家庭网络修复的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-022_plan",
+        "n_P3-022_result"
+      ]
+    },
+    {
+      "case_id": "P3-022-Q4",
+      "group_id": "P3-022",
+      "style": "alias_change",
+      "query": "家庭网络修复最近有什么变化？",
+      "expected_ids": [
+        "n_P3-022_risk",
+        "n_P3-022_result"
+      ]
+    },
+    {
+      "case_id": "P3-023-Q1",
+      "group_id": "P3-023",
+      "style": "all_evidence",
+      "query": "关于宠物接种安排，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-023_plan",
+        "n_P3-023_risk",
+        "n_P3-023_result"
+      ]
+    },
+    {
+      "case_id": "P3-023-Q2",
+      "group_id": "P3-023",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了宠物接种安排的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-023_plan",
+        "n_P3-023_risk"
+      ]
+    },
+    {
+      "case_id": "P3-023-Q3",
+      "group_id": "P3-023",
+      "style": "plan_vs_result",
+      "query": "比较宠物接种安排的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-023_plan",
+        "n_P3-023_result"
+      ]
+    },
+    {
+      "case_id": "P3-023-Q4",
+      "group_id": "P3-023",
+      "style": "alias_change",
+      "query": "宠物接种计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-023_risk",
+        "n_P3-023_result"
+      ]
+    },
+    {
+      "case_id": "P3-024-Q1",
+      "group_id": "P3-024",
+      "style": "all_evidence",
+      "query": "关于阳台植物换位，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-024_plan",
+        "n_P3-024_risk",
+        "n_P3-024_result"
+      ]
+    },
+    {
+      "case_id": "P3-024-Q2",
+      "group_id": "P3-024",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了阳台植物换位的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-024_plan",
+        "n_P3-024_risk"
+      ]
+    },
+    {
+      "case_id": "P3-024-Q3",
+      "group_id": "P3-024",
+      "style": "plan_vs_result",
+      "query": "比较阳台植物换位的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-024_plan",
+        "n_P3-024_result"
+      ]
+    },
+    {
+      "case_id": "P3-024-Q4",
+      "group_id": "P3-024",
+      "style": "alias_change",
+      "query": "阳台植物换位最近有什么变化？",
+      "expected_ids": [
+        "n_P3-024_risk",
+        "n_P3-024_result"
+      ]
+    },
+    {
+      "case_id": "P3-025-Q1",
+      "group_id": "P3-025",
+      "style": "all_evidence",
+      "query": "关于药箱清点计划，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-025_plan",
+        "n_P3-025_risk",
+        "n_P3-025_result"
+      ]
+    },
+    {
+      "case_id": "P3-025-Q2",
+      "group_id": "P3-025",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了药箱清点计划的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-025_plan",
+        "n_P3-025_risk"
+      ]
+    },
+    {
+      "case_id": "P3-025-Q3",
+      "group_id": "P3-025",
+      "style": "plan_vs_result",
+      "query": "比较药箱清点计划的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-025_plan",
+        "n_P3-025_result"
+      ]
+    },
+    {
+      "case_id": "P3-025-Q4",
+      "group_id": "P3-025",
+      "style": "alias_change",
+      "query": "药箱清点计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-025_risk",
+        "n_P3-025_result"
+      ]
+    },
+    {
+      "case_id": "P3-026-Q1",
+      "group_id": "P3-026",
+      "style": "all_evidence",
+      "query": "关于课程作业复盘，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-026_plan",
+        "n_P3-026_risk",
+        "n_P3-026_result"
+      ]
+    },
+    {
+      "case_id": "P3-026-Q2",
+      "group_id": "P3-026",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了课程作业复盘的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-026_plan",
+        "n_P3-026_risk"
+      ]
+    },
+    {
+      "case_id": "P3-026-Q3",
+      "group_id": "P3-026",
+      "style": "plan_vs_result",
+      "query": "比较课程作业复盘的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-026_plan",
+        "n_P3-026_result"
+      ]
+    },
+    {
+      "case_id": "P3-026-Q4",
+      "group_id": "P3-026",
+      "style": "alias_change",
+      "query": "课程作业复盘最近有什么变化？",
+      "expected_ids": [
+        "n_P3-026_risk",
+        "n_P3-026_result"
+      ]
+    },
+    {
+      "case_id": "P3-027-Q1",
+      "group_id": "P3-027",
+      "style": "all_evidence",
+      "query": "关于证书材料准备，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-027_plan",
+        "n_P3-027_risk",
+        "n_P3-027_result"
+      ]
+    },
+    {
+      "case_id": "P3-027-Q2",
+      "group_id": "P3-027",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了证书材料准备的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-027_plan",
+        "n_P3-027_risk"
+      ]
+    },
+    {
+      "case_id": "P3-027-Q3",
+      "group_id": "P3-027",
+      "style": "plan_vs_result",
+      "query": "比较证书材料准备的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-027_plan",
+        "n_P3-027_result"
+      ]
+    },
+    {
+      "case_id": "P3-027-Q4",
+      "group_id": "P3-027",
+      "style": "alias_change",
+      "query": "证书材料准备最近有什么变化？",
+      "expected_ids": [
+        "n_P3-027_risk",
+        "n_P3-027_result"
+      ]
+    },
+    {
+      "case_id": "P3-028-Q1",
+      "group_id": "P3-028",
+      "style": "all_evidence",
+      "query": "关于长文资料整理，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-028_plan",
+        "n_P3-028_risk",
+        "n_P3-028_result"
+      ]
+    },
+    {
+      "case_id": "P3-028-Q2",
+      "group_id": "P3-028",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了长文资料整理的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-028_plan",
+        "n_P3-028_risk"
+      ]
+    },
+    {
+      "case_id": "P3-028-Q3",
+      "group_id": "P3-028",
+      "style": "plan_vs_result",
+      "query": "比较长文资料整理的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-028_plan",
+        "n_P3-028_result"
+      ]
+    },
+    {
+      "case_id": "P3-028-Q4",
+      "group_id": "P3-028",
+      "style": "alias_change",
+      "query": "长文资料整理最近有什么变化？",
+      "expected_ids": [
+        "n_P3-028_risk",
+        "n_P3-028_result"
+      ]
+    },
+    {
+      "case_id": "P3-029-Q1",
+      "group_id": "P3-029",
+      "style": "all_evidence",
+      "query": "关于语言练习计划，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-029_plan",
+        "n_P3-029_risk",
+        "n_P3-029_result"
+      ]
+    },
+    {
+      "case_id": "P3-029-Q2",
+      "group_id": "P3-029",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了语言练习计划的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-029_plan",
+        "n_P3-029_risk"
+      ]
+    },
+    {
+      "case_id": "P3-029-Q3",
+      "group_id": "P3-029",
+      "style": "plan_vs_result",
+      "query": "比较语言练习计划的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-029_plan",
+        "n_P3-029_result"
+      ]
+    },
+    {
+      "case_id": "P3-029-Q4",
+      "group_id": "P3-029",
+      "style": "alias_change",
+      "query": "语言练习计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-029_risk",
+        "n_P3-029_result"
+      ]
+    },
+    {
+      "case_id": "P3-030-Q1",
+      "group_id": "P3-030",
+      "style": "all_evidence",
+      "query": "关于乐器保养安排，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-030_plan",
+        "n_P3-030_risk",
+        "n_P3-030_result"
+      ]
+    },
+    {
+      "case_id": "P3-030-Q2",
+      "group_id": "P3-030",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了乐器保养安排的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-030_plan",
+        "n_P3-030_risk"
+      ]
+    },
+    {
+      "case_id": "P3-030-Q3",
+      "group_id": "P3-030",
+      "style": "plan_vs_result",
+      "query": "比较乐器保养安排的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-030_plan",
+        "n_P3-030_result"
+      ]
+    },
+    {
+      "case_id": "P3-030-Q4",
+      "group_id": "P3-030",
+      "style": "alias_change",
+      "query": "乐器保养计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-030_risk",
+        "n_P3-030_result"
+      ]
+    },
+    {
+      "case_id": "P3-031-Q1",
+      "group_id": "P3-031",
+      "style": "all_evidence",
+      "query": "关于年度体检预约，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-031_plan",
+        "n_P3-031_risk",
+        "n_P3-031_result"
+      ]
+    },
+    {
+      "case_id": "P3-031-Q2",
+      "group_id": "P3-031",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了年度体检预约的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-031_plan",
+        "n_P3-031_risk"
+      ]
+    },
+    {
+      "case_id": "P3-031-Q3",
+      "group_id": "P3-031",
+      "style": "plan_vs_result",
+      "query": "比较年度体检预约的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-031_plan",
+        "n_P3-031_result"
+      ]
+    },
+    {
+      "case_id": "P3-031-Q4",
+      "group_id": "P3-031",
+      "style": "alias_change",
+      "query": "年度体检预约最近有什么变化？",
+      "expected_ids": [
+        "n_P3-031_risk",
+        "n_P3-031_result"
+      ]
+    },
+    {
+      "case_id": "P3-032-Q1",
+      "group_id": "P3-032",
+      "style": "all_evidence",
+      "query": "关于晚间拉伸计划，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-032_plan",
+        "n_P3-032_risk",
+        "n_P3-032_result"
+      ]
+    },
+    {
+      "case_id": "P3-032-Q2",
+      "group_id": "P3-032",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了晚间拉伸计划的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-032_plan",
+        "n_P3-032_risk"
+      ]
+    },
+    {
+      "case_id": "P3-032-Q3",
+      "group_id": "P3-032",
+      "style": "plan_vs_result",
+      "query": "比较晚间拉伸计划的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-032_plan",
+        "n_P3-032_result"
+      ]
+    },
+    {
+      "case_id": "P3-032-Q4",
+      "group_id": "P3-032",
+      "style": "alias_change",
+      "query": "晚间拉伸计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-032_risk",
+        "n_P3-032_result"
+      ]
+    },
+    {
+      "case_id": "P3-033-Q1",
+      "group_id": "P3-033",
+      "style": "all_evidence",
+      "query": "关于饮水习惯调整，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-033_plan",
+        "n_P3-033_risk",
+        "n_P3-033_result"
+      ]
+    },
+    {
+      "case_id": "P3-033-Q2",
+      "group_id": "P3-033",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了饮水习惯调整的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-033_plan",
+        "n_P3-033_risk"
+      ]
+    },
+    {
+      "case_id": "P3-033-Q3",
+      "group_id": "P3-033",
+      "style": "plan_vs_result",
+      "query": "比较饮水习惯调整的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-033_plan",
+        "n_P3-033_result"
+      ]
+    },
+    {
+      "case_id": "P3-033-Q4",
+      "group_id": "P3-033",
+      "style": "alias_change",
+      "query": "饮水习惯调整最近有什么变化？",
+      "expected_ids": [
+        "n_P3-033_risk",
+        "n_P3-033_result"
+      ]
+    },
+    {
+      "case_id": "P3-034-Q1",
+      "group_id": "P3-034",
+      "style": "all_evidence",
+      "query": "关于久坐提醒实验，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-034_plan",
+        "n_P3-034_risk",
+        "n_P3-034_result"
+      ]
+    },
+    {
+      "case_id": "P3-034-Q2",
+      "group_id": "P3-034",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了久坐提醒实验的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-034_plan",
+        "n_P3-034_risk"
+      ]
+    },
+    {
+      "case_id": "P3-034-Q3",
+      "group_id": "P3-034",
+      "style": "plan_vs_result",
+      "query": "比较久坐提醒实验的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-034_plan",
+        "n_P3-034_result"
+      ]
+    },
+    {
+      "case_id": "P3-034-Q4",
+      "group_id": "P3-034",
+      "style": "alias_change",
+      "query": "久坐提醒实验最近有什么变化？",
+      "expected_ids": [
+        "n_P3-034_risk",
+        "n_P3-034_result"
+      ]
+    },
+    {
+      "case_id": "P3-035-Q1",
+      "group_id": "P3-035",
+      "style": "all_evidence",
+      "query": "关于睡眠环境改善，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-035_plan",
+        "n_P3-035_risk",
+        "n_P3-035_result"
+      ]
+    },
+    {
+      "case_id": "P3-035-Q2",
+      "group_id": "P3-035",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了睡眠环境改善的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-035_plan",
+        "n_P3-035_risk"
+      ]
+    },
+    {
+      "case_id": "P3-035-Q3",
+      "group_id": "P3-035",
+      "style": "plan_vs_result",
+      "query": "比较睡眠环境改善的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-035_plan",
+        "n_P3-035_result"
+      ]
+    },
+    {
+      "case_id": "P3-035-Q4",
+      "group_id": "P3-035",
+      "style": "alias_change",
+      "query": "睡眠环境改善最近有什么变化？",
+      "expected_ids": [
+        "n_P3-035_risk",
+        "n_P3-035_result"
+      ]
+    },
+    {
+      "case_id": "P3-036-Q1",
+      "group_id": "P3-036",
+      "style": "all_evidence",
+      "query": "关于生日聚餐筹备，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-036_plan",
+        "n_P3-036_risk",
+        "n_P3-036_result"
+      ]
+    },
+    {
+      "case_id": "P3-036-Q2",
+      "group_id": "P3-036",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了生日聚餐筹备的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-036_plan",
+        "n_P3-036_risk"
+      ]
+    },
+    {
+      "case_id": "P3-036-Q3",
+      "group_id": "P3-036",
+      "style": "plan_vs_result",
+      "query": "比较生日聚餐筹备的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-036_plan",
+        "n_P3-036_result"
+      ]
+    },
+    {
+      "case_id": "P3-036-Q4",
+      "group_id": "P3-036",
+      "style": "alias_change",
+      "query": "生日聚餐准备最近有什么变化？",
+      "expected_ids": [
+        "n_P3-036_risk",
+        "n_P3-036_result"
+      ]
+    },
+    {
+      "case_id": "P3-037-Q1",
+      "group_id": "P3-037",
+      "style": "all_evidence",
+      "query": "关于社群活动报名，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-037_plan",
+        "n_P3-037_risk",
+        "n_P3-037_result"
+      ]
+    },
+    {
+      "case_id": "P3-037-Q2",
+      "group_id": "P3-037",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了社群活动报名的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-037_plan",
+        "n_P3-037_risk"
+      ]
+    },
+    {
+      "case_id": "P3-037-Q3",
+      "group_id": "P3-037",
+      "style": "plan_vs_result",
+      "query": "比较社群活动报名的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-037_plan",
+        "n_P3-037_result"
+      ]
+    },
+    {
+      "case_id": "P3-037-Q4",
+      "group_id": "P3-037",
+      "style": "alias_change",
+      "query": "社群活动报名最近有什么变化？",
+      "expected_ids": [
+        "n_P3-037_risk",
+        "n_P3-037_result"
+      ]
+    },
+    {
+      "case_id": "P3-038-Q1",
+      "group_id": "P3-038",
+      "style": "all_evidence",
+      "query": "关于讲座物料准备，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-038_plan",
+        "n_P3-038_risk",
+        "n_P3-038_result"
+      ]
+    },
+    {
+      "case_id": "P3-038-Q2",
+      "group_id": "P3-038",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了讲座物料准备的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-038_plan",
+        "n_P3-038_risk"
+      ]
+    },
+    {
+      "case_id": "P3-038-Q3",
+      "group_id": "P3-038",
+      "style": "plan_vs_result",
+      "query": "比较讲座物料准备的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-038_plan",
+        "n_P3-038_result"
+      ]
+    },
+    {
+      "case_id": "P3-038-Q4",
+      "group_id": "P3-038",
+      "style": "alias_change",
+      "query": "讲座物料准备最近有什么变化？",
+      "expected_ids": [
+        "n_P3-038_risk",
+        "n_P3-038_result"
+      ]
+    },
+    {
+      "case_id": "P3-039-Q1",
+      "group_id": "P3-039",
+      "style": "all_evidence",
+      "query": "关于志愿者排班安排，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-039_plan",
+        "n_P3-039_risk",
+        "n_P3-039_result"
+      ]
+    },
+    {
+      "case_id": "P3-039-Q2",
+      "group_id": "P3-039",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了志愿者排班安排的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-039_plan",
+        "n_P3-039_risk"
+      ]
+    },
+    {
+      "case_id": "P3-039-Q3",
+      "group_id": "P3-039",
+      "style": "plan_vs_result",
+      "query": "比较志愿者排班安排的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-039_plan",
+        "n_P3-039_result"
+      ]
+    },
+    {
+      "case_id": "P3-039-Q4",
+      "group_id": "P3-039",
+      "style": "alias_change",
+      "query": "志愿者排班计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-039_risk",
+        "n_P3-039_result"
+      ]
+    },
+    {
+      "case_id": "P3-040-Q1",
+      "group_id": "P3-040",
+      "style": "all_evidence",
+      "query": "关于亲友聚会安排，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-040_plan",
+        "n_P3-040_risk",
+        "n_P3-040_result"
+      ]
+    },
+    {
+      "case_id": "P3-040-Q2",
+      "group_id": "P3-040",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了亲友聚会安排的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-040_plan",
+        "n_P3-040_risk"
+      ]
+    },
+    {
+      "case_id": "P3-040-Q3",
+      "group_id": "P3-040",
+      "style": "plan_vs_result",
+      "query": "比较亲友聚会安排的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-040_plan",
+        "n_P3-040_result"
+      ]
+    },
+    {
+      "case_id": "P3-040-Q4",
+      "group_id": "P3-040",
+      "style": "alias_change",
+      "query": "亲友聚会计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-040_risk",
+        "n_P3-040_result"
+      ]
+    },
+    {
+      "case_id": "P3-041-Q1",
+      "group_id": "P3-041",
+      "style": "all_evidence",
+      "query": "关于床垫更换计划，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-041_plan",
+        "n_P3-041_risk",
+        "n_P3-041_result"
+      ]
+    },
+    {
+      "case_id": "P3-041-Q2",
+      "group_id": "P3-041",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了床垫更换计划的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-041_plan",
+        "n_P3-041_risk"
+      ]
+    },
+    {
+      "case_id": "P3-041-Q3",
+      "group_id": "P3-041",
+      "style": "plan_vs_result",
+      "query": "比较床垫更换计划的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-041_plan",
+        "n_P3-041_result"
+      ]
+    },
+    {
+      "case_id": "P3-041-Q4",
+      "group_id": "P3-041",
+      "style": "alias_change",
+      "query": "床垫更换计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-041_risk",
+        "n_P3-041_result"
+      ]
+    },
+    {
+      "case_id": "P3-042-Q1",
+      "group_id": "P3-042",
+      "style": "all_evidence",
+      "query": "关于净水器滤芯采购，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-042_plan",
+        "n_P3-042_risk",
+        "n_P3-042_result"
+      ]
+    },
+    {
+      "case_id": "P3-042-Q2",
+      "group_id": "P3-042",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了净水器滤芯采购的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-042_plan",
+        "n_P3-042_risk"
+      ]
+    },
+    {
+      "case_id": "P3-042-Q3",
+      "group_id": "P3-042",
+      "style": "plan_vs_result",
+      "query": "比较净水器滤芯采购的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-042_plan",
+        "n_P3-042_result"
+      ]
+    },
+    {
+      "case_id": "P3-042-Q4",
+      "group_id": "P3-042",
+      "style": "alias_change",
+      "query": "净水器滤芯采购最近有什么变化？",
+      "expected_ids": [
+        "n_P3-042_risk",
+        "n_P3-042_result"
+      ]
+    },
+    {
+      "case_id": "P3-043-Q1",
+      "group_id": "P3-043",
+      "style": "all_evidence",
+      "query": "关于窗帘遮光改造，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-043_plan",
+        "n_P3-043_risk",
+        "n_P3-043_result"
+      ]
+    },
+    {
+      "case_id": "P3-043-Q2",
+      "group_id": "P3-043",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了窗帘遮光改造的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-043_plan",
+        "n_P3-043_risk"
+      ]
+    },
+    {
+      "case_id": "P3-043-Q3",
+      "group_id": "P3-043",
+      "style": "plan_vs_result",
+      "query": "比较窗帘遮光改造的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-043_plan",
+        "n_P3-043_result"
+      ]
+    },
+    {
+      "case_id": "P3-043-Q4",
+      "group_id": "P3-043",
+      "style": "alias_change",
+      "query": "窗帘遮光改造最近有什么变化？",
+      "expected_ids": [
+        "n_P3-043_risk",
+        "n_P3-043_result"
+      ]
+    },
+    {
+      "case_id": "P3-044-Q1",
+      "group_id": "P3-044",
+      "style": "all_evidence",
+      "query": "关于书桌走线整理，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-044_plan",
+        "n_P3-044_risk",
+        "n_P3-044_result"
+      ]
+    },
+    {
+      "case_id": "P3-044-Q2",
+      "group_id": "P3-044",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了书桌走线整理的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-044_plan",
+        "n_P3-044_risk"
+      ]
+    },
+    {
+      "case_id": "P3-044-Q3",
+      "group_id": "P3-044",
+      "style": "plan_vs_result",
+      "query": "比较书桌走线整理的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-044_plan",
+        "n_P3-044_result"
+      ]
+    },
+    {
+      "case_id": "P3-044-Q4",
+      "group_id": "P3-044",
+      "style": "alias_change",
+      "query": "书桌走线整理最近有什么变化？",
+      "expected_ids": [
+        "n_P3-044_risk",
+        "n_P3-044_result"
+      ]
+    },
+    {
+      "case_id": "P3-045-Q1",
+      "group_id": "P3-045",
+      "style": "all_evidence",
+      "query": "关于家电保修续期，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-045_plan",
+        "n_P3-045_risk",
+        "n_P3-045_result"
+      ]
+    },
+    {
+      "case_id": "P3-045-Q2",
+      "group_id": "P3-045",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了家电保修续期的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-045_plan",
+        "n_P3-045_risk"
+      ]
+    },
+    {
+      "case_id": "P3-045-Q3",
+      "group_id": "P3-045",
+      "style": "plan_vs_result",
+      "query": "比较家电保修续期的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-045_plan",
+        "n_P3-045_result"
+      ]
+    },
+    {
+      "case_id": "P3-045-Q4",
+      "group_id": "P3-045",
+      "style": "alias_change",
+      "query": "家电保修续期最近有什么变化？",
+      "expected_ids": [
+        "n_P3-045_risk",
+        "n_P3-045_result"
+      ]
+    },
+    {
+      "case_id": "P3-046-Q1",
+      "group_id": "P3-046",
+      "style": "all_evidence",
+      "query": "关于周末展览选择，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-046_plan",
+        "n_P3-046_risk",
+        "n_P3-046_result"
+      ]
+    },
+    {
+      "case_id": "P3-046-Q2",
+      "group_id": "P3-046",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了周末展览选择的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-046_plan",
+        "n_P3-046_risk"
+      ]
+    },
+    {
+      "case_id": "P3-046-Q3",
+      "group_id": "P3-046",
+      "style": "plan_vs_result",
+      "query": "比较周末展览选择的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-046_plan",
+        "n_P3-046_result"
+      ]
+    },
+    {
+      "case_id": "P3-046-Q4",
+      "group_id": "P3-046",
+      "style": "alias_change",
+      "query": "周末展览选择最近有什么变化？",
+      "expected_ids": [
+        "n_P3-046_risk",
+        "n_P3-046_result"
+      ]
+    },
+    {
+      "case_id": "P3-047-Q1",
+      "group_id": "P3-047",
+      "style": "all_evidence",
+      "query": "关于公园散步路线，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-047_plan",
+        "n_P3-047_risk",
+        "n_P3-047_result"
+      ]
+    },
+    {
+      "case_id": "P3-047-Q2",
+      "group_id": "P3-047",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了公园散步路线的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-047_plan",
+        "n_P3-047_risk"
+      ]
+    },
+    {
+      "case_id": "P3-047-Q3",
+      "group_id": "P3-047",
+      "style": "plan_vs_result",
+      "query": "比较公园散步路线的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-047_plan",
+        "n_P3-047_result"
+      ]
+    },
+    {
+      "case_id": "P3-047-Q4",
+      "group_id": "P3-047",
+      "style": "alias_change",
+      "query": "公园散步路线最近有什么变化？",
+      "expected_ids": [
+        "n_P3-047_risk",
+        "n_P3-047_result"
+      ]
+    },
+    {
+      "case_id": "P3-048-Q1",
+      "group_id": "P3-048",
+      "style": "all_evidence",
+      "query": "关于夜骑照明准备，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-048_plan",
+        "n_P3-048_risk",
+        "n_P3-048_result"
+      ]
+    },
+    {
+      "case_id": "P3-048-Q2",
+      "group_id": "P3-048",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了夜骑照明准备的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-048_plan",
+        "n_P3-048_risk"
+      ]
+    },
+    {
+      "case_id": "P3-048-Q3",
+      "group_id": "P3-048",
+      "style": "plan_vs_result",
+      "query": "比较夜骑照明准备的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-048_plan",
+        "n_P3-048_result"
+      ]
+    },
+    {
+      "case_id": "P3-048-Q4",
+      "group_id": "P3-048",
+      "style": "alias_change",
+      "query": "夜骑照明准备最近有什么变化？",
+      "expected_ids": [
+        "n_P3-048_risk",
+        "n_P3-048_result"
+      ]
+    },
+    {
+      "case_id": "P3-049-Q1",
+      "group_id": "P3-049",
+      "style": "all_evidence",
+      "query": "关于桌游聚会安排，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-049_plan",
+        "n_P3-049_risk",
+        "n_P3-049_result"
+      ]
+    },
+    {
+      "case_id": "P3-049-Q2",
+      "group_id": "P3-049",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了桌游聚会安排的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-049_plan",
+        "n_P3-049_risk"
+      ]
+    },
+    {
+      "case_id": "P3-049-Q3",
+      "group_id": "P3-049",
+      "style": "plan_vs_result",
+      "query": "比较桌游聚会安排的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-049_plan",
+        "n_P3-049_result"
+      ]
+    },
+    {
+      "case_id": "P3-049-Q4",
+      "group_id": "P3-049",
+      "style": "alias_change",
+      "query": "桌游聚会计划最近有什么变化？",
+      "expected_ids": [
+        "n_P3-049_risk",
+        "n_P3-049_result"
+      ]
+    },
+    {
+      "case_id": "P3-050-Q1",
+      "group_id": "P3-050",
+      "style": "all_evidence",
+      "query": "关于手作材料采购，找出安排、风险和实际结果。",
+      "expected_ids": [
+        "n_P3-050_plan",
+        "n_P3-050_risk",
+        "n_P3-050_result"
+      ]
+    },
+    {
+      "case_id": "P3-050-Q2",
+      "group_id": "P3-050",
+      "style": "owner_and_risk",
+      "query": "哪些记录说明了手作材料采购的负责人安排和主要风险？",
+      "expected_ids": [
+        "n_P3-050_plan",
+        "n_P3-050_risk"
+      ]
+    },
+    {
+      "case_id": "P3-050-Q3",
+      "group_id": "P3-050",
+      "style": "plan_vs_result",
+      "query": "比较手作材料采购的计划与最后结果。",
+      "expected_ids": [
+        "n_P3-050_plan",
+        "n_P3-050_result"
+      ]
+    },
+    {
+      "case_id": "P3-050-Q4",
+      "group_id": "P3-050",
+      "style": "alias_change",
+      "query": "手作材料采购最近有什么变化？",
+      "expected_ids": [
+        "n_P3-050_risk",
+        "n_P3-050_result"
+      ]
+    }
+  ],
+  "provenance": {
+    "purpose": "development_only",
+    "tuning_allowed": true,
+    "relevance": "each case has 2-3 expected evidence notes plus one same-topic background distractor",
+    "overlap_check": "v2 and holdout title substring overlap rejected"
+  }
+}

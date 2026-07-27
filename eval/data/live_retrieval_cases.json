@@ -1,0 +1,62 @@
+{
+  "version": "live-retrieval-v1",
+  "notes": [
+    {"id":"n_rag_hybrid","title":"学习RAG混合检索","type":"学习","tags":["RAG","混合检索"],"summary":"记录混合检索的学习重点","text":"我正在学习RAG混合检索，重点理解关键词检索、向量检索和Weighted RRF如何融合。"},
+    {"id":"n_rag_vector","title":"学习RAG向量检索","type":"学习","tags":["RAG","向量检索"],"summary":"记录向量检索知识","text":"我学习了RAG中的向量检索、Embedding和余弦相似度，并整理了召回实验。"},
+    {"id":"n_rag_rerank","title":"RAG重排序方法","type":"学习","tags":["RAG","重排序"],"summary":"比较不同重排序模型","text":"我整理了bi-encoder、cross-encoder和LLM reranker的差异，准备做重排序评测。"},
+    {"id":"n_proj_redis","title":"PROJ-123 Redis超时","type":"问题","tags":["PROJ-123","Redis"],"summary":"记录一次Redis超时","text":"PROJ-123 在高并发时出现Redis连接超时，初步怀疑连接池耗尽，后续需要检查连接池配置。"},
+    {"id":"n_agent_resume","title":"Agent简历准备","type":"任务","tags":["Agent","简历"],"summary":"准备Agent相关简历","text":"我正在制作Agent相关的简历，重点突出RAG、工具调用和记忆系统项目。"},
+    {"id":"n_agent_portfolio","title":"Agent项目经历整理","type":"任务","tags":["Agent","项目"],"summary":"整理Agent项目经历","text":"我把随心记Agent项目经历整理成简历中的项目描述，准备补充检索架构图。"},
+    {"id":"n_oat_latte","title":"燕麦拿铁偏好记录","type":"生活","tags":["饮品","偏好"],"summary":"记录饮品偏好","text":"最近更喜欢燕麦拿铁，口味偏淡，工作日早上通常选择它。"},
+    {"id":"n_coffee","title":"工作日早上不喝咖啡","type":"生活","tags":["饮品","偏好"],"summary":"记录咖啡偏好","text":"我不喜欢在工作日早上喝咖啡，容易心慌。"},
+    {"id":"n_feishu_latency","title":"飞书消息延迟","type":"问题","tags":["飞书","耗时"],"summary":"记录消息处理延迟","text":"飞书消息偶尔会在LLM处理期间等待较久，需要观察pending、队列和回复耗时。"},
+    {"id":"n_query_rewrite","title":"Query Rewrite学习","type":"学习","tags":["RAG","查询改写"],"summary":"学习复杂查询改写","text":"复杂问题可以先做Query Rewrite，把用户问题改成更适合检索的表达。"},
+    {"id":"n_step_back","title":"Step-back Prompting学习","type":"学习","tags":["RAG","Step-back"],"summary":"学习抽象问题检索","text":"Step-back Prompting先问更抽象的背景问题，再回到具体事实，适合趋势和原因分析。"},
+    {"id":"n_memory_status","title":"长期记忆状态设计","type":"学习","tags":["Memory","状态机"],"summary":"设计状态安全检索","text":"长期Memory要优先使用canonical key和结构化字段，向量相似度不能覆盖任务状态。"},
+    {"id":"n_rag_eval","title":"RAG评测指标","type":"学习","tags":["RAG","评测"],"summary":"记录检索评测方法","text":"我准备记录Recall@K、MRR、命中率、状态正确率和回答耗时。"},
+    {"id":"n_cooking","title":"周末番茄意面","type":"生活","tags":["饮食"],"summary":"记录周末做饭","text":"周末做了番茄意面，加入罗勒和黑胡椒，味道不错。"},
+    {"id":"n_travel","title":"上海周末计划","type":"生活","tags":["出行"],"summary":"记录周末出行","text":"下个月想去上海周末短途旅行，计划参观博物馆。"},
+    {"id":"n_identifier","title":"工单标识符记录","type":"工作","tags":["ticket"],"summary":"记录工单标识符","text":"另一个工单 OPS-77 只涉及日志格式调整，与Redis连接池无关。"}
+  ],
+  "memories": [
+    {"id":"m_rag_task","memory_type":"task","content":"正在准备RAG混合检索实验报告","task_status":"in_progress","subject":"user","predicate":"task","object_value":"RAG混合检索实验报告"},
+    {"id":"m_rag_done","memory_type":"task","content":"已经完成学习RAG向量检索知识","task_status":"done","subject":"user","predicate":"task","object_value":"学习RAG向量检索知识"},
+    {"id":"m_agent_task","memory_type":"task","content":"正在制作Agent相关的简历","task_status":"in_progress","subject":"user","predicate":"task","object_value":"Agent相关简历"},
+    {"id":"m_oat","memory_type":"preference","content":"用户喜欢喝燕麦拿铁","task_status":null,"subject":"user","predicate":"preference","object_value":"燕麦拿铁","polarity":"positive"},
+    {"id":"m_coffee","memory_type":"preference","content":"用户不喜欢在工作日早上喝咖啡","task_status":null,"subject":"user","predicate":"preference","object_value":"工作日早上咖啡","polarity":"negative"},
+    {"id":"m_project","memory_type":"semantic","content":"用户当前项目是随心记Agent记忆系统","task_status":null,"subject":"user","predicate":"current_project","object_value":"随心记Agent记忆系统"},
+    {"id":"m_location","memory_type":"semantic","content":"用户目前住在杭州","task_status":null,"subject":"user","predicate":"location","object_value":"杭州"},
+    {"id":"m_redis_done","memory_type":"task","content":"已经完成排查PROJ-123 Redis连接池超时","task_status":"done","subject":"user","predicate":"task","object_value":"PROJ-123 Redis连接池超时"},
+    {"id":"m_tea","memory_type":"preference","content":"用户喜欢喝乌龙茶","task_status":null,"subject":"user","predicate":"preference","object_value":"乌龙茶","polarity":"positive"},
+    {"id":"m_eval","memory_type":"semantic","content":"用户正在记录RAG评测的Recall@K和MRR指标","task_status":null,"subject":"user","predicate":"learning_focus","object_value":"RAG评测指标"}
+  ],
+  "note_cases": [
+    {"case_id":"note_hybrid","query":"RAG混合检索","expected_ids":["n_rag_hybrid"]},
+    {"case_id":"note_vector","query":"RAG向量检索和Embedding","expected_ids":["n_rag_vector","n_rag_hybrid"]},
+    {"case_id":"note_rerank","query":"cross encoder重排序","expected_ids":["n_rag_rerank"]},
+    {"case_id":"note_identifier","query":"PROJ-123 Redis超时","expected_ids":["n_proj_redis"]},
+    {"case_id":"note_agent","query":"Agent简历项目经历","expected_ids":["n_agent_resume","n_agent_portfolio"]},
+    {"case_id":"note_oat","query":"燕麦拿铁偏好","expected_ids":["n_oat_latte"]},
+    {"case_id":"note_coffee","query":"工作日早上咖啡","expected_ids":["n_coffee"]},
+    {"case_id":"note_rewrite","query":"复杂问题查询改写和Step-back","expected_ids":["n_query_rewrite","n_step_back"]},
+    {"case_id":"note_latency","query":"飞书LLM处理等待pending耗时","expected_ids":["n_feishu_latency"]},
+    {"case_id":"note_eval","query":"Recall@K MRR RAG评测指标","expected_ids":["n_rag_eval"]}
+  ],
+  "memory_cases": [
+    {"case_id":"memory_rag_task","query":"当前RAG混合检索任务是什么","expected_ids":["m_rag_task"],"expected_status":"in_progress"},
+    {"case_id":"memory_rag_done","query":"我完成RAG向量检索学习了吗","expected_ids":["m_rag_done"],"expected_status":"done"},
+    {"case_id":"memory_agent","query":"Agent简历现在进展如何","expected_ids":["m_agent_task"],"expected_status":"in_progress"},
+    {"case_id":"memory_oat","query":"我现在喜欢什么饮品","expected_ids":["m_oat","m_tea"],"expected_polarity":"positive"},
+    {"case_id":"memory_coffee","query":"工作日早上我喜欢喝咖啡吗","expected_ids":["m_coffee"],"expected_polarity":"negative"},
+    {"case_id":"memory_project","query":"我当前主要项目是什么","expected_ids":["m_project"]},
+    {"case_id":"memory_location","query":"我现在住在哪里","expected_ids":["m_location"]},
+    {"case_id":"memory_redis","query":"PROJ-123 Redis超时任务状态","expected_ids":["m_redis_done"],"expected_status":"done"}
+  ],
+  "llm_cases": [
+    {"case_id":"llm_rag_current","question":"我现在关于RAG的任务是什么？","must_include":[["RAG"],["实验报告","混合检索"],["进行中","正在"]]},
+    {"case_id":"llm_rag_done","question":"我已经完成RAG向量检索的学习了吗？","must_include":[["RAG"],["完成","已完成","学完"]]},
+    {"case_id":"llm_agent_progress","question":"我的Agent简历进展如何？","must_include":[["Agent"],["简历"],["进行中","正在"]]},
+    {"case_id":"llm_compare","question":"为什么我需要同时学习向量检索和混合检索？请结合记录总结。","must_include":[["向量检索"],["混合检索"]]},
+    {"case_id":"llm_ticket","question":"PROJ-123的Redis超时问题是什么情况？","must_include":[["PROJ-123"],["Redis"]]}
+  ]
+}

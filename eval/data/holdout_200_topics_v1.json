@@ -1,0 +1,3414 @@
+{
+  "version": "holdout-200-topics-v1",
+  "topic_count": 200,
+  "case_count": 600,
+  "provenance": {
+    "purpose": "unseen_holdout_only",
+    "source": "curated independent Feishu-style topics across 20 domains",
+    "tuning_allowed": false,
+    "v2_overlap_check": "exact title/object substring overlap checked and rejected",
+    "generation_note": "Topics are independently authored; each topic has three retrieval phrasings."
+  },
+  "topics": [
+    {
+      "topic_id": "H001",
+      "domain": "家电维护",
+      "title": "冰箱除霜日",
+      "message": "补充一条长期背景：冰箱除霜日。冷冻层出现薄霜时安排半天断电除霜，食材先转移到保冷袋。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "冰箱除霜日",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于冰箱除霜日的背景是什么？",
+        "找一下冰箱除霜日这条长期记录。",
+        "我之前对冰箱除霜日留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H002",
+      "domain": "家电维护",
+      "title": "空调滤网更换",
+      "message": "补充一条长期背景：空调滤网更换。入夏前拆下两台空调的滤网清洗，晾干后再装回并记录日期。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "空调滤网更换",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于空调滤网更换的背景是什么？",
+        "找一下空调滤网更换这条长期记录。",
+        "我之前对空调滤网更换留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H003",
+      "domain": "家电维护",
+      "title": "洗衣机排水管",
+      "message": "补充一条长期背景：洗衣机排水管。排水管靠墙的一段容易弯折，清洁时要留出顺直的余量。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "洗衣机排水管",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于洗衣机排水管的背景是什么？",
+        "找一下洗衣机排水管这条长期记录。",
+        "我之前对洗衣机排水管留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H004",
+      "domain": "家电维护",
+      "title": "热水器镁棒检查",
+      "message": "补充一条长期背景：热水器镁棒检查。热水器每年秋天检查一次镁棒，发现消耗明显就提前预约更换。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "热水器镁棒检查",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于热水器镁棒检查的背景是什么？",
+        "找一下热水器镁棒检查这条长期记录。",
+        "我之前对热水器镁棒检查留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H005",
+      "domain": "家电维护",
+      "title": "吸尘器电池保养",
+      "message": "记录一个事项：吸尘器电池保养。无线吸尘器不要长期满电插着，收纳前保持半格电量即可。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "吸尘器电池保养",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "吸尘器电池保养这件事现在是什么状态？",
+        "找出我关于吸尘器电池保养的待办记录。",
+        "之前提到的吸尘器电池保养，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H006",
+      "domain": "家电维护",
+      "title": "净水器滤芯周期",
+      "message": "记录一个事项：净水器滤芯周期。净水器的前置滤芯变色后先冲洗，主滤芯按累计用水量判断是否更换。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "净水器滤芯周期",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "净水器滤芯周期这件事现在是什么状态？",
+        "找出我关于净水器滤芯周期的待办记录。",
+        "之前提到的净水器滤芯周期，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H007",
+      "domain": "家电维护",
+      "title": "吊灯遥控器配对",
+      "message": "记录一个事项：吊灯遥控器配对。吊灯遥控器换电池后需要重新配对，配对步骤写在电池仓旁边。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "吊灯遥控器配对",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "吊灯遥控器配对这件事现在是什么状态？",
+        "找出我关于吊灯遥控器配对的待办记录。",
+        "之前提到的吊灯遥控器配对，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H008",
+      "domain": "家电维护",
+      "title": "电饭煲内胆保护",
+      "message": "偏好记录：电饭煲内胆保护。电饭煲内胆只能用木勺，边缘的米粒先泡软再清理避免划伤。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "电饭煲内胆保护",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对电饭煲内胆保护有什么偏好？",
+        "关于电饭煲内胆保护，我会优先什么或避开什么？",
+        "把我之前留下的电饭煲内胆保护偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H009",
+      "domain": "家电维护",
+      "title": "智能门锁电量",
+      "message": "偏好记录：智能门锁电量。智能门锁低于百分之二十时提醒换电池，备用电池放在玄关抽屉。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "智能门锁电量",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对智能门锁电量有什么偏好？",
+        "关于智能门锁电量，我会优先什么或避开什么？",
+        "把我之前留下的智能门锁电量偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H010",
+      "domain": "家电维护",
+      "title": "空气净化器滤芯",
+      "message": "偏好记录：空气净化器滤芯。空气净化器提示寿命到期后拍照留档，再按型号购买替换滤芯。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "空气净化器滤芯",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对空气净化器滤芯有什么偏好？",
+        "关于空气净化器滤芯，我会优先什么或避开什么？",
+        "把我之前留下的空气净化器滤芯偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H011",
+      "domain": "健康习惯",
+      "title": "晚间拉伸时段",
+      "message": "补充一条长期背景：晚间拉伸时段。晚上洗澡后做十分钟肩颈和髋部拉伸，比睡前临时运动更容易坚持。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "晚间拉伸时段",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于晚间拉伸时段的背景是什么？",
+        "找一下晚间拉伸时段这条长期记录。",
+        "我之前对晚间拉伸时段留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H012",
+      "domain": "健康习惯",
+      "title": "午餐后散步",
+      "message": "补充一条长期背景：午餐后散步。午餐后绕街区走一圈，遇到下雨改为楼梯间慢走，不把它算成正式训练。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "午餐后散步",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于午餐后散步的背景是什么？",
+        "找一下午餐后散步这条长期记录。",
+        "我之前对午餐后散步留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H013",
+      "domain": "健康习惯",
+      "title": "眼睛远眺提醒",
+      "message": "补充一条长期背景：眼睛远眺提醒。连续看屏幕四十分钟后看窗外远处，提醒只在工作日白天弹出。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "眼睛远眺提醒",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于眼睛远眺提醒的背景是什么？",
+        "找一下眼睛远眺提醒这条长期记录。",
+        "我之前对眼睛远眺提醒留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H014",
+      "domain": "健康习惯",
+      "title": "睡前屏幕上限",
+      "message": "补充一条长期背景：睡前屏幕上限。上床后不再刷短视频，必要的消息在睡前半小时集中处理。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "睡前屏幕上限",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于睡前屏幕上限的背景是什么？",
+        "找一下睡前屏幕上限这条长期记录。",
+        "我之前对睡前屏幕上限留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H015",
+      "domain": "健康习惯",
+      "title": "体检预约月份",
+      "message": "记录一个事项：体检预约月份。年度体检尽量安排在九月，避开项目发布和年末出差高峰。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "体检预约月份",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "体检预约月份这件事现在是什么状态？",
+        "找出我关于体检预约月份的待办记录。",
+        "之前提到的体检预约月份，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H016",
+      "domain": "健康习惯",
+      "title": "饮水分段记录",
+      "message": "记录一个事项：饮水分段记录。上午和下午分别记录饮水量，咖啡不计入白水目标。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "饮水分段记录",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "饮水分段记录这件事现在是什么状态？",
+        "找出我关于饮水分段记录的待办记录。",
+        "之前提到的饮水分段记录，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H017",
+      "domain": "健康习惯",
+      "title": "久坐起身间隔",
+      "message": "记录一个事项：久坐起身间隔。写代码时每隔一小时起身两分钟，开会期间用站立替代提醒。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "久坐起身间隔",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "久坐起身间隔这件事现在是什么状态？",
+        "找出我关于久坐起身间隔的待办记录。",
+        "之前提到的久坐起身间隔，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H018",
+      "domain": "健康习惯",
+      "title": "早餐蛋白来源",
+      "message": "偏好记录：早餐蛋白来源。早餐优先准备鸡蛋、豆制品或无糖酸奶，前一晚先确认冰箱库存。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "早餐蛋白来源",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对早餐蛋白来源有什么偏好？",
+        "关于早餐蛋白来源，我会优先什么或避开什么？",
+        "把我之前留下的早餐蛋白来源偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H019",
+      "domain": "健康习惯",
+      "title": "春季过敏观察",
+      "message": "偏好记录：春季过敏观察。春季鼻炎加重时记录当天花粉和睡眠，连续三天异常再调整安排。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "春季过敏观察",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对春季过敏观察有什么偏好？",
+        "关于春季过敏观察，我会优先什么或避开什么？",
+        "把我之前留下的春季过敏观察偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H020",
+      "domain": "健康习惯",
+      "title": "周末体重记录",
+      "message": "偏好记录：周末体重记录。周六起床后、早餐前记录体重，只比较四周趋势，不看单日波动。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "周末体重记录",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对周末体重记录有什么偏好？",
+        "关于周末体重记录，我会优先什么或避开什么？",
+        "把我之前留下的周末体重记录偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H021",
+      "domain": "厨房实践",
+      "title": "糙米浸泡时间",
+      "message": "补充一条长期背景：糙米浸泡时间。糙米煮饭前浸泡四小时口感更好，临时来不及就改用电压力锅。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "糙米浸泡时间",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于糙米浸泡时间的背景是什么？",
+        "找一下糙米浸泡时间这条长期记录。",
+        "我之前对糙米浸泡时间留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H022",
+      "domain": "厨房实践",
+      "title": "冷冻蔬菜分装",
+      "message": "补充一条长期背景：冷冻蔬菜分装。买回来的冷冻蔬菜按两人份分袋，袋口写上日期避免反复解冻。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "冷冻蔬菜分装",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于冷冻蔬菜分装的背景是什么？",
+        "找一下冷冻蔬菜分装这条长期记录。",
+        "我之前对冷冻蔬菜分装留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H023",
+      "domain": "厨房实践",
+      "title": "烤箱预热温度",
+      "message": "补充一条长期背景：烤箱预热温度。烤面包先把烤箱预热到一百八十度，温度稳定后再计时。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "烤箱预热温度",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于烤箱预热温度的背景是什么？",
+        "找一下烤箱预热温度这条长期记录。",
+        "我之前对烤箱预热温度留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H024",
+      "domain": "厨房实践",
+      "title": "酱料开封标签",
+      "message": "补充一条长期背景：酱料开封标签。辣酱和芝麻酱开封后写日期，取用时使用干燥勺子。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "酱料开封标签",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于酱料开封标签的背景是什么？",
+        "找一下酱料开封标签这条长期记录。",
+        "我之前对酱料开封标签留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H025",
+      "domain": "厨房实践",
+      "title": "刀具磨刃周期",
+      "message": "记录一个事项：刀具磨刃周期。主厨刀切番茄变钝时先用磨刀棒，正式磨刃控制在每季度一次。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "刀具磨刃周期",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "刀具磨刃周期这件事现在是什么状态？",
+        "找出我关于刀具磨刃周期的待办记录。",
+        "之前提到的刀具磨刃周期，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H026",
+      "domain": "厨房实践",
+      "title": "面团醒发位置",
+      "message": "记录一个事项：面团醒发位置。冬天面团放在关机的烤箱里醒发，旁边放一杯温水保持湿度。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "面团醒发位置",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "面团醒发位置这件事现在是什么状态？",
+        "找出我关于面团醒发位置的待办记录。",
+        "之前提到的面团醒发位置，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H027",
+      "domain": "厨房实践",
+      "title": "豆浆机清洗",
+      "message": "记录一个事项：豆浆机清洗。豆浆机打完后立即冲洗刀头和密封圈，隔夜残渣不要用硬刷刮。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "豆浆机清洗",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "豆浆机清洗这件事现在是什么状态？",
+        "找出我关于豆浆机清洗的待办记录。",
+        "之前提到的豆浆机清洗，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H028",
+      "domain": "厨房实践",
+      "title": "海鲜解冻方式",
+      "message": "偏好记录：海鲜解冻方式。冷冻虾放在冷藏室慢慢解冻，做饭前再用厨房纸吸干表面水分。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "海鲜解冻方式",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对海鲜解冻方式有什么偏好？",
+        "关于海鲜解冻方式，我会优先什么或避开什么？",
+        "把我之前留下的海鲜解冻方式偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H029",
+      "domain": "厨房实践",
+      "title": "香料避光存放",
+      "message": "偏好记录：香料避光存放。整粒香料装在不透光的小罐里，开封日期写在罐底而不是盖子上。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "香料避光存放",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对香料避光存放有什么偏好？",
+        "关于香料避光存放，我会优先什么或避开什么？",
+        "把我之前留下的香料避光存放偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H030",
+      "domain": "厨房实践",
+      "title": "剩汤冷藏期限",
+      "message": "偏好记录：剩汤冷藏期限。剩汤分成小盒冷却后再入冰箱，三天内没喝完就不再留存。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "剩汤冷藏期限",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对剩汤冷藏期限有什么偏好？",
+        "关于剩汤冷藏期限，我会优先什么或避开什么？",
+        "把我之前留下的剩汤冷藏期限偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H031",
+      "domain": "亲友往来",
+      "title": "外婆生日礼物",
+      "message": "补充一条长期背景：外婆生日礼物。外婆喜欢实用的小家电，礼物提前一周寄到并附一张手写卡片。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "外婆生日礼物",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于外婆生日礼物的背景是什么？",
+        "找一下外婆生日礼物这条长期记录。",
+        "我之前对外婆生日礼物留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H032",
+      "domain": "亲友往来",
+      "title": "表弟婚礼交通",
+      "message": "补充一条长期背景：表弟婚礼交通。去表弟婚礼优先坐高铁，到站后再打车，不临时自驾长途往返。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "表弟婚礼交通",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于表弟婚礼交通的背景是什么？",
+        "找一下表弟婚礼交通这条长期记录。",
+        "我之前对表弟婚礼交通留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H033",
+      "domain": "亲友往来",
+      "title": "朋友新居贺卡",
+      "message": "补充一条长期背景：朋友新居贺卡。朋友搬家时送绿植和简短贺卡，称呼使用他平时的昵称。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "朋友新居贺卡",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于朋友新居贺卡的背景是什么？",
+        "找一下朋友新居贺卡这条长期记录。",
+        "我之前对朋友新居贺卡留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H034",
+      "domain": "亲友往来",
+      "title": "家庭群静音时段",
+      "message": "补充一条长期背景：家庭群静音时段。家庭群晚上十点后静音，紧急事情请直接电话联系。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "家庭群静音时段",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于家庭群静音时段的背景是什么？",
+        "找一下家庭群静音时段这条长期记录。",
+        "我之前对家庭群静音时段留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H035",
+      "domain": "亲友往来",
+      "title": "叔叔药品提醒",
+      "message": "记录一个事项：叔叔药品提醒。叔叔的常用药按早晚分格，提醒只说服用时间，不在群里讨论病情。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "叔叔药品提醒",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "叔叔药品提醒这件事现在是什么状态？",
+        "找出我关于叔叔药品提醒的待办记录。",
+        "之前提到的叔叔药品提醒，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H036",
+      "domain": "亲友往来",
+      "title": "同学聚会忌口",
+      "message": "记录一个事项：同学聚会忌口。同学聚餐提前确认是否有花生和酒精，菜单里保留一份清淡选项。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "同学聚会忌口",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "同学聚会忌口这件事现在是什么状态？",
+        "找出我关于同学聚会忌口的待办记录。",
+        "之前提到的同学聚会忌口，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H037",
+      "domain": "亲友往来",
+      "title": "春节寄件地址",
+      "message": "记录一个事项：春节寄件地址。春节寄件使用父母常住地址，出发前再次和家人确认门牌号。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "春节寄件地址",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "春节寄件地址这件事现在是什么状态？",
+        "找出我关于春节寄件地址的待办记录。",
+        "之前提到的春节寄件地址，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H038",
+      "domain": "亲友往来",
+      "title": "远程陪伴电话",
+      "message": "偏好记录：远程陪伴电话。每周日晚上给父母打视频电话，通话前先问他们是否方便。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "远程陪伴电话",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对远程陪伴电话有什么偏好？",
+        "关于远程陪伴电话，我会优先什么或避开什么？",
+        "把我之前留下的远程陪伴电话偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H039",
+      "domain": "亲友往来",
+      "title": "侄女绘画比赛",
+      "message": "偏好记录：侄女绘画比赛。侄女参加比赛时帮她检查材料清单，但不替她修改作品内容。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "侄女绘画比赛",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对侄女绘画比赛有什么偏好？",
+        "关于侄女绘画比赛，我会优先什么或避开什么？",
+        "把我之前留下的侄女绘画比赛偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H040",
+      "domain": "亲友往来",
+      "title": "邻居代收安排",
+      "message": "偏好记录：邻居代收安排。出差时请楼下邻居代收包裹，回家当天主动上门道谢。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "邻居代收安排",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对邻居代收安排有什么偏好？",
+        "关于邻居代收安排，我会优先什么或避开什么？",
+        "把我之前留下的邻居代收安排偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H041",
+      "domain": "财务行政",
+      "title": "月度水电核对",
+      "message": "补充一条长期背景：月度水电核对。每月五号核对水电账单和上月读数，异常时先拍表计再联系物业。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "月度水电核对",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于月度水电核对的背景是什么？",
+        "找一下月度水电核对这条长期记录。",
+        "我之前对月度水电核对留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H042",
+      "domain": "财务行政",
+      "title": "保险续期日",
+      "message": "补充一条长期背景：保险续期日。保险到期前四十五天设置提醒，先比较保障变化再决定是否续费。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "保险续期日",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于保险续期日的背景是什么？",
+        "找一下保险续期日这条长期记录。",
+        "我之前对保险续期日留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H043",
+      "domain": "财务行政",
+      "title": "护照到期检查",
+      "message": "补充一条长期背景：护照到期检查。计划出境前检查护照有效期，距离到期不足八个月就开始办理。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "护照到期检查",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于护照到期检查的背景是什么？",
+        "找一下护照到期检查这条长期记录。",
+        "我之前对护照到期检查留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H044",
+      "domain": "财务行政",
+      "title": "租约补充条款",
+      "message": "补充一条长期背景：租约补充条款。续租时把维修责任和退租验收写进补充条款，口头约定不作为依据。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "租约补充条款",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于租约补充条款的背景是什么？",
+        "找一下租约补充条款这条长期记录。",
+        "我之前对租约补充条款留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H045",
+      "domain": "财务行政",
+      "title": "备用金下限",
+      "message": "记录一个事项：备用金下限。日常备用金低于三个月开支时暂停非必要购物，月底再重新评估。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "备用金下限",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "备用金下限这件事现在是什么状态？",
+        "找出我关于备用金下限的待办记录。",
+        "之前提到的备用金下限，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H046",
+      "domain": "财务行政",
+      "title": "月度凭证归档",
+      "message": "记录一个事项：月度凭证归档。每月最后一个工作日把付款凭证按月份归档，扫描件和纸件使用同一编号。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "月度凭证归档",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "月度凭证归档这件事现在是什么状态？",
+        "找出我关于月度凭证归档的待办记录。",
+        "之前提到的月度凭证归档，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H047",
+      "domain": "财务行政",
+      "title": "银行卡年费",
+      "message": "记录一个事项：银行卡年费。银行卡年费扣款前检查实际使用率，不常用的卡在扣费前申请关闭。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "银行卡年费",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "银行卡年费这件事现在是什么状态？",
+        "找出我关于银行卡年费的待办记录。",
+        "之前提到的银行卡年费，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H048",
+      "domain": "财务行政",
+      "title": "个人所得税专项",
+      "message": "偏好记录：个人所得税专项。年度申报前集中整理住房和继续教育材料，缺少原件就先列待补清单。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "个人所得税专项",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对个人所得税专项有什么偏好？",
+        "关于个人所得税专项，我会优先什么或避开什么？",
+        "把我之前留下的个人所得税专项偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H049",
+      "domain": "财务行政",
+      "title": "会员自动续费",
+      "message": "偏好记录：会员自动续费。所有自动续费每季度检查一次，取消后保留确认截图和生效日期。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "会员自动续费",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对会员自动续费有什么偏好？",
+        "关于会员自动续费，我会优先什么或避开什么？",
+        "把我之前留下的会员自动续费偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H050",
+      "domain": "财务行政",
+      "title": "电子合同备份",
+      "message": "偏好记录：电子合同备份。电子合同下载原件和签署记录，分别保存到本地加密盘与家庭云盘。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "电子合同备份",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对电子合同备份有什么偏好？",
+        "关于电子合同备份，我会优先什么或避开什么？",
+        "把我之前留下的电子合同备份偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H051",
+      "domain": "城市游览",
+      "title": "苏州园林动线",
+      "message": "补充一条长期背景：苏州园林动线。苏州园林安排上午先看拙政园，午后再去平江路，避开景点中午人流。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "苏州园林动线",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于苏州园林动线的背景是什么？",
+        "找一下苏州园林动线这条长期记录。",
+        "我之前对苏州园林动线留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H052",
+      "domain": "城市游览",
+      "title": "南京城墙门票",
+      "message": "补充一条长期背景：南京城墙门票。南京城墙门票提前看开放城门，雨天只走较短的一段并带防滑鞋套。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "南京城墙门票",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于南京城墙门票的背景是什么？",
+        "找一下南京城墙门票这条长期记录。",
+        "我之前对南京城墙门票留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H053",
+      "domain": "城市游览",
+      "title": "厦门海边潮汐",
+      "message": "补充一条长期背景：厦门海边潮汐。厦门海边拍照先查潮汐表，涨潮前离开礁石区，不为了取景涉水。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "厦门海边潮汐",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于厦门海边潮汐的背景是什么？",
+        "找一下厦门海边潮汐这条长期记录。",
+        "我之前对厦门海边潮汐留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H054",
+      "domain": "城市游览",
+      "title": "西安博物馆预约",
+      "message": "补充一条长期背景：西安博物馆预约。西安参观博物馆先确认预约证件，讲解结束后预留一小时吃饭。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "西安博物馆预约",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于西安博物馆预约的背景是什么？",
+        "找一下西安博物馆预约这条长期记录。",
+        "我之前对西安博物馆预约留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H055",
+      "domain": "城市游览",
+      "title": "青岛渡轮班次",
+      "message": "记录一个事项：青岛渡轮班次。青岛坐渡轮先看风浪和末班时间，返程至少留两班的缓冲。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "青岛渡轮班次",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "青岛渡轮班次这件事现在是什么状态？",
+        "找出我关于青岛渡轮班次的待办记录。",
+        "之前提到的青岛渡轮班次，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H056",
+      "domain": "城市游览",
+      "title": "成都公园茶座",
+      "message": "记录一个事项：成都公园茶座。成都公园约茶优先选有遮阴的座位，周末到店前先电话确认是否排队。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "成都公园茶座",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "成都公园茶座这件事现在是什么状态？",
+        "找出我关于成都公园茶座的待办记录。",
+        "之前提到的成都公园茶座，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H057",
+      "domain": "城市游览",
+      "title": "广州骑楼路线",
+      "message": "记录一个事项：广州骑楼路线。广州骑楼步行从中山六路开始，途中安排室内休息点，不连续暴走。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "广州骑楼路线",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "广州骑楼路线这件事现在是什么状态？",
+        "找出我关于广州骑楼路线的待办记录。",
+        "之前提到的广州骑楼路线，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H058",
+      "domain": "城市游览",
+      "title": "桂林漓江天气",
+      "message": "偏好记录：桂林漓江天气。桂林漓江行程以能见度为准，雨雾太大时改成市区慢游。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "桂林漓江天气",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对桂林漓江天气有什么偏好？",
+        "关于桂林漓江天气，我会优先什么或避开什么？",
+        "把我之前留下的桂林漓江天气偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H059",
+      "domain": "城市游览",
+      "title": "杭州西溪停车",
+      "message": "偏好记录：杭州西溪停车。去西溪湿地尽量公共交通，必须开车时先记住预约停车场出口。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "杭州西溪停车",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对杭州西溪停车有什么偏好？",
+        "关于杭州西溪停车，我会优先什么或避开什么？",
+        "把我之前留下的杭州西溪停车偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H060",
+      "domain": "城市游览",
+      "title": "深圳湾日落点",
+      "message": "偏好记录：深圳湾日落点。深圳湾看日落提前查日落时间，带薄外套和可折叠坐垫。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "深圳湾日落点",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对深圳湾日落点有什么偏好？",
+        "关于深圳湾日落点，我会优先什么或避开什么？",
+        "把我之前留下的深圳湾日落点偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H061",
+      "domain": "书艺手作",
+      "title": "水彩纸克重",
+      "message": "补充一条长期背景：水彩纸克重。大面积湿画使用三百克水彩纸，小幅速写才用较薄的纸。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "水彩纸克重",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于水彩纸克重的背景是什么？",
+        "找一下水彩纸克重这条长期记录。",
+        "我之前对水彩纸克重留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H062",
+      "domain": "书艺手作",
+      "title": "篆刻印泥保存",
+      "message": "补充一条长期背景：篆刻印泥保存。印泥用后盖紧并避开暖气，表面变干时只补少量专用油。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "篆刻印泥保存",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于篆刻印泥保存的背景是什么？",
+        "找一下篆刻印泥保存这条长期记录。",
+        "我之前对篆刻印泥保存留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H063",
+      "domain": "书艺手作",
+      "title": "硬笔字帖页码",
+      "message": "补充一条长期背景：硬笔字帖页码。硬笔练习每次只临两页，页角写下当天最难控制的笔画。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "硬笔字帖页码",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于硬笔字帖页码的背景是什么？",
+        "找一下硬笔字帖页码这条长期记录。",
+        "我之前对硬笔字帖页码留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H064",
+      "domain": "书艺手作",
+      "title": "木工砂纸目数",
+      "message": "补充一条长期背景：木工砂纸目数。木料先用低目数找平，再逐级换细砂纸，最后一遍顺着纹理打磨。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "木工砂纸目数",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于木工砂纸目数的背景是什么？",
+        "找一下木工砂纸目数这条长期记录。",
+        "我之前对木工砂纸目数留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H065",
+      "domain": "书艺手作",
+      "title": "拼布布料配色",
+      "message": "记录一个事项：拼布布料配色。拼布先从主色布料确定配色，辅色不超过三种以免画面太杂。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "拼布布料配色",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "拼布布料配色这件事现在是什么状态？",
+        "找出我关于拼布布料配色的待办记录。",
+        "之前提到的拼布布料配色，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H066",
+      "domain": "书艺手作",
+      "title": "陶泥晾干速度",
+      "message": "记录一个事项：陶泥晾干速度。陶泥作品放在阴凉处缓慢干燥，底部垫木板并每天检查裂纹。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "陶泥晾干速度",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "陶泥晾干速度这件事现在是什么状态？",
+        "找出我关于陶泥晾干速度的待办记录。",
+        "之前提到的陶泥晾干速度，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H067",
+      "domain": "书艺手作",
+      "title": "书签压花方案",
+      "message": "记录一个事项：书签压花方案。压花书签使用薄花瓣和哑光膜，封膜前确认花材完全干燥。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "书签压花方案",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "书签压花方案这件事现在是什么状态？",
+        "找出我关于书签压花方案的待办记录。",
+        "之前提到的书签压花方案，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H068",
+      "domain": "书艺手作",
+      "title": "手账装订线材",
+      "message": "偏好记录：手账装订线材。手账装订选耐磨棉线，线头留在内页夹层避免刮手。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "手账装订线材",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对手账装订线材有什么偏好？",
+        "关于手账装订线材，我会优先什么或避开什么？",
+        "把我之前留下的手账装订线材偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H069",
+      "domain": "书艺手作",
+      "title": "素描灯色温",
+      "message": "偏好记录：素描灯色温。画素描时使用中性白灯，灯从左前方照射以减少手部阴影。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "素描灯色温",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对素描灯色温有什么偏好？",
+        "关于素描灯色温，我会优先什么或避开什么？",
+        "把我之前留下的素描灯色温偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H070",
+      "domain": "书艺手作",
+      "title": "篆书临摹来源",
+      "message": "偏好记录：篆书临摹来源。篆书临摹优先参考有释文的碑帖，陌生字先查出处再落笔。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "篆书临摹来源",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对篆书临摹来源有什么偏好？",
+        "关于篆书临摹来源，我会优先什么或避开什么？",
+        "把我之前留下的篆书临摹来源偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H071",
+      "domain": "家居采购",
+      "title": "床垫软硬选择",
+      "message": "补充一条长期背景：床垫软硬选择。床垫以侧睡肩胯支撑为准，试躺至少十分钟再决定，不只看促销折扣。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "床垫软硬选择",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于床垫软硬选择的背景是什么？",
+        "找一下床垫软硬选择这条长期记录。",
+        "我之前对床垫软硬选择留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H072",
+      "domain": "家居采购",
+      "title": "餐桌防滑垫尺寸",
+      "message": "补充一条长期背景：餐桌防滑垫尺寸。餐桌垫四边各留出两厘米，选择可水洗材质避免木桌受潮。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "餐桌防滑垫尺寸",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于餐桌防滑垫尺寸的背景是什么？",
+        "找一下餐桌防滑垫尺寸这条长期记录。",
+        "我之前对餐桌防滑垫尺寸留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H073",
+      "domain": "家居采购",
+      "title": "窗帘遮光等级",
+      "message": "补充一条长期背景：窗帘遮光等级。卧室窗帘选高遮光但保留透气层，客厅不追求完全不透光。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "窗帘遮光等级",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于窗帘遮光等级的背景是什么？",
+        "找一下窗帘遮光等级这条长期记录。",
+        "我之前对窗帘遮光等级留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H074",
+      "domain": "家居采购",
+      "title": "衣架肩宽规格",
+      "message": "补充一条长期背景：衣架肩宽规格。衬衫衣架按肩宽选窄版，厚外套才用宽肩衣架防止鼓包。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "衣架肩宽规格",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于衣架肩宽规格的背景是什么？",
+        "找一下衣架肩宽规格这条长期记录。",
+        "我之前对衣架肩宽规格留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H075",
+      "domain": "家居采购",
+      "title": "浴室防霉胶",
+      "message": "记录一个事项：浴室防霉胶。浴室重新打胶前先彻底干燥，选择标注防霉等级的中性胶。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "浴室防霉胶",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "浴室防霉胶这件事现在是什么状态？",
+        "找出我关于浴室防霉胶的待办记录。",
+        "之前提到的浴室防霉胶，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H076",
+      "domain": "家居采购",
+      "title": "阳台晾衣杆",
+      "message": "记录一个事项：阳台晾衣杆。晾衣杆安装高度兼顾长衣和通风，收起后不能挡住窗扇。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "阳台晾衣杆",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "阳台晾衣杆这件事现在是什么状态？",
+        "找出我关于阳台晾衣杆的待办记录。",
+        "之前提到的阳台晾衣杆，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H077",
+      "domain": "家居采购",
+      "title": "客厅地毯清洁",
+      "message": "记录一个事项：客厅地毯清洁。客厅地毯优先选择可拆洗款，购买前确认吸尘器能通过边缘高度。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "客厅地毯清洁",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "客厅地毯清洁这件事现在是什么状态？",
+        "找出我关于客厅地毯清洁的待办记录。",
+        "之前提到的客厅地毯清洁，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H078",
+      "domain": "家居采购",
+      "title": "书桌走线盒",
+      "message": "偏好记录：书桌走线盒。书桌走线盒放在靠墙一侧，电源适配器按设备贴标签。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "书桌走线盒",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对书桌走线盒有什么偏好？",
+        "关于书桌走线盒，我会优先什么或避开什么？",
+        "把我之前留下的书桌走线盒偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H079",
+      "domain": "家居采购",
+      "title": "床头暖光灯",
+      "message": "偏好记录：床头暖光灯。床头灯选可调亮度的暖光，开关位置要能在躺下时够到。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "床头暖光灯",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对床头暖光灯有什么偏好？",
+        "关于床头暖光灯，我会优先什么或避开什么？",
+        "把我之前留下的床头暖光灯偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H080",
+      "domain": "家居采购",
+      "title": "玄关换鞋凳高度",
+      "message": "偏好记录：玄关换鞋凳高度。换鞋凳高度以膝盖自然弯曲为准，底部留出放拖鞋的空间。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "玄关换鞋凳高度",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对玄关换鞋凳高度有什么偏好？",
+        "关于玄关换鞋凳高度，我会优先什么或避开什么？",
+        "把我之前留下的玄关换鞋凳高度偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H081",
+      "domain": "软件工程",
+      "title": "分支命名约定",
+      "message": "补充一条长期背景：分支命名约定。短期分支使用类型加票号命名，合并后及时删除，避免历史列表失控。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "分支命名约定",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于分支命名约定的背景是什么？",
+        "找一下分支命名约定这条长期记录。",
+        "我之前对分支命名约定留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H082",
+      "domain": "软件工程",
+      "title": "日志采样比例",
+      "message": "补充一条长期背景：日志采样比例。高流量接口默认采样百分之一，发生故障时临时提高并记录变更窗口。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "日志采样比例",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于日志采样比例的背景是什么？",
+        "找一下日志采样比例这条长期记录。",
+        "我之前对日志采样比例留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H083",
+      "domain": "软件工程",
+      "title": "配置回滚手册",
+      "message": "补充一条长期背景：配置回滚手册。配置发布前保存上一版本快照，回滚步骤必须在预发布环境演练。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "配置回滚手册",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于配置回滚手册的背景是什么？",
+        "找一下配置回滚手册这条长期记录。",
+        "我之前对配置回滚手册留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H084",
+      "domain": "软件工程",
+      "title": "缓存失效窗口",
+      "message": "补充一条长期背景：缓存失效窗口。缓存失效避开整点高峰，批量刷新拆成小批次并监控后端负载。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "缓存失效窗口",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于缓存失效窗口的背景是什么？",
+        "找一下缓存失效窗口这条长期记录。",
+        "我之前对缓存失效窗口留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H085",
+      "domain": "软件工程",
+      "title": "接口幂等标记",
+      "message": "记录一个事项：接口幂等标记。涉及扣款的接口要求客户端传幂等键，服务端保存键与结果的对应关系。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "接口幂等标记",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "接口幂等标记这件事现在是什么状态？",
+        "找出我关于接口幂等标记的待办记录。",
+        "之前提到的接口幂等标记，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H086",
+      "domain": "软件工程",
+      "title": "数据脱敏字段",
+      "message": "记录一个事项：数据脱敏字段。日志中的手机号和地址只保留必要片段，调试样本禁止直接复制生产数据。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "数据脱敏字段",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "数据脱敏字段这件事现在是什么状态？",
+        "找出我关于数据脱敏字段的待办记录。",
+        "之前提到的数据脱敏字段，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H087",
+      "domain": "软件工程",
+      "title": "发布冻结规则",
+      "message": "记录一个事项：发布冻结规则。大型活动前两小时进入发布冻结，紧急变更需要值班负责人确认。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "发布冻结规则",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "发布冻结规则这件事现在是什么状态？",
+        "找出我关于发布冻结规则的待办记录。",
+        "之前提到的发布冻结规则，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H088",
+      "domain": "软件工程",
+      "title": "异步重试上限",
+      "message": "偏好记录：异步重试上限。异步任务最多重试三次，超过上限转人工队列并保留原始错误。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "异步重试上限",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对异步重试上限有什么偏好？",
+        "关于异步重试上限，我会优先什么或避开什么？",
+        "把我之前留下的异步重试上限偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H089",
+      "domain": "软件工程",
+      "title": "依赖升级顺序",
+      "message": "偏好记录：依赖升级顺序。基础库升级先在工具服务验证，再逐个推进业务服务，不能一次全量替换。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "依赖升级顺序",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对依赖升级顺序有什么偏好？",
+        "关于依赖升级顺序，我会优先什么或避开什么？",
+        "把我之前留下的依赖升级顺序偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H090",
+      "domain": "软件工程",
+      "title": "本地调试端口",
+      "message": "偏好记录：本地调试端口。本地服务端口写进项目说明，冲突时按服务编号顺延而不是随机修改。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "本地调试端口",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对本地调试端口有什么偏好？",
+        "关于本地调试端口，我会优先什么或避开什么？",
+        "把我之前留下的本地调试端口偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H091",
+      "domain": "自然通识",
+      "title": "阳台月季修剪",
+      "message": "补充一条长期背景：阳台月季修剪。月季花后剪掉细弱枝，保留向外生长的芽点，修剪工具用酒精擦拭。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "阳台月季修剪",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于阳台月季修剪的背景是什么？",
+        "找一下阳台月季修剪这条长期记录。",
+        "我之前对阳台月季修剪留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H092",
+      "domain": "自然通识",
+      "title": "鸟类脚环含义",
+      "message": "补充一条长期背景：鸟类脚环含义。观察到带脚环的鸟只记录颜色和地点，不追赶或尝试抓取确认。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "鸟类脚环含义",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于鸟类脚环含义的背景是什么？",
+        "找一下鸟类脚环含义这条长期记录。",
+        "我之前对鸟类脚环含义留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H093",
+      "domain": "自然通识",
+      "title": "潮间带观察时段",
+      "message": "补充一条长期背景：潮间带观察时段。潮间带观察安排在退潮后一小时内，穿防滑鞋并避开孤立礁石。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "潮间带观察时段",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于潮间带观察时段的背景是什么？",
+        "找一下潮间带观察时段这条长期记录。",
+        "我之前对潮间带观察时段留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H094",
+      "domain": "自然通识",
+      "title": "流星雨观测方向",
+      "message": "补充一条长期背景：流星雨观测方向。流星雨观测先查辐射点方位，带躺椅和红光手电减少对眼睛的影响。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "流星雨观测方向",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于流星雨观测方向的背景是什么？",
+        "找一下流星雨观测方向这条长期记录。",
+        "我之前对流星雨观测方向留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H095",
+      "domain": "自然通识",
+      "title": "秋季落叶颜色",
+      "message": "记录一个事项：秋季落叶颜色。记录同一棵树从变黄到落叶的日期，拍照时保持相近角度。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "秋季落叶颜色",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "秋季落叶颜色这件事现在是什么状态？",
+        "找出我关于秋季落叶颜色的待办记录。",
+        "之前提到的秋季落叶颜色，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H096",
+      "domain": "自然通识",
+      "title": "河流弯道沉积",
+      "message": "记录一个事项：河流弯道沉积。河流弯道外侧流速较快，观察沉积物时分别比较内外岸而非只看一处。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "河流弯道沉积",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "河流弯道沉积这件事现在是什么状态？",
+        "找出我关于河流弯道沉积的待办记录。",
+        "之前提到的河流弯道沉积，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H097",
+      "domain": "自然通识",
+      "title": "蜂群避让距离",
+      "message": "记录一个事项：蜂群避让距离。发现蜂群先保持距离并联系专业人员，不能用烟雾或水直接驱赶。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "蜂群避让距离",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "蜂群避让距离这件事现在是什么状态？",
+        "找出我关于蜂群避让距离的待办记录。",
+        "之前提到的蜂群避让距离，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H098",
+      "domain": "自然通识",
+      "title": "云层高度判断",
+      "message": "偏好记录：云层高度判断。判断云层高度结合云底、能见度和风向，单凭照片颜色容易误判。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "云层高度判断",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对云层高度判断有什么偏好？",
+        "关于云层高度判断，我会优先什么或避开什么？",
+        "把我之前留下的云层高度判断偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H099",
+      "domain": "自然通识",
+      "title": "岩石风化纹理",
+      "message": "偏好记录：岩石风化纹理。观察岩石纹理先看裂隙方向，再比较迎风面和背风面的差异。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "岩石风化纹理",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对岩石风化纹理有什么偏好？",
+        "关于岩石风化纹理，我会优先什么或避开什么？",
+        "把我之前留下的岩石风化纹理偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H100",
+      "domain": "自然通识",
+      "title": "夜蛙鸣叫规律",
+      "message": "偏好记录：夜蛙鸣叫规律。夜间听蛙鸣只记录时间和天气，避免用强光照射附近水面。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "夜蛙鸣叫规律",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对夜蛙鸣叫规律有什么偏好？",
+        "关于夜蛙鸣叫规律，我会优先什么或避开什么？",
+        "把我之前留下的夜蛙鸣叫规律偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H101",
+      "domain": "工作沟通",
+      "title": "周会发言顺序",
+      "message": "补充一条长期背景：周会发言顺序。周会先讲结论和阻塞，再补充背景；需要讨论的事项提前写进议程。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "周会发言顺序",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于周会发言顺序的背景是什么？",
+        "找一下周会发言顺序这条长期记录。",
+        "我之前对周会发言顺序留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H102",
+      "domain": "工作沟通",
+      "title": "需求变更留痕",
+      "message": "补充一条长期背景：需求变更留痕。需求口径改变时在原任务下补充日期和影响，不只在聊天窗口口头确认。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "需求变更留痕",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于需求变更留痕的背景是什么？",
+        "找一下需求变更留痕这条长期记录。",
+        "我之前对需求变更留痕留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H103",
+      "domain": "工作沟通",
+      "title": "邮件抄送范围",
+      "message": "补充一条长期背景：邮件抄送范围。邮件只抄送需要决策或执行的人，知会对象单独发送摘要。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "邮件抄送范围",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于邮件抄送范围的背景是什么？",
+        "找一下邮件抄送范围这条长期记录。",
+        "我之前对邮件抄送范围留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H104",
+      "domain": "工作沟通",
+      "title": "远程会议背景",
+      "message": "补充一条长期背景：远程会议背景。远程会议使用简洁背景并提前测试麦克风，临时加入时先发文字说明。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "远程会议背景",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于远程会议背景的背景是什么？",
+        "找一下远程会议背景这条长期记录。",
+        "我之前对远程会议背景留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H105",
+      "domain": "工作沟通",
+      "title": "交接清单字段",
+      "message": "记录一个事项：交接清单字段。交接清单包含当前状态、下一步、联系人和风险，不用模糊的完成中表述。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "交接清单字段",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "交接清单字段这件事现在是什么状态？",
+        "找出我关于交接清单字段的待办记录。",
+        "之前提到的交接清单字段，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H106",
+      "domain": "工作沟通",
+      "title": "反馈措辞边界",
+      "message": "记录一个事项：反馈措辞边界。给同事反馈先描述事实和影响，再提出可执行建议，避免评价人格。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "反馈措辞边界",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "反馈措辞边界这件事现在是什么状态？",
+        "找出我关于反馈措辞边界的待办记录。",
+        "之前提到的反馈措辞边界，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H107",
+      "domain": "工作沟通",
+      "title": "任务延期说明",
+      "message": "记录一个事项：任务延期说明。任务延期说明原因和新日期，若依赖外部团队则同时标注等待事项。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "任务延期说明",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "任务延期说明这件事现在是什么状态？",
+        "找出我关于任务延期说明的待办记录。",
+        "之前提到的任务延期说明，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H108",
+      "domain": "工作沟通",
+      "title": "新人带教节奏",
+      "message": "偏好记录：新人带教节奏。新人第一周安排短任务和结对演示，第二周再逐步增加独立事项。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "新人带教节奏",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对新人带教节奏有什么偏好？",
+        "关于新人带教节奏，我会优先什么或避开什么？",
+        "把我之前留下的新人带教节奏偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H109",
+      "domain": "工作沟通",
+      "title": "客户称谓偏好",
+      "message": "偏好记录：客户称谓偏好。对外称呼客户使用合同中的正式名称，内部简称不直接带到邮件里。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "客户称谓偏好",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对客户称谓偏好有什么偏好？",
+        "关于客户称谓偏好，我会优先什么或避开什么？",
+        "把我之前留下的客户称谓偏好偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H110",
+      "domain": "工作沟通",
+      "title": "跨时区响应窗口",
+      "message": "偏好记录：跨时区响应窗口。跨时区协作约定每天两个重叠窗口，非紧急消息不要求即时回复。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "跨时区响应窗口",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对跨时区响应窗口有什么偏好？",
+        "关于跨时区响应窗口，我会优先什么或避开什么？",
+        "把我之前留下的跨时区响应窗口偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H111",
+      "domain": "个人节奏",
+      "title": "清晨专注时段",
+      "message": "补充一条长期背景：清晨专注时段。清晨先处理需要连续思考的事情，消息和零碎沟通放到十点以后。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "清晨专注时段",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于清晨专注时段的背景是什么？",
+        "找一下清晨专注时段这条长期记录。",
+        "我之前对清晨专注时段留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H112",
+      "domain": "个人节奏",
+      "title": "周三采购窗口",
+      "message": "补充一条长期背景：周三采购窗口。每周三晚上集中采购日用品，临时缺货先记入清单而不是马上下单。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "周三采购窗口",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于周三采购窗口的背景是什么？",
+        "找一下周三采购窗口这条长期记录。",
+        "我之前对周三采购窗口留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H113",
+      "domain": "个人节奏",
+      "title": "每月整理时刻",
+      "message": "补充一条长期背景：每月整理时刻。每月最后一个周日下午整理桌面和文件，控制在九十分钟内结束。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "每月整理时刻",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于每月整理时刻的背景是什么？",
+        "找一下每月整理时刻这条长期记录。",
+        "我之前对每月整理时刻留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H114",
+      "domain": "个人节奏",
+      "title": "午后低能量安排",
+      "message": "补充一条长期背景：午后低能量安排。午后精力下降时安排校对、归档等轻任务，不强行启动新项目。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "午后低能量安排",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于午后低能量安排的背景是什么？",
+        "找一下午后低能量安排这条长期记录。",
+        "我之前对午后低能量安排留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H115",
+      "domain": "个人节奏",
+      "title": "通勤听音频",
+      "message": "记录一个事项：通勤听音频。通勤时听短篇课程或播客，遇到需要记笔记的内容回家再整理。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "通勤听音频",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "通勤听音频这件事现在是什么状态？",
+        "找出我关于通勤听音频的待办记录。",
+        "之前提到的通勤听音频，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H116",
+      "domain": "个人节奏",
+      "title": "夜间备忘方式",
+      "message": "记录一个事项：夜间备忘方式。晚上只记录三条明日提醒，超过三条就移动到周计划中。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "夜间备忘方式",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "夜间备忘方式这件事现在是什么状态？",
+        "找出我关于夜间备忘方式的待办记录。",
+        "之前提到的夜间备忘方式，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H117",
+      "domain": "个人节奏",
+      "title": "周日计划长度",
+      "message": "记录一个事项：周日计划长度。周日计划最多写五项，必须给突发事项留出半天空档。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "周日计划长度",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "周日计划长度这件事现在是什么状态？",
+        "找出我关于周日计划长度的待办记录。",
+        "之前提到的周日计划长度，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H118",
+      "domain": "个人节奏",
+      "title": "短途休息地点",
+      "message": "偏好记录：短途休息地点。工作间隙去楼下树荫处走十分钟，比一直坐在咖啡店更能恢复注意力。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "短途休息地点",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对短途休息地点有什么偏好？",
+        "关于短途休息地点，我会优先什么或避开什么？",
+        "把我之前留下的短途休息地点偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H119",
+      "domain": "个人节奏",
+      "title": "重要事项颜色标记",
+      "message": "偏好记录：重要事项颜色标记。日历中红色只标记真正的截止日，普通提醒使用蓝色避免视觉疲劳。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "重要事项颜色标记",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对重要事项颜色标记有什么偏好？",
+        "关于重要事项颜色标记，我会优先什么或避开什么？",
+        "把我之前留下的重要事项颜色标记偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H120",
+      "domain": "个人节奏",
+      "title": "月末复盘问题",
+      "message": "偏好记录：月末复盘问题。月末复盘固定回答做成了什么、为什么延期、下月删掉什么三件事。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "月末复盘问题",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对月末复盘问题有什么偏好？",
+        "关于月末复盘问题，我会优先什么或避开什么？",
+        "把我之前留下的月末复盘问题偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H121",
+      "domain": "宠物植物",
+      "title": "猫砂更换频率",
+      "message": "补充一条长期背景：猫砂更换频率。猫砂盆每天铲两次，每两周彻底更换并清洗盆底。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "猫砂更换频率",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于猫砂更换频率的背景是什么？",
+        "找一下猫砂更换频率这条长期记录。",
+        "我之前对猫砂更换频率留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H122",
+      "domain": "宠物植物",
+      "title": "狗狗雨天散步",
+      "message": "补充一条长期背景：狗狗雨天散步。下小雨仍按短路线散步，暴雨时改做室内嗅闻游戏。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "狗狗雨天散步",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于狗狗雨天散步的背景是什么？",
+        "找一下狗狗雨天散步这条长期记录。",
+        "我之前对狗狗雨天散步留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H123",
+      "domain": "宠物植物",
+      "title": "绿萝浇水重量",
+      "message": "补充一条长期背景：绿萝浇水重量。绿萝花盆明显变轻再浇透，托盘积水超过十分钟就倒掉。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "绿萝浇水重量",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于绿萝浇水重量的背景是什么？",
+        "找一下绿萝浇水重量这条长期记录。",
+        "我之前对绿萝浇水重量留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H124",
+      "domain": "宠物植物",
+      "title": "多肉换盆季节",
+      "message": "补充一条长期背景：多肉换盆季节。多肉换盆选春秋凉爽天气，换盆后一周先不浇水。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "多肉换盆季节",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于多肉换盆季节的背景是什么？",
+        "找一下多肉换盆季节这条长期记录。",
+        "我之前对多肉换盆季节留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H125",
+      "domain": "宠物植物",
+      "title": "龟背竹支撑杆",
+      "message": "记录一个事项：龟背竹支撑杆。龟背竹新叶变大时加苔藓杆，绑带留出手指宽度避免勒伤。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "龟背竹支撑杆",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "龟背竹支撑杆这件事现在是什么状态？",
+        "找出我关于龟背竹支撑杆的待办记录。",
+        "之前提到的龟背竹支撑杆，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H126",
+      "domain": "宠物植物",
+      "title": "宠物疫苗提醒",
+      "message": "记录一个事项：宠物疫苗提醒。宠物疫苗按接种本日期提前一个月提醒，预约后把凭证拍照保存。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "宠物疫苗提醒",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "宠物疫苗提醒这件事现在是什么状态？",
+        "找出我关于宠物疫苗提醒的待办记录。",
+        "之前提到的宠物疫苗提醒，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H127",
+      "domain": "宠物植物",
+      "title": "阳台薄荷摘心",
+      "message": "记录一个事项：阳台薄荷摘心。薄荷长到六对叶片时摘心，剪下的枝条可水培但要保持通风。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "阳台薄荷摘心",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "阳台薄荷摘心这件事现在是什么状态？",
+        "找出我关于阳台薄荷摘心的待办记录。",
+        "之前提到的阳台薄荷摘心，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H128",
+      "domain": "宠物植物",
+      "title": "鱼缸换水比例",
+      "message": "偏好记录：鱼缸换水比例。鱼缸每周换四分之一的水，新水先静置并校对温度。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "鱼缸换水比例",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对鱼缸换水比例有什么偏好？",
+        "关于鱼缸换水比例，我会优先什么或避开什么？",
+        "把我之前留下的鱼缸换水比例偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H129",
+      "domain": "宠物植物",
+      "title": "仓鼠垫料厚度",
+      "message": "偏好记录：仓鼠垫料厚度。仓鼠垫料保持至少十五厘米，粉尘大的木屑不再购买。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "仓鼠垫料厚度",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对仓鼠垫料厚度有什么偏好？",
+        "关于仓鼠垫料厚度，我会优先什么或避开什么？",
+        "把我之前留下的仓鼠垫料厚度偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H130",
+      "domain": "宠物植物",
+      "title": "兰花通风位置",
+      "message": "偏好记录：兰花通风位置。兰花放在明亮散射光处，浇水后加强通风避免叶心积水。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "兰花通风位置",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对兰花通风位置有什么偏好？",
+        "关于兰花通风位置，我会优先什么或避开什么？",
+        "把我之前留下的兰花通风位置偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H131",
+      "domain": "家庭收纳",
+      "title": "冬被真空袋",
+      "message": "补充一条长期背景：冬被真空袋。冬被收进真空袋前完全晾干，袋外贴尺寸和取用季节。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "冬被真空袋",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于冬被真空袋的背景是什么？",
+        "找一下冬被真空袋这条长期记录。",
+        "我之前对冬被真空袋留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H132",
+      "domain": "家庭收纳",
+      "title": "药箱分类标签",
+      "message": "补充一条长期背景：药箱分类标签。药箱按外用、口服和备用分类，儿童不能接触的药放在上层。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "药箱分类标签",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于药箱分类标签的背景是什么？",
+        "找一下药箱分类标签这条长期记录。",
+        "我之前对药箱分类标签留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H133",
+      "domain": "家庭收纳",
+      "title": "证件复印件位置",
+      "message": "补充一条长期背景：证件复印件位置。证件复印件放在加密文件夹，原件和复印件分别标注有效期。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "证件复印件位置",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于证件复印件位置的背景是什么？",
+        "找一下证件复印件位置这条长期记录。",
+        "我之前对证件复印件位置留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H134",
+      "domain": "家庭收纳",
+      "title": "充电线收纳盒",
+      "message": "补充一条长期背景：充电线收纳盒。充电线按接口类型分隔，坏线先剪断再放入待回收袋。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "充电线收纳盒",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于充电线收纳盒的背景是什么？",
+        "找一下充电线收纳盒这条长期记录。",
+        "我之前对充电线收纳盒留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H135",
+      "domain": "家庭收纳",
+      "title": "门口钥匙盘",
+      "message": "记录一个事项：门口钥匙盘。门口只留日常钥匙，备用钥匙和门禁卡放进抽屉内的小盒。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "门口钥匙盘",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "门口钥匙盘这件事现在是什么状态？",
+        "找出我关于门口钥匙盘的待办记录。",
+        "之前提到的门口钥匙盘，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H136",
+      "domain": "家庭收纳",
+      "title": "清洁剂高处存放",
+      "message": "记录一个事项：清洁剂高处存放。清洁剂统一放在带门的高柜，喷头朝内并保持标签朝外。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "清洁剂高处存放",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "清洁剂高处存放这件事现在是什么状态？",
+        "找出我关于清洁剂高处存放的待办记录。",
+        "之前提到的清洁剂高处存放，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H137",
+      "domain": "家庭收纳",
+      "title": "工具箱分格",
+      "message": "记录一个事项：工具箱分格。工具箱按测量、紧固和维修分格，借出工具当天记录去向。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "工具箱分格",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "工具箱分格这件事现在是什么状态？",
+        "找出我关于工具箱分格的待办记录。",
+        "之前提到的工具箱分格，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H138",
+      "domain": "家庭收纳",
+      "title": "旅行用品清单",
+      "message": "偏好记录：旅行用品清单。出门用品按洗漱、充电和药品三类装袋，回来当天清点归位。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "旅行用品清单",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对旅行用品清单有什么偏好？",
+        "关于旅行用品清单，我会优先什么或避开什么？",
+        "把我之前留下的旅行用品清单偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H139",
+      "domain": "家庭收纳",
+      "title": "折叠伞晾干",
+      "message": "偏好记录：折叠伞晾干。雨伞回家先完全展开晾干，确认干透后再放回门边筒。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "折叠伞晾干",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对折叠伞晾干有什么偏好？",
+        "关于折叠伞晾干，我会优先什么或避开什么？",
+        "把我之前留下的折叠伞晾干偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H140",
+      "domain": "家庭收纳",
+      "title": "旧衣去留标准",
+      "message": "偏好记录：旧衣去留标准。一年未穿且不合身的衣服单独试穿，能转赠的先拍照登记。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "旧衣去留标准",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对旧衣去留标准有什么偏好？",
+        "关于旧衣去留标准，我会优先什么或避开什么？",
+        "把我之前留下的旧衣去留标准偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H141",
+      "domain": "本地服务",
+      "title": "洗衣店取件窗口",
+      "message": "补充一条长期背景：洗衣店取件窗口。洗衣店取件尽量安排在晚上八点前，取回时核对件数和特殊处理备注。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "洗衣店取件窗口",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于洗衣店取件窗口的背景是什么？",
+        "找一下洗衣店取件窗口这条长期记录。",
+        "我之前对洗衣店取件窗口留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H142",
+      "domain": "本地服务",
+      "title": "修鞋店配色要求",
+      "message": "补充一条长期背景：修鞋店配色要求。修鞋前拍下原鞋颜色，鞋带和鞋底更换要分别询价确认。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "修鞋店配色要求",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于修鞋店配色要求的背景是什么？",
+        "找一下修鞋店配色要求这条长期记录。",
+        "我之前对修鞋店配色要求留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H143",
+      "domain": "本地服务",
+      "title": "社区理发预约",
+      "message": "补充一条长期背景：社区理发预约。社区理发提前一天预约，第一次去先说明希望保留的长度。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "社区理发预约",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于社区理发预约的背景是什么？",
+        "找一下社区理发预约这条长期记录。",
+        "我之前对社区理发预约留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H144",
+      "domain": "本地服务",
+      "title": "快递柜超时处理",
+      "message": "补充一条长期背景：快递柜超时处理。快递放入柜后当天查看取件码，超过保管期前联系寄件方改派。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "快递柜超时处理",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于快递柜超时处理的背景是什么？",
+        "找一下快递柜超时处理这条长期记录。",
+        "我之前对快递柜超时处理留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H145",
+      "domain": "本地服务",
+      "title": "家政上门时间",
+      "message": "记录一个事项：家政上门时间。家政上门安排在周六上午，提前收好贵重物品并列出清洁重点。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "家政上门时间",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "家政上门时间这件事现在是什么状态？",
+        "找出我关于家政上门时间的待办记录。",
+        "之前提到的家政上门时间，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H146",
+      "domain": "本地服务",
+      "title": "维修进门说明",
+      "message": "记录一个事项：维修进门说明。维修人员进门前先确认工单和收费范围，离开时检查拆下的零件。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "维修进门说明",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "维修进门说明这件事现在是什么状态？",
+        "找出我关于维修进门说明的待办记录。",
+        "之前提到的维修进门说明，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H147",
+      "domain": "本地服务",
+      "title": "体检中心停车入口",
+      "message": "记录一个事项：体检中心停车入口。去体检中心开车从东门进入，早到时先确认车位是否需要扫码。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "体检中心停车入口",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "体检中心停车入口这件事现在是什么状态？",
+        "找出我关于体检中心停车入口的待办记录。",
+        "之前提到的体检中心停车入口，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H148",
+      "domain": "本地服务",
+      "title": "图书馆续借规则",
+      "message": "偏好记录：图书馆续借规则。借阅到期前一周查看续借次数，热门资料不能续借就提前归还。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "图书馆续借规则",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对图书馆续借规则有什么偏好？",
+        "关于图书馆续借规则，我会优先什么或避开什么？",
+        "把我之前留下的图书馆续借规则偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H149",
+      "domain": "本地服务",
+      "title": "旧物回收日期",
+      "message": "偏好记录：旧物回收日期。每月第二个周六整理纸箱和小家电，分别投放到对应回收点。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "旧物回收日期",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对旧物回收日期有什么偏好？",
+        "关于旧物回收日期，我会优先什么或避开什么？",
+        "把我之前留下的旧物回收日期偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H150",
+      "domain": "本地服务",
+      "title": "物业报修渠道",
+      "message": "偏好记录：物业报修渠道。漏水等紧急问题先电话报修，普通问题在小程序提交照片和位置。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "物业报修渠道",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对物业报修渠道有什么偏好？",
+        "关于物业报修渠道，我会优先什么或避开什么？",
+        "把我之前留下的物业报修渠道偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H151",
+      "domain": "长期目标",
+      "title": "资格考试分阶段",
+      "message": "补充一条长期背景：资格考试分阶段。资格考试先完成基础章节，再做真题和错题回看，每阶段设置可验收成果。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "资格考试分阶段",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于资格考试分阶段的背景是什么？",
+        "找一下资格考试分阶段这条长期记录。",
+        "我之前对资格考试分阶段留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H152",
+      "domain": "长期目标",
+      "title": "应急技能练习",
+      "message": "补充一条长期背景：应急技能练习。每季度练习一次灭火器和急救包使用，练习后补齐消耗品。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "应急技能练习",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于应急技能练习的背景是什么？",
+        "找一下应急技能练习这条长期记录。",
+        "我之前对应急技能练习留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H153",
+      "domain": "长期目标",
+      "title": "个人作品集节奏",
+      "message": "补充一条长期背景：个人作品集节奏。作品集每月完成一个小项目，先写说明再整理截图和复盘。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "个人作品集节奏",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于个人作品集节奏的背景是什么？",
+        "找一下个人作品集节奏这条长期记录。",
+        "我之前对个人作品集节奏留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H154",
+      "domain": "长期目标",
+      "title": "家庭旅行基金",
+      "message": "补充一条长期背景：家庭旅行基金。家庭旅行基金单独存放，每月固定转入，非旅行支出不动用。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "家庭旅行基金",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于家庭旅行基金的背景是什么？",
+        "找一下家庭旅行基金这条长期记录。",
+        "我之前对家庭旅行基金留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H155",
+      "domain": "长期目标",
+      "title": "体能提升基线",
+      "message": "记录一个事项：体能提升基线。体能计划先记录俯卧撑、步行和睡眠基线，四周后再调整强度。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "体能提升基线",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "体能提升基线这件事现在是什么状态？",
+        "找出我关于体能提升基线的待办记录。",
+        "之前提到的体能提升基线，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H156",
+      "domain": "长期目标",
+      "title": "学习第二外语",
+      "message": "记录一个事项：学习第二外语。第二外语每天学二十分钟，周末用一段听力材料检验是否记住。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "学习第二外语",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "学习第二外语这件事现在是什么状态？",
+        "找出我关于学习第二外语的待办记录。",
+        "之前提到的学习第二外语，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H157",
+      "domain": "长期目标",
+      "title": "房间改造预算",
+      "message": "记录一个事项：房间改造预算。房间改造先做必要维修，软装预算按房间拆分并预留百分之十机动金。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "房间改造预算",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "房间改造预算这件事现在是什么状态？",
+        "找出我关于房间改造预算的待办记录。",
+        "之前提到的房间改造预算，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H158",
+      "domain": "长期目标",
+      "title": "申请证书时间线",
+      "message": "偏好记录：申请证书时间线。申请证书前列出材料、翻译和递交节点，提前两周核对官方要求。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "申请证书时间线",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对申请证书时间线有什么偏好？",
+        "关于申请证书时间线，我会优先什么或避开什么？",
+        "把我之前留下的申请证书时间线偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H159",
+      "domain": "长期目标",
+      "title": "长文写作计划",
+      "message": "偏好记录：长文写作计划。长文写作每周完成一个小节，先保证论点完整，再统一润色语言。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "长文写作计划",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对长文写作计划有什么偏好？",
+        "关于长文写作计划，我会优先什么或避开什么？",
+        "把我之前留下的长文写作计划偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H160",
+      "domain": "长期目标",
+      "title": "退休储备检查",
+      "message": "偏好记录：退休储备检查。每年检查一次退休储备比例，结合收入变化调整长期投入金额。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "退休储备检查",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对退休储备检查有什么偏好？",
+        "关于退休储备检查，我会优先什么或避开什么？",
+        "把我之前留下的退休储备检查偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H161",
+      "domain": "娱乐休闲",
+      "title": "桌游人数上限",
+      "message": "补充一条长期背景：桌游人数上限。四人以上的桌游先确认规则时长，超过人数就拆成两桌轮换。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "桌游人数上限",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于桌游人数上限的背景是什么？",
+        "找一下桌游人数上限这条长期记录。",
+        "我之前对桌游人数上限留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H162",
+      "domain": "娱乐休闲",
+      "title": "纪录片观看顺序",
+      "message": "补充一条长期背景：纪录片观看顺序。纪录片按主题而不是上映年份观看，每集结束记下一条想继续查的线索。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "纪录片观看顺序",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于纪录片观看顺序的背景是什么？",
+        "找一下纪录片观看顺序这条长期记录。",
+        "我之前对纪录片观看顺序留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H163",
+      "domain": "娱乐休闲",
+      "title": "音乐会坐席选择",
+      "message": "补充一条长期背景：音乐会坐席选择。音乐会优先选能看清指挥和字幕的位置，散场交通要提前确认。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "音乐会坐席选择",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于音乐会坐席选择的背景是什么？",
+        "找一下音乐会坐席选择这条长期记录。",
+        "我之前对音乐会坐席选择留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H164",
+      "domain": "娱乐休闲",
+      "title": "露营炉具清单",
+      "message": "补充一条长期背景：露营炉具清单。露营炉具出发前逐项点数，燃料和防风配件分开放置。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "露营炉具清单",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于露营炉具清单的背景是什么？",
+        "找一下露营炉具清单这条长期记录。",
+        "我之前对露营炉具清单留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H165",
+      "domain": "娱乐休闲",
+      "title": "城市夜骑照明",
+      "message": "记录一个事项：城市夜骑照明。夜骑前检查前后灯和反光条，经过人多路段降低速度。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "城市夜骑照明",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "城市夜骑照明这件事现在是什么状态？",
+        "找出我关于城市夜骑照明的待办记录。",
+        "之前提到的城市夜骑照明，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H166",
+      "domain": "娱乐休闲",
+      "title": "拼图收纳方式",
+      "message": "记录一个事项：拼图收纳方式。未完成拼图放在硬质托盘上，按颜色分袋并标注缺口。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "拼图收纳方式",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "拼图收纳方式这件事现在是什么状态？",
+        "找出我关于拼图收纳方式的待办记录。",
+        "之前提到的拼图收纳方式，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H167",
+      "domain": "娱乐休闲",
+      "title": "咖啡豆烘焙度",
+      "message": "记录一个事项：咖啡豆烘焙度。手冲尝试中浅烘焙，第一次只买小包装，记录研磨度和水温。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "咖啡豆烘焙度",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "咖啡豆烘焙度这件事现在是什么状态？",
+        "找出我关于咖啡豆烘焙度的待办记录。",
+        "之前提到的咖啡豆烘焙度，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H168",
+      "domain": "娱乐休闲",
+      "title": "纸牌游戏计分",
+      "message": "偏好记录：纸牌游戏计分。纸牌游戏用统一计分表，结束后拍照保存而不是凭记忆口算。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "纸牌游戏计分",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对纸牌游戏计分有什么偏好？",
+        "关于纸牌游戏计分，我会优先什么或避开什么？",
+        "把我之前留下的纸牌游戏计分偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H169",
+      "domain": "娱乐休闲",
+      "title": "周末展览偏好",
+      "message": "偏好记录：周末展览偏好。周末展览优先看小型专题展，避开需要长时间排队的热门展馆。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "周末展览偏好",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对周末展览偏好有什么偏好？",
+        "关于周末展览偏好，我会优先什么或避开什么？",
+        "把我之前留下的周末展览偏好偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H170",
+      "domain": "娱乐休闲",
+      "title": "阳台观星准备",
+      "message": "偏好记录：阳台观星准备。阳台观星准备红光手电和小凳，先确认天气和楼顶照明是否干扰。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "阳台观星准备",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对阳台观星准备有什么偏好？",
+        "关于阳台观星准备，我会优先什么或避开什么？",
+        "把我之前留下的阳台观星准备偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H171",
+      "domain": "交通细节",
+      "title": "高铁换乘缓冲",
+      "message": "补充一条长期背景：高铁换乘缓冲。高铁换乘至少预留二十五分钟，带大件行李时再增加十分钟。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "高铁换乘缓冲",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于高铁换乘缓冲的背景是什么？",
+        "找一下高铁换乘缓冲这条长期记录。",
+        "我之前对高铁换乘缓冲留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H172",
+      "domain": "交通细节",
+      "title": "城际车站出口",
+      "message": "补充一条长期背景：城际车站出口。到陌生城际车站先确认出口编号，再打开导航规划最后一公里。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "城际车站出口",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于城际车站出口的背景是什么？",
+        "找一下城际车站出口这条长期记录。",
+        "我之前对城际车站出口留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H173",
+      "domain": "交通细节",
+      "title": "共享单车停车区",
+      "message": "补充一条长期背景：共享单车停车区。共享单车骑到地铁站后停入指定区域，锁车后检查订单是否正常结束。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "共享单车停车区",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于共享单车停车区的背景是什么？",
+        "找一下共享单车停车区这条长期记录。",
+        "我之前对共享单车停车区留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H174",
+      "domain": "交通细节",
+      "title": "机场早班接驳",
+      "message": "补充一条长期背景：机场早班接驳。早班机前一晚确认接驳车位置，出发时间按最早一班车倒推。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "机场早班接驳",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于机场早班接驳的背景是什么？",
+        "找一下机场早班接驳这条长期记录。",
+        "我之前对机场早班接驳留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H175",
+      "domain": "交通细节",
+      "title": "雨天鞋套备用",
+      "message": "记录一个事项：雨天鞋套备用。雨天长途出行带一双轻便鞋套，湿鞋回到住处后先用纸巾吸水。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "雨天鞋套备用",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "雨天鞋套备用这件事现在是什么状态？",
+        "找出我关于雨天鞋套备用的待办记录。",
+        "之前提到的雨天鞋套备用，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H176",
+      "domain": "交通细节",
+      "title": "长途座位选择",
+      "message": "记录一个事项：长途座位选择。长途车优先选靠前且不贴厕所的位置，容易晕车时准备薄荷糖。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "长途座位选择",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "长途座位选择这件事现在是什么状态？",
+        "找出我关于长途座位选择的待办记录。",
+        "之前提到的长途座位选择，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H177",
+      "domain": "交通细节",
+      "title": "地铁施工绕行",
+      "message": "记录一个事项：地铁施工绕行。地铁施工期间先看官方绕行公告，不把旧路线截图当成实时信息。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "地铁施工绕行",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "地铁施工绕行这件事现在是什么状态？",
+        "找出我关于地铁施工绕行的待办记录。",
+        "之前提到的地铁施工绕行，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H178",
+      "domain": "交通细节",
+      "title": "返程行李配重",
+      "message": "偏好记录：返程行李配重。返程前把重物放在箱底并称重，避免在车站临时重新分装。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "返程行李配重",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对返程行李配重有什么偏好？",
+        "关于返程行李配重，我会优先什么或避开什么？",
+        "把我之前留下的返程行李配重偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H179",
+      "domain": "交通细节",
+      "title": "夜间打车上车点",
+      "message": "偏好记录：夜间打车上车点。夜间打车选择有照明的固定上车点，上车后把车牌发给家人。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "夜间打车上车点",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对夜间打车上车点有什么偏好？",
+        "关于夜间打车上车点，我会优先什么或避开什么？",
+        "把我之前留下的夜间打车上车点偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H180",
+      "domain": "交通细节",
+      "title": "自驾充电规划",
+      "message": "偏好记录：自驾充电规划。自驾前查沿线充电站的开放状态，剩余电量低于百分之三十就开始找站。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "自驾充电规划",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对自驾充电规划有什么偏好？",
+        "关于自驾充电规划，我会优先什么或避开什么？",
+        "把我之前留下的自驾充电规划偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H181",
+      "domain": "活动筹备",
+      "title": "生日聚餐座位",
+      "message": "补充一条长期背景：生日聚餐座位。生日聚餐把行动不便的长辈安排在靠近入口的位置，菜单提前询问忌口。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "生日聚餐座位",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于生日聚餐座位的背景是什么？",
+        "找一下生日聚餐座位这条长期记录。",
+        "我之前对生日聚餐座位留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H182",
+      "domain": "活动筹备",
+      "title": "社群报名截止",
+      "message": "补充一条长期背景：社群报名截止。社群活动报名截止后统一导出名单，临时加入的人单独记录。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "社群报名截止",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于社群报名截止的背景是什么？",
+        "找一下社群报名截止这条长期记录。",
+        "我之前对社群报名截止留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H183",
+      "domain": "活动筹备",
+      "title": "讲座物料清单",
+      "message": "补充一条长期背景：讲座物料清单。讲座物料包括签到表、计时牌和备用笔，前一天按箱子逐项复核。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "讲座物料清单",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于讲座物料清单的背景是什么？",
+        "找一下讲座物料清单这条长期记录。",
+        "我之前对讲座物料清单留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H184",
+      "domain": "活动筹备",
+      "title": "婚礼签到流程",
+      "message": "补充一条长期背景：婚礼签到流程。婚礼签到按姓氏分两列，礼金登记和入场引导由不同人负责。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "婚礼签到流程",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于婚礼签到流程的背景是什么？",
+        "找一下婚礼签到流程这条长期记录。",
+        "我之前对婚礼签到流程留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H185",
+      "domain": "活动筹备",
+      "title": "亲子游戏时长",
+      "message": "记录一个事项：亲子游戏时长。亲子游戏单轮不超过十五分钟，准备安静活动给提前退出的孩子。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "亲子游戏时长",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "亲子游戏时长这件事现在是什么状态？",
+        "找出我关于亲子游戏时长的待办记录。",
+        "之前提到的亲子游戏时长，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H186",
+      "domain": "活动筹备",
+      "title": "展台电源位置",
+      "message": "记录一个事项：展台电源位置。展台搭建前确认电源负载和走线，电线经过通道必须加保护槽。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "展台电源位置",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "展台电源位置这件事现在是什么状态？",
+        "找出我关于展台电源位置的待办记录。",
+        "之前提到的展台电源位置，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H187",
+      "domain": "活动筹备",
+      "title": "志愿者轮班表",
+      "message": "记录一个事项：志愿者轮班表。志愿者轮班表写清交接时间和联系人，临时请假至少提前两小时通知。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "志愿者轮班表",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "志愿者轮班表这件事现在是什么状态？",
+        "找出我关于志愿者轮班表的待办记录。",
+        "之前提到的志愿者轮班表，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H188",
+      "domain": "活动筹备",
+      "title": "活动照片命名",
+      "message": "偏好记录：活动照片命名。活动照片按日期和环节命名，集体照单独备份到共享文件夹。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "活动照片命名",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对活动照片命名有什么偏好？",
+        "关于活动照片命名，我会优先什么或避开什么？",
+        "把我之前留下的活动照片命名偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H189",
+      "domain": "活动筹备",
+      "title": "雨备场地方案",
+      "message": "偏好记录：雨备场地方案。户外活动准备室内雨备场地，通知模板里同时写清集合点变更。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "雨备场地方案",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对雨备场地方案有什么偏好？",
+        "关于雨备场地方案，我会优先什么或避开什么？",
+        "把我之前留下的雨备场地方案偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H190",
+      "domain": "活动筹备",
+      "title": "礼物包装尺寸",
+      "message": "偏好记录：礼物包装尺寸。礼物包装先量盒子长宽高，易碎品使用双层缓冲并贴醒目标识。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "礼物包装尺寸",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对礼物包装尺寸有什么偏好？",
+        "关于礼物包装尺寸，我会优先什么或避开什么？",
+        "把我之前留下的礼物包装尺寸偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H191",
+      "domain": "数字生活",
+      "title": "手机相册分组",
+      "message": "补充一条长期背景：手机相册分组。手机相册按项目和家人分组，每月底清理重复截图和模糊照片。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "手机相册分组",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于手机相册分组的背景是什么？",
+        "找一下手机相册分组这条长期记录。",
+        "我之前对手机相册分组留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H192",
+      "domain": "数字生活",
+      "title": "双因素备份码",
+      "message": "补充一条长期背景：双因素备份码。双因素备份码打印一份放在锁柜，云端只保存加密副本。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "双因素备份码",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于双因素备份码的背景是什么？",
+        "找一下双因素备份码这条长期记录。",
+        "我之前对双因素备份码留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H193",
+      "domain": "数字生活",
+      "title": "浏览器标签清理",
+      "message": "补充一条长期背景：浏览器标签清理。浏览器标签每周整理一次，暂时不看的页面加入稍后阅读清单。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "浏览器标签清理",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于浏览器标签清理的背景是什么？",
+        "找一下浏览器标签清理这条长期记录。",
+        "我之前对浏览器标签清理留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H194",
+      "domain": "数字生活",
+      "title": "云盘共享权限",
+      "message": "补充一条长期背景：云盘共享权限。云盘共享按最小权限设置，项目结束后逐一撤销外部成员访问。",
+      "memory_type": "semantic",
+      "predicate": "background",
+      "object_value": "云盘共享权限",
+      "task_status": null,
+      "polarity": null,
+      "queries": [
+        "关于云盘共享权限的背景是什么？",
+        "找一下云盘共享权限这条长期记录。",
+        "我之前对云盘共享权限留下了什么说明？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H195",
+      "domain": "数字生活",
+      "title": "家庭屏幕时间",
+      "message": "记录一个事项：家庭屏幕时间。家庭平板设置晚间屏幕时间上限，学习应用不与娱乐应用共用账号。 当前状态先记为todo。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "家庭屏幕时间",
+      "task_status": "todo",
+      "polarity": null,
+      "queries": [
+        "家庭屏幕时间这件事现在是什么状态？",
+        "找出我关于家庭屏幕时间的待办记录。",
+        "之前提到的家庭屏幕时间，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H196",
+      "domain": "数字生活",
+      "title": "密码管理器分类",
+      "message": "记录一个事项：密码管理器分类。密码管理器按个人、家庭和临时服务分类，临时账号到期就删除。 当前状态先记为in_progress。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "密码管理器分类",
+      "task_status": "in_progress",
+      "polarity": null,
+      "queries": [
+        "密码管理器分类这件事现在是什么状态？",
+        "找出我关于密码管理器分类的待办记录。",
+        "之前提到的密码管理器分类，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H197",
+      "domain": "数字生活",
+      "title": "电子书同步设备",
+      "message": "记录一个事项：电子书同步设备。电子书只在两台常用设备同步，换设备前先确认阅读进度已上传。 当前状态先记为done。",
+      "memory_type": "task",
+      "predicate": "task",
+      "object_value": "电子书同步设备",
+      "task_status": "done",
+      "polarity": null,
+      "queries": [
+        "电子书同步设备这件事现在是什么状态？",
+        "找出我关于电子书同步设备的待办记录。",
+        "之前提到的电子书同步设备，下一步要做什么？"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H198",
+      "domain": "数字生活",
+      "title": "智能音箱隐私",
+      "message": "偏好记录：智能音箱隐私。智能音箱不用时关闭唤醒记录，涉及隐私的对话不在旁边进行。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "智能音箱隐私",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对智能音箱隐私有什么偏好？",
+        "关于智能音箱隐私，我会优先什么或避开什么？",
+        "把我之前留下的智能音箱隐私偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H199",
+      "domain": "数字生活",
+      "title": "旧手机迁移步骤",
+      "message": "偏好记录：旧手机迁移步骤。旧手机迁移先备份照片和通讯录，再退出支付应用并恢复出厂设置。我会避开这个做法。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "旧手机迁移步骤",
+      "task_status": null,
+      "polarity": "negative",
+      "queries": [
+        "我对旧手机迁移步骤有什么偏好？",
+        "关于旧手机迁移步骤，我会优先什么或避开什么？",
+        "把我之前留下的旧手机迁移步骤偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    },
+    {
+      "topic_id": "H200",
+      "domain": "数字生活",
+      "title": "账号注销清单",
+      "message": "偏好记录：账号注销清单。注销账号前导出需要保留的数据，确认订阅、绑定设备和登录方式都已解除。我倾向于按这个方式处理。",
+      "memory_type": "preference",
+      "predicate": "preference",
+      "object_value": "账号注销清单",
+      "task_status": null,
+      "polarity": "positive",
+      "queries": [
+        "我对账号注销清单有什么偏好？",
+        "关于账号注销清单，我会优先什么或避开什么？",
+        "把我之前留下的账号注销清单偏好找出来。"
+      ],
+      "source_style": "curated_feishu_holdout"
+    }
+  ]
+}

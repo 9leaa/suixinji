@@ -1,0 +1,1927 @@
+{
+  "dataset": "p4_query_routing_v1",
+  "description": "Planner-only routing set: 120 simple + 120 complex, including adversarial long, negated, English and punctuation queries.",
+  "created_at": "2026-07-26T00:56:56.245439+00:00",
+  "cases": [
+    {
+      "case_id": "p4_0000",
+      "style": "simple_fact",
+      "query": "RAG混合检索的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0001",
+      "style": "simple_task",
+      "query": "RAG混合检索这项任务状态",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0002",
+      "style": "simple_note",
+      "query": "关于RAG混合检索的笔记",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0003",
+      "style": "simple_preference",
+      "query": "我对RAG混合检索的偏好",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0004",
+      "style": "simple_english",
+      "query": "what is my current memory about RAG混合检索",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0005",
+      "style": "simple_filler",
+      "query": "请帮我查一下RAG混合检索",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0006",
+      "style": "simple_short_question",
+      "query": "RAG混合检索怎么记录",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0007",
+      "style": "simple_code",
+      "query": "记录编号 P4-00 对应的RAG混合检索",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0008",
+      "style": "simple_state_layer",
+      "query": "状态记忆里的RAG混合检索",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0009",
+      "style": "simple_single_entity",
+      "query": "RAG混合检索这一条事实",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0010",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找RAG混合检索这一项主题的唯一当前结论并返回对应的一条记录，不要扩展到其他主题，不需要额外解释背景，也不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0011",
+      "style": "simple_negated_markers",
+      "query": "只查询RAG混合检索，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0012",
+      "style": "simple_fact",
+      "query": "SQL索引的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0013",
+      "style": "simple_task",
+      "query": "SQL索引这项任务状态",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0014",
+      "style": "simple_note",
+      "query": "关于SQL索引的笔记",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0015",
+      "style": "simple_preference",
+      "query": "我对SQL索引的偏好",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0016",
+      "style": "simple_english",
+      "query": "what is my current memory about SQL索引",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0017",
+      "style": "simple_filler",
+      "query": "请帮我查一下SQL索引",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0018",
+      "style": "simple_short_question",
+      "query": "SQL索引怎么记录",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0019",
+      "style": "simple_code",
+      "query": "记录编号 P4-01 对应的SQL索引",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0020",
+      "style": "simple_state_layer",
+      "query": "状态记忆里的SQL索引",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0021",
+      "style": "simple_single_entity",
+      "query": "SQL索引这一条事实",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0022",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找SQL索引这一项主题的唯一当前结论并返回对应的一条记录，不要扩展到其他主题，不需要额外解释背景，也不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0023",
+      "style": "simple_negated_markers",
+      "query": "只查询SQL索引，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0024",
+      "style": "simple_fact",
+      "query": "Agent简历的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0025",
+      "style": "simple_task",
+      "query": "Agent简历这项任务状态",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0026",
+      "style": "simple_note",
+      "query": "关于Agent简历的笔记",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0027",
+      "style": "simple_preference",
+      "query": "我对Agent简历的偏好",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0028",
+      "style": "simple_english",
+      "query": "what is my current memory about Agent简历",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0029",
+      "style": "simple_filler",
+      "query": "请帮我查一下Agent简历",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0030",
+      "style": "simple_short_question",
+      "query": "Agent简历怎么记录",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0031",
+      "style": "simple_code",
+      "query": "记录编号 P4-02 对应的Agent简历",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0032",
+      "style": "simple_state_layer",
+      "query": "状态记忆里的Agent简历",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0033",
+      "style": "simple_single_entity",
+      "query": "Agent简历这一条事实",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0034",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找Agent简历这一项主题的唯一当前结论并返回对应的一条记录，不要扩展到其他主题，不需要额外解释背景，也不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0035",
+      "style": "simple_negated_markers",
+      "query": "只查询Agent简历，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0036",
+      "style": "simple_fact",
+      "query": "Canonical Key的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0037",
+      "style": "simple_task",
+      "query": "Canonical Key这项任务状态",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0038",
+      "style": "simple_note",
+      "query": "关于Canonical Key的笔记",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0039",
+      "style": "simple_preference",
+      "query": "我对Canonical Key的偏好",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0040",
+      "style": "simple_english",
+      "query": "what is my current memory about Canonical Key",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0041",
+      "style": "simple_filler",
+      "query": "请帮我查一下Canonical Key",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0042",
+      "style": "simple_short_question",
+      "query": "Canonical Key怎么记录",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0043",
+      "style": "simple_code",
+      "query": "记录编号 P4-03 对应的Canonical Key",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0044",
+      "style": "simple_state_layer",
+      "query": "状态记忆里的Canonical Key",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0045",
+      "style": "simple_single_entity",
+      "query": "Canonical Key这一条事实",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0046",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找Canonical Key这一项主题的唯一当前结论并返回对应的一条记录，不要扩展到其他主题，不需要额外解释背景，也不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0047",
+      "style": "simple_negated_markers",
+      "query": "只查询Canonical Key，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0048",
+      "style": "simple_fact",
+      "query": "Relation Guard的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0049",
+      "style": "simple_task",
+      "query": "Relation Guard这项任务状态",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0050",
+      "style": "simple_note",
+      "query": "关于Relation Guard的笔记",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0051",
+      "style": "simple_preference",
+      "query": "我对Relation Guard的偏好",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0052",
+      "style": "simple_english",
+      "query": "what is my current memory about Relation Guard",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0053",
+      "style": "simple_filler",
+      "query": "请帮我查一下Relation Guard",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0054",
+      "style": "simple_short_question",
+      "query": "Relation Guard怎么记录",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0055",
+      "style": "simple_code",
+      "query": "记录编号 P4-04 对应的Relation Guard",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0056",
+      "style": "simple_state_layer",
+      "query": "状态记忆里的Relation Guard",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0057",
+      "style": "simple_single_entity",
+      "query": "Relation Guard这一条事实",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0058",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找Relation Guard这一项主题的唯一当前结论并返回对应的一条记录，不要扩展到其他主题，不需要额外解释背景，也不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0059",
+      "style": "simple_negated_markers",
+      "query": "只查询Relation Guard，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0060",
+      "style": "simple_fact",
+      "query": "飞书Pending的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0061",
+      "style": "simple_task",
+      "query": "飞书Pending这项任务状态",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0062",
+      "style": "simple_note",
+      "query": "关于飞书Pending的笔记",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0063",
+      "style": "simple_preference",
+      "query": "我对飞书Pending的偏好",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0064",
+      "style": "simple_english",
+      "query": "what is my current memory about 飞书Pending",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0065",
+      "style": "simple_filler",
+      "query": "请帮我查一下飞书Pending",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0066",
+      "style": "simple_short_question",
+      "query": "飞书Pending怎么记录",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0067",
+      "style": "simple_code",
+      "query": "记录编号 P4-05 对应的飞书Pending",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0068",
+      "style": "simple_state_layer",
+      "query": "状态记忆里的飞书Pending",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0069",
+      "style": "simple_single_entity",
+      "query": "飞书Pending这一条事实",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0070",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找飞书Pending这一项主题的唯一当前结论并返回对应的一条记录，不要扩展到其他主题，不需要额外解释背景，也不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0071",
+      "style": "simple_negated_markers",
+      "query": "只查询飞书Pending，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0072",
+      "style": "simple_fact",
+      "query": "燕麦拿铁的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0073",
+      "style": "simple_task",
+      "query": "燕麦拿铁这项任务状态",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0074",
+      "style": "simple_note",
+      "query": "关于燕麦拿铁的笔记",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0075",
+      "style": "simple_preference",
+      "query": "我对燕麦拿铁的偏好",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0076",
+      "style": "simple_english",
+      "query": "what is my current memory about 燕麦拿铁",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0077",
+      "style": "simple_filler",
+      "query": "请帮我查一下燕麦拿铁",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0078",
+      "style": "simple_short_question",
+      "query": "燕麦拿铁怎么记录",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0079",
+      "style": "simple_code",
+      "query": "记录编号 P4-06 对应的燕麦拿铁",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0080",
+      "style": "simple_state_layer",
+      "query": "状态记忆里的燕麦拿铁",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0081",
+      "style": "simple_single_entity",
+      "query": "燕麦拿铁这一条事实",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0082",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找燕麦拿铁这一项主题的唯一当前结论并返回对应的一条记录，不要扩展到其他主题，不需要额外解释背景，也不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0083",
+      "style": "simple_negated_markers",
+      "query": "只查询燕麦拿铁，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0084",
+      "style": "simple_fact",
+      "query": "Python异步的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0085",
+      "style": "simple_task",
+      "query": "Python异步这项任务状态",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0086",
+      "style": "simple_note",
+      "query": "关于Python异步的笔记",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0087",
+      "style": "simple_preference",
+      "query": "我对Python异步的偏好",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0088",
+      "style": "simple_english",
+      "query": "what is my current memory about Python异步",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0089",
+      "style": "simple_filler",
+      "query": "请帮我查一下Python异步",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0090",
+      "style": "simple_short_question",
+      "query": "Python异步怎么记录",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0091",
+      "style": "simple_code",
+      "query": "记录编号 P4-07 对应的Python异步",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0092",
+      "style": "simple_state_layer",
+      "query": "状态记忆里的Python异步",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0093",
+      "style": "simple_single_entity",
+      "query": "Python异步这一条事实",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0094",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找Python异步这一项主题的唯一当前结论并返回对应的一条记录，不要扩展到其他主题，不需要额外解释背景，也不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0095",
+      "style": "simple_negated_markers",
+      "query": "只查询Python异步，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0096",
+      "style": "simple_fact",
+      "query": "订阅预算的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0097",
+      "style": "simple_task",
+      "query": "订阅预算这项任务状态",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0098",
+      "style": "simple_note",
+      "query": "关于订阅预算的笔记",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0099",
+      "style": "simple_preference",
+      "query": "我对订阅预算的偏好",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0100",
+      "style": "simple_english",
+      "query": "what is my current memory about 订阅预算",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0101",
+      "style": "simple_filler",
+      "query": "请帮我查一下订阅预算",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0102",
+      "style": "simple_short_question",
+      "query": "订阅预算怎么记录",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0103",
+      "style": "simple_code",
+      "query": "记录编号 P4-08 对应的订阅预算",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0104",
+      "style": "simple_state_layer",
+      "query": "状态记忆里的订阅预算",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0105",
+      "style": "simple_single_entity",
+      "query": "订阅预算这一条事实",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0106",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找订阅预算这一项主题的唯一当前结论并返回对应的一条记录，不要扩展到其他主题，不需要额外解释背景，也不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0107",
+      "style": "simple_negated_markers",
+      "query": "只查询订阅预算，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0108",
+      "style": "simple_fact",
+      "query": "上海博物馆的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0109",
+      "style": "simple_task",
+      "query": "上海博物馆这项任务状态",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0110",
+      "style": "simple_note",
+      "query": "关于上海博物馆的笔记",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0111",
+      "style": "simple_preference",
+      "query": "我对上海博物馆的偏好",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0112",
+      "style": "simple_english",
+      "query": "what is my current memory about 上海博物馆",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0113",
+      "style": "simple_filler",
+      "query": "请帮我查一下上海博物馆",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0114",
+      "style": "simple_short_question",
+      "query": "上海博物馆怎么记录",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0115",
+      "style": "simple_code",
+      "query": "记录编号 P4-09 对应的上海博物馆",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0116",
+      "style": "simple_state_layer",
+      "query": "状态记忆里的上海博物馆",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0117",
+      "style": "simple_single_entity",
+      "query": "上海博物馆这一条事实",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0118",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找上海博物馆这一项主题的唯一当前结论并返回对应的一条记录，不要扩展到其他主题，不需要额外解释背景，也不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0119",
+      "style": "simple_negated_markers",
+      "query": "只查询上海博物馆，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_requires_expansion": false,
+      "expected_strategy": null
+    },
+    {
+      "case_id": "p4_0120",
+      "style": "complex_compare",
+      "query": "比较RAG混合检索和SQL索引的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0121",
+      "style": "complex_causal",
+      "query": "为什么RAG混合检索的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0122",
+      "style": "complex_multi_evidence",
+      "query": "结合RAG混合检索、SQL索引以及Agent简历的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0123",
+      "style": "complex_multi_part",
+      "query": "RAG混合检索现在什么状态，并且SQL索引是否完成，另外说明Agent简历的偏好",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0124",
+      "style": "complex_trend",
+      "query": "分析RAG混合检索前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0125",
+      "style": "complex_step_back",
+      "query": "对RAG混合检索做step-back分析后再给出具体结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0126",
+      "style": "complex_long_no_marker",
+      "query": "请从长期记忆和普通笔记中检索RAG混合检索的最新状态以及相关证据，返回一份面向当前任务的完整判断并保留原始记录编号",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "any"
+    },
+    {
+      "case_id": "p4_0127",
+      "style": "complex_english_why",
+      "query": "Why did the status of RAG混合检索 change, and what evidence explains the current conclusion?",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0128",
+      "style": "complex_english_compare",
+      "query": "Compare RAG混合检索 and SQL索引 and explain which one is more suitable for the current task",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0129",
+      "style": "complex_punctuation_multi",
+      "query": "查RAG混合检索？再查SQL索引？最后把两条结果合并成一个结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0130",
+      "style": "complex_rewrite",
+      "query": "请帮我结合RAG混合检索的最新记录和SQL索引的历史记录，输出简洁结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "rewrite"
+    },
+    {
+      "case_id": "p4_0131",
+      "style": "complex_relation",
+      "query": "分别找出RAG混合检索与SQL索引的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0132",
+      "style": "complex_compare",
+      "query": "比较Agent简历和Canonical Key的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0133",
+      "style": "complex_causal",
+      "query": "为什么Agent简历的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0134",
+      "style": "complex_multi_evidence",
+      "query": "结合Agent简历、Canonical Key以及Relation Guard的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0135",
+      "style": "complex_multi_part",
+      "query": "Agent简历现在什么状态，并且Canonical Key是否完成，另外说明Relation Guard的偏好",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0136",
+      "style": "complex_trend",
+      "query": "分析Agent简历前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0137",
+      "style": "complex_step_back",
+      "query": "对Agent简历做step-back分析后再给出具体结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0138",
+      "style": "complex_long_no_marker",
+      "query": "请从长期记忆和普通笔记中检索Agent简历的最新状态以及相关证据，返回一份面向当前任务的完整判断并保留原始记录编号",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "any"
+    },
+    {
+      "case_id": "p4_0139",
+      "style": "complex_english_why",
+      "query": "Why did the status of Agent简历 change, and what evidence explains the current conclusion?",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0140",
+      "style": "complex_english_compare",
+      "query": "Compare Agent简历 and Canonical Key and explain which one is more suitable for the current task",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0141",
+      "style": "complex_punctuation_multi",
+      "query": "查Agent简历？再查Canonical Key？最后把两条结果合并成一个结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0142",
+      "style": "complex_rewrite",
+      "query": "请帮我结合Agent简历的最新记录和Canonical Key的历史记录，输出简洁结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "rewrite"
+    },
+    {
+      "case_id": "p4_0143",
+      "style": "complex_relation",
+      "query": "分别找出Agent简历与Canonical Key的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0144",
+      "style": "complex_compare",
+      "query": "比较Relation Guard和飞书Pending的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0145",
+      "style": "complex_causal",
+      "query": "为什么Relation Guard的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0146",
+      "style": "complex_multi_evidence",
+      "query": "结合Relation Guard、飞书Pending以及燕麦拿铁的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0147",
+      "style": "complex_multi_part",
+      "query": "Relation Guard现在什么状态，并且飞书Pending是否完成，另外说明燕麦拿铁的偏好",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0148",
+      "style": "complex_trend",
+      "query": "分析Relation Guard前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0149",
+      "style": "complex_step_back",
+      "query": "对Relation Guard做step-back分析后再给出具体结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0150",
+      "style": "complex_long_no_marker",
+      "query": "请从长期记忆和普通笔记中检索Relation Guard的最新状态以及相关证据，返回一份面向当前任务的完整判断并保留原始记录编号",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "any"
+    },
+    {
+      "case_id": "p4_0151",
+      "style": "complex_english_why",
+      "query": "Why did the status of Relation Guard change, and what evidence explains the current conclusion?",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0152",
+      "style": "complex_english_compare",
+      "query": "Compare Relation Guard and 飞书Pending and explain which one is more suitable for the current task",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0153",
+      "style": "complex_punctuation_multi",
+      "query": "查Relation Guard？再查飞书Pending？最后把两条结果合并成一个结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0154",
+      "style": "complex_rewrite",
+      "query": "请帮我结合Relation Guard的最新记录和飞书Pending的历史记录，输出简洁结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "rewrite"
+    },
+    {
+      "case_id": "p4_0155",
+      "style": "complex_relation",
+      "query": "分别找出Relation Guard与飞书Pending的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0156",
+      "style": "complex_compare",
+      "query": "比较燕麦拿铁和Python异步的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0157",
+      "style": "complex_causal",
+      "query": "为什么燕麦拿铁的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0158",
+      "style": "complex_multi_evidence",
+      "query": "结合燕麦拿铁、Python异步以及订阅预算的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0159",
+      "style": "complex_multi_part",
+      "query": "燕麦拿铁现在什么状态，并且Python异步是否完成，另外说明订阅预算的偏好",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0160",
+      "style": "complex_trend",
+      "query": "分析燕麦拿铁前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0161",
+      "style": "complex_step_back",
+      "query": "对燕麦拿铁做step-back分析后再给出具体结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0162",
+      "style": "complex_long_no_marker",
+      "query": "请从长期记忆和普通笔记中检索燕麦拿铁的最新状态以及相关证据，返回一份面向当前任务的完整判断并保留原始记录编号",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "any"
+    },
+    {
+      "case_id": "p4_0163",
+      "style": "complex_english_why",
+      "query": "Why did the status of 燕麦拿铁 change, and what evidence explains the current conclusion?",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0164",
+      "style": "complex_english_compare",
+      "query": "Compare 燕麦拿铁 and Python异步 and explain which one is more suitable for the current task",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0165",
+      "style": "complex_punctuation_multi",
+      "query": "查燕麦拿铁？再查Python异步？最后把两条结果合并成一个结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0166",
+      "style": "complex_rewrite",
+      "query": "请帮我结合燕麦拿铁的最新记录和Python异步的历史记录，输出简洁结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "rewrite"
+    },
+    {
+      "case_id": "p4_0167",
+      "style": "complex_relation",
+      "query": "分别找出燕麦拿铁与Python异步的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0168",
+      "style": "complex_compare",
+      "query": "比较订阅预算和上海博物馆的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0169",
+      "style": "complex_causal",
+      "query": "为什么订阅预算的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0170",
+      "style": "complex_multi_evidence",
+      "query": "结合订阅预算、上海博物馆以及向量检索的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0171",
+      "style": "complex_multi_part",
+      "query": "订阅预算现在什么状态，并且上海博物馆是否完成，另外说明向量检索的偏好",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0172",
+      "style": "complex_trend",
+      "query": "分析订阅预算前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0173",
+      "style": "complex_step_back",
+      "query": "对订阅预算做step-back分析后再给出具体结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0174",
+      "style": "complex_long_no_marker",
+      "query": "请从长期记忆和普通笔记中检索订阅预算的最新状态以及相关证据，返回一份面向当前任务的完整判断并保留原始记录编号",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "any"
+    },
+    {
+      "case_id": "p4_0175",
+      "style": "complex_english_why",
+      "query": "Why did the status of 订阅预算 change, and what evidence explains the current conclusion?",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0176",
+      "style": "complex_english_compare",
+      "query": "Compare 订阅预算 and 上海博物馆 and explain which one is more suitable for the current task",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0177",
+      "style": "complex_punctuation_multi",
+      "query": "查订阅预算？再查上海博物馆？最后把两条结果合并成一个结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0178",
+      "style": "complex_rewrite",
+      "query": "请帮我结合订阅预算的最新记录和上海博物馆的历史记录，输出简洁结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "rewrite"
+    },
+    {
+      "case_id": "p4_0179",
+      "style": "complex_relation",
+      "query": "分别找出订阅预算与上海博物馆的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0180",
+      "style": "complex_compare",
+      "query": "比较向量检索和敏感笔记的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0181",
+      "style": "complex_causal",
+      "query": "为什么向量检索的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0182",
+      "style": "complex_multi_evidence",
+      "query": "结合向量检索、敏感笔记以及查询改写的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0183",
+      "style": "complex_multi_part",
+      "query": "向量检索现在什么状态，并且敏感笔记是否完成，另外说明查询改写的偏好",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0184",
+      "style": "complex_trend",
+      "query": "分析向量检索前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0185",
+      "style": "complex_step_back",
+      "query": "对向量检索做step-back分析后再给出具体结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0186",
+      "style": "complex_long_no_marker",
+      "query": "请从长期记忆和普通笔记中检索向量检索的最新状态以及相关证据，返回一份面向当前任务的完整判断并保留原始记录编号",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "any"
+    },
+    {
+      "case_id": "p4_0187",
+      "style": "complex_english_why",
+      "query": "Why did the status of 向量检索 change, and what evidence explains the current conclusion?",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0188",
+      "style": "complex_english_compare",
+      "query": "Compare 向量检索 and 敏感笔记 and explain which one is more suitable for the current task",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0189",
+      "style": "complex_punctuation_multi",
+      "query": "查向量检索？再查敏感笔记？最后把两条结果合并成一个结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0190",
+      "style": "complex_rewrite",
+      "query": "请帮我结合向量检索的最新记录和敏感笔记的历史记录，输出简洁结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "rewrite"
+    },
+    {
+      "case_id": "p4_0191",
+      "style": "complex_relation",
+      "query": "分别找出向量检索与敏感笔记的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0192",
+      "style": "complex_compare",
+      "query": "比较查询改写和分布式系统的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0193",
+      "style": "complex_causal",
+      "query": "为什么查询改写的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0194",
+      "style": "complex_multi_evidence",
+      "query": "结合查询改写、分布式系统以及周报整理的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0195",
+      "style": "complex_multi_part",
+      "query": "查询改写现在什么状态，并且分布式系统是否完成，另外说明周报整理的偏好",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0196",
+      "style": "complex_trend",
+      "query": "分析查询改写前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0197",
+      "style": "complex_step_back",
+      "query": "对查询改写做step-back分析后再给出具体结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0198",
+      "style": "complex_long_no_marker",
+      "query": "请从长期记忆和普通笔记中检索查询改写的最新状态以及相关证据，返回一份面向当前任务的完整判断并保留原始记录编号",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "any"
+    },
+    {
+      "case_id": "p4_0199",
+      "style": "complex_english_why",
+      "query": "Why did the status of 查询改写 change, and what evidence explains the current conclusion?",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0200",
+      "style": "complex_english_compare",
+      "query": "Compare 查询改写 and 分布式系统 and explain which one is more suitable for the current task",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0201",
+      "style": "complex_punctuation_multi",
+      "query": "查查询改写？再查分布式系统？最后把两条结果合并成一个结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0202",
+      "style": "complex_rewrite",
+      "query": "请帮我结合查询改写的最新记录和分布式系统的历史记录，输出简洁结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "rewrite"
+    },
+    {
+      "case_id": "p4_0203",
+      "style": "complex_relation",
+      "query": "分别找出查询改写与分布式系统的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0204",
+      "style": "complex_compare",
+      "query": "比较周报整理和RAG混合检索的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0205",
+      "style": "complex_causal",
+      "query": "为什么周报整理的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0206",
+      "style": "complex_multi_evidence",
+      "query": "结合周报整理、RAG混合检索以及SQL索引的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0207",
+      "style": "complex_multi_part",
+      "query": "周报整理现在什么状态，并且RAG混合检索是否完成，另外说明SQL索引的偏好",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0208",
+      "style": "complex_trend",
+      "query": "分析周报整理前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0209",
+      "style": "complex_step_back",
+      "query": "对周报整理做step-back分析后再给出具体结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0210",
+      "style": "complex_long_no_marker",
+      "query": "请从长期记忆和普通笔记中检索周报整理的最新状态以及相关证据，返回一份面向当前任务的完整判断并保留原始记录编号",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "any"
+    },
+    {
+      "case_id": "p4_0211",
+      "style": "complex_english_why",
+      "query": "Why did the status of 周报整理 change, and what evidence explains the current conclusion?",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0212",
+      "style": "complex_english_compare",
+      "query": "Compare 周报整理 and RAG混合检索 and explain which one is more suitable for the current task",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0213",
+      "style": "complex_punctuation_multi",
+      "query": "查周报整理？再查RAG混合检索？最后把两条结果合并成一个结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0214",
+      "style": "complex_rewrite",
+      "query": "请帮我结合周报整理的最新记录和RAG混合检索的历史记录，输出简洁结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "rewrite"
+    },
+    {
+      "case_id": "p4_0215",
+      "style": "complex_relation",
+      "query": "分别找出周报整理与RAG混合检索的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0216",
+      "style": "complex_compare",
+      "query": "比较SQL索引和Agent简历的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0217",
+      "style": "complex_causal",
+      "query": "为什么SQL索引的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0218",
+      "style": "complex_multi_evidence",
+      "query": "结合SQL索引、Agent简历以及Canonical Key的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0219",
+      "style": "complex_multi_part",
+      "query": "SQL索引现在什么状态，并且Agent简历是否完成，另外说明Canonical Key的偏好",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0220",
+      "style": "complex_trend",
+      "query": "分析SQL索引前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0221",
+      "style": "complex_step_back",
+      "query": "对SQL索引做step-back分析后再给出具体结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0222",
+      "style": "complex_long_no_marker",
+      "query": "请从长期记忆和普通笔记中检索SQL索引的最新状态以及相关证据，返回一份面向当前任务的完整判断并保留原始记录编号",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "any"
+    },
+    {
+      "case_id": "p4_0223",
+      "style": "complex_english_why",
+      "query": "Why did the status of SQL索引 change, and what evidence explains the current conclusion?",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0224",
+      "style": "complex_english_compare",
+      "query": "Compare SQL索引 and Agent简历 and explain which one is more suitable for the current task",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0225",
+      "style": "complex_punctuation_multi",
+      "query": "查SQL索引？再查Agent简历？最后把两条结果合并成一个结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0226",
+      "style": "complex_rewrite",
+      "query": "请帮我结合SQL索引的最新记录和Agent简历的历史记录，输出简洁结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "rewrite"
+    },
+    {
+      "case_id": "p4_0227",
+      "style": "complex_relation",
+      "query": "分别找出SQL索引与Agent简历的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0228",
+      "style": "complex_compare",
+      "query": "比较Canonical Key和Relation Guard的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0229",
+      "style": "complex_causal",
+      "query": "为什么Canonical Key的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0230",
+      "style": "complex_multi_evidence",
+      "query": "结合Canonical Key、Relation Guard以及飞书Pending的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0231",
+      "style": "complex_multi_part",
+      "query": "Canonical Key现在什么状态，并且Relation Guard是否完成，另外说明飞书Pending的偏好",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0232",
+      "style": "complex_trend",
+      "query": "分析Canonical Key前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0233",
+      "style": "complex_step_back",
+      "query": "对Canonical Key做step-back分析后再给出具体结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0234",
+      "style": "complex_long_no_marker",
+      "query": "请从长期记忆和普通笔记中检索Canonical Key的最新状态以及相关证据，返回一份面向当前任务的完整判断并保留原始记录编号",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "any"
+    },
+    {
+      "case_id": "p4_0235",
+      "style": "complex_english_why",
+      "query": "Why did the status of Canonical Key change, and what evidence explains the current conclusion?",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "p4_0236",
+      "style": "complex_english_compare",
+      "query": "Compare Canonical Key and Relation Guard and explain which one is more suitable for the current task",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0237",
+      "style": "complex_punctuation_multi",
+      "query": "查Canonical Key？再查Relation Guard？最后把两条结果合并成一个结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "p4_0238",
+      "style": "complex_rewrite",
+      "query": "请帮我结合Canonical Key的最新记录和Relation Guard的历史记录，输出简洁结论",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "rewrite"
+    },
+    {
+      "case_id": "p4_0239",
+      "style": "complex_relation",
+      "query": "分别找出Canonical Key与Relation Guard的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_requires_expansion": true,
+      "expected_strategy": "decomposition"
+    }
+  ]
+}

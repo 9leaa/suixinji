@@ -1,0 +1,1964 @@
+{
+  "version": "p2-memory-state-evolution-v1",
+  "chain_count": 30,
+  "event_count": 180,
+  "topics": [
+    {
+      "topic_id": "P2-001",
+      "title": "季度报表提交",
+      "detail": "先确认截止日期，再把负责人和验收文件写进清单。"
+    },
+    {
+      "topic_id": "P2-002",
+      "title": "客户合同续签",
+      "detail": "对方确认后更新版本，缺少签署页就先列为待补。"
+    },
+    {
+      "topic_id": "P2-003",
+      "title": "仓库盘点安排",
+      "detail": "按区域分批清点，差异超过阈值时拍照留证。"
+    },
+    {
+      "topic_id": "P2-004",
+      "title": "培训签到汇总",
+      "detail": "签到表当天导出，缺席人员单独标注补签安排。"
+    },
+    {
+      "topic_id": "P2-005",
+      "title": "版本回滚演练",
+      "detail": "先在预发布环境演练，确认回滚后数据仍然可读。"
+    },
+    {
+      "topic_id": "P2-006",
+      "title": "服务账号复核",
+      "detail": "每月核对权限和使用人，离职账号及时关闭。"
+    },
+    {
+      "topic_id": "P2-007",
+      "title": "预算初稿整理",
+      "detail": "把固定项和可变项分开，初稿完成后再约一次复核。"
+    },
+    {
+      "topic_id": "P2-008",
+      "title": "供应商付款确认",
+      "detail": "付款前核对合同、金额和收款账户，异常先暂停。"
+    },
+    {
+      "topic_id": "P2-009",
+      "title": "产品截图更新",
+      "detail": "截图统一使用同一版本，发布前检查隐私信息。"
+    },
+    {
+      "topic_id": "P2-010",
+      "title": "数据备份检查",
+      "detail": "备份完成后抽样恢复，记录恢复耗时和缺失项。"
+    },
+    {
+      "topic_id": "P2-011",
+      "title": "机场接驳确认",
+      "detail": "先确认截止日期，再把负责人和验收文件写进清单。"
+    },
+    {
+      "topic_id": "P2-012",
+      "title": "活动物料寄送",
+      "detail": "对方确认后更新版本，缺少签署页就先列为待补。"
+    },
+    {
+      "topic_id": "P2-013",
+      "title": "课程作业上传",
+      "detail": "按区域分批清点，差异超过阈值时拍照留证。"
+    },
+    {
+      "topic_id": "P2-014",
+      "title": "考试报名确认",
+      "detail": "签到表当天导出，缺席人员单独标注补签安排。"
+    },
+    {
+      "topic_id": "P2-015",
+      "title": "家庭网络排障",
+      "detail": "先在预发布环境演练，确认回滚后数据仍然可读。"
+    },
+    {
+      "topic_id": "P2-016",
+      "title": "宠物接种预约",
+      "detail": "每月核对权限和使用人，离职账号及时关闭。"
+    },
+    {
+      "topic_id": "P2-017",
+      "title": "药箱日期清点",
+      "detail": "把固定项和可变项分开，初稿完成后再约一次复核。"
+    },
+    {
+      "topic_id": "P2-018",
+      "title": "阳台花盆换位",
+      "detail": "付款前核对合同、金额和收款账户，异常先暂停。"
+    },
+    {
+      "topic_id": "P2-019",
+      "title": "会议室设备检查",
+      "detail": "截图统一使用同一版本，发布前检查隐私信息。"
+    },
+    {
+      "topic_id": "P2-020",
+      "title": "资料寄送登记",
+      "detail": "备份完成后抽样恢复，记录恢复耗时和缺失项。"
+    },
+    {
+      "topic_id": "P2-021",
+      "title": "门禁权限回收",
+      "detail": "先确认截止日期，再把负责人和验收文件写进清单。"
+    },
+    {
+      "topic_id": "P2-022",
+      "title": "办公用品盘点",
+      "detail": "对方确认后更新版本，缺少签署页就先列为待补。"
+    },
+    {
+      "topic_id": "P2-023",
+      "title": "客户回访记录",
+      "detail": "按区域分批清点，差异超过阈值时拍照留证。"
+    },
+    {
+      "topic_id": "P2-024",
+      "title": "项目风险复核",
+      "detail": "签到表当天导出，缺席人员单独标注补签安排。"
+    },
+    {
+      "topic_id": "P2-025",
+      "title": "季度目标复盘",
+      "detail": "先在预发布环境演练，确认回滚后数据仍然可读。"
+    },
+    {
+      "topic_id": "P2-026",
+      "title": "合同附件补齐",
+      "detail": "每月核对权限和使用人，离职账号及时关闭。"
+    },
+    {
+      "topic_id": "P2-027",
+      "title": "报表字段核对",
+      "detail": "把固定项和可变项分开，初稿完成后再约一次复核。"
+    },
+    {
+      "topic_id": "P2-028",
+      "title": "跨组交接安排",
+      "detail": "付款前核对合同、金额和收款账户，异常先暂停。"
+    },
+    {
+      "topic_id": "P2-029",
+      "title": "演示环境刷新",
+      "detail": "截图统一使用同一版本，发布前检查隐私信息。"
+    },
+    {
+      "topic_id": "P2-030",
+      "title": "服务条款确认",
+      "detail": "备份完成后抽样恢复，记录恢复耗时和缺失项。"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "P2-001-E1",
+      "topic_id": "P2-001",
+      "title": "季度报表提交",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-001-E2",
+      "topic_id": "P2-001",
+      "title": "季度报表提交",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-001-E3",
+      "topic_id": "P2-001",
+      "title": "季度报表提交",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-001-E4",
+      "topic_id": "P2-001",
+      "title": "季度报表提交",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-001-E5",
+      "topic_id": "P2-001",
+      "title": "季度报表提交",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-001-E6",
+      "topic_id": "P2-001",
+      "title": "季度报表提交",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-002-E1",
+      "topic_id": "P2-002",
+      "title": "客户合同续签",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-002-E2",
+      "topic_id": "P2-002",
+      "title": "客户合同续签",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-002-E3",
+      "topic_id": "P2-002",
+      "title": "客户合同续签",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-002-E4",
+      "topic_id": "P2-002",
+      "title": "客户合同续签",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-002-E5",
+      "topic_id": "P2-002",
+      "title": "客户合同续签",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-002-E6",
+      "topic_id": "P2-002",
+      "title": "客户合同续签",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-003-E1",
+      "topic_id": "P2-003",
+      "title": "仓库盘点安排",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-003-E2",
+      "topic_id": "P2-003",
+      "title": "仓库盘点安排",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-003-E3",
+      "topic_id": "P2-003",
+      "title": "仓库盘点安排",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-003-E4",
+      "topic_id": "P2-003",
+      "title": "仓库盘点安排",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-003-E5",
+      "topic_id": "P2-003",
+      "title": "仓库盘点安排",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-003-E6",
+      "topic_id": "P2-003",
+      "title": "仓库盘点安排",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-004-E1",
+      "topic_id": "P2-004",
+      "title": "培训签到汇总",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-004-E2",
+      "topic_id": "P2-004",
+      "title": "培训签到汇总",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-004-E3",
+      "topic_id": "P2-004",
+      "title": "培训签到汇总",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-004-E4",
+      "topic_id": "P2-004",
+      "title": "培训签到汇总",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-004-E5",
+      "topic_id": "P2-004",
+      "title": "培训签到汇总",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-004-E6",
+      "topic_id": "P2-004",
+      "title": "培训签到汇总",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-005-E1",
+      "topic_id": "P2-005",
+      "title": "版本回滚演练",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-005-E2",
+      "topic_id": "P2-005",
+      "title": "版本回滚演练",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-005-E3",
+      "topic_id": "P2-005",
+      "title": "版本回滚演练",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-005-E4",
+      "topic_id": "P2-005",
+      "title": "版本回滚演练",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-005-E5",
+      "topic_id": "P2-005",
+      "title": "版本回滚演练",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-005-E6",
+      "topic_id": "P2-005",
+      "title": "版本回滚演练",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-006-E1",
+      "topic_id": "P2-006",
+      "title": "服务账号复核",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-006-E2",
+      "topic_id": "P2-006",
+      "title": "服务账号复核",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-006-E3",
+      "topic_id": "P2-006",
+      "title": "服务账号复核",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-006-E4",
+      "topic_id": "P2-006",
+      "title": "服务账号复核",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-006-E5",
+      "topic_id": "P2-006",
+      "title": "服务账号复核",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-006-E6",
+      "topic_id": "P2-006",
+      "title": "服务账号复核",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-007-E1",
+      "topic_id": "P2-007",
+      "title": "预算初稿整理",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-007-E2",
+      "topic_id": "P2-007",
+      "title": "预算初稿整理",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-007-E3",
+      "topic_id": "P2-007",
+      "title": "预算初稿整理",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-007-E4",
+      "topic_id": "P2-007",
+      "title": "预算初稿整理",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-007-E5",
+      "topic_id": "P2-007",
+      "title": "预算初稿整理",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-007-E6",
+      "topic_id": "P2-007",
+      "title": "预算初稿整理",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-008-E1",
+      "topic_id": "P2-008",
+      "title": "供应商付款确认",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-008-E2",
+      "topic_id": "P2-008",
+      "title": "供应商付款确认",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-008-E3",
+      "topic_id": "P2-008",
+      "title": "供应商付款确认",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-008-E4",
+      "topic_id": "P2-008",
+      "title": "供应商付款确认",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-008-E5",
+      "topic_id": "P2-008",
+      "title": "供应商付款确认",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-008-E6",
+      "topic_id": "P2-008",
+      "title": "供应商付款确认",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-009-E1",
+      "topic_id": "P2-009",
+      "title": "产品截图更新",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-009-E2",
+      "topic_id": "P2-009",
+      "title": "产品截图更新",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-009-E3",
+      "topic_id": "P2-009",
+      "title": "产品截图更新",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-009-E4",
+      "topic_id": "P2-009",
+      "title": "产品截图更新",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-009-E5",
+      "topic_id": "P2-009",
+      "title": "产品截图更新",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-009-E6",
+      "topic_id": "P2-009",
+      "title": "产品截图更新",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-010-E1",
+      "topic_id": "P2-010",
+      "title": "数据备份检查",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-010-E2",
+      "topic_id": "P2-010",
+      "title": "数据备份检查",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-010-E3",
+      "topic_id": "P2-010",
+      "title": "数据备份检查",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-010-E4",
+      "topic_id": "P2-010",
+      "title": "数据备份检查",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-010-E5",
+      "topic_id": "P2-010",
+      "title": "数据备份检查",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-010-E6",
+      "topic_id": "P2-010",
+      "title": "数据备份检查",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-011-E1",
+      "topic_id": "P2-011",
+      "title": "机场接驳确认",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-011-E2",
+      "topic_id": "P2-011",
+      "title": "机场接驳确认",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-011-E3",
+      "topic_id": "P2-011",
+      "title": "机场接驳确认",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-011-E4",
+      "topic_id": "P2-011",
+      "title": "机场接驳确认",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-011-E5",
+      "topic_id": "P2-011",
+      "title": "机场接驳确认",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-011-E6",
+      "topic_id": "P2-011",
+      "title": "机场接驳确认",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-012-E1",
+      "topic_id": "P2-012",
+      "title": "活动物料寄送",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-012-E2",
+      "topic_id": "P2-012",
+      "title": "活动物料寄送",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-012-E3",
+      "topic_id": "P2-012",
+      "title": "活动物料寄送",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-012-E4",
+      "topic_id": "P2-012",
+      "title": "活动物料寄送",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-012-E5",
+      "topic_id": "P2-012",
+      "title": "活动物料寄送",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-012-E6",
+      "topic_id": "P2-012",
+      "title": "活动物料寄送",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-013-E1",
+      "topic_id": "P2-013",
+      "title": "课程作业上传",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-013-E2",
+      "topic_id": "P2-013",
+      "title": "课程作业上传",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-013-E3",
+      "topic_id": "P2-013",
+      "title": "课程作业上传",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-013-E4",
+      "topic_id": "P2-013",
+      "title": "课程作业上传",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-013-E5",
+      "topic_id": "P2-013",
+      "title": "课程作业上传",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-013-E6",
+      "topic_id": "P2-013",
+      "title": "课程作业上传",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-014-E1",
+      "topic_id": "P2-014",
+      "title": "考试报名确认",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-014-E2",
+      "topic_id": "P2-014",
+      "title": "考试报名确认",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-014-E3",
+      "topic_id": "P2-014",
+      "title": "考试报名确认",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-014-E4",
+      "topic_id": "P2-014",
+      "title": "考试报名确认",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-014-E5",
+      "topic_id": "P2-014",
+      "title": "考试报名确认",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-014-E6",
+      "topic_id": "P2-014",
+      "title": "考试报名确认",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-015-E1",
+      "topic_id": "P2-015",
+      "title": "家庭网络排障",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-015-E2",
+      "topic_id": "P2-015",
+      "title": "家庭网络排障",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-015-E3",
+      "topic_id": "P2-015",
+      "title": "家庭网络排障",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-015-E4",
+      "topic_id": "P2-015",
+      "title": "家庭网络排障",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-015-E5",
+      "topic_id": "P2-015",
+      "title": "家庭网络排障",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-015-E6",
+      "topic_id": "P2-015",
+      "title": "家庭网络排障",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-016-E1",
+      "topic_id": "P2-016",
+      "title": "宠物接种预约",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-016-E2",
+      "topic_id": "P2-016",
+      "title": "宠物接种预约",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-016-E3",
+      "topic_id": "P2-016",
+      "title": "宠物接种预约",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-016-E4",
+      "topic_id": "P2-016",
+      "title": "宠物接种预约",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-016-E5",
+      "topic_id": "P2-016",
+      "title": "宠物接种预约",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-016-E6",
+      "topic_id": "P2-016",
+      "title": "宠物接种预约",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-017-E1",
+      "topic_id": "P2-017",
+      "title": "药箱日期清点",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-017-E2",
+      "topic_id": "P2-017",
+      "title": "药箱日期清点",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-017-E3",
+      "topic_id": "P2-017",
+      "title": "药箱日期清点",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-017-E4",
+      "topic_id": "P2-017",
+      "title": "药箱日期清点",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-017-E5",
+      "topic_id": "P2-017",
+      "title": "药箱日期清点",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-017-E6",
+      "topic_id": "P2-017",
+      "title": "药箱日期清点",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-018-E1",
+      "topic_id": "P2-018",
+      "title": "阳台花盆换位",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-018-E2",
+      "topic_id": "P2-018",
+      "title": "阳台花盆换位",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-018-E3",
+      "topic_id": "P2-018",
+      "title": "阳台花盆换位",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-018-E4",
+      "topic_id": "P2-018",
+      "title": "阳台花盆换位",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-018-E5",
+      "topic_id": "P2-018",
+      "title": "阳台花盆换位",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-018-E6",
+      "topic_id": "P2-018",
+      "title": "阳台花盆换位",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-019-E1",
+      "topic_id": "P2-019",
+      "title": "会议室设备检查",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-019-E2",
+      "topic_id": "P2-019",
+      "title": "会议室设备检查",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-019-E3",
+      "topic_id": "P2-019",
+      "title": "会议室设备检查",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-019-E4",
+      "topic_id": "P2-019",
+      "title": "会议室设备检查",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-019-E5",
+      "topic_id": "P2-019",
+      "title": "会议室设备检查",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-019-E6",
+      "topic_id": "P2-019",
+      "title": "会议室设备检查",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-020-E1",
+      "topic_id": "P2-020",
+      "title": "资料寄送登记",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-020-E2",
+      "topic_id": "P2-020",
+      "title": "资料寄送登记",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-020-E3",
+      "topic_id": "P2-020",
+      "title": "资料寄送登记",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-020-E4",
+      "topic_id": "P2-020",
+      "title": "资料寄送登记",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-020-E5",
+      "topic_id": "P2-020",
+      "title": "资料寄送登记",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-020-E6",
+      "topic_id": "P2-020",
+      "title": "资料寄送登记",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-021-E1",
+      "topic_id": "P2-021",
+      "title": "门禁权限回收",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-021-E2",
+      "topic_id": "P2-021",
+      "title": "门禁权限回收",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-021-E3",
+      "topic_id": "P2-021",
+      "title": "门禁权限回收",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-021-E4",
+      "topic_id": "P2-021",
+      "title": "门禁权限回收",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-021-E5",
+      "topic_id": "P2-021",
+      "title": "门禁权限回收",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-021-E6",
+      "topic_id": "P2-021",
+      "title": "门禁权限回收",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-022-E1",
+      "topic_id": "P2-022",
+      "title": "办公用品盘点",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-022-E2",
+      "topic_id": "P2-022",
+      "title": "办公用品盘点",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-022-E3",
+      "topic_id": "P2-022",
+      "title": "办公用品盘点",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-022-E4",
+      "topic_id": "P2-022",
+      "title": "办公用品盘点",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-022-E5",
+      "topic_id": "P2-022",
+      "title": "办公用品盘点",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-022-E6",
+      "topic_id": "P2-022",
+      "title": "办公用品盘点",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-023-E1",
+      "topic_id": "P2-023",
+      "title": "客户回访记录",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-023-E2",
+      "topic_id": "P2-023",
+      "title": "客户回访记录",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-023-E3",
+      "topic_id": "P2-023",
+      "title": "客户回访记录",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-023-E4",
+      "topic_id": "P2-023",
+      "title": "客户回访记录",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-023-E5",
+      "topic_id": "P2-023",
+      "title": "客户回访记录",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-023-E6",
+      "topic_id": "P2-023",
+      "title": "客户回访记录",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-024-E1",
+      "topic_id": "P2-024",
+      "title": "项目风险复核",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-024-E2",
+      "topic_id": "P2-024",
+      "title": "项目风险复核",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-024-E3",
+      "topic_id": "P2-024",
+      "title": "项目风险复核",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-024-E4",
+      "topic_id": "P2-024",
+      "title": "项目风险复核",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-024-E5",
+      "topic_id": "P2-024",
+      "title": "项目风险复核",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-024-E6",
+      "topic_id": "P2-024",
+      "title": "项目风险复核",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-025-E1",
+      "topic_id": "P2-025",
+      "title": "季度目标复盘",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-025-E2",
+      "topic_id": "P2-025",
+      "title": "季度目标复盘",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-025-E3",
+      "topic_id": "P2-025",
+      "title": "季度目标复盘",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-025-E4",
+      "topic_id": "P2-025",
+      "title": "季度目标复盘",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-025-E5",
+      "topic_id": "P2-025",
+      "title": "季度目标复盘",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-025-E6",
+      "topic_id": "P2-025",
+      "title": "季度目标复盘",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-026-E1",
+      "topic_id": "P2-026",
+      "title": "合同附件补齐",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-026-E2",
+      "topic_id": "P2-026",
+      "title": "合同附件补齐",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-026-E3",
+      "topic_id": "P2-026",
+      "title": "合同附件补齐",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-026-E4",
+      "topic_id": "P2-026",
+      "title": "合同附件补齐",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-026-E5",
+      "topic_id": "P2-026",
+      "title": "合同附件补齐",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-026-E6",
+      "topic_id": "P2-026",
+      "title": "合同附件补齐",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-027-E1",
+      "topic_id": "P2-027",
+      "title": "报表字段核对",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-027-E2",
+      "topic_id": "P2-027",
+      "title": "报表字段核对",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-027-E3",
+      "topic_id": "P2-027",
+      "title": "报表字段核对",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-027-E4",
+      "topic_id": "P2-027",
+      "title": "报表字段核对",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-027-E5",
+      "topic_id": "P2-027",
+      "title": "报表字段核对",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-027-E6",
+      "topic_id": "P2-027",
+      "title": "报表字段核对",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-028-E1",
+      "topic_id": "P2-028",
+      "title": "跨组交接安排",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-028-E2",
+      "topic_id": "P2-028",
+      "title": "跨组交接安排",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-028-E3",
+      "topic_id": "P2-028",
+      "title": "跨组交接安排",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-028-E4",
+      "topic_id": "P2-028",
+      "title": "跨组交接安排",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-028-E5",
+      "topic_id": "P2-028",
+      "title": "跨组交接安排",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-028-E6",
+      "topic_id": "P2-028",
+      "title": "跨组交接安排",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-029-E1",
+      "topic_id": "P2-029",
+      "title": "演示环境刷新",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-029-E2",
+      "topic_id": "P2-029",
+      "title": "演示环境刷新",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-029-E3",
+      "topic_id": "P2-029",
+      "title": "演示环境刷新",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-029-E4",
+      "topic_id": "P2-029",
+      "title": "演示环境刷新",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-029-E5",
+      "topic_id": "P2-029",
+      "title": "演示环境刷新",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-029-E6",
+      "topic_id": "P2-029",
+      "title": "演示环境刷新",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    },
+    {
+      "event_id": "P2-030-E1",
+      "topic_id": "P2-030",
+      "title": "服务条款确认",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-030-E2",
+      "topic_id": "P2-030",
+      "title": "服务条款确认",
+      "new_status": "done",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "done",
+      "kind": "valid_update"
+    },
+    {
+      "event_id": "P2-030-E3",
+      "topic_id": "P2-030",
+      "title": "服务条款确认",
+      "new_status": "blocked",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "done",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-030-E4",
+      "topic_id": "P2-030",
+      "title": "服务条款确认",
+      "new_status": "in_progress",
+      "expected_action": "update_task",
+      "expected_relation": "update_task",
+      "expected_active_status": "in_progress",
+      "kind": "valid_reactivate"
+    },
+    {
+      "event_id": "P2-030-E5",
+      "topic_id": "P2-030",
+      "title": "服务条款确认",
+      "new_status": "todo",
+      "expected_action": "pending_review",
+      "expected_relation": "conflict",
+      "expected_active_status": "in_progress",
+      "kind": "invalid_transition"
+    },
+    {
+      "event_id": "P2-030-E6",
+      "topic_id": "P2-030",
+      "title": "服务条款确认",
+      "new_status": "in_progress",
+      "expected_action": "add_source",
+      "expected_relation": "same",
+      "expected_active_status": "in_progress",
+      "kind": "same_status"
+    }
+  ],
+  "provenance": {
+    "purpose": "development_only",
+    "tuning_allowed": true,
+    "sequence": "todo -> in_progress -> done -> invalid blocked -> reactivated -> invalid todo -> duplicate"
+  }
+}

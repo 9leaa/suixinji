@@ -3,6 +3,18 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PYTHON="${PYTHON:-python3}"
+# On the documented remote host the system Anaconda interpreter does not
+# carry the PostgreSQL driver, while the project environment does.  Keep
+# explicit PYTHON overrides authoritative, but make a plain
+# `make distributed-start` select the project environment automatically.
+if [[ "${PYTHON}" == "python3" ]] && ! "$PYTHON" -c 'import psycopg' >/dev/null 2>&1; then
+  for candidate in "/usr/local/anaconda3/envs/zcj_hello/bin/python" "$HOME/.conda/envs/zcj_hello/bin/python"; do
+    if [[ -x "$candidate" ]] && "$candidate" -c 'import psycopg' >/dev/null 2>&1; then
+      PYTHON="$candidate"
+      break
+    fi
+  done
+fi
 PID_DIR="$ROOT/data/pids"
 LOG_DIR="$ROOT/data/logs"
 failed=0
@@ -62,6 +74,7 @@ start_role worker-ingest env SUIXINJI_PROCESS_ROLE=worker-ingest "$PYTHON" -m ap
 start_role worker-query env SUIXINJI_PROCESS_ROLE=worker-query "$PYTHON" -m apps.worker query
 start_role worker-summary env SUIXINJI_PROCESS_ROLE=worker-summary "$PYTHON" -m apps.worker summary
 start_role worker-memory env SUIXINJI_PROCESS_ROLE=worker-memory "$PYTHON" -m apps.worker memory
+start_role worker-memory-embedding env SUIXINJI_PROCESS_ROLE=worker-memory-embedding "$PYTHON" -m apps.worker memory_embedding
 start_role worker-enrichment env SUIXINJI_PROCESS_ROLE=worker-enrichment "$PYTHON" -m apps.worker enrichment
 start_role worker-delivery env SUIXINJI_PROCESS_ROLE=worker-delivery "$PYTHON" -m apps.worker delivery
 start_role scheduler env SUIXINJI_PROCESS_ROLE=scheduler "$PYTHON" -m apps.scheduler

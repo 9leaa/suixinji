@@ -8,12 +8,17 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from agent.hooks import AgentRunContext, get_default_hook_manager
+from agent.query_intent import classify_query_intent, is_task_inventory_question, route_for_intent
+from agent.query_planner import build_query_plan
+from agent.query_route_features import should_call_query_intent_llm, structural_route
+from core import settings
 from core.llm_client import complete_json, embed_text
 from core.observability import log_event, observe
 from core.sensitive import mentions_sensitive_topic
 from core.settings import MEMORY_QUERY_MIN_SCORE, QUERY_MIN_SCORE, QUERY_TOP_K, STORAGE_BACKEND
 from core.taxonomy import is_valid_tag, is_valid_type, normalize_tag, normalize_type
 from memory.service import memory_search
+from memory.consistency import wait_for_memory_barrier
 from memory.trace import add_step, finish_trace, start_trace
 from storage.note_storage import is_note_queryable, load_index
 from storage.vector_store import search_related
@@ -26,6 +31,8 @@ if STORAGE_BACKEND == "postgres":
         list_recent_notes as _postgres_list_recent_notes,
         query_notes_by_tags as _postgres_query_notes_by_tags,
         query_notes_by_type as _postgres_query_notes_by_type,
+        hybrid_search_notes as _postgres_hybrid_search_notes,
+        search_notes_memory_fallback as _postgres_search_notes_memory_fallback,
     )
 
 
@@ -79,7 +86,7 @@ FINAL_SYSTEM_PROMPT = """
 
 _COMPLEX_QUERY_MARKERS = ("比较", "为什么", "结合", "关联", "之间", "变化", "趋势", "总结", "归纳", "多次")
 _CURRENT_PREFERENCE_MARKERS = ("喜欢", "讨厌", "偏好", "习惯", "过敏", "避开")
-_CURRENT_TASK_MARKERS = ("当前待办", "现在的任务", "有哪些任务", "要做什么", "任务进度", "待办是什么")
+_CURRENT_TASK_MARKERS = ("当前待办", "现在的任务", "有哪些任务", "要做什么", "任务进度", "待办是什么", "当前状态", "什么状态", "进展如何", "是否完成", "有没有完成", "做到哪")
 _CURRENT_FACT_MARKERS = ("住在哪里", "住哪", "现在住", "目前住", "正在学习", "重点做什么", "当前项目")
 
 
@@ -179,17 +186,26 @@ def _deterministic_route(question: str) -> dict[str, Any] | None:
             "action": "memory_search",
             "args": {"query": normalized, "memory_type": "preference", "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
             "fallback": {
-                "action": "semantic_search",
-                "args": {"query": normalized, "top_k": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE},
+                "action": "memory_note_fallback",
+                "args": {"query": normalized, "limit": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE},
             },
             "synthesize": True,
             "reason": "current_preference",
         }
     if any(marker in normalized for marker in _CURRENT_TASK_MARKERS):
+        fallback: dict[str, Any] = {
+            "action": "memory_note_fallback",
+            "args": {"query": normalized, "limit": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE},
+        }
+        if is_task_inventory_question(normalized):
+            fallback = {
+                "action": "filter_notes",
+                "args": {"type": "任务", "limit": 30},
+            }
         return {
             "action": "memory_search",
             "args": {"query": normalized, "memory_type": "task", "limit": 8, "min_score": DEFAULT_MEMORY_MIN_SCORE},
-            "fallback": {"action": "filter_notes", "args": {"type": "任务", "limit": 8}},
+            "fallback": fallback,
             "synthesize": True,
             "reason": "current_task",
         }
@@ -198,13 +214,14 @@ def _deterministic_route(question: str) -> dict[str, Any] | None:
             "action": "memory_search",
             "args": {"query": normalized, "memory_type": "semantic", "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
             "fallback": {
-                "action": "semantic_search",
-                "args": {"query": normalized, "top_k": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE},
+                "action": "memory_note_fallback",
+                "args": {"query": normalized, "limit": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE},
             },
             "synthesize": True,
             "reason": "current_fact",
         }
-    if len(normalized) <= 60 and not any(marker in normalized for marker in _COMPLEX_QUERY_MARKERS):
+    _, structural_decision = structural_route(normalized)
+    if len(normalized) <= 60 and structural_decision.complexity == "simple":
         return {
             "action": "semantic_search",
             "args": {"query": normalized, "top_k": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE},
@@ -212,6 +229,37 @@ def _deterministic_route(question: str) -> dict[str, Any] | None:
             "reason": "single_hop_semantic",
         }
     return None
+
+
+def _intent_route(question: str, *, trace: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    """Use the fast structured classifier only for the Memory V3 rollout."""
+    if not settings.QUERY_INTENT_MODEL_ENABLED:
+        return None
+    if settings.QUERY_ROUTER_V2_ENABLED and settings.QUERY_ROUTER_LLM_ON_UNCERTAIN and not should_call_query_intent_llm(question):
+        return None
+    intent = classify_query_intent(question)
+    if intent is None:
+        add_step(trace, "query_intent_classified", status="partial", reason="invalid_or_unavailable_model_output")
+        return None
+    add_step(
+        trace,
+        "query_intent_classified",
+        output_summary={
+            "intent": intent.intent,
+            "time_scope": intent.time_scope,
+            "confidence": intent.confidence,
+            "complexity": intent.complexity,
+            "strategies": list(intent.strategies),
+        },
+        reason="fast_structured_classifier",
+    )
+    return route_for_intent(
+        intent,
+        question,
+        memory_min_score=DEFAULT_MEMORY_MIN_SCORE,
+        note_min_score=DEFAULT_QUERY_MIN_SCORE,
+        top_k=QUERY_TOP_K,
+    )
 
 
 def _safe_tool_args(action: str, args: dict[str, Any]) -> dict[str, Any]:
@@ -238,6 +286,46 @@ def _result_ids(result: Any) -> list[str]:
                 if isinstance(item, dict) and item.get("id"):
                     ids.append(str(item["id"]))
     return ids[:10]
+
+
+def _low_quality_memory_result(result: Any) -> bool:
+    """Detect weak non-empty recall so complex queries can recover."""
+    if not isinstance(result, list) or not result:
+        return True
+    scores = [float(item.get("score") or 0.0) for item in result if isinstance(item, dict)]
+    if not scores:
+        return True
+    top = scores[0]
+    if top < 0.58:
+        return True
+    return len(scores) > 1 and top < 0.75 and top - scores[1] < 0.04
+
+
+def _fuse_memory_results(groups: list[list[dict[str, Any]]], *, limit: int = 5) -> list[dict[str, Any]]:
+    """Fuse original/rewrite/decomposition results while retaining topic coverage."""
+    candidates: dict[str, dict[str, Any]] = {}
+    fusion: dict[str, float] = {}
+    appearances: dict[str, int] = {}
+    for group_index, group in enumerate(groups):
+        weight = 1.0 if group_index == 0 else 0.92
+        for rank, item in enumerate(group, start=1):
+            if not isinstance(item, dict) or not item.get("id"):
+                continue
+            item_id = str(item["id"])
+            candidates.setdefault(item_id, dict(item))
+            appearances[item_id] = appearances.get(item_id, 0) + 1
+            score = float(item.get("score") or 0.0)
+            contribution = weight * (0.70 * score + 0.30 / rank)
+            fusion[item_id] = max(fusion.get(item_id, 0.0), contribution)
+    for item_id, count in appearances.items():
+        fusion[item_id] += min(0.12, 0.03 * (count - 1))
+    ordered = sorted(candidates, key=lambda item_id: (fusion[item_id], candidates[item_id].get("updated_at") or "", item_id), reverse=True)
+    result: list[dict[str, Any]] = []
+    for item_id in ordered[: max(1, int(limit))]:
+        item = candidates[item_id]
+        item["retrieval_fusion_score"] = round(fusion[item_id], 4)
+        result.append(item)
+    return result
 
 
 def _source_lines(observations: list[dict[str, Any]], limit: int = 5) -> list[str]:
@@ -408,6 +496,28 @@ def semantic_search(
 
     top_k = max(1, min(int(top_k), 10))
     min_score = float(min_score)
+    if STORAGE_BACKEND == "postgres" and settings.NOTE_HYBRID_RETRIEVAL_ENABLED:
+        # Dense recall is optional during note-vector backfill.  Hybrid search
+        # still returns exact/sparse evidence when the embedding provider is
+        # unavailable or a note has not received a vector yet.
+        embedding = None
+        if settings.NOTE_HYBRID_VECTOR_ENABLED:
+            try:
+                embedding = embed_text(query)
+            except Exception:
+                embedding = None
+        return [
+            _note_brief(note) | {
+                "score": note.get("score", 0.0),
+                "retrieval_channels": note.get("retrieval_channels", []),
+            }
+            for note in _postgres_hybrid_search_notes(
+                space_id,
+                query,
+                query_embedding=embedding,
+                limit=top_k,
+            )
+        ]
     embedding = embed_text(query)
     results = search_related(
         space_id,
@@ -500,6 +610,21 @@ def provisional_search(space_id: str, query: str, limit: int = 5) -> list[dict[s
         {**_note_brief(note), "score": round(score, 4), "provisional": True}
         for score, note in scored[: max(1, min(int(limit), 10))]
     ]
+
+
+def memory_note_fallback(
+    space_id: str,
+    query: str,
+    *,
+    limit: int = QUERY_TOP_K,
+    min_score: float = DEFAULT_QUERY_MIN_SCORE,
+) -> list[dict[str, Any]]:
+    """Read normal notes only when a memory-oriented lookup is empty."""
+    if STORAGE_BACKEND == "postgres":
+        if settings.NOTE_HYBRID_RETRIEVAL_ENABLED:
+            return semantic_search(space_id, query, top_k=limit, min_score=min_score)
+        return [_note_brief(note) for note in _postgres_search_notes_memory_fallback(space_id, query, limit=limit)]
+    return semantic_search(space_id, query, top_k=limit, min_score=min_score)
 
 
 def get_note(space_id: str, note_id: str) -> dict[str, Any]:
@@ -661,6 +786,13 @@ def _execute_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
             min_score=args.get("min_score", DEFAULT_MEMORY_MIN_SCORE),
             limit=args.get("limit", 8),
         )
+    if action == "memory_note_fallback":
+        return memory_note_fallback(
+            space_id,
+            str(args.get("query", "")),
+            limit=args.get("limit", QUERY_TOP_K),
+            min_score=args.get("min_score", DEFAULT_QUERY_MIN_SCORE),
+        )
 
     return {"error": f"unknown tool: {action}"}
 
@@ -731,6 +863,13 @@ def _provisional_answer(notes: list[dict[str, Any]]) -> str:
         content = note.get("text") or note.get("summary") or note.get("title") or ""
         lines.append(f"- {_clip(str(content), 220)}")
     return "\n".join(lines)
+
+
+def _memory_still_updating_answer(notes: list[dict[str, Any]]) -> str:
+    prefix = "最新记录已保存，长期记忆仍在更新。"
+    if not notes:
+        return prefix + "请稍后再问一次。"
+    return prefix + "\n\n" + _provisional_answer(notes)
 
 
 def _complete_json_with_hooks(
@@ -817,6 +956,22 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
             return answer
 
         observations: list[dict[str, Any]] = []
+        query_plan = build_query_plan(question)
+        add_step(
+            trace,
+            "query_plan",
+            output_summary={
+                "complexity": query_plan.complexity,
+                "use_query_rewrite": query_plan.use_query_rewrite,
+                "use_decomposition": query_plan.use_decomposition,
+                "use_step_back": query_plan.use_step_back,
+                "variant_count": len(query_plan.retrieval_queries),
+                "routing_state": query_plan.routing_state,
+                "routing_confidence": query_plan.routing_confidence,
+                "routing_reasons": list(query_plan.routing_reasons),
+            },
+            reason="conditional_complex_query_features",
+        )
         if hook_context is not None and hook_context.session:
             session_context = {
                 key: hook_context.session.get(key)
@@ -828,6 +983,41 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
 
         try:
             provisional = provisional_search(space_id, question, limit=5)
+            fast_route = _intent_route(question, trace=trace) or _deterministic_route(question)
+            model_plan = fast_route.get("query_plan") if isinstance(fast_route, dict) else None
+            if isinstance(model_plan, dict):
+                query_plan = build_query_plan(question, model_plan=model_plan)
+                add_step(
+                    trace,
+                    "query_plan_model",
+                    output_summary={
+                        "complexity": query_plan.complexity,
+                        "routing_state": query_plan.routing_state,
+                        "variant_count": len(query_plan.retrieval_queries),
+                        "strategies": {
+                            "rewrite": query_plan.use_query_rewrite,
+                            "decomposition": query_plan.use_decomposition,
+                            "step_back": query_plan.use_step_back,
+                        },
+                    },
+                    reason="validated_fast_llm_plan",
+                )
+            if fast_route is not None and str(fast_route.get("action")) == "memory_prefetch":
+                # The structured intent already decided this is not one of the
+                # bounded Memory-first fast paths.  Continue to the normal
+                # memory-prefetch/ReAct flow instead of the legacy short-query
+                # note-only shortcut.
+                fast_route = None
+            if (
+                fast_route is not None
+                and str(fast_route.get("action")) == "memory_search"
+                and query_plan.complexity == "complex"
+                and query_plan.routing_state == "complex"
+            ):
+                # Complex state questions need bounded multi-query recall; a
+                # type-only fast route can otherwise return one topic early and
+                # hide the second half of a comparison.
+                fast_route = None
             if provisional:
                 observations.append(
                     {
@@ -844,6 +1034,11 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     reason="read_after_write",
                 )
                 add_step(trace, "note_search", output_summary={"result_count": len(provisional), "ids": _result_ids(provisional)})
+                # The immediate answer path is deliberately independent of
+                # query intent and vector availability.  A lexical hit here is
+                # the note that was just durably saved; waiting for the memory
+                # worker (or invoking the model) would make a user's follow-up
+                # question appear to have lost that message.
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(provisional)})
                 add_step(trace, "rerank", output_summary={"strategy": "local_lexical_recency", "ids": _result_ids(provisional)})
                 answer = _with_sources(_provisional_answer(provisional), observations)
@@ -853,10 +1048,19 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 finish_trace(trace)
                 return answer
 
-            fast_route = _deterministic_route(question)
             if fast_route is not None:
                 action = str(fast_route["action"])
                 args = dict(fast_route["args"])
+                barrier: dict[str, Any] | None = None
+                if action == "memory_search":
+                    barrier = wait_for_memory_barrier(space_id)
+                    add_step(
+                        trace,
+                        "memory_watermark_barrier",
+                        status="partial" if barrier.get("status") == "timeout" else "success",
+                        output_summary=barrier,
+                        reason="memory_first_read_after_write",
+                    )
                 add_step(
                     trace,
                     "query_routed",
@@ -892,6 +1096,15 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                         }
                     )
                     result = fallback_result
+                if not result and barrier is not None and barrier.get("status") == "timeout":
+                    answer = _with_sources(_memory_still_updating_answer(provisional), observations)
+                    _log_final_answer(space_id, answer, source="memory_barrier_timeout", observations=observations)
+                    add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="memory_barrier_timeout")
+                    add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                    finish_trace(trace)
+                    return answer
+                if not result and provisional:
+                    result = provisional
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
                 add_step(trace, "rerank", output_summary={"strategy": "fast_path_tool_order", "ids": _result_ids(result)})
                 if fast_route["synthesize"] and result:
@@ -923,6 +1136,77 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 trace=trace,
                 hook_context=hook_context,
             )
+            # Complex-query variants also run for weak non-empty recall and
+            # multi-topic decomposition. This recovers from plausible-looking
+            # but incomplete candidates without penalising simple lookups.
+            should_expand = (
+                query_plan.complexity == "complex"
+                and bool(query_plan.retrieval_queries)
+                and (
+                    _low_quality_memory_result(memory_prefetch)
+                    or query_plan.use_decomposition
+                    or query_plan.use_step_back
+                )
+            )
+            executed_variant_count = 0
+            skipped_variant_count = 0
+            if should_expand:
+                result_groups: list[list[dict[str, Any]]] = [memory_prefetch] if isinstance(memory_prefetch, list) else []
+                for variant in query_plan.retrieval_queries:
+                    if variant == question:
+                        skipped_variant_count += 1
+                        continue
+                    is_step_back = variant.endswith((
+                        "背景与原因", "历史变化与趋势", "共同点、差异与适用场景",
+                        "方法、步骤与注意事项", "上位概念、背景与约束",
+                    ))
+                    is_rewrite = variant == query_plan.rewritten_query
+                    if is_rewrite and not settings.QUERY_REWRITE_ENABLED:
+                        skipped_variant_count += 1
+                        continue
+                    if is_step_back and not settings.QUERY_STEP_BACK_ENABLED:
+                        skipped_variant_count += 1
+                        continue
+                    if not is_rewrite and not is_step_back and not settings.QUERY_DECOMPOSITION_ENABLED:
+                        skipped_variant_count += 1
+                        continue
+                    executed_variant_count += 1
+                    variant_result = _run_tool(
+                        space_id,
+                        "memory_search",
+                        {"query": variant, "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
+                        trace=trace,
+                        hook_context=hook_context,
+                    )
+                    add_step(
+                        trace,
+                        "query_variant",
+                        output_summary={"query_len": len(variant), "result_count": len(variant_result or [])},
+                        reason="query_rewrite_or_complex_recall",
+                    )
+                    if isinstance(variant_result, list) and variant_result:
+                        result_groups.append(variant_result)
+                        observations.append(
+                            {
+                                "thought": "复杂查询使用受限检索变体补充召回。",
+                                "tool": "memory_search",
+                                "args": {"query_len": len(variant), "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
+                                "result": variant_result,
+                            }
+                        )
+                if result_groups:
+                    memory_prefetch = _fuse_memory_results(result_groups, limit=5)
+            add_step(
+                trace,
+                "query_plan_executed",
+                output_summary={
+                    "planned_variant_count": len(query_plan.retrieval_queries),
+                    "executed_variant_count": executed_variant_count,
+                    "skipped_variant_count": skipped_variant_count,
+                    "expansion_gate": should_expand,
+                },
+                reason="bounded_variant_execution",
+            )
             if memory_prefetch:
                 observations.append(
                     {
@@ -934,7 +1218,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 )
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(memory_prefetch)})
 
-            react_llm_task = "query_complex_reasoning" if any(marker in question for marker in _COMPLEX_QUERY_MARKERS) or max_steps > 2 else "query_routing"
+            react_llm_task = "query_complex_reasoning" if query_plan.complexity == "complex" or max_steps > 2 else "query_routing"
             for step in range(max_steps):
                 payload = {
                     "question": question,

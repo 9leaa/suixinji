@@ -13,15 +13,20 @@ from core.llm_client import complete_json
 from core.config import get_chat_config
 from core import settings
 from memory.candidate_validator import contains_sensitive_data
+from memory.canonicalizer import canonicalize_candidate, is_task_lifecycle_statement
 from memory.clause_splitter import split_clauses
+from memory.extraction_schema import parse_extracted_candidate
 from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for, candidate_id_for_evidence, memory_key_for
 from memory.policies.preference import preference_polarity, preference_signature
-from memory.prompts import MEMORY_EXTRACTOR_PROMPT
+from memory.prompts import MEMORY_EXTRACTOR_PROMPT, MEMORY_EXTRACTOR_V3_PROMPT
+from memory.task_state import infer_task_status
 
 LOGGER = logging.getLogger(__name__)
 EXTRACTOR_VERSION = "memory-extractor-v1"
 LLM_EXTRACTOR_VERSION = "memory-extractor-v1-llm"
+V3_LLM_EXTRACTOR_VERSION = "memory-extractor-v3-llm"
 PROMPT_HASH = hashlib.sha256(MEMORY_EXTRACTOR_PROMPT.encode("utf-8")).hexdigest()[:16]
+V3_PROMPT_HASH = hashlib.sha256(MEMORY_EXTRACTOR_V3_PROMPT.encode("utf-8")).hexdigest()[:16]
 MEMORY_EXTRACTOR_MODE = settings.MEMORY_EXTRACTOR_MODE
 
 LOW_VALUE_PATTERNS = {
@@ -56,17 +61,7 @@ def _entities(text: str) -> list[str]:
 
 
 def _task_status(text: str) -> str:
-    if any(token in text for token in ("取消", "不用做", "不做了")):
-        return "cancelled"
-    if any(token in text for token in ("完成", "搞定", "已做完", "做完")):
-        return "done"
-    if any(token in text for token in ("卡住", "阻塞", "等确认")):
-        return "blocked"
-    if any(token in text for token in ("正在", "进行中", "继续")):
-        return "in_progress"
-    if "准备" in text and any(token in text for token in ("最近", "现在", "重点")):
-        return "in_progress"
-    return "todo"
+    return infer_task_status(text) or "todo"
 
 
 def _clean_subject(text: str) -> str:
@@ -133,6 +128,11 @@ def may_contain_memory(text: str, classification: dict[str, Any] | None = None) 
         "todo",
         "跟进",
         "完成",
+        "做完",
+        "已做完",
+        "学完",
+        "已学完",
+        "弄好",
         "提醒",
         "计划",
         "报名",
@@ -142,6 +142,9 @@ def may_contain_memory(text: str, classification: dict[str, Any] | None = None) 
         "研究",
         "开发",
         "负责",
+        "更换",
+        "换成",
+        "改成",
         "住在",
         "搬到",
         "今天",
@@ -178,6 +181,7 @@ def _candidate(
     extractor_version: str = EXTRACTOR_VERSION,
     model: str | None = None,
     clause_index: int | None = None,
+    scope: dict[str, Any] | None = None,
 ) -> MemoryCandidate:
     if subject is None and predicate is None and object_value is None:
         subject, predicate, object_value = _structured_fields(memory_type, evidence_span or content, entities)
@@ -189,7 +193,7 @@ def _candidate(
         object_value=object_value,
         content=content,
     )
-    return MemoryCandidate(
+    candidate = MemoryCandidate(
         memory_type=memory_type,
         content=content,
         importance=importance,
@@ -224,8 +228,12 @@ def _candidate(
         extractor_type=extractor_type,
         extractor_version=extractor_version,
         model=model,
-        prompt_hash=PROMPT_HASH if extractor_type == "llm" else None,
+        prompt_hash=(V3_PROMPT_HASH if extractor_type == "llm" and extractor_version == V3_LLM_EXTRACTOR_VERSION else PROMPT_HASH)
+        if extractor_type == "llm"
+        else None,
+        scope=dict(scope or {}),
     )
+    return canonicalize_candidate(candidate) if settings.MEMORY_CANONICAL_KEY_V3_ENABLED else candidate
 
 
 def extract_rule_candidates(note_id: str, text: str, classification: dict[str, Any] | None = None) -> list[MemoryCandidate]:
@@ -286,6 +294,8 @@ def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: in
         )
 
     has_task_marker = any(marker in raw.casefold() for marker in task_markers)
+    v3_lifecycle_task = settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED and is_task_lifecycle_statement(raw)
+    has_task_marker = has_task_marker or v3_lifecycle_task
     if has_task_marker:
         candidates.append(
             _candidate(
@@ -302,8 +312,11 @@ def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: in
             )
         )
 
-    if any(marker in raw for marker in semantic_markers) or ("项目" in raw and not has_task_marker) or any(
+    if (
+        not (settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED and has_task_marker)
+        and (any(marker in raw for marker in semantic_markers) or ("项目" in raw and not has_task_marker) or any(
         pattern.search(raw) for pattern in SHORT_FACT_PATTERNS
+        ))
     ):
         candidates.append(
             _candidate(
@@ -355,7 +368,13 @@ def _bool_value(value: Any, default: bool = True) -> bool:
     return bool(value)
 
 
-def extract_llm_candidates(note_id: str, text: str, classification: dict[str, Any] | None = None) -> list[MemoryCandidate]:
+def extract_llm_candidates(
+    note_id: str,
+    text: str,
+    classification: dict[str, Any] | None = None,
+    *,
+    hints: list[dict[str, Any]] | None = None,
+) -> list[MemoryCandidate]:
     raw = str(text or "").strip()
     if _should_skip_text(raw):
         return []
@@ -363,9 +382,10 @@ def extract_llm_candidates(note_id: str, text: str, classification: dict[str, An
         "note_id": note_id,
         "text": raw,
         "classification": classification or {},
+        "hints": hints or [],
     }
     data = complete_json(
-        system_prompt=MEMORY_EXTRACTOR_PROMPT,
+        system_prompt=MEMORY_EXTRACTOR_V3_PROMPT if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED else MEMORY_EXTRACTOR_PROMPT,
         user_prompt=json.dumps(payload, ensure_ascii=False),
         llm_task="memory_extraction",
     )
@@ -376,6 +396,41 @@ def extract_llm_candidates(note_id: str, text: str, classification: dict[str, An
     candidates: list[MemoryCandidate] = []
     for row in rows[:5]:
         if not isinstance(row, dict):
+            continue
+        if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED:
+            structured = parse_extracted_candidate(row, raw)
+            if structured is None:
+                continue
+            scope = {
+                "canonical_topic": structured.canonical_topic,
+                "operation": structured.operation,
+                "old_value": structured.old_value,
+                "new_value": structured.new_value,
+                "scope": "global",
+            }
+            candidates.append(
+                _candidate(
+                    note_id,
+                    structured.memory_type,
+                    structured.content or structured.evidence_span,
+                    importance=structured.importance,
+                    confidence=structured.confidence,
+                    entities=structured.entities,
+                    reason=structured.extraction_reason or "v3_structured_llm_extraction",
+                    task_status=structured.task_status,
+                    evidence_span=structured.evidence_span,
+                    subject=structured.entity,
+                    predicate=structured.attribute,
+                    object_value=structured.new_value or structured.attribute,
+                    valid_from=structured.valid_from.isoformat() if structured.valid_from else None,
+                    valid_until=structured.valid_until.isoformat() if structured.valid_until else None,
+                    should_store=structured.should_store,
+                    extractor_type="llm",
+                    extractor_version=V3_LLM_EXTRACTOR_VERSION,
+                    model=get_chat_config("fast").model,
+                    scope=scope,
+                )
+            )
             continue
         memory_type = str(row.get("memory_type") or "").strip().lower()
         content = str(row.get("content") or "").strip()
@@ -412,6 +467,20 @@ def extract_llm_candidates(note_id: str, text: str, classification: dict[str, An
     return _dedupe(candidates)
 
 
+def _rule_hints(note_id: str, text: str, classification: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    """Give the fast model cheap signals without creating a second candidate set."""
+    return [
+        {
+            "memory_type": candidate.memory_type,
+            "task_status": candidate.task_status,
+            "subject": candidate.subject,
+            "predicate": candidate.predicate,
+            "evidence_span": candidate.evidence_span,
+        }
+        for candidate in extract_rule_candidates(note_id, text, classification)[:5]
+    ]
+
+
 def _dedupe(candidates: list[MemoryCandidate]) -> list[MemoryCandidate]:
     deduped: list[MemoryCandidate] = []
     seen: set[tuple[Any, ...]] = set()
@@ -436,7 +505,12 @@ def extract_candidates(note_id: str, text: str, classification: dict[str, Any] |
         return extract_rule_candidates(note_id, text, classification)
 
     try:
-        model_candidates = extract_llm_candidates(note_id, text, classification)
+        model_candidates = extract_llm_candidates(
+            note_id,
+            text,
+            classification,
+            hints=_rule_hints(note_id, text, classification) if mode == "hybrid" else None,
+        )
     except Exception as exc:
         LOGGER.warning("memory.extractor.llm_failed note_id=%s error_type=%s", note_id, type(exc).__name__)
         return [
@@ -446,4 +520,15 @@ def extract_candidates(note_id: str, text: str, classification: dict[str, Any] |
 
     if mode == "llm":
         return model_candidates
-    return _dedupe(model_candidates + extract_rule_candidates(note_id, text, classification))
+    # Hybrid means rule hints plus one authoritative structured model result.
+    # Returning a rules/LLM union lets one sentence create incompatible memory
+    # types and was the source of repeated false merges.
+    if model_candidates:
+        return model_candidates
+    # An empty model response is not a semantic decision.  Preserve the
+    # deterministic admission fallback, but never union it with a non-empty
+    # model result.
+    return [
+        replace(candidate, reason="llm_empty_rule_fallback", extraction_reason="llm_empty_rule_fallback")
+        for candidate in extract_rule_candidates(note_id, text, classification)
+    ]

@@ -64,6 +64,7 @@ from runtime.enrichment_drainer import EnrichmentDrainer
 from runtime.executor import get_task_executor
 from runtime.pending_drainer import PendingDrainer
 from runtime.task import TASK_REJECTED
+from repositories.postgres.dispatch import complete_blocked_sensitive_inbox, recover_skipped_ingress
 
 
 load_dotenv()
@@ -409,7 +410,7 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
 
     raw = text.removeprefix("/memory").strip()
     if not raw:
-        return "用法：/memory list｜show <id>｜search <内容>｜profile｜pending｜approve <id>｜reject <id>｜edit <id> <内容>｜resolve <id> keep|merge|archive [内容]｜decisions｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
+        return "用法：/memory list｜show <id>｜search <内容>｜profile｜pending｜approve <id>｜reject <id>｜edit <id> <内容>｜resolve <id> keep|merge|archive [内容]｜decisions｜forget <id>｜purge <id>｜correct <id> [--status done] <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
 
     parts = raw.split(maxsplit=2)
     action = parts[0].lower()
@@ -426,7 +427,13 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
     if action == "purge" and len(parts) >= 2:
         return format_memory_purge(parts[1])
     if action == "correct" and len(parts) >= 3:
-        return format_memory_correct(parts[1], parts[2])
+        content = parts[2]
+        task_status = None
+        status_match = re.match(r"^--status(?:=|\s+)(todo|in_progress|blocked|done|cancelled)\s+(.+)$", content, flags=re.IGNORECASE)
+        if status_match:
+            task_status = status_match.group(1).lower()
+            content = status_match.group(2)
+        return format_memory_correct(parts[1], content, task_status=task_status)
     if action == "reject" and len(parts) >= 2:
         return format_memory_reject(parts[1], parts[2] if len(parts) >= 3 else "user_rejected_pending_memory")
     if action == "edit" and len(parts) >= 3:
@@ -449,7 +456,7 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
     if action == "consolidate" and len(parts) >= 2:
         return format_memory_consolidate(space_id, parts[1])
 
-    return "用法：/memory list｜show <id>｜search <内容>｜profile｜pending｜approve <id>｜reject <id>｜edit <id> <内容>｜resolve <id> keep|merge|archive [内容]｜decisions｜forget <id>｜purge <id>｜correct <id> <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
+    return "用法：/memory list｜show <id>｜search <内容>｜profile｜pending｜approve <id>｜reject <id>｜edit <id> <内容>｜resolve <id> keep|merge|archive [内容]｜decisions｜forget <id>｜purge <id>｜correct <id> [--status done] <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
 
 
 def _handle_trace_command(text: str) -> str | None:
@@ -565,6 +572,8 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
             },
         )
         if appended:
+            if TASK_QUEUE_BACKEND == "redis_streams":
+                complete_blocked_sensitive_inbox(record.id)
             safe_send_text(chat_id, "检测到疑似密码、密钥或高风险身份信息：这条内容未保存，也未发送给模型。")
         else:
             _log_duplicate_event(
@@ -785,6 +794,17 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
             safe_send_text(chat_id, "当前任务较多，请稍后重试。")
         return
 
+    if text.startswith("/"):
+        log_event(
+            "feishu.command.unknown",
+            status="skipped",
+            space_id=space_id,
+            message_id=message_id,
+            extra={"command": text.split(maxsplit=1)[0][:80]},
+        )
+        safe_send_text(chat_id, "未识别的命令。可用：/ask、/memory、/trace、/summary、/status、/feedback")
+        return
+
     if TASK_QUEUE_BACKEND == "redis_streams":
         result = receive(
             InboxCommand(
@@ -887,6 +907,11 @@ def start() -> None:
         format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
     )
     log_process_started("receiver")
+
+    if TASK_QUEUE_BACKEND == "redis_streams":
+        report = recover_skipped_ingress()
+        if any(report.values()):
+            LOGGER.info("Recovered skipped ingress records: %s", report)
 
     if TASK_QUEUE_BACKEND == "local":
         executor = get_task_executor(safe_send_text)

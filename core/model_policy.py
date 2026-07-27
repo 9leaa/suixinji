@@ -15,6 +15,7 @@ class ModelRole(str, Enum):
 class LLMTask(str, Enum):
     NOTE_CLASSIFICATION = "note_classification"
     MEMORY_EXTRACTION = "memory_extraction"
+    QUERY_INTENT = "query_intent"
     QUERY_ROUTING = "query_routing"
     QUERY_SYNTHESIS = "query_synthesis"
     QUERY_COMPLEX_REASONING = "query_complex_reasoning"
@@ -36,6 +37,7 @@ class ModelRoute:
 DEFAULT_ROUTES: dict[LLMTask, ModelRoute] = {
     LLMTask.NOTE_CLASSIFICATION: ModelRoute(LLMTask.NOTE_CLASSIFICATION, ModelRole.FAST, "cheap_structured_note_classification"),
     LLMTask.MEMORY_EXTRACTION: ModelRoute(LLMTask.MEMORY_EXTRACTION, ModelRole.FAST, "cheap_memory_candidate_extraction"),
+    LLMTask.QUERY_INTENT: ModelRoute(LLMTask.QUERY_INTENT, ModelRole.FAST, "cheap_structured_query_intent"),
     LLMTask.QUERY_ROUTING: ModelRoute(LLMTask.QUERY_ROUTING, ModelRole.FAST, "cheap_query_tool_selection"),
     LLMTask.QUERY_SYNTHESIS: ModelRoute(LLMTask.QUERY_SYNTHESIS, ModelRole.BALANCED, "normal_answer_synthesis"),
     LLMTask.QUERY_COMPLEX_REASONING: ModelRoute(

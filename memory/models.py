@@ -29,6 +29,7 @@ MEMORY_RELATION_TYPES = {"supersedes", "superseded_by", "conflicts_with", "suppo
 MEMORY_EXTRACTION_STATUSES = {"pending", "processing", "completed", "empty", "partial", "failed"}
 MEMORY_CONSOLIDATION_STATUSES = {"running", "completed", "failed"}
 MEMORY_KEY_VERSION = "memory-key-v2"
+MEMORY_KEY_V3_VERSION = "memory-key-v3"
 SLOT_SEMANTIC_PREDICATES = {
     "location",
     "current_project",
@@ -157,6 +158,7 @@ class MemoryCandidate:
     extractor_version: str = "memory-extractor-v1"
     model: str | None = None
     prompt_hash: str | None = None
+    memory_key_version: str = MEMORY_KEY_VERSION
 
     def __post_init__(self) -> None:
         if self.memory_type not in MEMORY_TYPES:
@@ -300,6 +302,7 @@ class MemoryRecord:
     memory_key: str | None = None
     polarity: str | None = None
     scope: dict[str, Any] = field(default_factory=dict)
+    memory_key_version: str = MEMORY_KEY_VERSION
 
     @property
     def effective_memory_key(self) -> str:
@@ -334,6 +337,7 @@ class MemoryRecord:
             "object_value": self.object_value,
             "last_confirmed_at": self.last_confirmed_at,
             "memory_key": self.memory_key,
+            "memory_key_version": self.memory_key_version,
             "polarity": self.polarity,
             "scope": self.scope,
             "sources": [source.__dict__ for source in self.sources],

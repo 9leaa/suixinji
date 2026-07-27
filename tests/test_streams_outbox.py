@@ -14,7 +14,7 @@ from infrastructure.database import session_scope
 from infrastructure.redis_client import get_redis
 from infrastructure.redis_keys import RedisKeys
 from infrastructure.schema import InboxMessage, OutboxEvent, Space, Task
-from repositories.postgres.dispatch import enqueue_task, get_space_progress, receive_command
+from repositories.postgres.dispatch import enqueue_task, get_space_progress, receive_command, skip_inbox_record
 from repositories.postgres.outbox import relay_outbox_batch
 from repositories.postgres.tasks import (
     claim_task,
@@ -138,6 +138,42 @@ def test_only_first_root_is_published_and_completion_releases_one_next(distribut
         "processed_sequence_no": 0,
         "note_watermark": 1,
         "memory_watermark": 0,
+        "memory_gap_sequence_no": None,
+    }
+
+
+def test_skipped_ingress_advances_both_watermarks_and_releases_next(distributed_scope):
+    """A redacted/invalid message must not permanently block later ingress."""
+    space_id, source, _keys, _client = distributed_scope
+    skipped = _receive(space_id, source, "skipped-sensitive")
+    next_message = _receive(space_id, source, "after-skipped-sensitive")
+
+    with session_scope() as session:
+        row = session.get(InboxMessage, skipped.inbox_id)
+        assert row is not None
+        # This is the persistent state written by the sensitive ingress path
+        # before it calls the queue-finalization helper.
+        row.status = "blocked_sensitive"
+        assert session.get(Task, next_message.task_id).status == "blocked"
+
+    assert skip_inbox_record(
+        skipped.inbox_id,
+        final_status="blocked_sensitive",
+        cancel_root_task=True,
+    ) is True
+
+    with session_scope() as session:
+        row = session.get(InboxMessage, skipped.inbox_id)
+        assert row.status == "blocked_sensitive"
+        assert row.note_status == "completed"
+        assert row.memory_status == "completed"
+        assert session.get(Task, skipped.task_id).status == "cancelled"
+        assert session.get(Task, next_message.task_id).status == "queued"
+    assert _outbox_count(str(next_message.task_id)) == 1
+    assert get_space_progress(space_id) == {
+        "processed_sequence_no": 0,
+        "note_watermark": 1,
+        "memory_watermark": 1,
         "memory_gap_sequence_no": None,
     }
 

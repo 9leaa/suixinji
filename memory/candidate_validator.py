@@ -5,8 +5,10 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, replace
 
+from core import settings
 from core.sensitive import contains_sensitive_data
 from core.settings import MEMORY_CANDIDATE_MIN_CONFIDENCE
+from memory.canonicalizer import canonicalize_candidate
 from memory.models import MemoryCandidate, memory_key_for, normalize_content
 
 
@@ -44,6 +46,8 @@ def validate_candidate(candidate: MemoryCandidate, *, note_text: str = "") -> tu
 
     evidence_span = str(candidate.evidence_span or "").strip()
     if evidence_span and evidence_span not in note_text:
+        if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED:
+            return None, CandidateRejection(candidate.candidate_id, "evidence_span_not_grounded")
         evidence_span = ""
     validated = replace(
         candidate,
@@ -63,6 +67,17 @@ def validate_candidate(candidate: MemoryCandidate, *, note_text: str = "") -> tu
             content=content[:1000],
         ),
     )
+    if settings.MEMORY_CANONICAL_KEY_V3_ENABLED:
+        validated = canonicalize_candidate(validated)
+        if validated.memory_type == "task" and not all(
+            (
+                validated.subject,
+                validated.predicate,
+                validated.scope.get("operation"),
+                validated.task_status,
+            )
+        ):
+            return None, CandidateRejection(candidate.candidate_id, "task_identity_incomplete")
     return validated, None
 
 

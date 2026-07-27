@@ -11,10 +11,11 @@ from core import settings
 from core.settings import MEMORY_EXTRACTION_LEASE_SECONDS
 from memory.adjudicator import adjudicate_memory
 from memory.advisory import maybe_memory_relation_advisory
-from memory.candidate_retriever import retrieve_candidates
+from memory.candidate_retriever import retrieval_signals, retrieve_candidates
 from memory.evolution import evolve_memory
 from memory.models import MemoryCandidate, utc_now_iso
 from memory.repository import add_memory_relation, add_source, get_extraction_state, list_memories, mark_extraction_failed, update_memory
+from memory.shadow import build_relation_shadow_report
 from memory.retriever import score_memory
 from memory.trace import add_step
 from storage.note_storage import is_note_queryable, load_index
@@ -46,12 +47,24 @@ def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidat
         trace,
         "candidate_memories_found",
         input_summary={"candidate_id": candidate.candidate_id, "memory_type": candidate.memory_type},
-        output_summary={"retrieved_count": len(similar), "memory_ids": [memory.id for memory in similar]},
+        output_summary={
+            "retrieved_count": len(similar),
+            "memory_ids": [memory.id for memory in similar],
+            "signals": [retrieval_signals(candidate, memory) for memory in similar[:8]],
+        },
         duration_ms=int((time.perf_counter() - retrieval_started) * 1000),
     )
     adjudication_started = time.perf_counter()
     decision = adjudicate_memory(candidate, similar)
     advisory = maybe_memory_relation_advisory(candidate, similar, decision)
+    shadow = build_relation_shadow_report(candidate, similar, decision)
+    if shadow is not None:
+        add_step(
+            trace,
+            "v3_shadow_relation_evaluated",
+            output_summary=shadow,
+            reason="read_only_relation_guard_projection",
+        )
     add_step(
         trace,
         "relation_decided",

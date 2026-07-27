@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from datetime import timedelta
 from datetime import date, datetime
 from typing import Any
@@ -26,6 +27,7 @@ from core.settings import (
     MEMORY_VECTOR_LIFECYCLE_ENABLED,
     MEMORY_VECTOR_MAX_ATTEMPTS,
     MEMORY_VECTOR_RETRY_BASE_SECONDS,
+    RETRIEVAL_WEIGHTED_RRF_ENABLED,
 )
 from infrastructure.database import session_scope
 from infrastructure.schema import (
@@ -252,6 +254,7 @@ def _record(
         object_value=row.object_value,
         last_confirmed_at=_iso(row.last_confirmed_at),
         memory_key=row.memory_key,
+        memory_key_version=row.memory_key_version or MEMORY_KEY_VERSION,
         polarity=row.polarity,
         scope=dict(row.scope_json or {}),
         sources=_sources(session, row.id) if sources is None else sources,
@@ -357,7 +360,7 @@ def _insert_memory(
         predicate=candidate.predicate,
         object_value=candidate.object_value,
         memory_key=candidate.effective_memory_key,
-        memory_key_version=MEMORY_KEY_VERSION,
+        memory_key_version=candidate.memory_key_version,
         polarity=candidate.polarity,
         scope_json=dict(candidate.scope),
         valid_from=_dt(candidate.valid_from or timestamp),
@@ -386,6 +389,10 @@ def _versioned_update(
     confidence: float | None = None,
     importance: float | None = None,
     last_confirmed_at: str | None = None,
+    object_value: str | None = None,
+    scope: dict[str, Any] | None = None,
+    memory_key: str | None = None,
+    memory_key_version: str | None = None,
     reason: str | None,
     source_note_id: str | None,
 ) -> None:
@@ -395,13 +402,14 @@ def _versioned_update(
     if content_changed:
         row.content = content
         row.normalized_content = normalize_content(content)
-        row.memory_key = memory_key_for(
-            row.memory_type,
-            subject=row.subject,
-            predicate=row.predicate,
-            object_value=row.object_value,
-            content=content,
-        )
+        if row.memory_key_version != "memory-key-v3":
+            row.memory_key = memory_key_for(
+                row.memory_type,
+                subject=row.subject,
+                predicate=row.predicate,
+                object_value=row.object_value,
+                content=content,
+            )
     if status is not None:
         row.status = status
     if task_status is not None:
@@ -414,12 +422,58 @@ def _versioned_update(
         row.importance = float(importance)
     if last_confirmed_at is not None:
         row.last_confirmed_at = _dt(last_confirmed_at)
+    if object_value is not None:
+        row.object_value = object_value
+    if scope is not None:
+        row.scope_json = dict(scope)
+    if memory_key is not None:
+        row.memory_key = memory_key
+    if memory_key_version is not None:
+        row.memory_key_version = memory_key_version
     row.updated_at = _dt(utc_now_iso())
     row.current_version += 1
     session.flush()
     _add_version(session, row, reason=reason, source_note_id=source_note_id)
     if content_changed:
         _schedule_memory_embedding_if_enabled(session, row)
+
+
+def _archive_terminal_task_duplicates(
+    session: Any,
+    target: Memory,
+    candidate: MemoryCandidate,
+    *,
+    decision_id: str,
+    source_note_id: str,
+    now: str,
+) -> list[str]:
+    """Archive older active copies after an unambiguous terminal update."""
+    if target.memory_type != "task" or target.task_status not in {"done", "cancelled"}:
+        return []
+    from memory.canonicalizer import task_identity_compatible
+
+    rows = list(
+        session.execute(
+            select(Memory)
+            .where(Memory.space_id == target.space_id, Memory.memory_type == "task", Memory.status == "active", Memory.id != target.id)
+            .with_for_update()
+        ).scalars()
+    )
+    archived: list[str] = []
+    for duplicate in rows:
+        if not task_identity_compatible(candidate, duplicate):
+            continue
+        _versioned_update(
+            session,
+            duplicate,
+            status="archived",
+            reason="duplicate_task_identity_reconciled",
+            source_note_id=source_note_id,
+        )
+        _add_relation(session, target.space_id, target.id, duplicate.id, "supersedes", decision_id, now)
+        _add_relation(session, target.space_id, duplicate.id, target.id, "superseded_by", decision_id, now)
+        archived.append(duplicate.id)
+    return archived
 
 
 def _add_relation(session: Any, space_id: str, source_id: str, target_id: str, relation: str, decision_id: str | None, now: str) -> None:
@@ -593,17 +647,45 @@ def _text_document() -> Any:
 
 
 def _query_terms(text: str, *, entities: list[str] | None = None) -> list[str]:
-    values = [str(text or "")]
+    # Put the intent-stripped topic first so bounded term expansion cannot be
+    # exhausted by n-grams of generic question wording before reaching the
+    # actual entity (for example, 发票 in “发票这项任务进展如何”).
+    from memory.retriever import retrieval_topic_text
+
+    topic = retrieval_topic_text(text)
+    values = [topic, str(text or "")] if topic and topic != str(text or "") else [str(text or "")]
     values.extend(str(item or "") for item in entities or [])
     terms: list[str] = []
+
+    def add(value: str) -> None:
+        token = str(value or "").strip()
+        if len(token) >= 2 and token not in terms:
+            terms.append(token)
+
     for value in values:
         for token in value.replace("：", " ").replace(":", " ").split():
-            token = token.strip()
-            if len(token) >= 2 and token not in terms:
-                terms.append(token)
+            add(token)
+
+        # PostgreSQL's simple full-text parser does not segment Chinese, and
+        # users naturally omit connective characters (for example “的”) or
+        # change whitespace around an ASCII name.  Add bounded, general CJK
+        # and ASCII runs so the structured lexical channel can still surface
+        # the memory for the scorer.  These are retrieval hints only; they do
+        # not change memory identity or permit any write-side merge.
+        runs = re.findall(r"[A-Za-z0-9][A-Za-z0-9+#._-]*|[\u4e00-\u9fff]+", value)
+        for run in runs:
+            add(run)
+        for run in runs:
+            if not re.fullmatch(r"[\u4e00-\u9fff]+", run):
+                continue
+            for width in (4, 3, 2):
+                if len(run) < width:
+                    continue
+                for start in range(len(run) - width + 1):
+                    add(run[start : start + width])
+
     compact = normalize_content(text)
-    if compact and compact not in terms:
-        terms.append(compact)
+    add(compact)
     return terms[:12]
 
 
@@ -619,11 +701,23 @@ def _rrf_hits(
     rows: dict[str, Memory] = {}
     ranks: dict[str, dict[str, int]] = {}
     rrf_k = max(1, int(MEMORY_HYBRID_RRF_K))
+    channel_weights = {
+        # Structured/canonical matches carry the strongest signal for a
+        # state-layer lookup. Sparse and vector channels complement it, while
+        # trigram is deliberately weaker because it is mainly a typo/segmentation
+        # recovery path.
+        "exact": 1.60,
+        "structured": 1.35,
+        "fts": 1.00,
+        "vector": 0.95,
+        "trigram": 0.60,
+    }
     for channel, ranked in channels:
+        weight = channel_weights.get(channel, 1.0) if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0
         for rank, row in enumerate(ranked, start=1):
             rows[row.id] = row
             ranks.setdefault(row.id, {})[channel] = rank
-            scores[row.id] = scores.get(row.id, 0.0) + 1.0 / (rrf_k + rank)
+            scores[row.id] = scores.get(row.id, 0.0) + weight / (rrf_k + rank)
     hits: list[MemoryRetrievalHit] = []
     for memory_id, row in rows.items():
         policy_score = 0.0
@@ -649,11 +743,11 @@ def _rrf_hits(
                 fts_rank=channel_ranks.get("fts"),
                 trigram_rank=channel_ranks.get("trigram"),
                 vector_rank=channel_ranks.get("vector"),
-                exact_score=1.0 / (rrf_k + channel_ranks["exact"]) if "exact" in channel_ranks else 0.0,
-                structured_score=1.0 / (rrf_k + channel_ranks["structured"]) if "structured" in channel_ranks else 0.0,
-                fts_score=1.0 / (rrf_k + channel_ranks["fts"]) if "fts" in channel_ranks else 0.0,
-                trigram_score=1.0 / (rrf_k + channel_ranks["trigram"]) if "trigram" in channel_ranks else 0.0,
-                vector_score=1.0 / (rrf_k + channel_ranks["vector"]) if "vector" in channel_ranks else 0.0,
+                exact_score=(channel_weights["exact"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["exact"]) if "exact" in channel_ranks else 0.0,
+                structured_score=(channel_weights["structured"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["structured"]) if "structured" in channel_ranks else 0.0,
+                fts_score=(channel_weights["fts"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["fts"]) if "fts" in channel_ranks else 0.0,
+                trigram_score=(channel_weights["trigram"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["trigram"]) if "trigram" in channel_ranks else 0.0,
+                vector_score=(channel_weights["vector"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["vector"]) if "vector" in channel_ranks else 0.0,
                 rrf_score=scores.get(memory_id, 0.0) - policy_score,
                 policy_score=policy_score,
                 final_score=scores.get(memory_id, 0.0),
@@ -880,6 +974,60 @@ def list_memory_vector_backfill_candidates(*, status: str = "active", limit: int
         return result
 
 
+def schedule_memory_vector_backfill(*, status: str = "active", limit: int = 10000) -> int:
+    """Create durable embedding tasks for memories missing current vectors.
+
+    This is an idempotent operational helper: ready vectors with the current
+    content hash/model contract are left untouched, while missing, failed, or
+    stale rows are moved through the normal pending/outbox path.
+    """
+    if not MEMORY_VECTOR_LIFECYCLE_ENABLED:
+        return 0
+    model, dimension, version = current_embedding_contract()
+    scheduled = 0
+    with session_scope() as session:
+        rows = list(
+            session.execute(
+                select(Memory)
+                .where(Memory.status == status)
+                .order_by(Memory.updated_at, Memory.id)
+                .limit(max(1, min(int(limit), 100000)))
+                .with_for_update(skip_locked=True)
+            ).scalars()
+        )
+        for row in rows:
+            content_hash = memory_content_hash(
+                memory_type=row.memory_type,
+                subject=row.subject,
+                predicate=row.predicate,
+                object_value=row.object_value,
+                content=row.content,
+                model=model,
+                dimension=dimension,
+                embedding_version=version,
+            )
+            vector = session.get(MemoryVector, row.id)
+            if (
+                vector is not None
+                and vector.status in {"pending", "processing"}
+                and vector.content_hash == content_hash
+            ):
+                continue
+            if (
+                vector is not None
+                and vector.status == "ready"
+                and vector.content_hash == content_hash
+                and vector.model == model
+                and vector.dimension == dimension
+                and vector.embedding_version == version
+                and vector.embedding is not None
+            ):
+                continue
+            if _schedule_memory_embedding(session, row) is not None:
+                scheduled += 1
+    return scheduled
+
+
 def hybrid_adjudication_candidates(
     space_id: str,
     candidate: MemoryCandidate,
@@ -937,6 +1085,17 @@ def hybrid_adjudication_candidates(
                         .limit(retrieval_limit)
                     ).scalars()
                 )
+            ))
+        if candidate.memory_type == "task":
+            # Legacy V2 tasks can have generic subject/predicate slots; keep
+            # a bounded task slice available to the identity bridge.
+            channels.append((
+                "structured",
+                list(
+                    session.execute(
+                        base.order_by(Memory.updated_at.desc(), Memory.id.desc()).limit(retrieval_limit)
+                    ).scalars()
+                ),
             ))
 
         query_text = " ".join(terms) or candidate.content
@@ -1059,6 +1218,7 @@ def _candidate_record(row: MemoryCandidateRow) -> MemoryCandidate:
         evidence_span=row.evidence_span,
         clause_index=row.clause_index,
         memory_key=row.memory_key,
+        memory_key_version=row.memory_key_version or MEMORY_KEY_VERSION,
         polarity=row.polarity,
         scope=dict(row.scope_json or {}),
         extractor_type=row.extractor_type,
@@ -1091,7 +1251,7 @@ def save_memory_candidate(
             "content": candidate.content,
             "normalized_content": candidate.normalized_content,
             "memory_key": candidate.effective_memory_key,
-            "memory_key_version": MEMORY_KEY_VERSION,
+            "memory_key_version": candidate.memory_key_version,
             "subject": candidate.subject,
             "predicate": candidate.predicate,
             "object_value": candidate.object_value,
@@ -1240,6 +1400,12 @@ def apply_memory_decision(
                     target.updated_at = _dt(now)
                 result_ids.append(target.id)
                 result.update({"memory_id": target.id, "source_added": added})
+                if added and candidate.memory_type == "task" and candidate.task_status in {"done", "cancelled"}:
+                    archived = _archive_terminal_task_duplicates(
+                        session, target, candidate, decision_id=decision.decision_id, source_note_id=note_id, now=now,
+                    )
+                    if archived:
+                        result["archived_duplicate_ids"] = archived
             elif action in {"merge", "update_task"} and target is not None:
                 relation = "updated_by" if action == "update_task" else "supported_by"
                 added = _add_source(session, target.id, note_id, relation, now=now)
@@ -1249,6 +1415,10 @@ def apply_memory_decision(
                         target,
                         content=candidate.content if action == "update_task" else (merged_content or candidate.content),
                         task_status=candidate.task_status if action == "update_task" else None,
+                        object_value=candidate.object_value if action == "update_task" else None,
+                        scope=dict(candidate.scope) if action == "update_task" else None,
+                        memory_key=candidate.effective_memory_key if action == "update_task" else None,
+                        memory_key_version=candidate.memory_key_version if action == "update_task" else None,
                         confidence=min(0.99, max(float(target.confidence), candidate.confidence)),
                         importance=max(float(target.importance), candidate.importance) if action == "merge" else None,
                         last_confirmed_at=now,
@@ -1259,6 +1429,11 @@ def apply_memory_decision(
                 result.update({"memory_id": target.id, "source_added": added})
                 if action == "update_task":
                     result["task_status"] = candidate.task_status
+                    archived = _archive_terminal_task_duplicates(
+                        session, target, candidate, decision_id=decision.decision_id, source_note_id=note_id, now=now,
+                    )
+                    if archived:
+                        result["archived_duplicate_ids"] = archived
             elif action in {"supersede", "conflict"} and target is not None:
                 _add_source(session, target.id, note_id, "contradicted_by", now=now)
                 _versioned_update(
@@ -1361,8 +1536,41 @@ def soft_delete_memory(memory_id: str, *, reason: str = "user_forget", db_path: 
     return update_memory(memory_id, status="deleted", reason=reason, db_path=db_path)
 
 
-def correct_memory(memory_id: str, content: str, *, reason: str = "user_correct", db_path: Any = None) -> MemoryRecord | None:
-    return update_memory(memory_id, content=content, status="active", reason=reason, db_path=db_path)
+def correct_memory(
+    memory_id: str,
+    content: str,
+    *,
+    task_status: str | None = None,
+    reason: str = "user_correct",
+    db_path: Any = None,
+) -> MemoryRecord | None:
+    del db_path
+    from memory.task_state import infer_task_status, validate_task_status
+    from memory.policies.task import can_transition
+
+    with session_scope() as session:
+        row = session.execute(select(Memory).where(Memory.id == memory_id).with_for_update()).scalar_one_or_none()
+        if row is None:
+            return None
+        resolved_status = validate_task_status(task_status)
+        if row.memory_type == "task":
+            resolved_status = resolved_status or infer_task_status(content) or row.task_status
+            if resolved_status != row.task_status and not can_transition(row.task_status, resolved_status):
+                raise ValueError(f"invalid task status transition: {row.task_status} -> {resolved_status}")
+            if row.task_status in {"done", "cancelled"} and resolved_status in {"todo", "in_progress"}:
+                reopen_markers = ("重新", "再次", "重做", "返工", "恢复", "再开始", "又开始")
+                if not any(marker in content for marker in reopen_markers):
+                    raise ValueError("reopening a terminal task requires explicit wording")
+        _versioned_update(
+            session,
+            row,
+            content=content,
+            status="active",
+            task_status=resolved_status if row.memory_type == "task" else None,
+            reason=reason,
+            source_note_id=None,
+        )
+        return _record(session, row)
 
 
 def purge_memory(memory_id: str, db_path: Any = None) -> bool:
@@ -1478,11 +1686,46 @@ def edit_pending_memory(memory_id: str, content: str, db_path: Any = None) -> Me
     del db_path
     if not content.strip():
         return None
+    from memory.task_state import infer_task_status
+    from memory.policies.task import can_transition
     with session_scope() as session:
         row = session.execute(select(Memory).where(Memory.id == memory_id, Memory.status == "pending_review").with_for_update()).scalar_one_or_none()
         if row is None:
             return None
-        _versioned_update(session, row, content=content, status="pending_review", reason="user_edited_pending_memory", source_note_id=None)
+        next_status = infer_task_status(content) if row.memory_type == "task" else None
+        _versioned_update(
+            session,
+            row,
+            content=content,
+            status="pending_review",
+            task_status=next_status if next_status is not None else row.task_status if row.memory_type == "task" else None,
+            reason="user_edited_pending_memory",
+            source_note_id=None,
+        )
+        candidate = session.execute(select(MemoryCandidateRow).where(MemoryCandidateRow.candidate_id.in_(
+            select(MemoryDecisionRow.candidate_id).where(
+                MemoryDecisionRow.status == "pending_review",
+                MemoryDecisionRow.result_memory_ids_json.contains([memory_id]),
+            )
+        ))).scalar_one_or_none()
+        if candidate is not None and row.memory_type == "task" and next_status is not None:
+            candidate.content = content
+            candidate.task_status = next_status
+            candidate.updated_at = datetime.now().astimezone()
+        decision = session.execute(
+            select(MemoryDecisionRow)
+            .where(MemoryDecisionRow.status == "pending_review", MemoryDecisionRow.result_memory_ids_json.contains([memory_id]))
+            .order_by(MemoryDecisionRow.created_at.desc())
+            .limit(1)
+            .with_for_update()
+        ).scalar_one_or_none()
+        if decision is not None and row.memory_type == "task" and next_status is not None and decision.target_memory_ids_json:
+            target = session.execute(select(Memory).where(Memory.id == decision.target_memory_ids_json[0]).with_for_update()).scalar_one_or_none()
+            if target is not None and (next_status == target.task_status or can_transition(target.task_status, next_status)):
+                decision.relation = "update_task"
+                decision.recommended_action = "update_task"
+                decision.reason = "user_edited_pending_memory_revalidated"
+                decision.target_snapshot_version = target.current_version
     return approve_pending_memory(memory_id)
 
 
@@ -1750,7 +1993,7 @@ def mark_consolidation_failed(run_id: str, error: str, db_path: Any = None) -> N
             row.status, row.completed_at, row.error = "failed", _dt(utc_now_iso()), error
 
 
-def hybrid_search_memories(
+def hybrid_search_memory_hits(
     space_id: str,
     query: str,
     *,
@@ -1759,8 +2002,8 @@ def hybrid_search_memories(
     query_embedding: list[float] | None = None,
     limit: int = 40,
     db_path: Any = None,
-) -> list[MemoryRecord]:
-    """Return memory search candidates without fixed 100-row pre-scans."""
+) -> list[MemoryRetrievalHit]:
+    """Return explainable hybrid hits without losing channel/RRF scores."""
     del db_path
     top = max(1, min(int(limit), 100))
     retrieval_limit = max(30, min(120, top * 3))
@@ -1770,6 +2013,38 @@ def hybrid_search_memories(
     _, embedding_dimension, _ = current_embedding_contract()
     with session_scope() as session:
         base = _base_memory_statement(space_id, memory_type=memory_type, include_inactive=include_inactive)
+        # State-layer lookups are exact-first: a canonical key or verbatim
+        # normalized statement must outrank approximate semantic matches.
+        normalized_query = normalize_content(query)
+        exact_filters = [Memory.normalized_content == normalized_query]
+        if query.strip():
+            exact_filters.extend(
+                [
+                    Memory.memory_key == query.strip(),
+                    Memory.content.ilike(f"%{query.strip()[:160]}%"),
+                ]
+            )
+        identifiers = re.findall(r"[\u4e00-\u9fffA-Za-z]+-\d+|[A-Za-z][A-Za-z0-9+#._-]*-\d+", query)
+        for identifier in identifiers[:4]:
+            escaped = re.escape(identifier[:120])
+            identifier_pattern = rf"(^|[^[:alnum:]一-鿿]){escaped}([^[:alnum:]一-鿿]|$)"
+            exact_filters.extend(
+                [
+                    Memory.content.op("~*")(identifier_pattern),
+                    Memory.subject.op("~*")(identifier_pattern),
+                    Memory.object_value.op("~*")(identifier_pattern),
+                    Memory.memory_key.op("~*")(identifier_pattern),
+                ]
+            )
+        exact_rows = list(
+            session.execute(
+                base.where(or_(*exact_filters))
+                .order_by(Memory.updated_at.desc(), Memory.id.desc())
+                .limit(min(retrieval_limit, 30))
+            ).scalars()
+        )
+        if exact_rows:
+            channels.append(("exact", exact_rows))
         type_hints: list[str] = []
         if any(marker in query for marker in ("喜欢", "偏好", "习惯", "讨厌", "避开", "过敏")):
             type_hints.append("preference")
@@ -1789,8 +2064,8 @@ def hybrid_search_memories(
                 )
             ))
 
-        structured_filters = [Memory.content.ilike(f"%{term[:120]}%") for term in terms[:8]]
-        for term in terms[:8]:
+        structured_filters = [Memory.content.ilike(f"%{term[:120]}%") for term in terms[:12]]
+        for term in terms[:12]:
             structured_filters.extend(
                 [
                     Memory.subject.ilike(f"%{term[:120]}%"),
@@ -1870,8 +2145,41 @@ def hybrid_search_memories(
             return []
         rows = list(session.execute(select(Memory).where(Memory.id.in_(ids))).scalars())
         row_map = {row.id: row for row in rows}
-        ordered_rows = [row_map[memory_id] for memory_id in ids if memory_id in row_map]
-        return _records(session, ordered_rows, include_sources=True)
+        records = _records(session, [row_map[memory_id] for memory_id in ids if memory_id in row_map], include_sources=True)
+        record_map = {record.id: record for record in records}
+        hydrated: list[MemoryRetrievalHit] = []
+        for hit in hits:
+            record = record_map.get(hit.memory.id)
+            if record is None:
+                continue
+            hit.memory = record
+            hydrated.append(hit)
+        return hydrated
+
+
+def hybrid_search_memories(
+    space_id: str,
+    query: str,
+    *,
+    memory_type: str | None = None,
+    include_inactive: bool = False,
+    query_embedding: list[float] | None = None,
+    limit: int = 40,
+    db_path: Any = None,
+) -> list[MemoryRecord]:
+    """Compatibility wrapper returning records in fused retrieval order."""
+    return [
+        hit.memory
+        for hit in hybrid_search_memory_hits(
+            space_id,
+            query,
+            memory_type=memory_type,
+            include_inactive=include_inactive,
+            query_embedding=query_embedding,
+            limit=limit,
+            db_path=db_path,
+        )
+    ]
 
 
 def search_memories(
@@ -1885,11 +2193,29 @@ def search_memories(
     mark_access: bool = True,
     db_path: Any = None,
 ) -> list[tuple[MemoryRecord, float]]:
+    """Search Memory with exact-first fused retrieval and deterministic policy.
+
+    Hybrid/RRF finds evidence candidates. The final rank preserves that signal
+    and combines it with topic, state and polarity rules; approximate model
+    scores never change stored state or override an exact identity match.
+    """
     from memory.retriever import score_memory
+
     if MEMORY_RETRIEVAL_MODE not in {"hybrid", "hybrid_v1", "hybrid_v2"}:
-        candidates = list_memories(space_id, status=None if include_inactive else "active", memory_type=memory_type, limit=100, db_path=db_path)
+        candidates = list_memories(
+            space_id,
+            status=None if include_inactive else "active",
+            memory_type=memory_type,
+            limit=100,
+            db_path=db_path,
+        )
+        scored = sorted(
+            ((item, score_memory(query, item)) for item in candidates),
+            key=lambda item: (item[1], item[0].updated_at, item[0].id),
+            reverse=True,
+        )
     else:
-        candidates = hybrid_search_memories(
+        hits = hybrid_search_memory_hits(
             space_id,
             query,
             memory_type=memory_type,
@@ -1898,7 +2224,36 @@ def search_memories(
             limit=max(limit * 4, 30),
             db_path=db_path,
         )
-    scored = sorted(((item, score_memory(query, item)) for item in candidates), key=lambda item: item[1], reverse=True)
+        maximum_rrf = max((hit.final_score for hit in hits), default=0.0)
+        ranked: list[tuple[MemoryRecord, float, MemoryRetrievalHit]] = []
+        for hit in hits:
+            policy = score_memory(query, hit.memory)
+            rrf = hit.final_score / maximum_rrf if maximum_rrf > 0 else 0.0
+            channel_count = sum(
+                rank is not None
+                for rank in (hit.exact_rank, hit.structured_rank, hit.fts_rank, hit.trigram_rank, hit.vector_rank)
+            )
+            fused_signal = min(1.0, rrf + 0.04 * max(0, channel_count - 1))
+            final = 0.52 * policy + 0.48 * fused_signal
+            if hit.exact_rank is not None:
+                final = max(final, 0.98 - 0.005 * max(0, hit.exact_rank - 1))
+                hit.reasons.append("exact_first_final")
+            hit.policy_score += policy
+            hit.final_score = round(min(1.0, final), 4)
+            hit.reasons.append("deterministic_policy_rerank")
+            ranked.append((hit.memory, hit.final_score, hit))
+        ranked.sort(
+            key=lambda item: (
+                item[2].exact_rank is not None,
+                item[1],
+                item[2].rrf_score,
+                item[0].updated_at,
+                item[0].id,
+            ),
+            reverse=True,
+        )
+        scored = [(memory, score) for memory, score, _hit in ranked]
+
     if MEMORY_RETRIEVAL_MODE == "hybrid_v2" or MEMORY_UNIFIED_RERANK_ENABLED:
         limited = scored[: max(1, min(int(limit), 50))]
     else:
