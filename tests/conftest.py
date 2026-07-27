@@ -4,6 +4,9 @@ os.environ["STORAGE_BACKEND"] = "local"
 os.environ["COORDINATION_BACKEND"] = "local"
 os.environ["TASK_QUEUE_BACKEND"] = "local"
 os.environ["SUIXINJI_AGENT_HOOKS_ENABLED"] = "false"
+# Keep tests deterministic even when a developer's local .env enables LLM
+# extraction for the running Feishu service.
+os.environ["SUIXINJI_MEMORY_EXTRACTOR_MODE"] = "rules"
 
 import pytest
 

@@ -122,6 +122,8 @@ def _recency_score(memory: MemoryRecord) -> float:
 
 
 def score_memory(query: str, memory: MemoryRecord) -> float:
+    query_polarity = "unknown"
+    memory_polarity = "unknown"
     if memory.memory_type == "preference":
         query_polarity = preference_query_polarity(query)
         memory_polarity = memory.polarity or preference_polarity(memory.content)
@@ -139,6 +141,16 @@ def score_memory(query: str, memory: MemoryRecord) -> float:
     )
     topic_similarity = max(_overlap_score(query, value) for value in searchable_fields)
     intent_similarity = _intent_score(query, memory)
+    if (
+        memory.memory_type == "preference"
+        and query_polarity in {"positive", "negative"}
+        and query_polarity == memory_polarity
+        and intent_similarity > 0
+    ):
+        # "我不喜欢喝什么" intentionally omits the concrete object. Preserve
+        # polarity and type matching so a relevant negative preference clears
+        # the retrieval threshold without making an opposite preference match.
+        topic_similarity = max(topic_similarity, 0.45)
     if topic_similarity <= 0 and intent_similarity <= 0:
         return 0.0
 

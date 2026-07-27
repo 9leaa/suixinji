@@ -41,6 +41,8 @@ def test_preference_question_has_neutral_query_polarity():
     assert preference_query_polarity("工作日早上我喜欢喝咖啡吗？") == "unknown"
     assert preference_query_polarity("我是不是不喜欢苹果") == "unknown"
     assert preference_query_polarity("我不喜欢工作日早上喝咖啡") == "negative"
+    assert preference_query_polarity("我喜欢喝什么") == "positive"
+    assert preference_query_polarity("我不喜欢喝什么") == "negative"
 
 
 def _record(content: str, *, memory_type: str = "semantic", object_value: str | None = None, polarity: str | None = None):

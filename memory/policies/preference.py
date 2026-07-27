@@ -118,7 +118,7 @@ def preference_query_polarity(text: str) -> str:
         or "？" in value
         or informational_preference
         or bool(re.search(r"(?:我|用户)?(?:是否|是不是|有没有)", value))
-        or bool(re.search(r"(?:哪种|哪个|什么偏好|偏好是什么|习惯是什么|吗|么|嘛|呢)$", value.rstrip("。！!")))
+        or bool(re.search(r"(?:哪种|哪个|什么偏好|偏好是什么|习惯是什么|吗|嘛|呢)$", value.rstrip("。！!")))
         or normalized.startswith(("是否", "是不是", "do i ", "did i ", "what ", "which "))
     )
     return "unknown" if interrogative else preference_polarity(value)
