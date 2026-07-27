@@ -643,7 +643,7 @@ def format_trace_memory(memory_id: str) -> str:
     return "\n".join(lines)
 
 
-def _trace_summary(value: Any, *, limit: int = 900) -> str:
+def _trace_summary(value: Any, *, limit: int = 220) -> str:
     if not value:
         return ""
     try:
@@ -691,9 +691,9 @@ def _trace_candidate_lines(trace: dict[str, Any]) -> list[str]:
             details.append(f"action={decision.get('action')}")
         lines.append(f"  {index}. " + "｜".join(details))
         if content:
-            lines.append(f"     内容：{safe_text_preview(str(content), limit=180)}")
-        if evidence:
-            lines.append(f"     证据：{safe_text_preview(str(evidence), limit=180)}")
+            lines[-1] += f"｜内容={safe_text_preview(str(content), limit=90)}"
+        elif evidence:
+            lines[-1] += f"｜证据={safe_text_preview(str(evidence), limit=90)}"
     return lines
 
 
@@ -709,15 +709,18 @@ def format_trace(trace: dict[str, Any]) -> str:
     steps = trace.get("steps", [])
     lines.append(f"步骤（共 {len(steps)}）：")
     for index, step in enumerate(steps, start=1):
-        lines.append(
-            f"  {index}. {step.get('step')}｜{step.get('status')}｜{step.get('duration_ms', 0)}ms"
-            + (f"｜{step.get('reason')}" if step.get("reason") else "")
-        )
-        if input_summary := _trace_summary(step.get("input_summary")):
-            lines.append(f"     input：{input_summary}")
-        if output_summary := _trace_summary(step.get("output_summary")):
-            lines.append(f"     output：{output_summary}")
+        details = [
+            f"{index}. {step.get('step')}",
+            str(step.get("status") or "unknown"),
+            f"{step.get('duration_ms', 0)}ms",
+        ]
+        if step.get("reason"):
+            details.append(str(step["reason"]))
+        if step.get("step") != "candidate_extracted":
+            if output_summary := _trace_summary(step.get("output_summary")):
+                details.append(f"out={output_summary}")
         if step.get("error"):
-            lines.append(f"     error：{safe_text_preview(str(step['error']), limit=300)}")
+            details.append(f"error={safe_text_preview(str(step['error']), limit=160)}")
+        lines.append("  " + "｜".join(details))
     lines.extend(_trace_candidate_lines(trace))
     return "\n".join(lines)
