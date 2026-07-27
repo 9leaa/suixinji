@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import asdict, is_dataclass, replace
 from datetime import date
@@ -643,16 +642,6 @@ def format_trace_memory(memory_id: str) -> str:
     return "\n".join(lines)
 
 
-def _trace_summary(value: Any, *, limit: int = 220) -> str:
-    if not value:
-        return ""
-    try:
-        rendered = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    except (TypeError, ValueError):
-        rendered = str(value)
-    return safe_text_preview(rendered, limit=limit)
-
-
 def _trace_candidate_lines(trace: dict[str, Any]) -> list[str]:
     extracted = [step for step in trace.get("steps", []) if step.get("step") == "candidate_extracted"]
     if not extracted:
@@ -709,18 +698,8 @@ def format_trace(trace: dict[str, Any]) -> str:
     steps = trace.get("steps", [])
     lines.append(f"步骤（共 {len(steps)}）：")
     for index, step in enumerate(steps, start=1):
-        details = [
-            f"{index}. {step.get('step')}",
-            str(step.get("status") or "unknown"),
-            f"{step.get('duration_ms', 0)}ms",
-        ]
-        if step.get("reason"):
-            details.append(str(step["reason"]))
-        if step.get("step") != "candidate_extracted":
-            if output_summary := _trace_summary(step.get("output_summary")):
-                details.append(f"out={output_summary}")
-        if step.get("error"):
-            details.append(f"error={safe_text_preview(str(step['error']), limit=160)}")
-        lines.append("  " + "｜".join(details))
+        lines.append(
+            f"  {index}. {step.get('step')}｜{step.get('status') or 'unknown'}｜{step.get('duration_ms', 0)}ms"
+        )
     lines.extend(_trace_candidate_lines(trace))
     return "\n".join(lines)
