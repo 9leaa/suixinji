@@ -1267,6 +1267,46 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 )
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(memory_prefetch)})
 
+            # A multi-clause question can need raw note context even when a
+            # memory hit exists for another clause. Keep this bounded to the
+            # planned variants so ordinary lookups stay Memory-first.
+            if (
+                query_plan.complexity == "complex"
+                and query_plan.use_decomposition
+                and settings.COMPLEX_QUERY_NOTE_AUGMENT_ENABLED
+            ):
+                note_limit = max(1, min(int(settings.COMPLEX_QUERY_NOTE_AUGMENT_LIMIT), QUERY_TOP_K))
+                for variant in dict.fromkeys(query_plan.retrieval_queries):
+                    note_result = _run_tool(
+                        space_id,
+                        "memory_note_fallback",
+                        {"query": variant, "limit": note_limit, "min_score": DEFAULT_QUERY_MIN_SCORE},
+                        trace=trace,
+                        hook_context=hook_context,
+                    )
+                    add_step(
+                        trace,
+                        "query_variant_note",
+                        output_summary={"query_len": len(variant), "result_count": len(note_result or [])},
+                        reason="complex_clause_note_augmentation",
+                    )
+                    if isinstance(note_result, list) and note_result:
+                        selected_evidence = _merge_evidence(selected_evidence, note_result)
+                        observations.append(
+                            {
+                                "thought": "复杂查询按子句补充原始笔记证据。",
+                                "tool": "memory_note_fallback",
+                                "args": {"query_len": len(variant), "limit": note_limit, "min_score": DEFAULT_QUERY_MIN_SCORE},
+                                "result": note_result,
+                            }
+                        )
+                add_step(
+                    trace,
+                    "evidence_selected",
+                    output_summary={"ids": _result_ids(selected_evidence)},
+                    reason="memory_and_note_clause_coverage",
+                )
+
             react_llm_task = "query_complex_reasoning" if query_plan.complexity == "complex" or max_steps > 2 else "query_routing"
             for step in range(max_steps):
                 payload = {

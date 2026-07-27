@@ -136,10 +136,12 @@ def _merge_model_plan(base: QueryPlan, model_plan: Mapping[str, Any] | None) -> 
     use_decomposition = base.use_decomposition or ("decomposition" in strategies and len(subqueries) >= 2)
     use_step_back = base.use_step_back or ("step_back" in strategies and step_back is not None)
     variants: list[str] = []
-    if use_query_rewrite:
-        variants.extend(rewrites)
+    # For multi-clause questions, preserve one retrieval slot per clause
+    # before spending a bounded slot on a global rewrite.
     if use_decomposition:
         variants.extend(subqueries)
+    if use_query_rewrite:
+        variants.extend(rewrites)
     if use_step_back and step_back:
         variants.append(step_back)
     variants = list(dict.fromkeys(item for item in variants if item != base.rewritten_query))[:_max_variants()]
@@ -177,10 +179,13 @@ def build_query_plan(question: str, *, model_plan: Mapping[str, Any] | None = No
     use_step_back = is_complex_route and "step_back" in decision.suggested_strategies and step_back is not None
 
     variants: list[str] = []
-    if use_query_rewrite and rewritten and rewritten != original:
-        variants.append(rewritten)
+    # Clause coverage takes precedence over a global rewrite. The configured
+    # total-query bound is small, so putting the rewrite first can otherwise
+    # silently drop the final question in a four-clause request.
     if use_decomposition:
         variants.extend(part for part in parts if part not in variants and part != rewritten)
+    if use_query_rewrite and rewritten and rewritten != original:
+        variants.append(rewritten)
     if use_step_back and step_back and step_back not in variants and step_back != rewritten:
         variants.append(step_back)
     variants = list(dict.fromkeys(variants))[:_max_variants()]

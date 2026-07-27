@@ -102,6 +102,58 @@ def test_complex_query_sources_follow_fused_final_evidence(monkeypatch):
     assert "mem-preference-0" not in answer
 
 
+def test_complex_query_augments_each_clause_with_note_evidence(monkeypatch):
+    question = "我喜欢喝什么？我什么时候去的植物园？"
+    plan = QueryPlan(
+        complexity="complex",
+        rewritten_query=question,
+        retrieval_queries=("我喜欢喝什么", "我什么时候去的植物园"),
+        use_query_rewrite=False,
+        use_decomposition=True,
+        use_step_back=False,
+        routing_state="complex",
+    )
+    memories = [
+        {"id": "mem-drink", "memory_type": "preference", "content": "用户喜欢喝汽水", "sources": []},
+        {"id": "mem-garden", "memory_type": "episodic", "content": "今天逛了植物园", "sources": []},
+    ]
+    notes = {
+        "我喜欢喝什么": [{"id": "note-drink", "title": "饮料偏好", "ts": "2026-07-27"}],
+        "我什么时候去的植物园": [{"id": "note-garden", "title": "植物园", "ts": "2026-07-27"}],
+    }
+    calls: list[tuple[str, str]] = []
+
+    def fake_run_tool(space_id, action, args, **kwargs):
+        calls.append((action, args["query"]))
+        if action == "memory_note_fallback":
+            return notes[args["query"]]
+        return memories
+
+    monkeypatch.setattr(query_agent, "provisional_search", lambda *args, **kwargs: [])
+    monkeypatch.setattr(query_agent, "_intent_route", lambda *args, **kwargs: None)
+    monkeypatch.setattr(query_agent, "_deterministic_route", lambda *args, **kwargs: None)
+    monkeypatch.setattr(query_agent, "build_query_plan", lambda *args, **kwargs: plan)
+    monkeypatch.setattr(query_agent, "_fuse_memory_results", lambda *args, **kwargs: memories)
+    monkeypatch.setattr(query_agent, "_run_tool", fake_run_tool)
+    monkeypatch.setattr(query_agent.settings, "COMPLEX_QUERY_NOTE_AUGMENT_ENABLED", True)
+    monkeypatch.setattr(query_agent.settings, "COMPLEX_QUERY_NOTE_AUGMENT_LIMIT", 2)
+    monkeypatch.setattr(
+        query_agent,
+        "_complete_json_with_hooks",
+        lambda *args, **kwargs: {
+            "final_answer": "你喜欢喝汽水，今天去了植物园。",
+            "evidence_ids": ["mem-drink", "mem-garden", "note-drink", "note-garden"],
+        },
+    )
+
+    answer = query_agent.answer_question("space-1", question, max_steps=1)
+
+    assert ("memory_note_fallback", "我喜欢喝什么") in calls
+    assert ("memory_note_fallback", "我什么时候去的植物园") in calls
+    assert "memory:mem-garden｜episodic｜sources=0" in answer
+    assert "note:note-garden｜植物园｜2026-07-27" in answer
+
+
 def test_answer_question_writes_query_trace_with_safe_steps(monkeypatch):
     decisions = iter(
         [

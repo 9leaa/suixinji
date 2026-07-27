@@ -37,6 +37,20 @@ def test_question_mark_multi_hop_is_split():
     assert len(plan.retrieval_queries) >= 2
 
 
+def test_chinese_full_stop_splits_independent_questions(monkeypatch):
+    from core import settings
+
+    monkeypatch.setattr(settings, "QUERY_MAX_SUBQUESTIONS", 4)
+    plan = build_query_plan("我喜欢喝什么？我找什么工作？我什么时候去的植物园。我喜欢喝咖啡吗？")
+
+    assert plan.retrieval_queries == (
+        "我喜欢喝什么",
+        "我找什么工作",
+        "我什么时候去的植物园",
+        "我喜欢喝咖啡吗",
+    )
+
+
 def test_english_compare_is_complex_and_decomposed():
     plan = build_query_plan("Compare Canonical Key and SQL indexes and explain which is more suitable")
     assert plan.complexity == "complex"

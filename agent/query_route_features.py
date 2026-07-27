@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import re
 
 
-_CLAUSE_SPLIT_RE = re.compile(r"(?:并且|同时|另外|还有|以及|然后|最后|此外|；|;|\n|[?？])")
+_CLAUSE_SPLIT_RE = re.compile(r"(?:并且|同时|另外|还有|以及|然后|最后|此外|；|;|。|\n|[?？])")
 _NEGATION_RE = re.compile(r"(?:不要|无需|不需要|不必|不用|无须|别|don't|do not|without)\s*$", re.IGNORECASE)
 _NEGATED_OPERATION_PREFIX_RE = re.compile(r"(?:不要|无需|不需要|不必|不用|无须|别|don't|do not|without)[^，,。；;？?]{0,8}$", re.IGNORECASE)
 _ASCII_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9+#._-]*")
