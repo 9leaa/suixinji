@@ -110,6 +110,51 @@ def test_llm_extractor_falls_back_to_rules(monkeypatch):
 
     assert candidates
     assert candidates[0].memory_type == "preference"
+    assert candidates[0].reason == "llm_failed_rule_fallback"
+
+
+def test_llm_fallback_logs_safe_degradation_without_raw_text_or_keys(monkeypatch):
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
+    events = []
+    raw_text = "我不喜欢喝牛奶，我也不爱工作，现在正在投递agent简历"
+    secret = "sk-abcdefghijklmnopqrstuvwxyz"
+    error = (
+        "LLM chat completion failed; model='fast-model', "
+        f"base_url='https://example.test/v1?api_key={secret}', "
+        f"text_preview='{raw_text}', output_preview='{raw_text}', cause=APITimeoutError."
+    )
+    monkeypatch.setattr(extractor, "complete_json", lambda **kwargs: (_ for _ in ()).throw(RuntimeError(error)))
+    monkeypatch.setattr(extractor, "log_event", lambda action, **kwargs: events.append((action, kwargs)))
+
+    candidates = extractor.extract_candidates("note-safe-log", raw_text)
+
+    assert candidates
+    assert candidates[0].reason == "llm_failed_rule_fallback"
+    assert events
+    action, payload = events[0]
+    assert action == "memory.extractor.llm_failed"
+    assert payload["status"] == "degraded"
+    assert payload["record_id"] == "note-safe-log"
+    assert payload["extra"]["extractor_mode"] == "hybrid"
+    assert payload["extra"]["fallback"] == "rules"
+    assert payload["extra"]["fallback_reason"] == "llm_failed_rule_fallback"
+    serialized = str(payload)
+    assert raw_text not in serialized
+    assert secret not in serialized
+    assert "text_preview=[redacted]" in serialized
+    assert "output_preview=[redacted]" in serialized
+
+
+def test_memory_v3_e2e_diagnostic_prefix_is_ignored_for_rule_fallback(monkeypatch):
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
+    monkeypatch.setattr(extractor, "complete_json", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("model down")))
+
+    candidates = extractor.extract_candidates("note-marker", "[MemoryV3-E2E-20260727102715] 我讨厌喝牛奶")
+
+    assert candidates
+    assert candidates[0].memory_type == "preference"
+    assert "[MemoryV3-E2E" not in candidates[0].content
+    assert candidates[0].evidence_span == "我讨厌喝牛奶"
 
 
 def test_extractor_filters_secret_shaped_values_before_model_call(monkeypatch):

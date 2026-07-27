@@ -5,10 +5,13 @@ from __future__ import annotations
 import json
 import re
 import time
+from dataclasses import replace
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from openai import OpenAI
+from openai import APITimeoutError, OpenAI
 
+from core import settings
 from core.model_router import route_model
 from core.observability import log_event
 from core.sensitive import safe_text_preview
@@ -18,6 +21,51 @@ from core.config import (
     get_chat_config,
     get_embedding_config,
 )
+
+_SENSITIVE_URL_KEYS = {"api_key", "apikey", "key", "token", "secret", "access_token", "access-key", "access_key"}
+
+
+def _safe_base_url(value: str | None) -> str | None:
+    if not value:
+        return value
+    try:
+        parts = urlsplit(value)
+    except Exception:
+        return "<unparseable-url>"
+    netloc = parts.hostname or ""
+    if parts.port:
+        netloc = f"{netloc}:{parts.port}"
+    query = urlencode(
+        [
+            (key, "[REDACTED]" if key.strip().lower() in _SENSITIVE_URL_KEYS else item)
+            for key, item in parse_qsl(parts.query, keep_blank_values=True)
+        ]
+    )
+    return urlunsplit((parts.scheme, netloc, parts.path, query, parts.fragment))
+
+
+def _is_memory_extraction_task(route: Any) -> bool:
+    task = getattr(route, "task", None)
+    return str(getattr(task, "value", task) or "") == "memory_extraction"
+
+
+def _config_for_route(route: Any) -> ChatConfig:
+    config = get_chat_config(route.role.value)
+    if not _is_memory_extraction_task(route):
+        return config
+    # The retry below is intentionally owned by this adapter.  Disable SDK
+    # retries for memory extraction so only APITimeoutError gets one retry.
+    return replace(
+        config,
+        timeout_seconds=settings.MEMORY_EXTRACTION_LLM_TIMEOUT_SECONDS,
+        max_retries=0,
+    )
+
+
+def _timeout_retries_for_route(route: Any) -> int:
+    if not _is_memory_extraction_task(route):
+        return 0
+    return min(1, max(0, int(settings.MEMORY_EXTRACTION_LLM_MAX_RETRIES)))
 
 
 def build_openai_client(config: ChatConfig | EmbeddingConfig | None = None) -> OpenAI:
@@ -127,51 +175,98 @@ def complete_json(
         dict[str, Any]: 从模型输出中解析出的 JSON object。
     """
     route = route_model(task=llm_task, model_role=model_role, range_key=(route_context or {}).get("range_key"))
-    config = get_chat_config(route.role.value)
+    config = _config_for_route(route)
     client = build_openai_client(config)
     start = time.perf_counter()
+    timeout_retries = _timeout_retries_for_route(route)
+    max_attempts = timeout_retries + 1
+    attempt = 0
 
-    try:
-        response = client.chat.completions.create(
-            model=config.model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0,
-        )
-    except Exception as exc:
-        duration_ms = int((time.perf_counter() - start) * 1000)
-        log_event(
-            "llm.complete_json",
-            level="error",
-            status="failed",
-            duration_ms=duration_ms,
-            error=f"{type(exc).__name__}: {exc}",
-            extra={
+    while True:
+        attempt += 1
+        try:
+            response = client.chat.completions.create(
+                model=config.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0,
+            )
+            break
+        except APITimeoutError as exc:
+            duration_ms = int((time.perf_counter() - start) * 1000)
+            extra = {
                 "llm_task": route.task.value,
                 "model_role": route.role.value,
                 "model": config.model,
                 "route_reason": route.reason,
                 "fallback": False,
-            },
-        )
-        preview = safe_text_preview(user_prompt)
-        raise RuntimeError(
-            "LLM chat completion failed; "
-            f"model={config.model!r}, "
-            f"base_url={config.base_url!r}, "
-            f"text_preview={preview!r}, "
-            f"cause={type(exc).__name__}."
-        ) from None
+                "attempt": attempt,
+                "max_attempts": max_attempts,
+                "timeout_seconds": config.timeout_seconds,
+            }
+            if attempt < max_attempts:
+                log_event(
+                    "llm.complete_json",
+                    level="warning",
+                    status="retry",
+                    duration_ms=duration_ms,
+                    error=f"{type(exc).__name__}: {exc}",
+                    extra={**extra, "retry_reason": "api_timeout"},
+                )
+                continue
+            log_event(
+                "llm.complete_json",
+                level="error",
+                status="failed",
+                duration_ms=duration_ms,
+                error=f"{type(exc).__name__}: {exc}",
+                extra=extra,
+            )
+            raise RuntimeError(
+                "LLM chat completion failed; "
+                f"model={config.model!r}, "
+                f"base_url={_safe_base_url(config.base_url)!r}, "
+                f"prompt_chars={len(user_prompt)}, "
+                f"attempts={attempt}, "
+                f"timeout_seconds={config.timeout_seconds}, "
+                f"cause={type(exc).__name__}."
+            ) from None
+        except Exception as exc:
+            duration_ms = int((time.perf_counter() - start) * 1000)
+            log_event(
+                "llm.complete_json",
+                level="error",
+                status="failed",
+                duration_ms=duration_ms,
+                error=f"{type(exc).__name__}: {exc}",
+                extra={
+                    "llm_task": route.task.value,
+                    "model_role": route.role.value,
+                    "model": config.model,
+                    "route_reason": route.reason,
+                    "fallback": False,
+                    "attempt": attempt,
+                    "max_attempts": max_attempts,
+                    "timeout_seconds": config.timeout_seconds,
+                },
+            )
+            raise RuntimeError(
+                "LLM chat completion failed; "
+                f"model={config.model!r}, "
+                f"base_url={_safe_base_url(config.base_url)!r}, "
+                f"prompt_chars={len(user_prompt)}, "
+                f"attempts={attempt}, "
+                f"cause={type(exc).__name__}."
+            ) from None
 
     if not response.choices:
-        preview = safe_text_preview(user_prompt)
         raise RuntimeError(
             "LLM returned no choices; "
             f"model={config.model!r}, "
-            f"base_url={config.base_url!r}, "
-            f"text_preview={preview!r}."
+            f"base_url={_safe_base_url(config.base_url)!r}, "
+            f"prompt_chars={len(user_prompt)}."
         )
 
     usage = getattr(response, "usage", None)
@@ -188,30 +283,31 @@ def complete_json(
             "completion_tokens": getattr(usage, "completion_tokens", None),
             "total_tokens": getattr(usage, "total_tokens", None),
             "fallback": False,
+            "attempt": attempt,
+            "max_attempts": max_attempts,
+            "timeout_seconds": config.timeout_seconds,
         },
     )
     content = response.choices[0].message.content
 
     if content is None:
-        preview = safe_text_preview(user_prompt)
         raise RuntimeError(
             "LLM returned no message content; "
             f"model={config.model!r}, "
-            f"base_url={config.base_url!r}, "
-            f"text_preview={preview!r}."
+            f"base_url={_safe_base_url(config.base_url)!r}, "
+            f"prompt_chars={len(user_prompt)}."
         )
 
     try:
         return extract_json_object(content)
     except Exception:
-        preview = safe_text_preview(user_prompt)
         output_preview = safe_text_preview(content, limit=200)
 
         raise RuntimeError(
             "LLM did not return valid JSON object; "
             f"model={config.model!r}, "
-            f"base_url={config.base_url!r}, "
-            f"text_preview={preview!r}, "
+            f"base_url={_safe_base_url(config.base_url)!r}, "
+            f"prompt_chars={len(user_prompt)}, "
             f"output_preview={output_preview!r}."
         ) from None
 

@@ -80,6 +80,20 @@ def check_memory_config() -> None:
         fail("SUIXINJI_MEMORY_ADJUDICATION_TOP_K 必须是正整数")
     if top_k <= 0:
         fail("SUIXINJI_MEMORY_ADJUDICATION_TOP_K 必须是正整数")
+
+    try:
+        extraction_timeout = int(os.getenv("SUIXINJI_MEMORY_EXTRACTION_LLM_TIMEOUT_SECONDS", "30"))
+    except ValueError:
+        fail("SUIXINJI_MEMORY_EXTRACTION_LLM_TIMEOUT_SECONDS 必须是正整数")
+    if extraction_timeout <= 0:
+        fail("SUIXINJI_MEMORY_EXTRACTION_LLM_TIMEOUT_SECONDS 必须是正整数")
+
+    try:
+        extraction_retries = int(os.getenv("SUIXINJI_MEMORY_EXTRACTION_LLM_MAX_RETRIES", "1"))
+    except ValueError:
+        fail("SUIXINJI_MEMORY_EXTRACTION_LLM_MAX_RETRIES 必须是 0 或 1")
+    if extraction_retries not in {0, 1}:
+        fail("SUIXINJI_MEMORY_EXTRACTION_LLM_MAX_RETRIES 必须是 0 或 1")
     ok("memory config is valid")
 
 

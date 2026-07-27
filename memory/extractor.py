@@ -12,6 +12,9 @@ from typing import Any
 from core.llm_client import complete_json
 from core.config import get_chat_config
 from core import settings
+from core.model_router import route_model
+from core.observability import log_event
+from core.sensitive import redact_sensitive_text
 from memory.candidate_validator import contains_sensitive_data
 from memory.canonicalizer import canonicalize_candidate, is_task_lifecycle_statement
 from memory.clause_splitter import split_clauses
@@ -28,6 +31,8 @@ V3_LLM_EXTRACTOR_VERSION = "memory-extractor-v3-llm"
 PROMPT_HASH = hashlib.sha256(MEMORY_EXTRACTOR_PROMPT.encode("utf-8")).hexdigest()[:16]
 V3_PROMPT_HASH = hashlib.sha256(MEMORY_EXTRACTOR_V3_PROMPT.encode("utf-8")).hexdigest()[:16]
 MEMORY_EXTRACTOR_MODE = settings.MEMORY_EXTRACTOR_MODE
+_ERROR_PREVIEW_RE = re.compile(r"\b(text_preview|output_preview)=('(?:\\'|[^'])*'|\"(?:\\\"|[^\"])*\")")
+_DIAGNOSTIC_PREFIX_RE = re.compile(r"^\[MemoryV3-E2E-[^\]\n]{1,80}\]\s*")
 
 LOW_VALUE_PATTERNS = {
     "你好",
@@ -368,6 +373,45 @@ def _bool_value(value: Any, default: bool = True) -> bool:
     return bool(value)
 
 
+def _strip_diagnostic_prefix(text: str) -> str:
+    return _DIAGNOSTIC_PREFIX_RE.sub("", str(text or "").strip(), count=1).strip()
+
+
+def _safe_exception_summary(exc: Exception) -> str:
+    message = str(exc).strip() or type(exc).__name__
+    message = _ERROR_PREVIEW_RE.sub(lambda match: f"{match.group(1)}=[redacted]", message)
+    return redact_sensitive_text(message)[:500]
+
+
+def _log_llm_failure(note_id: str, exc: Exception, *, mode: str) -> None:
+    route = route_model(task="memory_extraction")
+    config = get_chat_config(route.role.value)
+    error = _safe_exception_summary(exc)
+    log_event(
+        "memory.extractor.llm_failed",
+        level="warning",
+        status="degraded",
+        record_id=note_id,
+        error=f"{type(exc).__name__}: {error}",
+        extra={
+            "extractor_mode": mode,
+            "schema_v3": bool(settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED),
+            "fallback": "rules",
+            "fallback_reason": "llm_failed_rule_fallback",
+            "model_role": route.role.value,
+            "model": config.model,
+            "route_reason": route.reason,
+            "error_type": type(exc).__name__,
+        },
+    )
+    LOGGER.warning(
+        "memory.extractor.llm_failed note_id=%s error_type=%s error=%s fallback=rules",
+        note_id,
+        type(exc).__name__,
+        error,
+    )
+
+
 def extract_llm_candidates(
     note_id: str,
     text: str,
@@ -376,11 +420,12 @@ def extract_llm_candidates(
     hints: list[dict[str, Any]] | None = None,
 ) -> list[MemoryCandidate]:
     raw = str(text or "").strip()
-    if _should_skip_text(raw):
+    model_text = _strip_diagnostic_prefix(raw)
+    if _should_skip_text(model_text):
         return []
     payload = {
         "note_id": note_id,
-        "text": raw,
+        "text": model_text,
         "classification": classification or {},
         "hints": hints or [],
     }
@@ -477,7 +522,7 @@ def _rule_hints(note_id: str, text: str, classification: dict[str, Any] | None =
             "predicate": candidate.predicate,
             "evidence_span": candidate.evidence_span,
         }
-        for candidate in extract_rule_candidates(note_id, text, classification)[:5]
+        for candidate in extract_rule_candidates(note_id, _strip_diagnostic_prefix(text), classification)[:5]
     ]
 
 
@@ -501,8 +546,9 @@ def _dedupe(candidates: list[MemoryCandidate]) -> list[MemoryCandidate]:
 def extract_candidates(note_id: str, text: str, classification: dict[str, Any] | None = None) -> list[MemoryCandidate]:
     """Return candidates only; adjudication and database mutation happen later."""
     mode = MEMORY_EXTRACTOR_MODE if MEMORY_EXTRACTOR_MODE in {"rules", "llm", "hybrid"} else "rules"
+    rule_text = _strip_diagnostic_prefix(text)
     if mode == "rules":
-        return extract_rule_candidates(note_id, text, classification)
+        return extract_rule_candidates(note_id, rule_text, classification)
 
     try:
         model_candidates = extract_llm_candidates(
@@ -512,10 +558,10 @@ def extract_candidates(note_id: str, text: str, classification: dict[str, Any] |
             hints=_rule_hints(note_id, text, classification) if mode == "hybrid" else None,
         )
     except Exception as exc:
-        LOGGER.warning("memory.extractor.llm_failed note_id=%s error_type=%s", note_id, type(exc).__name__)
+        _log_llm_failure(note_id, exc, mode=mode)
         return [
             replace(candidate, reason="llm_failed_rule_fallback", extraction_reason="llm_failed_rule_fallback")
-            for candidate in extract_rule_candidates(note_id, text, classification)
+            for candidate in extract_rule_candidates(note_id, rule_text, classification)
         ]
 
     if mode == "llm":
@@ -530,5 +576,5 @@ def extract_candidates(note_id: str, text: str, classification: dict[str, Any] |
     # model result.
     return [
         replace(candidate, reason="llm_empty_rule_fallback", extraction_reason="llm_empty_rule_fallback")
-        for candidate in extract_rule_candidates(note_id, text, classification)
+        for candidate in extract_rule_candidates(note_id, rule_text, classification)
     ]

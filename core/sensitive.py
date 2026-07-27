@@ -45,7 +45,9 @@ _PRIVATE_KEY_RE = re.compile(
     re.DOTALL,
 )
 _CONNECTION_CREDENTIAL_RE = re.compile(r"(?i)\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?|redis)://[^\s:/]+:[^\s@]+@")
-_URL_CREDENTIAL_RE = re.compile(r"(?i)([?&](?:access_key|ticket)=)([^&\s]+)")
+_URL_CREDENTIAL_RE = re.compile(
+    r"(?i)([?&](?:api[_-]?key|key|token|secret|access[_-]?token|access[_-]?key|ticket)=)([^&\s]+)"
+)
 _IDENTIFIER_RE = re.compile(
     r"(?:身份证(?:号)?|银行卡(?:号)?|卡号|银行账号|账号)\s*(?:是|为|[:：=])?\s*"
     r"(?:\d[ -]?){12,19}[0-9Xx]"
