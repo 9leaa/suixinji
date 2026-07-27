@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import asdict, is_dataclass, replace
 from datetime import date
 from typing import Any
 
 from agent.hooks import AgentRunContext, get_default_hook_manager
+from core.sensitive import safe_text_preview
 from core.settings import MEMORY_EXTRACTOR_MODE, MEMORY_QUERY_MIN_SCORE
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock
@@ -21,6 +23,7 @@ from memory.repository import (
     correct_memory,
     edit_pending_memory,
     get_extraction_state,
+    get_memory_candidate,
     get_memory_candidate_status,
     get_memory,
     list_memories,
@@ -172,6 +175,10 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
                     "importance": candidate.importance,
                     "confidence": candidate.confidence,
                     "should_store": candidate.should_store,
+                    "task_status": candidate.task_status,
+                    "clause_index": candidate.clause_index,
+                    "content_preview": safe_text_preview(candidate.content, limit=180),
+                    "evidence_preview": safe_text_preview(candidate.evidence_span or "", limit=180),
                 },
                 reason=candidate.effective_reason,
             )
@@ -636,6 +643,60 @@ def format_trace_memory(memory_id: str) -> str:
     return "\n".join(lines)
 
 
+def _trace_summary(value: Any, *, limit: int = 900) -> str:
+    if not value:
+        return ""
+    try:
+        rendered = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    except (TypeError, ValueError):
+        rendered = str(value)
+    return safe_text_preview(rendered, limit=limit)
+
+
+def _trace_candidate_lines(trace: dict[str, Any]) -> list[str]:
+    extracted = [step for step in trace.get("steps", []) if step.get("step") == "candidate_extracted"]
+    if not extracted:
+        return []
+
+    decisions: dict[str, dict[str, Any]] = {}
+    for step in trace.get("steps", []):
+        if step.get("step") != "relation_decided":
+            continue
+        candidate_id = str((step.get("input_summary") or {}).get("candidate_id") or "")
+        if candidate_id:
+            decisions[candidate_id] = step.get("output_summary") or {}
+
+    lines = [f"候选（{len(extracted)}）："]
+    for index, step in enumerate(extracted, start=1):
+        summary = step.get("output_summary") or {}
+        candidate_id = str(summary.get("candidate_id") or "")
+        candidate = get_memory_candidate(candidate_id) if candidate_id else None
+        decision = decisions.get(candidate_id, {})
+        memory_type = summary.get("memory_type") or (candidate.memory_type if candidate else "unknown")
+        confidence = summary.get("confidence") if summary.get("confidence") is not None else (candidate.confidence if candidate else None)
+        importance = summary.get("importance") if summary.get("importance") is not None else (candidate.importance if candidate else None)
+        content = summary.get("content_preview") or (candidate.content if candidate else "")
+        evidence = summary.get("evidence_preview") or (candidate.evidence_span if candidate else "")
+        details = [
+            f"id={candidate_id or 'unknown'}",
+            f"type={memory_type}",
+            f"should_store={summary.get('should_store') if summary.get('should_store') is not None else (candidate.should_store if candidate else 'unknown')}",
+        ]
+        if confidence is not None:
+            details.append(f"confidence={float(confidence):.2f}")
+        if importance is not None:
+            details.append(f"importance={float(importance):.2f}")
+        if decision:
+            details.append(f"relation={decision.get('relation')}")
+            details.append(f"action={decision.get('action')}")
+        lines.append(f"  {index}. " + "｜".join(details))
+        if content:
+            lines.append(f"     内容：{safe_text_preview(str(content), limit=180)}")
+        if evidence:
+            lines.append(f"     证据：{safe_text_preview(str(evidence), limit=180)}")
+    return lines
+
+
 def format_trace(trace: dict[str, Any]) -> str:
     lines = [
         f"Trace {trace.get('trace_id')}：",
@@ -645,6 +706,18 @@ def format_trace(trace: dict[str, Any]) -> str:
         f"- started：{trace.get('started_at')}",
         f"- finished：{trace.get('finished_at')}",
     ]
-    for step in trace.get("steps", [])[-12:]:
-        lines.append(f"  - {step.get('step')}｜{step.get('status')}｜{step.get('reason') or ''}")
+    steps = trace.get("steps", [])
+    lines.append(f"步骤（共 {len(steps)}）：")
+    for index, step in enumerate(steps, start=1):
+        lines.append(
+            f"  {index}. {step.get('step')}｜{step.get('status')}｜{step.get('duration_ms', 0)}ms"
+            + (f"｜{step.get('reason')}" if step.get("reason") else "")
+        )
+        if input_summary := _trace_summary(step.get("input_summary")):
+            lines.append(f"     input：{input_summary}")
+        if output_summary := _trace_summary(step.get("output_summary")):
+            lines.append(f"     output：{output_summary}")
+        if step.get("error"):
+            lines.append(f"     error：{safe_text_preview(str(step['error']), limit=300)}")
+    lines.extend(_trace_candidate_lines(trace))
     return "\n".join(lines)
