@@ -42,7 +42,7 @@ def test_answer_question_fast_routes_current_task_then_synthesizes_once(monkeypa
     answer = query_agent.answer_question(SPACE_ID, "我现在有哪些任务？", max_steps=2)
 
     assert answer.startswith("你现在有 1 个任务：测试任务。")
-    assert "来源：" in answer
+    assert "来源（最多展示 5 条记忆和 5 条笔记）：" in answer
     assert "note:task-1" in answer
     assert len(prompts) == 1
     assert prompts[0]["observations"][0]["tool"] == "memory_search"

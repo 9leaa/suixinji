@@ -59,7 +59,7 @@ REACT_SYSTEM_PROMPT = f"""
 {{"thought":"为什么要调用这个工具","action":"semantic_search","args":{{"query":"用户问题","top_k":{QUERY_TOP_K},"min_score":{QUERY_MIN_SCORE}}}}}
 
 如果已经有足够证据回答，输出：
-{{"thought":"为什么可以回答","final_answer":"基于笔记的回答"}}
+{{"thought":"为什么可以回答","final_answer":"基于笔记的回答","evidence_ids":["memory 或 note 的 id"]}}
 
 规则：
 - 如果用户明确说“type 是生活/学习/任务”等，调用 filter_notes，不要调用 semantic_search。
@@ -70,6 +70,7 @@ REACT_SYSTEM_PROMPT = f"""
 - 如果用户问长期偏好、习惯、当前任务状态或“我现在/我喜欢/我住在哪/我重点做什么”，优先调用 memory_search。
 - 如果用户问“和某条笔记相关的有哪些”，先 semantic_search 找候选 note_id，再 follow_links。
 - 回答只能基于 observations，不要编造。
+- 输出 final_answer 时，必须给出直接支撑该回答的 evidence_ids；只能填写 observations 中实际出现过的 id。若没有直接证据，返回空数组并明确说明无法确认。
 - 如果没有找到相关笔记，要明确说没找到。
 - observations 中如果存在 session_context，它表示上一轮临时会话状态；可据此理解“一周”“这个”等承接回答。
 - 如果回答后需要等待用户补充信息，可额外输出 session_update，例如 {{"waiting_for":"summary_range","current_intent":"summary"}}；不再需要时输出空对象。
@@ -328,32 +329,77 @@ def _fuse_memory_results(groups: list[list[dict[str, Any]]], *, limit: int = 5) 
     return result
 
 
-def _source_lines(selected_evidence: Any, limit: int = 5) -> list[str]:
-    """Format only the evidence selected for the final answer."""
+def _evidence_items(evidence: Any) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    if isinstance(evidence, list):
+        items.extend(item for item in evidence if isinstance(item, dict))
+    elif isinstance(evidence, dict):
+        items.append(evidence)
+        items.extend(item for item in evidence.get("related", []) if isinstance(item, dict))
+        items.extend(item for item in evidence.get("candidates", []) if isinstance(item, dict))
+    return items
+
+
+def _merge_evidence(current: list[dict[str, Any]], result: Any) -> list[dict[str, Any]]:
+    merged = list(current)
+    seen = {str(item.get("id")) for item in merged if item.get("id")}
+    for item in _evidence_items(result):
+        item_id = str(item.get("id") or "")
+        if item_id and item_id not in seen:
+            merged.append(item)
+            seen.add(item_id)
+    return merged
+
+
+def _cited_evidence(observations: list[dict[str, Any]], evidence_ids: Any) -> list[dict[str, Any]]:
+    if not isinstance(evidence_ids, list):
+        return []
+    available: dict[str, dict[str, Any]] = {}
+    for observation in observations:
+        for item in _evidence_items(observation.get("result")):
+            item_id = str(item.get("id") or "")
+            if item_id and item_id not in available:
+                available[item_id] = item
+    cited: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for evidence_id in evidence_ids:
+        item_id = str(evidence_id or "")
+        if item_id and item_id in available and item_id not in seen:
+            cited.append(available[item_id])
+            seen.add(item_id)
+    return cited
+
+
+def _source_lines(
+    selected_evidence: Any,
+    *,
+    memory_limit: int = 5,
+    note_limit: int = 5,
+) -> list[str]:
+    """Format selected evidence with independent memory and note limits."""
     lines: list[str] = []
     seen: set[str] = set()
-    items: list[dict[str, Any]] = []
-    if isinstance(selected_evidence, list):
-        items.extend(item for item in selected_evidence if isinstance(item, dict))
-    elif isinstance(selected_evidence, dict):
-        items.append(selected_evidence)
-        items.extend(item for item in selected_evidence.get("related", []) if isinstance(item, dict))
-        items.extend(item for item in selected_evidence.get("candidates", []) if isinstance(item, dict))
+    memory_count = 0
+    note_count = 0
 
-    for item in items:
+    for item in _evidence_items(selected_evidence):
         item_id = str(item.get("id") or "")
         if not item_id or item_id in seen:
             continue
         seen.add(item_id)
         if item.get("memory_type"):
+            if memory_count >= memory_limit:
+                continue
             source_count = len(item.get("sources") or [])
             lines.append(f"- memory:{item_id}｜{item.get('memory_type')}｜sources={source_count}")
+            memory_count += 1
         else:
+            if note_count >= note_limit:
+                continue
             title = item.get("title") or item_id
             time = item.get("time") or item.get("ts") or ""
             lines.append(f"- note:{item_id}｜{title}｜{str(time)[:10]}")
-        if len(lines) >= limit:
-            return lines
+            note_count += 1
     return lines
 
 
@@ -361,7 +407,7 @@ def _with_sources(answer: str, selected_evidence: Any) -> str:
     sources = _source_lines(selected_evidence)
     if not sources:
         return answer
-    return answer.rstrip() + "\n\n来源：\n" + "\n".join(sources)
+    return answer.rstrip() + "\n\n来源（最多展示 5 条记忆和 5 条笔记）：\n" + "\n".join(sources)
 
 
 def _log_final_answer(
@@ -955,7 +1001,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
             return answer
 
         observations: list[dict[str, Any]] = []
-        selected_evidence: Any = None
+        selected_evidence: list[dict[str, Any]] = []
         query_plan = build_query_plan(question)
         add_step(
             trace,
@@ -1106,7 +1152,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 if not result and provisional:
                     result = provisional
                 if result:
-                    selected_evidence = result
+                    selected_evidence = _merge_evidence(selected_evidence, result)
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
                 add_step(trace, "rerank", output_summary={"strategy": "fast_path_tool_order", "ids": _result_ids(result)})
                 if fast_route["synthesize"] and result:
@@ -1210,7 +1256,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 reason="bounded_variant_execution",
             )
             if memory_prefetch:
-                selected_evidence = memory_prefetch
+                selected_evidence = _merge_evidence(selected_evidence, memory_prefetch)
                 observations.append(
                     {
                         "thought": "先召回最新 active 长期记忆。",
@@ -1261,7 +1307,15 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     update = decision.get("session_update")
                     hook_context.metadata["session_update"] = update if isinstance(update, dict) else {}
                 if final_answer and observations:
-                    answer = _with_sources(final_answer, selected_evidence)
+                    cited_evidence = _cited_evidence(observations, decision.get("evidence_ids"))
+                    source_evidence = cited_evidence or selected_evidence
+                    add_step(
+                        trace,
+                        "answer_evidence_cited",
+                        output_summary={"ids": _result_ids(source_evidence)},
+                        reason="llm_citations" if cited_evidence else "selected_evidence_fallback",
+                    )
+                    answer = _with_sources(final_answer, source_evidence)
                     _log_final_answer(space_id, answer, source="react_final", observations=observations)
                     add_step(trace, "answer_generated", output_summary={"answer_len": len(final_answer)}, reason="react_final")
                     add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
@@ -1300,7 +1354,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     }
                 )
                 if result:
-                    selected_evidence = result
+                    selected_evidence = _merge_evidence(selected_evidence, result)
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
                 add_step(trace, "rerank", output_summary={"strategy": "tool_order", "ids": _result_ids(result)})
 

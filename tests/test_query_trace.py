@@ -22,10 +22,29 @@ def test_sources_render_only_final_selected_evidence():
     ]
     answer = query_agent._with_sources("已找到相关记录。", selected)
 
-    assert answer.split("来源：\n", 1)[1].splitlines() == [
+    assert answer.split("来源（最多展示 5 条记忆和 5 条笔记）：\n", 1)[1].splitlines() == [
         "- memory:mem-garden｜episodic｜sources=1",
         "- memory:mem-agent-resume｜task｜sources=1",
     ]
+
+
+def test_sources_limit_memory_and_notes_independently():
+    memories = [
+        {"id": f"mem-{index}", "memory_type": "fact", "sources": []}
+        for index in range(6)
+    ]
+    notes = [
+        {"id": f"note-{index}", "title": f"笔记 {index}", "ts": "2026-07-27"}
+        for index in range(6)
+    ]
+
+    lines = query_agent._source_lines(memories + notes)
+
+    assert len(lines) == 10
+    assert sum(line.startswith("- memory:") for line in lines) == 5
+    assert sum(line.startswith("- note:") for line in lines) == 5
+    assert "mem-5" not in "\n".join(lines)
+    assert "note-5" not in "\n".join(lines)
 
 
 def test_complex_query_sources_follow_fused_final_evidence(monkeypatch):
@@ -109,7 +128,7 @@ def test_answer_question_writes_query_trace_with_safe_steps(monkeypatch):
     steps = [step["step"] for step in trace["steps"]]
     trace_text = json.dumps(trace, ensure_ascii=False)
 
-    assert "来源：" in answer
+    assert "来源（最多展示 5 条记忆和 5 条笔记）：" in answer
     assert trace["trace_type"] == "memory_query"
     assert "query_received" in steps
     assert "query_routed" in steps
@@ -144,6 +163,6 @@ def test_answer_question_falls_back_when_react_llm_fails_after_prefetch(monkeypa
     steps = [step["step"] for step in trace["steps"]]
 
     assert "用户讨厌喝牛奶" in answer
-    assert "来源：" in answer
+    assert "来源（最多展示 5 条记忆和 5 条笔记）：" in answer
     assert "answer_failed" not in steps
     assert "answer_returned" in steps
