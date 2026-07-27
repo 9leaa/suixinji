@@ -1,38 +1,122 @@
 # 随心记 Agent
 
-随心记 Agent 是一个飞书里的个人记忆助手：普通文本先写入 Inbox/WAL 并用本地规则快速归档，LLM 分类、embedding 和相关链接在独立后台池补全；`/ask`、固定条件筛选和周期总结都可以读取已经落库的内容。存储可通过 `STORAGE_BACKEND=local|postgres` 切换。
+一个运行在飞书中的个人记忆助手。它把聊天中的原始记录保存为可追溯 Note，再将值得长期保留的信息抽取为可演化的 Memory，用于回答历史问题、维护任务进展和展示当前画像。
+
+> 记录不等于记忆。Note 保留用户说过什么；Memory 经过候选校验、关系审理和版本化演化后，才会影响后续回答。
+
+## 项目能力
+
+| 能力 | 说明 |
+| --- | --- |
+| 可靠记录 | 消息先进入 Inbox/WAL，再异步完成分类、向量、关联和记忆处理。 |
+| 长期记忆 | 支持偏好、任务、稳定事实和带时间背景的经历四类 Memory。 |
+| 混合检索 | `/ask` 结合 Note 与 active Memory；复杂问题按子句做有界检索并组织来源。 |
+| 记忆演化 | 新信息可被审理为 `new`、`same`、`merge`、`update_task`、`supersede` 或 `conflict`。 |
+| 可审计 | Trace 展示完整处理步骤与候选，来源、版本、决策和关系都可回看。 |
+| 安全控制 | 密码、密钥、令牌和高风险证件信息在入口本地拦截，不写入、不嵌入、不发送给模型。 |
+
+## 飞书演示
+
+以下均为真实飞书交互截图。
+
+### 1. 像聊天一样记录
+
+发送自然语言消息后，系统先确认接收，再异步整理为 Note 和长期记忆。
+
+<p align="center">
+  <img src="docs/images/feishu/01-record-note.png" width="760" alt="在飞书中记录植物园经历和 Agent 简历修改">
+</p>
+
+### 2. 简单问题：从历史中直接回答
+
+单一问题优先查询长期记忆，并在答案末尾标明实际引用的来源。
+
+<p align="center">
+  <img src="docs/images/feishu/02-ask-simple.png" width="760" alt="在飞书中查询上次提到 Agent 简历时的活动">
+</p>
+
+### 3. 复杂问题：拆解并混合检索
+
+多问题消息会按子句拆解，分别检索 Memory 和相关 Note。答案中的来源最多展示 5 条 Memory 与 5 条 Note，不会为了凑数量加入无关记录。
+
+<p align="center">
+  <img src="docs/images/feishu/03-ask-complex.png" width="760" alt="在飞书中回答饮料偏好、求职方向和植物园经历的复杂问题">
+</p>
+
+### 4. 普通输入生成的记忆候选
+
+`/trace latest` 显示全部处理步骤，以及本条消息生成的候选、关系和最终动作。
+
+<p align="center">
+  <img src="docs/images/feishu/04-memory-candidates.png" width="640" alt="在飞书中查看植物园经历和 Agent 简历任务的记忆候选">
+</p>
+
+### 5. 任务状态演化
+
+同一任务可从待办演化为进行中或完成；重复确认只增加来源，不会创建重复任务。
+
+<p align="center">
+  <img src="docs/images/feishu/05-task-lifecycle.png" width="760" alt="在飞书中查看 Agent 简历任务的状态演化">
+</p>
+
+### 6. 记忆审计与追溯
+
+候选、关系决策、写入动作和来源均可追溯；不确定的破坏性变更会进入人工审阅。
+
+<p align="center">
+  <img src="docs/images/feishu/06-memory-audit-trace.png" width="640" alt="在飞书中查看记忆审计与 Trace">
+</p>
+
+### 7. 动态用户画像
+
+`/memory profile` 汇总当前有效的偏好、进行中的任务和稳定事实，方便用户校验系统目前记住了什么。
+
+<p align="center">
+  <img src="docs/images/feishu/07-memory-profile.png" width="640" alt="在飞书中查看动态用户画像">
+</p>
+
+## 工作方式
 
 ```text
-Feishu
-  -> WAL
-  -> BoundedTaskExecutor
-  -> PendingDrainer
-  -> Local Provisional Classification / Markdown / Index / Memory
-  -> EnrichmentDrainer / LLM Classification / Embedding / Related Search / Vector Store
-  -> Memory Extraction / Adjudication / Evolution / Trace
-  -> ReAct Query
-  -> Reflection Summary
-  -> DeliveryStore
-  -> Observability / Evaluation
+Feishu message
+  -> Inbox / WAL
+  -> Note (原始证据)
+  -> Memory candidate
+  -> Validation + relation adjudication
+  -> Versioned memory
+
+/ask
+  -> Query planning
+  -> Memory + Note retrieval
+  -> Evidence selection
+  -> Answer with sources
 ```
 
-## 核心功能
+长期记忆包含四类：
 
-- 普通文本自动归档：写入 `data/cache/{space_id}.jsonl` 后，本地规则先生成 provisional 元数据并立即归档；LLM/embedding/related 在独立后台池补全，失败最多重试有限次数。
-- 查询历史笔记：`/ask` 会先冲刷同空间 pending，并用本地词法检索读取尚在增强的最新笔记；其余情况走 ReAct 和语义检索。`/type`、`/tag`、`/filter` 直接筛选 `index.json`。
-- 敏感内容保护：密码、密钥、Bearer/JWT、带凭据的连接串和高风险身份证件/银行卡值在入口处本地拦截，不写原文、不做 embedding、不发送给模型；遗留敏感笔记也从查询、链接、总结和记忆整理中统一过滤。
-- 长期记忆：原始 Note 只作为证据；经过 Candidate 校验、旧记忆检索、六类关系审理和确定性演化后，形成当前有效认知。
-- 可审计演化：`new/same/merge/update_task/supersede/conflict` 均写入 `memory_decisions`；跨记忆关系写入 `memory_relations`，合并、任务更新、替代和冲突使用版本记录。
-- 保守审阅：置信度不足的破坏性动作先生成 `pending_review` 候选；`/memory approve <id>` 会原子执行原审理关系，而不是简单把候选改成 active。
-- 记忆控制：`/memory list|show|search|profile|pending|approve|decisions|forget|purge|correct|conflicts|stats|consolidate` 可查看、审阅、修正和维护长期记忆。
-- 记忆 Trace：`/trace latest`、`/trace <id>`、`/trace memory <memory_id>` 可解释“为什么记住”和“为什么召回”。
-- 手动和自动总结：`/summary 今天|昨天|一周|一个月|半年|一年`，以及 `/summary_auto on|off|status|time 22:00`。
-- 可靠性设计：WAL 先写入、`message_id` 幂等、pending 后台自动 drain、有界任务队列、同一 `space_id` 写入串行。
-- 延迟隔离：交互任务池和 LLM 增强池分离；默认单次模型请求 15 秒、SDK 不做内层重试，失败由应用级 EnrichmentDrainer 间隔重试。
-- 发送幂等：查询回答、归档成功提示、手动总结和自动总结都通过 `DeliveryStore` 生成 delivery key，避免重复发送。
-- 状态对账：自动总结如果已经发送但订阅状态没更新，下一轮 scheduler 会按 delivery 记录补写 `last_sent_date`，不会重复生成或发送。
-- 调度韧性：Scheduler 对每个订阅进行异常隔离，并在 tick 层提供总异常保护；单个订阅或单次 tick 失败不会导致后台线程退出。
-- 可观测性：结构化日志写入 `data/logs/app-YYYY-MM-DD.jsonl`，`/status` 展示 pending、队列、容量、成功、失败、拒绝和最近错误。
+| 类型 | 用途 | 示例 |
+| --- | --- | --- |
+| `preference` | 喜欢、讨厌、习惯和约束 | 不喜欢喝牛奶 |
+| `task` | 待办、进行中、完成、取消 | 修改 Agent 简历 |
+| `semantic` | 稳定事实、项目和学习重点 | 正在投递 Agent 简历 |
+| `episodic` | 有时间背景的重要经历 | 今天逛了植物园并拍花 |
+
+原始 Note 不会被覆盖。Memory 的变更写入决策、版本和来源；低置信度的破坏性变更进入 `pending_review`，等待人工确认。
+
+## 常用命令
+
+| 目的 | 命令 |
+| --- | --- |
+| 随手记录 | 直接发送文本 |
+| 询问历史 | `/ask 上次我提到 Agent 简历时在做什么？` |
+| 查看候选与步骤 | `/trace latest` |
+| 查看某次 Trace | `/trace <trace_id>` |
+| 查看画像 | `/memory profile` |
+| 搜索记忆 | `/memory search <关键词>` |
+| 审阅待确认变更 | `/memory pending`、`/memory approve <id>` |
+| 查看决策 | `/memory decisions` |
+| 修正或删除记忆 | `/memory correct <id> <内容>`、`/memory forget <id>` |
+| 周期回顾 | `/summary 今天|一周|一个月` |
 
 ## 快速启动
 
@@ -43,127 +127,50 @@ make install-dev
 cp .env.example .env
 python scripts/check_config.py
 make test
-make eval-dry-run
 make start
 ```
 
-`.env` 至少需要飞书应用配置；真实 LLM、embedding 调用还需要 OpenAI 或 OpenAI-compatible 服务配置。开发测试和 dry-run 评测不会调用真实 API。
+`.env` 至少需要飞书应用配置。真实 LLM 与 embedding 调用还需要 OpenAI 或 OpenAI-compatible 服务配置；测试和 dry-run 评测不调用真实 API。
 
-PostgreSQL 模式需要设置 `STORAGE_BACKEND=postgres` 和 `DATABASE_URL`，然后运行 `make db-upgrade`。如果数据库由其他机器提供，不要启动 compose 的 `local-infra` profile。仓库中的 PostgreSQL 容器仅用于明确需要本机临时数据库时手动启动：`docker compose --profile local-infra up -d postgres`。
+## 存储与部署
 
-## Redis Hooks 与分布式角色
+本地学习或单实例使用：
 
-第二、第三阶段使用以下配置：
+```dotenv
+STORAGE_BACKEND=local
+COORDINATION_BACKEND=local
+TASK_QUEUE_BACKEND=local
+```
 
-```text
+多实例部署使用 PostgreSQL 与 Redis：
+
+```dotenv
 STORAGE_BACKEND=postgres
 COORDINATION_BACKEND=redis
 TASK_QUEUE_BACKEND=redis_streams
 REDIS_URL=redis://...
 ```
 
-Query、Summary 和 Memory 流程经过同步 HookManager，提供共享限流、请求幂等、LLM 并发槽位、版本化查询缓存、临时 Session、短临界区分布式锁和 PostgreSQL Agent Run 审计。Redis 故障时，缓存和 Session 会跳过；普通 Inbox 仍以 PostgreSQL 唯一约束为最终保证；关键写锁会回退 PostgreSQL advisory lock。
-
-分布式运行角色：
-
-```text
-Receiver -> PostgreSQL Inbox + Task + Outbox
-Outbox Relay -> Redis Streams
-Ingest / Query / Summary / Memory Worker
-Delivery Worker -> Feishu
-Leader-locked Scheduler
-FastAPI test receiver :${SUIXINJI_API_PORT:-8000}
-```
-
-在已激活 `zcj_hello` 环境中启动：
-
 ```bash
+make db-upgrade
 make distributed-start
 make distributed-status
-make distributed-stop
 ```
 
-API 默认监听 `127.0.0.1:8000`。如果端口被占用，在 `.env` 中设置：
-
-```dotenv
-SUIXINJI_API_HOST=127.0.0.1
-SUIXINJI_API_PORT=18000
-```
-
-也可以使用 Docker：
+完整切换步骤见 [分布式切换手册](docs/distributed_cutover_runbook.md)。本地临时 PostgreSQL 可显式启动：
 
 ```bash
-make distributed-up
-make distributed-down
+docker compose --profile local-infra up -d postgres
 ```
 
-本机测试用 Redis profile 明确关闭 AOF 和 RDB 快照，不做持久化写盘；使用外部 Redis 时无需启动该 profile。
+## 可靠性、Trace 与评测
 
-## 第四阶段分布式验收
+- `message_id`、Delivery Key 和持久化状态避免常规重试导致的重复写入或重复发送。
+- Memory 抽取支持 `rules`、`llm` 与 `hybrid` 模式。专用抽取请求默认 30 秒超时，只对 `APITimeoutError` 受控重试一次；失败会安全降级到规则候选。
+- `/trace latest` 完整展示步骤名称、状态、耗时和本条消息的候选摘要；敏感内容会脱敏。
+- 评测覆盖分类、检索、总结、ReAct 查询、候选提取、关系审理、任务生命周期和端到端场景。详细 dry-run 指标见 [docs/metrics/latest.json](docs/metrics/latest.json)。
 
-第四阶段直接使用 `.env` 中的 `DATABASE_URL` 和 `REDIS_URL`，在服务器启动独立 Python 进程模拟多服务器：Receiver x2、Outbox Relay x2、Ingest Worker x4，以及 Query/Summary/Memory/Delivery Worker 和 Scheduler 各 x2。它不执行 Docker 命令，也不连接 Docker Socket。
-
-```bash
-make stage4-start
-make stage4-validate-basic     # 100 用户、1000 请求，并执行进程故障演练
-make stage4-status
-make stage4-stop
-```
-
-宿主机直接生成压测计划不会发送请求：
-
-```bash
-python scripts/load_test_multi_users.py --profile basic
-```
-
-只有显式增加 `--execute` 才会提交。流量模型覆盖普通、活跃、突发和恶意用户，默认比例为 70% 写入、20% 查询、5% 总结、5% Memory 命令。每次执行在 `data/load-tests/` 生成报告，再通过 `scripts/collect_distributed_metrics.py` 汇总任务状态、Streams lag/pending、重试、死信、p50/p95/p99、LLM token/cost 和守恒关系。
-
-Chaos 工具同样默认只预览命令：
-
-```bash
-python scripts/chaos_test_distributed.py
-python scripts/chaos_test_distributed.py --execute
-```
-
-应用级演练覆盖 Worker 崩溃接管、Outbox Relay 重启、Delivery/Query 暂停恢复和 Scheduler Leader 切换。每次运行使用独立测试租户和 Redis namespace；采集指标并停止进程后，通过 `scripts/cleanup_stage4_run.py` 只删除本次测试数据，不停止 PostgreSQL/Redis，不操作容器或数据卷。正式切换前运行 `make cutover-check`，完整步骤见 `docs/distributed_cutover_runbook.md`。
-
-## 使用示例
-
-```text
-今天看了一篇关于 RAG 语义分块的文章，感觉按标题层级切分不一定适合小说。
-/ask 上次我说吃馅饼是什么时候？
-/filter type=生活 tags=饮食,日常
-/summary 一周
-/summary_auto time 22:00
-/memory search Python Agent
-/memory decisions
-/memory pending
-/memory profile
-/memory consolidate daily
-/trace latest
-/status
-```
-
-重复消息会被 `message_id` 幂等跳过。队列满时消息会保持 pending，`PendingDrainer` 会在进程持续运行时自动重新提交；进程重启后也会先 drain 一轮 pending。
-
-## 运行产物
-
-`STORAGE_BACKEND=postgres` 时，Inbox、Note、Embedding、Memory、Summary Subscription 和 Delivery 的正式读写都进入 PostgreSQL；下面的本地文件仅用于 `local` 兼容、导出、备份和日志。
-
-```text
-data/cache/{space_id}.jsonl
-data/notes/{space_id}/{YYYY-MM-DD}.md
-data/notes/{space_id}/index.json
-data/notes/{space_id}/vectors/index.json
-data/memory/memory.db              # memories/sources/versions/decisions/relations/traces
-data/memory/traces.jsonl
-data/notes/{space_id}/summaries/
-data/summary_subscriptions.json
-data/deliveries/index.json
-data/logs/app-YYYY-MM-DD.jsonl
-```
-
-## 测试与评测
+运行验证：
 
 ```bash
 make lint
@@ -171,61 +178,16 @@ make test
 make eval-dry-run
 ```
 
-CI 会在 Python 3.10 和 3.11 上执行 Ruff、pytest coverage 和五条 dry-run 评测：
-
-```text
-eval/eval_classification.py --dry-run
-eval/eval_retrieval.py --dry-run
-eval/eval_summary.py --dry-run
-eval/eval_query_react.py --dry-run
-eval/eval_memory.py --dry-run
-```
-
-Memory 独立评测数据位于 `eval/memory/`，覆盖提取、过滤、六类关系审理、错误 merge/supersede、冲突更新、任务状态、生命周期、检索、端到端场景和工程加固指标。当前展示指标记录在 `docs/metrics/latest.json`。未真实测量的延迟字段使用 `null` 和 `measurement_status=not_measured`，不会把 0 包装成性能结论。
-
-核心记忆写入以 `memory_extraction_states` 记录每条 note 的提取状态：`completed` 和 `empty` 不会被重复处理，`failed` 和 `partial` 可恢复重试，超时的 `processing` 会被视为 stale 并恢复。SQLite 连接开启 WAL、`busy_timeout` 和有限 locked 重试；daily/weekly/monthly consolidation 通过 `memory_consolidation_runs` 持久化幂等。长期记忆查询默认应用 `SUIXINJI_MEMORY_QUERY_MIN_SCORE`，低相关记忆不会进入 `/ask` 的 active memory prefetch。
-
-## Trace 示例
-
-```text
-message_received
-  -> wal_appended
-  -> task_queued
-  -> local_classify_success
-  -> provisional_note_saved
-  -> memory_extraction_started
-  -> extraction_state_processing
-  -> candidate_extracted
-  -> candidate_memories_found
-  -> relation_decided
-  -> evolution_started
-  -> memory_inserted / memory_merged / memory_updated / memory_superseded / memory_conflicted / memory_pending_review
-  -> extraction_state_completed / extraction_state_empty / extraction_state_partial / extraction_state_failed
-  -> wal_processed
-  -> archived_reply
-  -> background_llm_classify / embedding / related_search / vector_saved
-```
-
-查询 Trace 记录 `query_received`、`query_routed`、`memory_search`、`note_search`、`rerank`、`evidence_selected`、`answer_generated` 和 `answer_returned`。`/ask` 会先做一次 active memory prefetch；如果召回到长期记忆，回答末尾会附上来源。
-
-每一步对应结构化日志字段：`duration_ms`、`status`、`space_id`、`message_id`、`record_id`、`error` 和 `extra`。默认不会记录完整消息正文，只记录长度和必要上下文。
-
-任务日志还会记录 `queue_wait_ms`、`execution_ms` 和 `total_duration_ms`，后续可用 `python scripts/build_metrics.py` 从结构化日志生成真实运行时指标。
+`make eval-dry-run` 会运行五个离线评测脚本，不产生真实 LLM 调用。真实线上质量和延迟需要基于生产流量或独立基准单独测量，项目不会把未测延迟写成性能结论。
 
 ## 当前边界
 
-- 只支持文本消息；语音、图片、文件仍是未来计划。
-- `local` 后端适合学习和小规模使用；多实例部署应使用 PostgreSQL 后端。
-- 同一 `space_id` 写入在进程内串行；跨进程部署需要数据库锁或 OS 文件锁。
-- 飞书接口没有本地 exactly-once 保证；当前通过 delivery key 避免正常重试和重复调度造成重复发送，网络超时等不确定状态会标记为 `unknown`。
-- `reserved` delivery 使用 10 分钟租约，过期后可恢复为 failed 并有限重试；同一 delivery 默认最多尝试 3 次。
-- LLM 质量依赖模型和 prompt，真实失败样例应通过 `/feedback` 持续沉淀到 `eval/data/`。
-- 记忆抽取支持 `rules`、`llm`、`hybrid` 三种模式，默认使用可复现的 `rules`；`llm`/`hybrid` 只生成候选，失败会回退规则，数据库更新始终由本地审理阈值和原子演化事务控制。
-- 当前候选检索以类型、状态、结构化 subject/predicate、实体和词法相似度为稳定路径；`memory_vectors` 仍保留为可选 embedding 检索扩展位。
-- Memory consolidation 提供 daily/weekly/monthly 后台 scheduler，并保留 `/memory consolidate ...` 命令用于手动触发。
+- 目前只处理文本消息，语音、图片和文件尚未接入。
+- `local` 后端适合学习和小规模使用；多实例部署应使用 PostgreSQL。
+- LLM 候选质量仍受模型与 prompt 影响，复杂消息应持续通过真实样例和评测集校准。
+- 飞书接口无法在本地提供严格 exactly-once 语义；系统通过幂等键、状态机和有限重试降低重复发送风险。
 
 ## Roadmap
 
-- 已完成：WAL、固定 taxonomy 分类、embedding 相关笔记、ReAct 查询、手动/自动总结、有界任务执行器、pending drainer、发送幂等、可审计核心记忆链路、CI 和 dry-run 评测。
-- 已完成：PostgreSQL 共享数据底座、Redis Hooks、Transactional Outbox、Redis Streams、多角色部署和第四阶段分布式验收工具。
-- 下一阶段：在隔离环境完成持续 10～30 分钟和 5000+ 虚拟用户实测，再基于真实反馈集评估 `hybrid` 抽取与 memory embedding。
+- 扩充真实反馈集，持续评测复杂查询和多子句记忆抽取。
+- 为语音、图片和文件提供可审计的多模态记录路径。
