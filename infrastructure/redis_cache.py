@@ -14,22 +14,35 @@ from infrastructure.redis_keys import KEYS, RedisKeys
 
 class RedisCache:
     def __init__(self, client: Redis | None = None, *, enabled: bool = CACHE_ENABLED, keys: RedisKeys = KEYS) -> None:
+        """初始化`RedisCache` 实例并建立后续调用所需的状态。"""
         self.client = client or get_redis()
         self.enabled = enabled
         self.keys = keys
 
     def version(self, space_id: str, *, tenant_id: str = "default") -> int:
+        """负责“版本”。
+
+        该函数是 `infrastructure.redis_cache` 中的`RedisCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if not self.enabled:
             return 0
         value = self.client.get(self.keys.cache_version(tenant_id, space_id))
         return int(value or 0)
 
     def bump_version(self, space_id: str, *, tenant_id: str = "default") -> int:
+        """负责“bump版本”。
+
+        该函数是 `infrastructure.redis_cache` 中的`RedisCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if not self.enabled:
             return 0
         return int(self.client.incr(self.keys.cache_version(tenant_id, space_id)))
 
     def get(self, kind: str, space_id: str, query_payload: str, *, tenant_id: str = "default") -> Any | None:
+        """负责“获取”。
+
+        该函数是 `infrastructure.redis_cache` 中的`RedisCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if not self.enabled:
             return None
         key = self.keys.cache_search(tenant_id, kind, space_id, self.version(space_id, tenant_id=tenant_id), query_payload)
@@ -46,6 +59,10 @@ class RedisCache:
         *,
         tenant_id: str = "default",
     ) -> None:
+        """负责“设置”。
+
+        该函数是 `infrastructure.redis_cache` 中的`RedisCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if not self.enabled:
             return
         key = self.keys.cache_search(tenant_id, kind, space_id, self.version(space_id, tenant_id=tenant_id), query_payload)
@@ -54,11 +71,16 @@ class RedisCache:
 
 class EmbeddingCache:
     def __init__(self, client: Redis | None = None, *, enabled: bool = CACHE_ENABLED, keys: RedisKeys = KEYS) -> None:
+        """初始化`EmbeddingCache` 实例并建立后续调用所需的状态。"""
         self.client = client or get_redis()
         self.enabled = enabled
         self.keys = keys
 
     def get(self, model: str, text: str) -> list[float] | None:
+        """负责“获取”。
+
+        该函数是 `infrastructure.redis_cache` 中的`EmbeddingCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if not self.enabled:
             return None
         raw = self.client.get(self.keys.cache_embedding(model, text))
@@ -71,6 +93,10 @@ class EmbeddingCache:
             return None
 
     def set(self, model: str, text: str, embedding: list[float], *, ttl_seconds: int = EMBEDDING_CACHE_TTL_SECONDS) -> None:
+        """负责“设置”。
+
+        该函数是 `infrastructure.redis_cache` 中的`EmbeddingCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if not self.enabled:
             return
         self.client.set(
@@ -101,10 +127,15 @@ return result
 """
 
     def __init__(self, client: Redis | None = None, *, keys: RedisKeys = KEYS) -> None:
+        """初始化`MemoryAccessBuffer` 实例并建立后续调用所需的状态。"""
         self.client = client or get_redis()
         self.keys = keys
 
     def increment(self, memory_ids: list[str], *, seen_at: str, tenant_id: str = "default") -> None:
+        """负责“increment”。
+
+        该函数是 `infrastructure.redis_cache` 中的`MemoryAccessBuffer` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         unique_ids = list(dict.fromkeys(str(memory_id) for memory_id in memory_ids if memory_id))
         if not unique_ids:
             return
@@ -115,6 +146,10 @@ return result
         pipeline.execute()
 
     def drain(self, *, limit: int, tenant_id: str = "default") -> dict[str, tuple[int, str]]:
+        """负责“清空”。
+
+        该函数是 `infrastructure.redis_cache` 中的`MemoryAccessBuffer` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         raw = self.client.eval(
             self._DRAIN_SCRIPT,
             2,
@@ -128,6 +163,10 @@ return result
         return result
 
     def restore(self, entries: dict[str, tuple[int, str]], *, tenant_id: str = "default") -> None:
+        """负责“restore”。
+
+        该函数是 `infrastructure.redis_cache` 中的`MemoryAccessBuffer` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if not entries:
             return
         pipeline = self.client.pipeline(transaction=False)
@@ -139,6 +178,10 @@ return result
 
 
 def invalidate_space_cache(space_id: str, *, tenant_id: str = "default") -> None:
+    """负责“invalidate空间缓存”。
+
+    该函数是 `infrastructure.redis_cache` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if COORDINATION_BACKEND != "redis" or not CACHE_ENABLED:
         return
     try:

@@ -14,12 +14,20 @@ depends_on = None
 
 
 def _columns(inspector: sa.Inspector, table: str) -> set[str]:
+    """负责“columns”。
+
+    该函数是 `alembic.versions.20260723_0009_memory_search_document_trgm` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not inspector.has_table(table):
         return set()
     return {column["name"] for column in inspector.get_columns(table)}
 
 
 def upgrade() -> None:
+    """负责“upgrade”。
+
+    该函数是 `alembic.versions.20260723_0009_memory_search_document_trgm` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     bind = op.get_bind()
     inspector = sa.inspect(bind)
     if not inspector.has_table("memories"):
@@ -44,6 +52,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """负责“downgrade”。
+
+    该函数是 `alembic.versions.20260723_0009_memory_search_document_trgm` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     op.execute("DROP INDEX IF EXISTS ix_memories_object_value_trgm")
     op.execute("DROP INDEX IF EXISTS ix_memories_content_trgm")
     op.execute("DROP INDEX IF EXISTS ix_memories_search_document")

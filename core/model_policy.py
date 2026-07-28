@@ -72,6 +72,10 @@ DEFAULT_ROUTES: dict[LLMTask, ModelRoute] = {
 
 
 def coerce_task(value: LLMTask | str | None) -> LLMTask | None:
+    """负责“coerce任务”。
+
+    该函数是 `core.model_policy` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if isinstance(value, LLMTask):
         return value
     if value is None:
@@ -83,6 +87,10 @@ def coerce_task(value: LLMTask | str | None) -> LLMTask | None:
 
 
 def coerce_role(value: ModelRole | str | None) -> ModelRole | None:
+    """负责“coercerole”。
+
+    该函数是 `core.model_policy` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if isinstance(value, ModelRole):
         return value
     if value is None:

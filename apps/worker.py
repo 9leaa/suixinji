@@ -12,6 +12,7 @@ from runtime.streams.worker import AdaptiveStreamWorker, StreamWorker
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser()
     parser.add_argument("task_type", choices=[*sorted(HANDLERS), "adaptive"])
     parser.add_argument("--worker-id")

@@ -20,15 +20,27 @@ class QueryStats:
     durations_ms: list[float] = field(default_factory=list)
 
     def observe(self, duration_ms: float, *, failed: bool = False) -> None:
+        """负责“observe”。
+
+        该函数是 `runtime.query_metrics` 中的`QueryStats` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         self.count += 1
         self.failed += int(failed)
         self.total_duration_ms += duration_ms
         self.durations_ms.append(duration_ms)
 
     def to_dict(self) -> dict[str, Any]:
+        """负责“转换为dict”。
+
+        该函数是 `runtime.query_metrics` 中的`QueryStats` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         ordered = sorted(self.durations_ms)
 
         def percentile(ratio: float) -> float | None:
+            """负责“percentile”。
+
+            该函数是 `runtime.query_metrics` 中的`to_dict` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+            """
             if not ordered:
                 return None
             index = min(len(ordered) - 1, max(0, int(round((len(ordered) - 1) * ratio))))
@@ -64,6 +76,10 @@ def capture_sql_queries(engine: Engine) -> Iterator[QueryStats]:
         context: Any,
         executemany: bool,
     ) -> None:
+        """负责“前置cursorexecute”。
+
+        该函数是 `runtime.query_metrics` 中的`capture_sql_queries` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         started[id(context)] = time.perf_counter()
 
     def after_cursor_execute(
@@ -74,10 +90,18 @@ def capture_sql_queries(engine: Engine) -> Iterator[QueryStats]:
         context: Any,
         executemany: bool,
     ) -> None:
+        """负责“后置cursorexecute”。
+
+        该函数是 `runtime.query_metrics` 中的`capture_sql_queries` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         begin = started.pop(id(context), None)
         stats.observe((time.perf_counter() - begin) * 1000 if begin is not None else 0.0)
 
     def handle_error(exception_context: Any) -> None:
+        """负责“处理错误”。
+
+        该函数是 `runtime.query_metrics` 中的`capture_sql_queries` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         context = exception_context.execution_context
         begin = started.pop(id(context), None) if context is not None else None
         stats.observe((time.perf_counter() - begin) * 1000 if begin is not None else 0.0, failed=True)

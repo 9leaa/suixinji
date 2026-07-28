@@ -4,6 +4,7 @@ from memory.repository import insert_memory, list_memories, list_memory_relation
 
 
 def test_process_unextracted_notes_processes_notes_without_memory_sources(monkeypatch):
+    """验证“处理unextracted笔记列表processes笔记列表without记忆sources”场景的预期行为与回归边界。"""
     notes = [
         {"id": "note-1", "space_id": "space-1", "text": "我正在学习 Agent 工程"},
         {"id": "note-2", "space_id": "space-1", "text": "你好"},
@@ -17,6 +18,7 @@ def test_process_unextracted_notes_processes_notes_without_memory_sources(monkey
 
 
 def test_merge_duplicate_episodic_preserves_sources_and_supersedes_duplicate():
+    """验证“合并重复episodicpreservessourcesandsupersedes重复”场景的预期行为与回归边界。"""
     first = insert_memory("space-1", MemoryCandidate("episodic", "今天阅读 RAG 论文", 0.6, 0.8), source_note_id="note-1")
     second = insert_memory("space-1", MemoryCandidate("episodic", "今天阅读 RAG 论文", 0.6, 0.8), source_note_id="note-2")
 
@@ -32,6 +34,7 @@ def test_merge_duplicate_episodic_preserves_sources_and_supersedes_duplicate():
 
 
 def test_generate_stable_semantic_keeps_source_notes_and_original_episodic_memories():
+    """验证“生成stablesemantickeeps来源笔记列表andoriginalepisodicmemories”场景的预期行为与回归边界。"""
     for idx, text in enumerate(["阅读 RAG 论文", "实现向量检索", "调整 ReAct 查询"]):
         insert_memory("space-1", MemoryCandidate("episodic", text, 0.6, 0.8), source_note_id=f"note-{idx}")
 

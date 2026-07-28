@@ -19,6 +19,7 @@ from runtime.query_metrics import capture_sql_queries
 
 
 def _postgres_ready() -> bool:
+    """验证“postgresready”场景的预期行为与回归边界。"""
     if not os.getenv("DATABASE_URL"):
         return False
     try:
@@ -32,6 +33,7 @@ pytestmark = pytest.mark.skipif(not _postgres_ready(), reason="PostgreSQL integr
 
 @pytest.fixture
 def pg_space():
+    """验证“pg空间”场景的预期行为与回归边界。"""
     space_id = f"test-{uuid.uuid4().hex}"
     yield space_id
     with session_scope() as session:
@@ -39,6 +41,7 @@ def pg_space():
 
 
 def _wal(space_id: str, message_id: str) -> WalRecord:
+    """验证“预写日志”场景的预期行为与回归边界。"""
     return WalRecord(
         id=f"wal-{uuid.uuid4().hex}",
         source="test",
@@ -54,6 +57,7 @@ def _wal(space_id: str, message_id: str) -> WalRecord:
 
 
 def test_postgres_inbox_and_note_contract(pg_space):
+    """验证“postgresinboxand笔记contract”场景的预期行为与回归边界。"""
     message_id = f"message-{uuid.uuid4().hex}"
     record = _wal(pg_space, message_id)
     assert inbox.append_message_once(record) is True
@@ -89,6 +93,7 @@ def test_postgres_inbox_and_note_contract(pg_space):
 
 
 def test_postgres_pgvector_contract(pg_space):
+    """验证“postgrespgvectorcontract”场景的预期行为与回归边界。"""
     note = NoteMetadata(
         id=f"note-{uuid.uuid4().hex}",
         message_id=f"message-{uuid.uuid4().hex}",
@@ -113,6 +118,7 @@ def test_postgres_pgvector_contract(pg_space):
 
 
 def test_postgres_memory_summary_and_delivery_contract(pg_space):
+    """验证“postgres记忆总结and投递contract”场景的预期行为与回归边界。"""
     created = memory.insert_memory(pg_space, MemoryCandidate("preference", "用户喜欢咖啡", 0.8, 0.9), source_note_id="note-1")
     corrected = memory.correct_memory(created.id, "用户喜欢牛奶")
     assert corrected is not None
@@ -171,6 +177,7 @@ def test_postgres_memory_search_tolerates_omitted_chinese_connectives(pg_space):
 
 
 def test_postgres_memory_candidate_lifecycle(pg_space):
+    """验证“postgres记忆候选生命周期”场景的预期行为与回归边界。"""
     candidate = MemoryCandidate(
         "preference",
         "用户喜欢绿茶",
@@ -190,6 +197,7 @@ def test_postgres_memory_candidate_lifecycle(pg_space):
 
 
 def test_postgres_memory_list_and_adjudication_query_budgets(pg_space):
+    """验证“postgres记忆列出andadjudication查询budgets”场景的预期行为与回归边界。"""
     for index in range(5):
         memory.insert_memory(
             pg_space,
@@ -223,6 +231,7 @@ def test_postgres_memory_list_and_adjudication_query_budgets(pg_space):
 
 
 def test_postgres_note_specialized_query_budgets(pg_space):
+    """验证“postgres笔记specialized查询budgets”场景的预期行为与回归边界。"""
     for index in range(8):
         note = NoteMetadata(
             id=f"note-{uuid.uuid4().hex}",
@@ -253,9 +262,11 @@ def test_postgres_note_specialized_query_budgets(pg_space):
 
 
 def test_postgres_same_message_is_inserted_once_under_concurrency(pg_space):
+    """验证“postgressame消息是否为insertedonceunderconcurrency”场景的预期行为与回归边界。"""
     message_id = f"message-{uuid.uuid4().hex}"
 
     def write(index: int) -> bool:
+        """验证“写入”场景的预期行为与回归边界。"""
         return inbox.append_message_once(_wal(pg_space, message_id))
 
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -269,9 +280,11 @@ def test_postgres_same_message_is_inserted_once_under_concurrency(pg_space):
 
 
 def test_postgres_memory_versions_are_serialized_under_concurrency(pg_space):
+    """验证“postgres记忆versionsareserializedunderconcurrency”场景的预期行为与回归边界。"""
     created = memory.insert_memory(pg_space, MemoryCandidate("semantic", "版本 0", 0.8, 0.9), source_note_id="note-0")
 
     def update(index: int):
+        """验证“更新”场景的预期行为与回归边界。"""
         return memory.update_memory(created.id, content=f"版本 {index + 1}", reason="concurrency-test")
 
     with ThreadPoolExecutor(max_workers=6) as pool:
@@ -287,9 +300,11 @@ def test_postgres_memory_versions_are_serialized_under_concurrency(pg_space):
 
 
 def test_postgres_delivery_reservation_is_single_winner(pg_space):
+    """验证“postgres投递reservation是否为singlewinner”场景的预期行为与回归边界。"""
     key = f"delivery-{uuid.uuid4().hex}"
 
     def reserve(_index: int):
+        """验证“预约”场景的预期行为与回归边界。"""
         return delivery.reserve_delivery(key, delivery_type="query", space_id=pg_space)
 
     with ThreadPoolExecutor(max_workers=8) as pool:

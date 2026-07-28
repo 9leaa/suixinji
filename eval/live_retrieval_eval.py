@@ -43,10 +43,18 @@ DATASET_PATH = ROOT / "eval" / "data" / "live_retrieval_cases.json"
 
 
 def _now(offset: int = 0) -> str:
+    """负责“now”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return (datetime.now().astimezone() - timedelta(seconds=offset)).isoformat()
 
 
 def _note_text(note: dict[str, Any]) -> str:
+    """负责“笔记文本”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return "\n".join(
         str(value)
         for value in (
@@ -61,6 +69,10 @@ def _note_text(note: dict[str, Any]) -> str:
 
 
 def _insert_notes(space_id: str, notes: list[dict[str, Any]]) -> int:
+    """负责“插入笔记列表”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     model = str(get_embedding_config().model)
     created = 0
     for index, note in enumerate(notes):
@@ -132,6 +144,10 @@ def _ensure_memory_vector(memory_id: str, *, timeout: float = 90.0) -> None:
 
 
 def _insert_memories(space_id: str, memories: list[dict[str, Any]]) -> dict[str, str]:
+    """负责“插入memories”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     ids: dict[str, str] = {}
     for item in memories:
         candidate = MemoryCandidate(
@@ -160,6 +176,10 @@ def _insert_memories(space_id: str, memories: list[dict[str, Any]]) -> dict[str,
 
 
 def _metrics(ranks: list[int | None], *, cutoff: int = 5) -> dict[str, float]:
+    """负责“指标”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     valid = [rank for rank in ranks if rank is not None]
     return {
         "cases": float(len(ranks)),
@@ -172,6 +192,10 @@ def _metrics(ranks: list[int | None], *, cutoff: int = 5) -> dict[str, float]:
 
 
 def _latency_metrics(results: list[dict[str, Any]]) -> dict[str, float]:
+    """负责“latency指标”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     values = sorted(float(item["latency_ms"]) for item in results)
     if not values:
         return {"avg_latency_ms": 0.0, "p95_latency_ms": 0.0}
@@ -183,6 +207,10 @@ def _latency_metrics(results: list[dict[str, Any]]) -> dict[str, float]:
 
 
 def _run_note_eval(space_id: str, cases: list[dict[str, Any]], id_map: dict[str, str]) -> dict[str, Any]:
+    """负责“运行笔记评测”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     results: list[dict[str, Any]] = []
     ranks: list[int | None] = []
     for case in cases:
@@ -207,6 +235,10 @@ def _run_note_eval(space_id: str, cases: list[dict[str, Any]], id_map: dict[str,
 
 
 def _run_memory_eval(space_id: str, cases: list[dict[str, Any]], id_map: dict[str, str]) -> dict[str, Any]:
+    """负责“运行记忆评测”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     results: list[dict[str, Any]] = []
     ranks: list[int | None] = []
     status_correct = 0
@@ -257,10 +289,18 @@ def _run_memory_eval(space_id: str, cases: list[dict[str, Any]], id_map: dict[st
 
 
 def _run_llm_eval(space_id: str, cases: list[dict[str, Any]]) -> dict[str, Any]:
+    """负责“运行LLM评测”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     original = query_agent._complete_json_with_hooks
     call_count = 0
 
     def counted(*args: Any, **kwargs: Any) -> Any:
+        """负责“counted”。
+
+        该函数是 `eval.live_retrieval_eval` 中的`_run_llm_eval` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         nonlocal call_count
         call_count += 1
         return original(*args, **kwargs)
@@ -307,11 +347,19 @@ def _run_llm_eval(space_id: str, cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _cleanup_space(space_id: str) -> None:
+    """负责“cleanup空间”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         session.execute(delete(Space).where(Space.id == space_id))
 
 
 def run(*, keep: bool = True) -> dict[str, Any]:
+    """负责“运行”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     dataset = json.loads(DATASET_PATH.read_text(encoding="utf-8"))
     space_id = f"eval_live_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
     note_ids = {item["id"]: f"{space_id}_{item['id']}" for item in dataset["notes"]}
@@ -337,6 +385,10 @@ def run(*, keep: bool = True) -> dict[str, Any]:
 
 
 def _print_report(report: dict[str, Any]) -> None:
+    """负责“print报告”。
+
+    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     print(json.dumps({key: report[key] for key in ("dataset_version", "space_id", "created_notes", "created_memories", "real_embedding", "real_llm")}, ensure_ascii=False))
     print("section\tcases\thit_rate\trecall@1\trecall@3\trecall@5\tMRR\tstate_acc\tpolarity_acc\tanswer_acc\tavg_ms\tp95_ms")
     for name in ("note", "memory"):
@@ -347,6 +399,7 @@ def _print_report(report: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", default=None)
     parser.add_argument("--keep", action="store_true", help="keep the isolated evaluation space (default behavior is also isolated)")

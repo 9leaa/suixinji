@@ -22,6 +22,10 @@ INDEXES = (
 
 
 def upgrade() -> None:
+    """负责“upgrade”。
+
+    该函数是 `alembic.versions.20260718_0004_query_performance` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     bind = op.get_bind()
     inspector = sa.inspect(bind)
     for name, table, columns in INDEXES:
@@ -34,6 +38,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """负责“downgrade”。
+
+    该函数是 `alembic.versions.20260718_0004_query_performance` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     bind = op.get_bind()
     inspector = sa.inspect(bind)
     for name, table, _columns in reversed(INDEXES):

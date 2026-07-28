@@ -43,10 +43,18 @@ SLOT_SEMANTIC_PREDICATES = {
 
 
 def utc_now_iso() -> str:
+    """负责“utcnowiso”。
+
+    该函数是 `memory.models` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
 def new_id(prefix: str) -> str:
+    """负责“new标识”。
+
+    该函数是 `memory.models` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return f"{prefix}_{uuid.uuid4().hex[:12]}"
 
 
@@ -79,6 +87,10 @@ def candidate_id_for_evidence(
 
 
 def normalize_content(text: str) -> str:
+    """负责“normalizecontent”。
+
+    该函数是 `memory.models` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = str(text or "").casefold()
     value = re.sub(r"[\s\W_]+", "", value, flags=re.UNICODE)
     for token in ("用户", "我现在", "我最近", "我", "本人", "目前", "现在", "最近"):
@@ -161,6 +173,10 @@ class MemoryCandidate:
     memory_key_version: str = MEMORY_KEY_VERSION
 
     def __post_init__(self) -> None:
+        """负责“post初始化”。
+
+        该函数是 `memory.models` 中的`MemoryCandidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if self.memory_type not in MEMORY_TYPES:
             raise ValueError(f"invalid memory_type: {self.memory_type}")
         if self.task_status is not None and self.task_status not in TASK_STATUSES:
@@ -168,14 +184,26 @@ class MemoryCandidate:
 
     @property
     def normalized_content(self) -> str:
+        """负责“normalizedcontent”。
+
+        该函数是 `memory.models` 中的`MemoryCandidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return normalize_content(self.content)
 
     @property
     def effective_reason(self) -> str | None:
+        """负责“effectivereason”。
+
+        该函数是 `memory.models` 中的`MemoryCandidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return self.extraction_reason or self.reason
 
     @property
     def effective_memory_key(self) -> str:
+        """负责“effective记忆键”。
+
+        该函数是 `memory.models` 中的`MemoryCandidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return self.memory_key or memory_key_for(
             self.memory_type,
             subject=self.subject,
@@ -204,6 +232,10 @@ class MemoryDecision:
     retry_of_decision_id: str | None = None
 
     def __post_init__(self) -> None:
+        """负责“post初始化”。
+
+        该函数是 `memory.models` 中的`MemoryDecision` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if self.relation not in DECISION_RELATIONS:
             raise ValueError(f"invalid decision relation: {self.relation}")
         if self.recommended_action not in DECISION_ACTIONS:
@@ -306,6 +338,10 @@ class MemoryRecord:
 
     @property
     def effective_memory_key(self) -> str:
+        """负责“effective记忆键”。
+
+        该函数是 `memory.models` 中的`MemoryRecord` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return self.memory_key or memory_key_for(
             self.memory_type,
             subject=self.subject,
@@ -315,6 +351,10 @@ class MemoryRecord:
         )
 
     def to_dict(self) -> dict[str, Any]:
+        """负责“转换为dict”。
+
+        该函数是 `memory.models` 中的`MemoryRecord` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return {
             "id": self.id,
             "space_id": self.space_id,

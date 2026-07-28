@@ -36,24 +36,40 @@ TIME_COLUMNS = {
 
 
 def _constraints(inspector: sa.Inspector, table: str) -> set[str]:
+    """负责“constraints”。
+
+    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not inspector.has_table(table):
         return set()
     return {item["name"] for item in inspector.get_unique_constraints(table)}
 
 
 def _indexes(inspector: sa.Inspector, table: str) -> set[str]:
+    """负责“indexes”。
+
+    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not inspector.has_table(table):
         return set()
     return {item["name"] for item in inspector.get_indexes(table)}
 
 
 def _columns(inspector: sa.Inspector, table: str) -> set[str]:
+    """负责“columns”。
+
+    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not inspector.has_table(table):
         return set()
     return {item["name"] for item in inspector.get_columns(table)}
 
 
 def _alter_to_timestamptz(inspector: sa.Inspector, table: str, column: str) -> None:
+    """负责“alter转换为timestamptz”。
+
+    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if column not in _columns(inspector, table):
         return
     op.execute(
@@ -67,6 +83,10 @@ def _alter_to_timestamptz(inspector: sa.Inspector, table: str, column: str) -> N
 
 
 def _alter_to_text(inspector: sa.Inspector, table: str, column: str) -> None:
+    """负责“alter转换为文本”。
+
+    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if column not in _columns(inspector, table):
         return
     op.execute(
@@ -80,6 +100,10 @@ def _alter_to_text(inspector: sa.Inspector, table: str, column: str) -> None:
 
 
 def upgrade() -> None:
+    """负责“upgrade”。
+
+    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     bind = op.get_bind()
     inspector = sa.inspect(bind)
 
@@ -120,6 +144,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """负责“downgrade”。
+
+    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     bind = op.get_bind()
     inspector = sa.inspect(bind)
 

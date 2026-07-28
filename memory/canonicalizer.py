@@ -61,11 +61,19 @@ def normalize_identity(value: str | None, *, fallback: str = "unspecified") -> s
 
 
 def normalize_scope(value: str | None) -> str:
+    """负责“normalizescope”。
+
+    该函数是 `memory.canonicalizer` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     normalized = normalize_identity(value, fallback="global")
     return "current" if normalized in {"当前", "current", "现在", "目前"} else normalized
 
 
 def _task_identity_topic(value: str | None) -> str:
+    """负责“任务identitytopic”。
+
+    该函数是 `memory.canonicalizer` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     normalized = normalize_content(value or "")
     for marker in sorted(_TASK_IDENTITY_NOISE, key=len, reverse=True):
         normalized = normalized.replace(normalize_content(marker), "")
@@ -88,6 +96,10 @@ def task_identity_compatible(candidate: Any, memory: Any) -> bool:
         return False
 
     def topic(value: Any) -> str:
+        """负责“topic”。
+
+        该函数是 `memory.canonicalizer` 中的`task_identity_compatible` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         predicate = str(getattr(value, "predicate", None) or "")
         if normalize_content(predicate) not in {normalize_content(item) for item in _GENERIC_TASK_ATTRIBUTES} and predicate:
             return _task_identity_topic(predicate)
@@ -106,6 +118,10 @@ def task_identity_compatible(candidate: Any, memory: Any) -> bool:
 
 
 def _first_operation(text: str, supplied: str | None = None) -> str:
+    """负责“首个operation”。
+
+    该函数是 `memory.canonicalizer` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     supplied_normalized = normalize_identity(supplied, fallback="")
     # 完成、已经完成等描述的是任务状态，不是任务身份。模型有时会
     # mistakenly place it in operation; ignore it and use the source text
@@ -256,6 +272,10 @@ def _task_identity_from_text(text: str, candidate: MemoryCandidate) -> tuple[str
 
 
 def _task_values(text: str, scope: dict[str, Any]) -> tuple[str | None, str | None]:
+    """负责“任务values”。
+
+    该函数是 `memory.canonicalizer` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     old_value = str(scope.get("old_value") or "").strip() or None
     new_value = str(scope.get("new_value") or "").strip() or None
     if old_value or new_value:
@@ -271,6 +291,10 @@ def _task_values(text: str, scope: dict[str, Any]) -> tuple[str | None, str | No
 
 
 def task_key(entity: str, attribute: str, operation: str, scope: str = "global") -> str:
+    """负责“任务键”。
+
+    该函数是 `memory.canonicalizer` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     entity_key = "用户" if str(entity or "").strip() in {"", "我", "本人", "用户", "user", "me"} else normalize_identity(entity)
     return ":".join(
         (
@@ -284,6 +308,10 @@ def task_key(entity: str, attribute: str, operation: str, scope: str = "global")
 
 
 def semantic_key(entity: str, attribute: str, canonical_topic: str, scope: str = "current") -> str:
+    """负责“semantic键”。
+
+    该函数是 `memory.canonicalizer` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     entity_key = normalize_identity(entity)
     attribute_key = normalize_identity(attribute)
     stable = _STABLE_SEMANTIC_ATTRIBUTES.get(attribute_key)
@@ -294,10 +322,18 @@ def semantic_key(entity: str, attribute: str, canonical_topic: str, scope: str =
 
 
 def preference_key(entity: str, topic: str, scope: str = "global") -> str:
+    """负责“偏好键”。
+
+    该函数是 `memory.canonicalizer` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return f"preference:{normalize_identity(entity)}:{normalize_identity(topic)}:{normalize_scope(scope)}"
 
 
 def is_task_lifecycle_statement(text: str) -> bool:
+    """负责“是否为任务生命周期statement”。
+
+    该函数是 `memory.canonicalizer` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     raw = str(text or "")
     return any(word in raw for word in _TASK_STATUS_WORDS) and any(
         operation in raw for operation in _TASK_OPERATION_ALIASES

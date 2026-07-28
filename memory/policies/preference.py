@@ -88,6 +88,10 @@ class PreferenceSignature:
 
 
 def preference_polarity(text: str) -> str:
+    """负责“偏好polarity”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = str(text or "")
     negative_positions = [value.find(marker) for marker in NEGATIVE_MARKERS if marker in value]
     negative_positions.extend(match.start() for match in _NEGATIVE_ACTION_RE.finditer(value))
@@ -125,6 +129,10 @@ def preference_query_polarity(text: str) -> str:
 
 
 def _extract_scopes(text: str) -> tuple[str, ...]:
+    """负责“抽取scopes”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     found: list[str] = []
     for scope in _FIXED_SCOPES:
         if scope in text and scope not in found:
@@ -137,6 +145,10 @@ def _extract_scopes(text: str) -> tuple[str, ...]:
 
 
 def _strip_scope_prefix(text: str) -> str:
+    """负责“stripscopeprefix”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = text.strip()
     for scope in sorted(_FIXED_SCOPES, key=len, reverse=True):
         if value.startswith(scope):
@@ -146,6 +158,10 @@ def _strip_scope_prefix(text: str) -> str:
 
 
 def _marker_and_remainder(text: str) -> tuple[str | None, str]:
+    """负责“markerandremainder”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     markers = sorted(NEGATIVE_MARKERS + POSITIVE_MARKERS, key=len, reverse=True)
     matches = [(text.find(marker), marker) for marker in markers if marker in text]
     matches.extend((match.start(), match.group(0)) for match in _NEGATIVE_ACTION_RE.finditer(text))
@@ -160,6 +176,10 @@ def _marker_and_remainder(text: str) -> tuple[str | None, str]:
 
 
 def _extract_topic(text: str) -> tuple[str, tuple[str, ...]]:
+    """负责“抽取topic”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = " ".join(str(text or "").split()).strip()
     value = _LEADING_OWNER_RE.sub("", value).strip()
     value = _LEADING_CHANGE_RE.sub("", value).strip()
@@ -180,6 +200,10 @@ def _extract_topic(text: str) -> tuple[str, tuple[str, ...]]:
 
 
 def preference_signature(text: str, topic_hint: str | None = None) -> PreferenceSignature:
+    """负责“偏好signature”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     topic, qualifiers = _extract_topic(text)
     hint = str(topic_hint or "").strip()
     # Model-provided hints are useful only when deterministic extraction found no
@@ -200,6 +224,10 @@ def preference_signature(text: str, topic_hint: str | None = None) -> Preference
 
 
 def _bigrams(value: str) -> set[str]:
+    """负责“bigrams”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if len(value) < 2:
         return {value} if value else set()
     return {value[index : index + 2] for index in range(len(value) - 1)}
@@ -239,6 +267,10 @@ def topic_compatibility(left: Any, right: Any) -> float:
 
 
 def scopes_compatible(left: Any, right: Any) -> bool:
+    """负责“scopescompatible”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     left_scopes = set(preference_signature(str(getattr(left, "content", "") or "")).scopes)
     right_scopes = set(preference_signature(str(getattr(right, "content", "") or "")).scopes)
     if not left_scopes or not right_scopes:
@@ -247,14 +279,26 @@ def scopes_compatible(left: Any, right: Any) -> bool:
 
 
 def has_negation(text: str) -> bool:
+    """负责“是否包含negation”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return preference_polarity(text) == "negative"
 
 
 def is_ambiguous_conflict(new_content: str, old_content: str) -> bool:
+    """负责“是否为ambiguousconflict”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return is_comparative_alternative(new_content, old_content)
 
 
 def _common_suffix_length(left: str, right: str) -> int:
+    """负责“commonsuffixlength”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     count = 0
     for left_char, right_char in zip(reversed(left), reversed(right)):
         if left_char != right_char:
@@ -278,6 +322,10 @@ def is_comparative_alternative(new_content: str, old_content: str) -> bool:
 
 
 def explicitly_replaces(new_content: str, old_content: str) -> bool:
+    """负责“explicitlyreplaces”。
+
+    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     new_polarity = preference_polarity(new_content)
     old_polarity = preference_polarity(old_content)
     polarity_changed = new_polarity != "unknown" and old_polarity != "unknown" and new_polarity != old_polarity

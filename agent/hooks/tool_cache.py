@@ -18,6 +18,10 @@ class ToolCacheHook(AgentHook):
     name = "tool_cache"
 
     def before_tool(self, context: AgentRunContext, tool_name: str, args: dict[str, Any]) -> None:
+        """负责“工具调用前的 Hook 前置处理”。
+
+        该函数是 `agent.hooks.tool_cache` 中的`ToolCacheHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if COORDINATION_BACKEND != "redis" or not CACHE_ENABLED or tool_name not in READ_TOOLS:
             return
         payload = json.dumps(args, ensure_ascii=False, sort_keys=True, default=str)
@@ -30,6 +34,10 @@ class ToolCacheHook(AgentHook):
             context.resources[f"tool_cache_payload:{tool_name}"] = payload
 
     def after_tool(self, context: AgentRunContext, tool_name: str, args: dict[str, Any], result: Any) -> None:
+        """负责“工具调用后的 Hook 后置处理”。
+
+        该函数是 `agent.hooks.tool_cache` 中的`ToolCacheHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if COORDINATION_BACKEND != "redis" or not CACHE_ENABLED:
             return
         try:

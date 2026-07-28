@@ -21,6 +21,7 @@ from repositories.postgres.memory import schedule_memory_vector_backfill
 
 
 def main() -> int:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser()
     parser.add_argument("--status", default="active", choices=("active", "inactive", "archived"))
     parser.add_argument("--limit", type=int, default=10000)

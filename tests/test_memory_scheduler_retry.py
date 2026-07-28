@@ -4,9 +4,11 @@ from memory import scheduler
 
 
 def test_scheduler_tick_retries_same_day_after_failure(monkeypatch):
+    """验证“schedulertickretriessameday后置failure”场景的预期行为与回归边界。"""
     attempts = {"count": 0}
 
     def run_once(cadence, today=None):
+        """验证“运行once”场景的预期行为与回归边界。"""
         attempts["count"] += 1
         status = "failed" if attempts["count"] == 1 else "completed"
         return {"cadence": cadence, "results": [{"space_id": "space-1", "status": status}]}
@@ -26,10 +28,12 @@ def test_scheduler_tick_retries_same_day_after_failure(monkeypatch):
 
 
 def test_scheduler_retries_only_failed_space_same_day(monkeypatch):
+    """验证“schedulerretriesonlyfailed空间sameday”场景的预期行为与回归边界。"""
     attempts = {"space-a": 0, "space-b": 0}
     monkeypatch.setattr(scheduler, "list_memory_space_ids", lambda: ["space-a", "space-b"])
 
     def run_consolidation(space_id, cadence):
+        """验证“运行consolidation”场景的预期行为与回归边界。"""
         attempts[space_id] += 1
         if space_id == "space-b" and attempts[space_id] == 1:
             raise RuntimeError("temporary")

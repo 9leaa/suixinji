@@ -16,12 +16,14 @@ from runtime.delivery_store import (
 
 
 def isolate_delivery_store(monkeypatch, tmp_path):
+    """验证“isolate投递存储”场景的预期行为与回归边界。"""
     monkeypatch.setattr(delivery_store, "DATA_DIR", tmp_path)
     monkeypatch.setattr(delivery_store, "DELIVERY_DIR", tmp_path / "deliveries")
     monkeypatch.setattr(delivery_store, "DELIVERY_PATH", tmp_path / "deliveries" / "index.json")
 
 
 def test_delivery_key_can_only_be_reserved_once_until_terminal_state(monkeypatch, tmp_path):
+    """验证“投递键canonlybereservedonceuntilterminal状态”场景的预期行为与回归边界。"""
     isolate_delivery_store(monkeypatch, tmp_path)
 
     first = reserve_delivery("query:s:m1", delivery_type="query", space_id="s", message_id="m1")
@@ -32,6 +34,7 @@ def test_delivery_key_can_only_be_reserved_once_until_terminal_state(monkeypatch
 
 
 def test_sent_and_unknown_are_not_reserved_again(monkeypatch, tmp_path):
+    """验证“sentandunknownarenotreservedagain”场景的预期行为与回归边界。"""
     isolate_delivery_store(monkeypatch, tmp_path)
 
     assert reserve_delivery("k1", delivery_type="query", space_id="s") is not None
@@ -46,6 +49,7 @@ def test_sent_and_unknown_are_not_reserved_again(monkeypatch, tmp_path):
 
 
 def test_failed_delivery_can_be_reserved_again(monkeypatch, tmp_path):
+    """验证“failed投递canbereservedagain”场景的预期行为与回归边界。"""
     isolate_delivery_store(monkeypatch, tmp_path)
 
     assert reserve_delivery("k1", delivery_type="query", space_id="s") is not None
@@ -56,6 +60,7 @@ def test_failed_delivery_can_be_reserved_again(monkeypatch, tmp_path):
 
 
 def test_expired_reserved_delivery_can_be_reserved_again(monkeypatch, tmp_path):
+    """验证“expiredreserved投递canbereservedagain”场景的预期行为与回归边界。"""
     isolate_delivery_store(monkeypatch, tmp_path)
 
     first = reserve_delivery("k1", delivery_type="query", space_id="s")
@@ -75,6 +80,7 @@ def test_expired_reserved_delivery_can_be_reserved_again(monkeypatch, tmp_path):
 
 
 def test_recover_stale_reserved_deliveries_marks_expired_reserved_as_failed(monkeypatch, tmp_path):
+    """验证“恢复stalereserveddeliveriesmarksexpiredreservedasfailed”场景的预期行为与回归边界。"""
     isolate_delivery_store(monkeypatch, tmp_path)
 
     reserve_delivery("k1", delivery_type="query", space_id="s")
@@ -91,6 +97,7 @@ def test_recover_stale_reserved_deliveries_marks_expired_reserved_as_failed(monk
 
 
 def test_delivery_stops_after_max_attempts(monkeypatch, tmp_path):
+    """验证“投递stops后置maxattempts”场景的预期行为与回归边界。"""
     isolate_delivery_store(monkeypatch, tmp_path)
     monkeypatch.setattr(delivery_store, "DELIVERY_MAX_ATTEMPTS", 3)
 
@@ -104,6 +111,7 @@ def test_delivery_stops_after_max_attempts(monkeypatch, tmp_path):
 
 
 def _patch_delivery(tmp_path, key, **updates):
+    """验证“patch投递”场景的预期行为与回归边界。"""
     path = tmp_path / "deliveries" / "index.json"
     raw = json.loads(path.read_text(encoding="utf-8"))
     raw[key].update(updates)

@@ -23,10 +23,18 @@ from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space,
 
 
 def _iso(value: datetime | None) -> str | None:
+    """负责“iso”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return value.isoformat() if value is not None else None
 
 
 def _as_note(row: Note, tags: list[str], related: list[str]) -> dict[str, Any]:
+    """负责“as笔记”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     metadata = dict(row.metadata_json or {})
     return {
         "id": row.id,
@@ -51,6 +59,10 @@ def _as_note(row: Note, tags: list[str], related: list[str]) -> dict[str, Any]:
 
 
 def _load_parts(session: Any, note_ids: list[str]) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
+    """负责“加载parts”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     tags: dict[str, list[str]] = {note_id: [] for note_id in note_ids}
     related: dict[str, list[str]] = {note_id: [] for note_id in note_ids}
     if not note_ids:
@@ -65,6 +77,10 @@ def _load_parts(session: Any, note_ids: list[str]) -> tuple[dict[str, list[str]]
 
 
 def save_note(meta: Any) -> bool:
+    """负责“保存笔记”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     values = asdict(meta) if not isinstance(meta, dict) else dict(meta)
     space_id = str(values["space_id"])
     tenant_id = str(values.get("tenant_id") or DEFAULT_TENANT_ID)
@@ -113,6 +129,10 @@ def save_note(meta: Any) -> bool:
 
 
 def load_index(space_id: str) -> list[dict[str, Any]]:
+    """负责“加载索引”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         rows = list(session.execute(select(Note).where(Note.space_id == space_id).order_by(Note.created_at, Note.id)).scalars())
         tags, related = _load_parts(session, [row.id for row in rows])
@@ -129,6 +149,10 @@ def _query_notes(
     enrichment_statuses: tuple[str, ...] | None = None,
     limit: int = 30,
 ) -> list[dict[str, Any]]:
+    """负责“查询笔记列表”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     requested_tags = sorted(set(tags or []))
     statement = select(Note).where(Note.space_id == space_id, Note.sensitivity == "normal")
     if note_type:
@@ -152,6 +176,10 @@ def _query_notes(
 
 
 def query_notes_by_type(space_id: str, note_type: str, *, limit: int = 30) -> list[dict[str, Any]]:
+    """负责“查询笔记列表by类型”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _query_notes(space_id, note_type=note_type, limit=limit)
 
 
@@ -163,6 +191,10 @@ def query_notes_by_tags(
     match_all_tags: bool = True,
     limit: int = 30,
 ) -> list[dict[str, Any]]:
+    """负责“查询笔记列表bytags”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _query_notes(
         space_id,
         note_type=note_type,
@@ -173,10 +205,18 @@ def query_notes_by_tags(
 
 
 def list_recent_notes(space_id: str, *, created_after: datetime, limit: int = 30) -> list[dict[str, Any]]:
+    """负责“列出recent笔记列表”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _query_notes(space_id, created_after=created_after, limit=limit)
 
 
 def list_provisional_notes(space_id: str, *, limit: int = 200) -> list[dict[str, Any]]:
+    """负责“列出provisional笔记列表”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _query_notes(
         space_id,
         enrichment_statuses=("provisional", "enriching", "failed"),
@@ -198,6 +238,10 @@ def _note_query_terms(text: str) -> list[str]:
     terms: list[str] = []
 
     def add(token: str) -> None:
+        """负责“添加”。
+
+        该函数是 `repositories.postgres.notes` 中的`_note_query_terms` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         token = str(token or "").strip()
         if len(token) >= 2 and token not in terms:
             terms.append(token)
@@ -220,6 +264,10 @@ def _weighted_note_rrf(
     *,
     limit: int,
 ) -> list[tuple[Note, float, list[str]]]:
+    """负责“weighted笔记rrf”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     weights = {
         "exact": 1.55,
         "fts": 1.00,
@@ -399,6 +447,10 @@ def search_notes_memory_fallback(space_id: str, query: str, *, limit: int = 8) -
 
 
 def get_note_relations(space_id: str, note_id: str, *, limit: int = 5) -> dict[str, Any] | None:
+    """负责“获取笔记relations”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     bounded_limit = max(1, min(int(limit), 20))
     with session_scope() as session:
         source = session.execute(
@@ -440,11 +492,19 @@ def get_note_relations(space_id: str, note_id: str, *, limit: int = 5) -> dict[s
 
 
 def list_space_ids() -> list[str]:
+    """负责“列出空间标识列表”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         return list(session.execute(select(Note.space_id).distinct().order_by(Note.space_id)).scalars())
 
 
 def find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
+    """负责“查找笔记”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         row = session.execute(select(Note).where(Note.space_id == space_id, Note.id == note_id)).scalar_one_or_none()
         if row is None:
@@ -495,11 +555,19 @@ def find_note_content(space_id: str, note_id: str) -> dict[str, Any] | None:
 
 
 def note_exists(space_id: str, message_id: str) -> bool:
+    """负责“笔记exists”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         return session.execute(select(Note.id).where(Note.space_id == space_id, Note.message_id == message_id).limit(1)).scalar_one_or_none() is not None
 
 
 def update_note_metadata(space_id: str, note_id: str, **updates: Any) -> dict[str, Any] | None:
+    """负责“更新笔记metadata”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     column_map = {
         "title": "title", "type": "note_type", "summary": "summary", "text": "text",
         "enrichment_status": "enrichment_status", "enrichment_attempts": "enrichment_attempts",
@@ -524,6 +592,10 @@ def update_note_metadata(space_id: str, note_id: str, **updates: Any) -> dict[st
 
 
 def list_pending_enrichments(*, limit: int = 100, max_attempts: int = 3) -> list[dict[str, str]]:
+    """负责“列出待处理enrichments”。
+
+    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         rows = session.execute(
             select(Note.space_id, Note.id)

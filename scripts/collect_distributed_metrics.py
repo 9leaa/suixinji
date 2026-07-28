@@ -22,6 +22,10 @@ from runtime.distributed_metrics import (
 
 
 def parse_args() -> argparse.Namespace:
+    """负责“解析参数”。
+
+    该函数是 `scripts.collect_distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--tenant-id", required=True)
     parser.add_argument("--submission-report")
@@ -31,6 +35,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     args = parse_args()
     submission = {}
     if args.submission_report:

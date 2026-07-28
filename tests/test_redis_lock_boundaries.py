@@ -11,6 +11,7 @@ class FakeRedisLock:
     ttl_ms = 30_000
 
     def __init__(self, *, acquire_result: bool = True, acquire_error: Exception | None = None, release_error: Exception | None = None) -> None:
+        """初始化`FakeRedisLock` 实例并建立后续调用所需的状态。"""
         self.acquire_result = acquire_result
         self.acquire_error = acquire_error
         self.release_error = release_error
@@ -19,6 +20,7 @@ class FakeRedisLock:
         self.renew_calls = 0
 
     def acquire(self, wait_seconds: float) -> bool:
+        """验证“acquire”场景的预期行为与回归边界。"""
         del wait_seconds
         self.acquire_calls += 1
         if self.acquire_error is not None:
@@ -26,10 +28,12 @@ class FakeRedisLock:
         return self.acquire_result
 
     def renew(self) -> bool:
+        """验证“renew”场景的预期行为与回归边界。"""
         self.renew_calls += 1
         return True
 
     def release(self) -> bool:
+        """验证“释放”场景的预期行为与回归边界。"""
         self.release_calls += 1
         if self.release_error is not None:
             raise self.release_error
@@ -37,6 +41,7 @@ class FakeRedisLock:
 
 
 def _install(monkeypatch: pytest.MonkeyPatch, fake_lock: FakeRedisLock) -> list[str]:
+    """验证“install”场景的预期行为与回归边界。"""
     postgres_entries: list[str] = []
     monkeypatch.setattr(redis_lock, "COORDINATION_BACKEND", "redis")
     monkeypatch.setattr(redis_lock, "RedisDistributedLock", lambda _key: fake_lock)
@@ -44,6 +49,7 @@ def _install(monkeypatch: pytest.MonkeyPatch, fake_lock: FakeRedisLock) -> list[
 
     @contextmanager
     def fake_postgres_advisory_lock(key: str):
+        """验证“fakepostgresadvisory锁”场景的预期行为与回归边界。"""
         postgres_entries.append(key)
         yield
 
@@ -52,6 +58,7 @@ def _install(monkeypatch: pytest.MonkeyPatch, fake_lock: FakeRedisLock) -> list[
 
 
 def test_coordinated_lock_redis_success_business_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    """验证“coordinated锁redissuccessbusinesssuccess”场景的预期行为与回归边界。"""
     fake_lock = FakeRedisLock(acquire_result=True)
     postgres_entries = _install(monkeypatch, fake_lock)
 
@@ -64,6 +71,7 @@ def test_coordinated_lock_redis_success_business_success(monkeypatch: pytest.Mon
 
 
 def test_coordinated_lock_redis_success_business_exception_propagates(monkeypatch: pytest.MonkeyPatch) -> None:
+    """验证“coordinated锁redissuccessbusinessexceptionpropagates”场景的预期行为与回归边界。"""
     fake_lock = FakeRedisLock(acquire_result=True)
     postgres_entries = _install(monkeypatch, fake_lock)
     original = RuntimeError("business failed")
@@ -79,6 +87,7 @@ def test_coordinated_lock_redis_success_business_exception_propagates(monkeypatc
 
 
 def test_coordinated_lock_redis_acquire_failure_falls_back_to_postgres(monkeypatch: pytest.MonkeyPatch) -> None:
+    """验证“coordinated锁redisacquirefailurefallsback转换为postgres”场景的预期行为与回归边界。"""
     fake_lock = FakeRedisLock(acquire_error=ConnectionError("redis down"))
     postgres_entries = _install(monkeypatch, fake_lock)
 
@@ -91,6 +100,7 @@ def test_coordinated_lock_redis_acquire_failure_falls_back_to_postgres(monkeypat
 
 
 def test_coordinated_lock_non_critical_acquire_timeout_does_not_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """验证“coordinated锁noncriticalacquire超时doesnotfallback”场景的预期行为与回归边界。"""
     fake_lock = FakeRedisLock(acquire_result=False)
     postgres_entries = _install(monkeypatch, fake_lock)
 
@@ -104,6 +114,7 @@ def test_coordinated_lock_non_critical_acquire_timeout_does_not_fallback(monkeyp
 
 
 def test_coordinated_lock_release_failure_is_logged_and_does_not_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """验证“coordinated锁释放failure是否为loggedanddoesnotfallback”场景的预期行为与回归边界。"""
     fake_lock = FakeRedisLock(acquire_result=True, release_error=ConnectionError("release failed"))
     postgres_entries = _install(monkeypatch, fake_lock)
     events: list[dict[str, object]] = []
@@ -119,11 +130,13 @@ def test_coordinated_lock_release_failure_is_logged_and_does_not_fallback(monkey
 
 
 def test_coordinated_lock_business_exception_does_not_double_yield(monkeypatch: pytest.MonkeyPatch) -> None:
+    """验证“coordinated锁businessexceptiondoesnotdoubleyield”场景的预期行为与回归边界。"""
     fake_lock = FakeRedisLock(acquire_result=True)
     _install(monkeypatch, fake_lock)
 
     @contextmanager
     def forbidden_postgres_advisory_lock(_key: str):
+        """验证“forbiddenpostgresadvisory锁”场景的预期行为与回归边界。"""
         raise AssertionError("business exceptions must not fallback")
         yield
 

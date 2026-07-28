@@ -21,6 +21,10 @@ from infrastructure.schema import OutboxEvent, Task, Tenant
 
 
 def parse_args() -> argparse.Namespace:
+    """负责“解析参数”。
+
+    该函数是 `scripts.cleanup_stage4_run` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--tenant-id", required=True)
     parser.add_argument("--redis-env", required=True)
@@ -29,6 +33,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     args = parse_args()
     if not args.confirm:
         raise SystemExit("--confirm is required")

@@ -4,14 +4,17 @@ from runtime.task import TASK_REJECTED, create_task
 
 class FakeExecutor:
     def __init__(self, rejected_after=None):
+        """初始化`FakeExecutor` 实例并建立后续调用所需的状态。"""
         self.rejected_after = rejected_after
         self.submitted = []
         self.inflight = set()
 
     def has_inflight_ingest(self, space_id, message_id):
+        """验证“是否包含inflight接收写入”场景的预期行为与回归边界。"""
         return (space_id, message_id) in self.inflight
 
     def submit_ingest(self, record, chat_id=None, notify_on_success=False, source="direct"):
+        """验证“submit接收写入”场景的预期行为与回归边界。"""
         if self.rejected_after is not None and len(self.submitted) >= self.rejected_after:
             return create_task("ingest", record["space_id"], {}, message_id=record.get("message_id"), status=TASK_REJECTED)
         self.submitted.append((record, chat_id, notify_on_success, source))
@@ -19,6 +22,7 @@ class FakeExecutor:
 
 
 def test_pending_drainer_submits_pending_without_success_notification(monkeypatch):
+    """验证“待处理drainersubmits待处理withoutsuccessnotification”场景的预期行为与回归边界。"""
     records = [{"id": "r1", "space_id": "s1", "message_id": "m1"}]
     executor = FakeExecutor()
 
@@ -32,6 +36,7 @@ def test_pending_drainer_submits_pending_without_success_notification(monkeypatc
 
 
 def test_pending_drainer_skips_inflight_message(monkeypatch):
+    """验证“待处理drainerskipsinflight消息”场景的预期行为与回归边界。"""
     records = [{"id": "r1", "space_id": "s1", "message_id": "m1"}]
     executor = FakeExecutor()
     executor.inflight.add(("s1", "m1"))
@@ -44,6 +49,7 @@ def test_pending_drainer_skips_inflight_message(monkeypatch):
 
 
 def test_pending_drainer_respects_batch_size_and_stops_on_rejection(monkeypatch):
+    """验证“待处理drainerrespectsbatchsizeandstopsrejection”场景的预期行为与回归边界。"""
     records = [
         {"id": f"r{index}", "space_id": "s1", "message_id": f"m{index}"}
         for index in range(5)

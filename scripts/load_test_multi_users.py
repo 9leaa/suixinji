@@ -20,6 +20,10 @@ from runtime.load_testing import PROFILES, execute_load, generate_requests, summ
 
 
 def default_endpoint() -> str:
+    """负责“默认endpoint”。
+
+    该函数是 `scripts.load_test_multi_users` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     values = dotenv_values(ROOT / ".env")
     host = os.environ.get("SUIXINJI_API_HOST") or values.get("SUIXINJI_API_HOST") or "127.0.0.1"
     port = os.environ.get("SUIXINJI_API_PORT") or values.get("SUIXINJI_API_PORT") or "8000"
@@ -27,6 +31,10 @@ def default_endpoint() -> str:
 
 
 def parse_args() -> argparse.Namespace:
+    """负责“解析参数”。
+
+    该函数是 `scripts.load_test_multi_users` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--profile", choices=sorted(PROFILES), default="smoke")
     parser.add_argument("--users", type=int)
@@ -42,6 +50,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     args = parse_args()
     profile = PROFILES[args.profile]
     users = args.users or profile.users

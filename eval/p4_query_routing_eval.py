@@ -36,10 +36,18 @@ TOPICS = [
 
 
 def _cases() -> list[dict[str, Any]]:
+    """负责“cases”。
+
+    该函数是 `eval.p4_query_routing_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cases: list[dict[str, Any]] = []
     serial = 0
 
     def add(style: str, query: str, expected: str, strategy: str | None = None) -> None:
+        """负责“添加”。
+
+        该函数是 `eval.p4_query_routing_eval` 中的`_cases` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         nonlocal serial
         cases.append(
             {
@@ -133,6 +141,10 @@ def _cases() -> list[dict[str, Any]]:
 
 
 def _p95(values: list[float]) -> float:
+    """负责“p95”。
+
+    该函数是 `eval.p4_query_routing_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not values:
         return 0.0
     ordered = sorted(values)
@@ -144,10 +156,18 @@ def _p95(values: list[float]) -> float:
 
 
 def _plan_dict(plan: Any) -> dict[str, Any]:
+    """负责“规划dict”。
+
+    该函数是 `eval.p4_query_routing_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return asdict(plan)
 
 
 def run() -> tuple[Path, Path, dict[str, Any]]:
+    """负责“运行”。
+
+    该函数是 `eval.p4_query_routing_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cases = _cases()
     DATASET_PATH.parent.mkdir(parents=True, exist_ok=True)
     dataset = {

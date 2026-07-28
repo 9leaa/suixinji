@@ -30,6 +30,10 @@ app = FastAPI(title="Suixinji Receiver", version="3")
 
 @app.on_event("startup")
 def _log_api_startup() -> None:
+    """负责“logAPIstartup”。
+
+    该函数是 `apps.api` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     log_process_started("api")
 
 
@@ -51,6 +55,10 @@ class ReceiveRequest(BaseModel):
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    """负责“health”。
+
+    该函数是 `apps.api` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return {"status": "ok"}
 
 
@@ -59,6 +67,10 @@ def _authorize_test_api(
     tenant_id: str | None,
     user_id: str | None,
 ) -> TestApiContext:
+    """负责“authorizeAPI”。
+
+    该函数是 `apps.api` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     authorization = authorization if isinstance(authorization, str) else None
     tenant_id = tenant_id if isinstance(tenant_id, str) else None
     user_id = user_id if isinstance(user_id, str) else None
@@ -79,6 +91,10 @@ def _authorize_test_api(
 
 
 def _check_rate_limit(request: ReceiveRequest, context: TestApiContext | None = None) -> None:
+    """负责“检查rate限制”。
+
+    该函数是 `apps.api` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if COORDINATION_BACKEND != "redis":
         return
     context = context or TestApiContext(tenant_id=request.tenant_id or "default", user_id=request.user_id)
@@ -128,6 +144,10 @@ def commands(
     x_suixinji_tenant_id: str | None = Header(default=None),
     x_suixinji_user_id: str | None = Header(default=None),
 ) -> dict[str, object]:
+    """负责“commands”。
+
+    该函数是 `apps.api` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     context = _authorize_test_api(authorization, x_suixinji_tenant_id, x_suixinji_user_id)
     _check_rate_limit(request, context)
     sender = {"user_id": context.user_id} if context.user_id else {}

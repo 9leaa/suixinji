@@ -16,7 +16,12 @@ from infrastructure.schema import OutboxEvent
 
 
 class EventPublisher(Protocol):
-    def publish_task(self, event_id: str, payload: dict[str, Any]) -> str: ...
+    def publish_task(self, event_id: str, payload: dict[str, Any]) -> str:
+        """负责“发布任务”。
+
+        该函数是 `repositories.postgres.outbox` 中的`EventPublisher` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
+        ...
 
 
 def claim_outbox_batch(
@@ -26,6 +31,10 @@ def claim_outbox_batch(
     event_ids: list[str] | None = None,
     lease_seconds: int = OUTBOX_LEASE_SECONDS,
 ) -> list[dict[str, Any]]:
+    """负责“认领发件箱batch”。
+
+    该函数是 `repositories.postgres.outbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone()
     with session_scope() as session:
         statement = select(OutboxEvent).where(
@@ -71,6 +80,10 @@ def claim_outbox_batch(
 
 
 def mark_outbox_published(event_id: str, lease_token: str) -> bool:
+    """负责“标记发件箱published”。
+
+    该函数是 `repositories.postgres.outbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone()
     with session_scope() as session:
         event_id_value = session.execute(
@@ -95,6 +108,10 @@ def mark_outbox_published(event_id: str, lease_token: str) -> bool:
 
 
 def mark_outbox_failed(event_id: str, lease_token: str, error: str) -> str:
+    """负责“标记发件箱failed”。
+
+    该函数是 `repositories.postgres.outbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone()
     with session_scope() as session:
         row = session.execute(
@@ -126,6 +143,10 @@ def relay_outbox_batch(
     event_ids: list[str] | None = None,
     worker_id: str | None = None,
 ) -> dict[str, int]:
+    """负责“relay发件箱batch”。
+
+    该函数是 `repositories.postgres.outbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     relay_id = worker_id or f"{socket.gethostname()}-outbox-{uuid.uuid4().hex[:8]}"
     events = claim_outbox_batch(worker_id=relay_id, limit=limit, event_ids=event_ids)
     report = {"published": 0, "failed": 0, "dead": 0, "stale": 0}

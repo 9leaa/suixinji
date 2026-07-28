@@ -8,6 +8,7 @@ from runtime.streams.client import GROUPS
 
 
 def test_model_router_maps_tasks_to_expected_roles(monkeypatch):
+    """验证“模型routermapstasks转换为expectedroles”场景的预期行为与回归边界。"""
     monkeypatch.setattr("core.settings.MODEL_ROUTING_ENABLED", True)
     monkeypatch.setattr("core.settings.STRONG_ESCALATION_ENABLED", False)
 
@@ -24,6 +25,7 @@ def test_model_router_maps_tasks_to_expected_roles(monkeypatch):
 
 
 def test_short_fact_admission_gate_covers_compact_user_facts():
+    """验证“shortfactadmissiongatecoverscompact用户facts”场景的预期行为与回归边界。"""
     examples = [
         "我是杭州人",
         "我姓张",
@@ -38,6 +40,7 @@ def test_short_fact_admission_gate_covers_compact_user_facts():
 
 
 def test_clause_splitter_keeps_evidence_spans():
+    """验证“clausesplitterkeepsevidencespans”场景的预期行为与回归边界。"""
     clauses = split_clauses("今天参加了交流会，我更喜欢小班练习，下周还要报名。")
 
     assert [item.text for item in clauses] == ["今天参加了交流会", "我更喜欢小班练习", "下周还要报名"]
@@ -45,6 +48,7 @@ def test_clause_splitter_keeps_evidence_spans():
 
 
 def test_clause_level_rule_extraction_emits_multiple_candidate_types(monkeypatch):
+    """验证“clauselevelruleextractionemitsmultiple候选types”场景的预期行为与回归边界。"""
     monkeypatch.setattr("core.settings.MEMORY_CLAUSE_EXTRACTION_ENABLED", True)
 
     candidates = extract_rule_candidates("note-stage7", "今天参加了交流会，我更喜欢小班练习，下周还要报名。")
@@ -56,5 +60,6 @@ def test_clause_level_rule_extraction_emits_multiple_candidate_types(monkeypatch
 
 
 def test_memory_embedding_worker_route_is_registered():
+    """验证“记忆向量工作器路由是否为registered”场景的预期行为与回归边界。"""
     assert "memory_embedding" in HANDLERS
     assert GROUPS["memory_embedding"] == "memory-embedding-workers"

@@ -10,6 +10,7 @@ from repositories.postgres.dispatch import DispatchResult
 
 
 def _message_event(text: str, message_id: str = "message-dup") -> SimpleNamespace:
+    """验证“消息事件”场景的预期行为与回归边界。"""
     sender_id = SimpleNamespace(open_id="open-test", user_id="user-test", union_id="union-test")
     sender = SimpleNamespace(sender_id=sender_id, sender_type="user", tenant_key="tenant-test")
     message = SimpleNamespace(
@@ -27,6 +28,7 @@ def _message_event(text: str, message_id: str = "message-dup") -> SimpleNamespac
 
 
 def _patch_duplicate_runtime(monkeypatch, result: DispatchResult) -> tuple[list[str], list[tuple[str, dict]]]:
+    """验证“patch重复runtime”场景的预期行为与回归边界。"""
     sent: list[str] = []
     events: list[tuple[str, dict]] = []
     monkeypatch.setattr(feishu_bot, "TASK_QUEUE_BACKEND", "redis_streams")
@@ -45,6 +47,7 @@ def _patch_duplicate_runtime(monkeypatch, result: DispatchResult) -> tuple[list[
     ],
 )
 def test_duplicate_feishu_stream_events_are_silent(monkeypatch, text: str, task_type: str) -> None:
+    """验证“重复feishu流eventsaresilent”场景的预期行为与回归边界。"""
     sent, events = _patch_duplicate_runtime(
         monkeypatch,
         DispatchResult("inbox-dup", None, False, True),
@@ -59,6 +62,7 @@ def test_duplicate_feishu_stream_events_are_silent(monkeypatch, text: str, task_
 
 
 def test_in_progress_feishu_stream_events_are_silent(monkeypatch) -> None:
+    """验证“progressfeishu流eventsaresilent”场景的预期行为与回归边界。"""
     sent, events = _patch_duplicate_runtime(
         monkeypatch,
         DispatchResult("inbox-processing", None, False, False, True),
@@ -72,15 +76,18 @@ def test_in_progress_feishu_stream_events_are_silent(monkeypatch) -> None:
 
 
 def test_first_ask_event_receives_before_visible_reply(monkeypatch) -> None:
+    """验证“首个ask事件receives前置visiblereply”场景的预期行为与回归边界。"""
     order: list[str] = []
     monkeypatch.setattr(feishu_bot, "TASK_QUEUE_BACKEND", "redis_streams")
     monkeypatch.setattr(feishu_bot, "log_event", lambda *_args, **_kwargs: None)
 
     def receive(_command):
+        """验证“receive”场景的预期行为与回归边界。"""
         order.append("receive")
         return DispatchResult("inbox-first", "task-first", True, False)
 
     def send(_chat_id: str, text: str) -> bool:
+        """验证“发送”场景的预期行为与回归边界。"""
         order.append(f"send:{text}")
         return True
 
@@ -93,6 +100,7 @@ def test_first_ask_event_receives_before_visible_reply(monkeypatch) -> None:
 
 
 def test_local_duplicate_ingest_event_is_silent(monkeypatch) -> None:
+    """验证“local重复接收写入事件是否为silent”场景的预期行为与回归边界。"""
     sent: list[str] = []
     events: list[tuple[str, dict]] = []
     monkeypatch.setattr(feishu_bot, "TASK_QUEUE_BACKEND", "local")
@@ -108,6 +116,7 @@ def test_local_duplicate_ingest_event_is_silent(monkeypatch) -> None:
 
 
 def test_unknown_slash_command_is_not_persisted_as_an_ingest(monkeypatch) -> None:
+    """验证“unknownslash命令是否为notpersistedasan接收写入”场景的预期行为与回归边界。"""
     sent: list[str] = []
     monkeypatch.setattr(feishu_bot, "TASK_QUEUE_BACKEND", "redis_streams")
     monkeypatch.setattr(feishu_bot, "safe_send_text", lambda _chat_id, text: sent.append(text) or True)

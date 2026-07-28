@@ -83,15 +83,27 @@ class SummaryResult:
 
 
 def parse_summary_range(raw: str) -> str | None:
+    """负责“解析总结range”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = raw.strip().lower()
     return RANGE_ALIASES.get(value)
 
 
 def _local_midnight(now: datetime) -> datetime:
+    """负责“localmidnight”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return now.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
 def build_time_range(range_key: str, now: datetime | None = None) -> tuple[datetime, datetime]:
+    """负责“构建timerange”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = now or datetime.now().astimezone()
     today = _local_midnight(now)
     tomorrow = today + timedelta(days=1)
@@ -113,6 +125,10 @@ def build_time_range(range_key: str, now: datetime | None = None) -> tuple[datet
 
 
 def _parse_ts(value: str | None) -> datetime | None:
+    """负责“解析ts”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not value:
         return None
     try:
@@ -125,6 +141,10 @@ def _parse_ts(value: str | None) -> datetime | None:
 
 
 def load_notes_in_range(space_id: str, start: datetime, end: datetime) -> list[dict[str, Any]]:
+    """负责“加载笔记列表range”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     notes = []
     for note in load_index(space_id):
         if not is_note_queryable(note):
@@ -138,11 +158,19 @@ def load_notes_in_range(space_id: str, start: datetime, end: datetime) -> list[d
 
 
 def _clip(text: str | None, limit: int = 260) -> str:
+    """负责“clip”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     text = str(text or "")
     return text if len(text) <= limit else text[:limit] + "..."
 
 
 def _brief_notes(notes: list[dict[str, Any]], limit: int = 120) -> list[dict[str, Any]]:
+    """负责“brief笔记列表”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return [
         {
             "id": note.get("id"),
@@ -158,6 +186,10 @@ def _brief_notes(notes: list[dict[str, Any]], limit: int = 120) -> list[dict[str
 
 
 def load_memory_changes(space_id: str, start: datetime, end: datetime) -> list[dict[str, Any]]:
+    """负责“加载记忆changes”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     changes = []
     for memory in list_memories(space_id, status=None, limit=100):
         updated = _parse_ts(memory.updated_at)
@@ -168,6 +200,10 @@ def load_memory_changes(space_id: str, start: datetime, end: datetime) -> list[d
 
 
 def _brief_memories(memories: list[dict[str, Any]], limit: int = 60) -> list[dict[str, Any]]:
+    """负责“briefmemories”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return [
         {
             "id": memory.get("id"),
@@ -183,6 +219,10 @@ def _brief_memories(memories: list[dict[str, Any]], limit: int = 60) -> list[dic
 
 
 def _stats(notes: list[dict[str, Any]]) -> dict[str, Any]:
+    """负责“统计”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     type_counter = Counter(str(note.get("type") or "未分类") for note in notes)
     tag_counter: Counter[str] = Counter()
     for note in notes:
@@ -196,6 +236,10 @@ def _stats(notes: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _fallback_summary(range_label: str, notes: list[dict[str, Any]], memories: list[dict[str, Any]] | None = None) -> str:
+    """负责“fallback总结”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not notes and not memories:
         return f"{range_label}没有记录到随心记笔记。"
 
@@ -225,12 +269,20 @@ def _fallback_summary(range_label: str, notes: list[dict[str, Any]], memories: l
 
 
 def _summary_path(space_id: str, range_key: str, start: datetime, end: datetime) -> Path:
+    """负责“总结path”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     directory = note_dir(space_id) / "summaries"
     directory.mkdir(parents=True, exist_ok=True)
     return directory / f"{start.date()}_{end.date()}_{range_key}.md"
 
 
 def save_summary(space_id: str, result: SummaryResult) -> None:
+    """负责“保存总结”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     path = Path(result.path)
     with locked_space(space_id):
         path.write_text(result.markdown + "\n", encoding="utf-8")
@@ -266,8 +318,16 @@ def _summary_complete_json(
     user_prompt: str,
     range_key: str,
 ) -> dict[str, Any]:
+    """负责“总结完成JSON”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     llm_task = "summary_review" if name == "summary_review" else "summary_draft"
     def call() -> dict[str, Any]:
+        """负责“call”。
+
+        该函数是 `summary.daily_summary` 中的`_summary_complete_json` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         try:
             return complete_json(
                 system_prompt=system_prompt,
@@ -290,6 +350,10 @@ def _summary_complete_json(
 
 
 def _generate_summary_impl(space_id: str, range_key: str, context: AgentRunContext | None) -> SummaryResult:
+    """负责“生成总结实现”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     start, end = build_time_range(range_key)
     range_label = RANGE_LABELS[range_key]
     notes = load_notes_in_range(space_id, start, end)
@@ -356,6 +420,10 @@ def generate_summary(
     message_id: str | None = None,
     task_id: str | None = None,
 ) -> SummaryResult:
+    """负责“生成总结”。
+
+    该函数是 `summary.daily_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     context = AgentRunContext.create(
         space_id=space_id,
         run_type="summary",

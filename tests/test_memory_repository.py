@@ -14,6 +14,7 @@ from memory.repository import (
 
 
 def test_insert_memory_preserves_source_and_initial_version():
+    """验证“插入记忆preserves来源andinitial版本”场景的预期行为与回归边界。"""
     assert {"memories", "memory_sources", "memory_versions", "memory_vectors"}.issubset(schema_tables())
 
     candidate = MemoryCandidate(
@@ -35,6 +36,7 @@ def test_insert_memory_preserves_source_and_initial_version():
 
 
 def test_add_source_is_idempotent():
+    """验证“添加来源是否为idempotent”场景的预期行为与回归边界。"""
     memory = insert_memory("space-1", MemoryCandidate("preference", "用户喜欢咖啡", 0.7, 0.8), source_note_id="note-1")
 
     assert add_source(memory.id, "note-2", "supported_by") is True
@@ -46,6 +48,7 @@ def test_add_source_is_idempotent():
 
 
 def test_correct_and_soft_delete_create_versions_and_hide_from_active_search():
+    """验证“correctandsoft删除创建versionsandhidefromactive检索”场景的预期行为与回归边界。"""
     memory = insert_memory("space-1", MemoryCandidate("preference", "用户喜欢苹果", 0.7, 0.8), source_note_id="note-1")
 
     corrected = correct_memory(memory.id, "用户对苹果过敏")
@@ -62,6 +65,7 @@ def test_correct_and_soft_delete_create_versions_and_hide_from_active_search():
 
 
 def test_expired_memory_is_hidden_from_default_search():
+    """验证“expired记忆是否为hiddenfrom默认检索”场景的预期行为与回归边界。"""
     memory = insert_memory("space-1", MemoryCandidate("semantic", "用户住在上海", 0.8, 0.9), source_note_id="note-1")
     from memory.lifecycle import expire
 
@@ -71,6 +75,7 @@ def test_expired_memory_is_hidden_from_default_search():
 
 
 def test_search_memories_respects_min_score():
+    """验证“检索memoriesrespectsmin评分”场景的预期行为与回归边界。"""
     insert_memory("space-1", MemoryCandidate("preference", "用户喜欢咖啡", 0.8, 0.9), source_note_id="note-1")
 
     assert search_memories("space-1", "喜欢", min_score=0.1)
@@ -79,6 +84,7 @@ def test_search_memories_respects_min_score():
 
 
 def test_purge_memory_removes_record_and_audit_rows():
+    """验证“清除记忆removes记录and审计rows”场景的预期行为与回归边界。"""
     memory = insert_memory("space-1", MemoryCandidate("preference", "用户喜欢苹果", 0.7, 0.8), source_note_id="note-1")
     assert purge_memory(memory.id) is True
     assert get_memory(memory.id) is None
@@ -86,6 +92,7 @@ def test_purge_memory_removes_record_and_audit_rows():
 
 
 def test_list_and_stats_by_space():
+    """验证“列出and统计by空间”场景的预期行为与回归边界。"""
     insert_memory("space-1", MemoryCandidate("task", "完善 README", 0.8, 0.9), source_note_id="note-1")
     insert_memory("space-2", MemoryCandidate("semantic", "用户住在上海", 0.8, 0.9), source_note_id="note-2")
 

@@ -43,9 +43,14 @@ class LimitResult:
 
 class RedisRateLimiter:
     def __init__(self, client: Redis | None = None) -> None:
+        """初始化`RedisRateLimiter` 实例并建立后续调用所需的状态。"""
         self.client = client or get_redis()
 
     def allow(self, key: str, limit: int, window_seconds: int = 60, *, cost: int = 1) -> LimitResult:
+        """负责“allow”。
+
+        该函数是 `infrastructure.redis_rate_limit` 中的`RedisRateLimiter` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         allowed, current, ttl = self.client.eval(
             _FIXED_WINDOW_LUA,
             1,
@@ -57,6 +62,10 @@ class RedisRateLimiter:
         return LimitResult(bool(allowed), int(current), max(0, int(ttl)))
 
     def acquire_slot(self, key: str, limit: int, ttl_seconds: int = 60) -> str | None:
+        """负责“acquireslot”。
+
+        该函数是 `infrastructure.redis_rate_limit` 中的`RedisRateLimiter` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         now_ms = int(time.time() * 1000)
         token = uuid.uuid4().hex
         expires_ms = now_ms + max(1, int(ttl_seconds * 1000))
@@ -73,6 +82,10 @@ class RedisRateLimiter:
         return token if int(acquired) == 1 else None
 
     def release_slot(self, key: str, token: str) -> None:
+        """负责“释放slot”。
+
+        该函数是 `infrastructure.redis_rate_limit` 中的`RedisRateLimiter` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         self.client.zrem(key, token)
 
 
@@ -80,11 +93,16 @@ class LocalRateLimiter:
     """Conservative process-local fallback used when Redis is unavailable."""
 
     def __init__(self) -> None:
+        """初始化`LocalRateLimiter` 实例并建立后续调用所需的状态。"""
         self._lock = threading.RLock()
         self._windows: dict[str, tuple[float, int]] = {}
         self._slots: dict[str, dict[str, float]] = {}
 
     def allow(self, key: str, limit: int, window_seconds: int = 60, *, cost: int = 1) -> LimitResult:
+        """负责“allow”。
+
+        该函数是 `infrastructure.redis_rate_limit` 中的`LocalRateLimiter` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         now = time.monotonic()
         with self._lock:
             expires, current = self._windows.get(key, (now + window_seconds, 0))
@@ -95,6 +113,10 @@ class LocalRateLimiter:
             return LimitResult(current <= limit, current, max(0, int((expires - now) * 1000)))
 
     def acquire_slot(self, key: str, limit: int, ttl_seconds: int = 60) -> str | None:
+        """负责“acquireslot”。
+
+        该函数是 `infrastructure.redis_rate_limit` 中的`LocalRateLimiter` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         now = time.monotonic()
         with self._lock:
             slots = self._slots.setdefault(key, {})
@@ -108,6 +130,10 @@ class LocalRateLimiter:
             return token
 
     def release_slot(self, key: str, token: str) -> None:
+        """负责“释放slot”。
+
+        该函数是 `infrastructure.redis_rate_limit` 中的`LocalRateLimiter` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._lock:
             self._slots.get(key, {}).pop(token, None)
 

@@ -16,6 +16,10 @@ TASK_REJECTED = "rejected"
 
 
 def now_iso() -> str:
+    """负责“nowiso”。
+
+    该函数是 `runtime.task` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return datetime.now().astimezone().isoformat(timespec="milliseconds")
 
 
@@ -44,6 +48,10 @@ def create_task(
     message_id: str | None = None,
     status: str = TASK_QUEUED,
 ) -> Task:
+    """负责“创建任务”。
+
+    该函数是 `runtime.task` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return Task(
         id=str(uuid4()),
         task_type=task_type,

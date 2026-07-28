@@ -5,6 +5,7 @@ from runtime.load_testing import SubmissionResult, execute_load, generate_reques
 
 
 def test_multi_user_generator_has_isolated_spaces_and_expected_mix():
+    """验证“multi用户generator是否包含isolatedspacesandexpectedmix”场景的预期行为与回归边界。"""
     requests = generate_requests(users=100, messages_per_user=10, run_id="stage4-test", seed=42)
     plan = summarize_plan(requests)
     assert plan["submitted"] == 1000
@@ -19,6 +20,7 @@ def test_multi_user_generator_has_isolated_spaces_and_expected_mix():
 
 
 def test_execute_load_reports_submission_conservation(monkeypatch):
+    """验证“execute加载reportssubmissionconservation”场景的预期行为与回归边界。"""
     requests = generate_requests(users=2, messages_per_user=2, run_id="stage4-submit")
     outcomes = iter([
         SubmissionResult("accepted", 10, 200),

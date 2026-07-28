@@ -24,6 +24,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _is_processing_stale(updated_at: str | None) -> bool:
+    """负责“是否为processingstale”。
+
+    该函数是 `memory.consolidator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not updated_at:
         return True
     try:
@@ -36,6 +40,10 @@ def _is_processing_stale(updated_at: str | None) -> bool:
 
 
 def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidate, *, trace: dict[str, Any] | None = None) -> dict[str, Any]:
+    """负责“整合候选”。
+
+    该函数是 `memory.consolidator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     add_step(
         trace,
         "retrieval_started",

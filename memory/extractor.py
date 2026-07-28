@@ -58,6 +58,10 @@ SHORT_FACT_PATTERNS = (
 
 
 def _entities(text: str) -> list[str]:
+    """负责“entities”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     found = re.findall(r"[A-Za-z][A-Za-z0-9+#.-]*", text)
     for keyword in ("咖啡", "牛奶", "苹果", "北京", "上海", "Java", "Python", "Agent", "RAG", "README", "CI"):
         if keyword in text and keyword not in found:
@@ -66,10 +70,18 @@ def _entities(text: str) -> list[str]:
 
 
 def _task_status(text: str) -> str:
+    """负责“任务状态”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return infer_task_status(text) or "todo"
 
 
 def _clean_subject(text: str) -> str:
+    """负责“清理subject”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = text.strip()
     value = re.sub(r"^(记得|需要|待办|todo[:：]?|帮我记一下|提醒我)", "", value, flags=re.IGNORECASE).strip(" ：:")
     value = re.sub(r"^(我|本人|用户)", "", value).strip(" ：:")
@@ -77,6 +89,10 @@ def _clean_subject(text: str) -> str:
 
 
 def _structured_fields(memory_type: str, text: str, entities: list[str]) -> tuple[str | None, str | None, str | None]:
+    """负责“structuredfields”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cleaned = _clean_subject(text)
     if memory_type == "preference":
         signature = preference_signature(text)
@@ -99,6 +115,10 @@ def _structured_fields(memory_type: str, text: str, entities: list[str]) -> tupl
 
 
 def _should_skip_text(raw: str) -> bool:
+    """负责“shouldskip文本”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     compact = re.sub(r"\s+", "", raw).casefold()
     if not raw or compact in LOW_VALUE_PATTERNS or len(compact) <= 2:
         return True
@@ -188,6 +208,10 @@ def _candidate(
     clause_index: int | None = None,
     scope: dict[str, Any] | None = None,
 ) -> MemoryCandidate:
+    """负责“候选”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if subject is None and predicate is None and object_value is None:
         subject, predicate, object_value = _structured_fields(memory_type, evidence_span or content, entities)
     polarity = preference_polarity(evidence_span or content) if memory_type == "preference" else None
@@ -258,6 +282,10 @@ def extract_rule_candidates(note_id: str, text: str, classification: dict[str, A
 
 
 def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: int | None) -> list[MemoryCandidate]:
+    """负责“抽取rulecandidatesforclause”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     raw = str(raw or "").strip()
     if _should_skip_text(raw):
         return []
@@ -357,6 +385,10 @@ def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: in
 
 
 def _float_value(value: Any, default: float) -> float:
+    """负责“float字段值”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     try:
         return float(value)
     except (TypeError, ValueError):
@@ -364,6 +396,10 @@ def _float_value(value: Any, default: float) -> float:
 
 
 def _bool_value(value: Any, default: bool = True) -> bool:
+    """负责“bool字段值”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if isinstance(value, bool):
         return value
     if value is None:
@@ -374,16 +410,28 @@ def _bool_value(value: Any, default: bool = True) -> bool:
 
 
 def _strip_diagnostic_prefix(text: str) -> str:
+    """负责“stripdiagnosticprefix”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _DIAGNOSTIC_PREFIX_RE.sub("", str(text or "").strip(), count=1).strip()
 
 
 def _safe_exception_summary(exc: Exception) -> str:
+    """负责“安全exception总结”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     message = str(exc).strip() or type(exc).__name__
     message = _ERROR_PREVIEW_RE.sub(lambda match: f"{match.group(1)}=[redacted]", message)
     return redact_sensitive_text(message)[:500]
 
 
 def _log_llm_failure(note_id: str, exc: Exception, *, mode: str) -> None:
+    """负责“logLLMfailure”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     route = route_model(task="memory_extraction")
     config = get_chat_config(route.role.value)
     error = _safe_exception_summary(exc)
@@ -419,6 +467,10 @@ def extract_llm_candidates(
     *,
     hints: list[dict[str, Any]] | None = None,
 ) -> list[MemoryCandidate]:
+    """负责“抽取LLMcandidates”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     raw = str(text or "").strip()
     model_text = _strip_diagnostic_prefix(raw)
     if _should_skip_text(model_text):
@@ -527,6 +579,10 @@ def _rule_hints(note_id: str, text: str, classification: dict[str, Any] | None =
 
 
 def _dedupe(candidates: list[MemoryCandidate]) -> list[MemoryCandidate]:
+    """负责“dedupe”。
+
+    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     deduped: list[MemoryCandidate] = []
     seen: set[tuple[Any, ...]] = set()
     for candidate in candidates:

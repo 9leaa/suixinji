@@ -29,6 +29,10 @@ class SummarySubscription:
 
 
 def parse_summary_time(value: str) -> str | None:
+    """负责“解析总结time”。
+
+    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = value.strip()
     if not _TIME_RE.match(value):
         return None
@@ -36,6 +40,10 @@ def parse_summary_time(value: str) -> str | None:
 
 
 def _load_raw() -> dict[str, dict[str, Any]]:
+    """负责“加载raw”。
+
+    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with _LOCK:
         if not SUBSCRIPTIONS_PATH.exists():
             return {}
@@ -43,6 +51,10 @@ def _load_raw() -> dict[str, dict[str, Any]]:
 
 
 def _save_raw(items: dict[str, dict[str, Any]]) -> None:
+    """负责“保存raw”。
+
+    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with _LOCK:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         SUBSCRIPTIONS_PATH.write_text(
@@ -52,6 +64,10 @@ def _save_raw(items: dict[str, dict[str, Any]]) -> None:
 
 
 def get_summary_subscription(space_id: str) -> SummarySubscription | None:
+    """负责“获取总结subscription”。
+
+    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     raw = _load_raw().get(space_id)
     if raw is None:
         return None
@@ -59,6 +75,10 @@ def get_summary_subscription(space_id: str) -> SummarySubscription | None:
 
 
 def list_enabled_summary_subscriptions() -> list[SummarySubscription]:
+    """负责“列出enabled总结subscriptions”。
+
+    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return [
         SummarySubscription(**item)
         for item in _load_raw().values()
@@ -67,6 +87,10 @@ def list_enabled_summary_subscriptions() -> list[SummarySubscription]:
 
 
 def enable_summary_subscription(space_id: str, chat_id: str) -> SummarySubscription:
+    """负责“启用总结subscription”。
+
+    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     items = _load_raw()
     old = items.get(space_id, {})
     sub = SummarySubscription(
@@ -83,6 +107,10 @@ def enable_summary_subscription(space_id: str, chat_id: str) -> SummarySubscript
 
 
 def disable_summary_subscription(space_id: str) -> SummarySubscription | None:
+    """负责“disable总结subscription”。
+
+    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     items = _load_raw()
     old = items.get(space_id)
     if old is None:
@@ -94,6 +122,10 @@ def disable_summary_subscription(space_id: str) -> SummarySubscription | None:
 
 
 def update_summary_time(space_id: str, chat_id: str, time_value: str) -> SummarySubscription:
+    """负责“更新总结time”。
+
+    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     parsed = parse_summary_time(time_value)
     if parsed is None:
         raise ValueError("time must be HH:MM, for example 22:00")
@@ -114,6 +146,10 @@ def update_summary_time(space_id: str, chat_id: str, time_value: str) -> Summary
 
 
 def mark_summary_sent(space_id: str, sent_date: str) -> None:
+    """负责“标记总结sent”。
+
+    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     items = _load_raw()
     old = items.get(space_id)
     if old is None:

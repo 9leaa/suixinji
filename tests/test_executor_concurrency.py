@@ -6,6 +6,7 @@ from runtime.task import TASK_REJECTED
 
 
 def test_ingest_same_space_is_serialized_and_different_spaces_can_overlap(monkeypatch):
+    """验证“接收写入same空间是否为serializedanddifferentspacescanoverlap”场景的预期行为与回归边界。"""
     active_by_space = {}
     max_active_same_space = {"s1": 0}
     seen_overlap = threading.Event()
@@ -13,6 +14,7 @@ def test_ingest_same_space_is_serialized_and_different_spaces_can_overlap(monkey
     lock = threading.Lock()
 
     def fake_process_record(record):
+        """验证“fake处理记录”场景的预期行为与回归边界。"""
         space_id = record["space_id"]
         with lock:
             active_by_space[space_id] = active_by_space.get(space_id, 0) + 1
@@ -42,11 +44,13 @@ def test_ingest_same_space_is_serialized_and_different_spaces_can_overlap(monkey
 
 
 def test_executor_pressure_limits_accepted_tasks(monkeypatch):
+    """验证“executorpressurelimitsacceptedtasks”场景的预期行为与回归边界。"""
     started = 0
     max_started = 0
     lock = threading.Lock()
 
     def fake_answer(space_id, question):
+        """验证“fakeanswer”场景的预期行为与回归边界。"""
         nonlocal started, max_started
         with lock:
             started += 1

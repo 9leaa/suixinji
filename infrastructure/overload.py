@@ -15,10 +15,18 @@ class OverloadSnapshot:
     local_capacity: int
 
     def to_dict(self) -> dict[str, int | str]:
+        """负责“转换为dict”。
+
+        该函数是 `infrastructure.overload` 中的`OverloadSnapshot` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return asdict(self)
 
 
 def database_overload_snapshot() -> OverloadSnapshot:
+    """负责“databaseoverloadsnapshot”。
+
+    该函数是 `infrastructure.overload` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     engine = get_engine()
     checked_out = int(engine.pool.checkedout()) if hasattr(engine.pool, "checkedout") else 0
     pool_size, max_overflow = database_pool_budget()

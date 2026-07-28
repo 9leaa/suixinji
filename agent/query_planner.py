@@ -21,6 +21,10 @@ _BOUNDARY_STRIP = " ，,。！？?!；;\n"
 
 
 def _max_variants() -> int:
+    """负责“maxvariants”。
+
+    该函数是 `agent.query_planner` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     configured = max(2, int(getattr(settings, "QUERY_MAX_TOTAL_QUERIES", 5)))
     return max(1, min(4, configured - 1))
 
@@ -39,6 +43,10 @@ class QueryPlan:
 
 
 def _rewrite(question: str) -> str:
+    """负责“rewrite”。
+
+    该函数是 `agent.query_planner` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = " ".join(str(question or "").split()).strip()
     for filler in _FILLERS:
         value = value.replace(filler, " ")
@@ -74,6 +82,10 @@ def _decompose(question: str, *, features: Any | None = None) -> list[str]:
 
 
 def _step_back(question: str, *, features: Any | None = None) -> str | None:
+    """负责“步骤back”。
+
+    该函数是 `agent.query_planner` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     features = features or extract_route_features(question)
     value = str(question or "").strip()
     lowered = value.casefold()
@@ -93,6 +105,10 @@ def _step_back(question: str, *, features: Any | None = None) -> str | None:
 
 
 def _merge_model_plan(base: QueryPlan, model_plan: Mapping[str, Any] | None) -> QueryPlan:
+    """负责“合并模型规划”。
+
+    该函数是 `agent.query_planner` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not model_plan:
         return base
 
@@ -160,6 +176,10 @@ def _merge_model_plan(base: QueryPlan, model_plan: Mapping[str, Any] | None) -> 
 
 
 def build_query_plan(question: str, *, model_plan: Mapping[str, Any] | None = None) -> QueryPlan:
+    """负责“构建查询规划”。
+
+    该函数是 `agent.query_planner` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     original = " ".join(str(question or "").split()).strip()
     rewritten = _rewrite(original)
     features = extract_route_features(original)

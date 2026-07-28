@@ -6,6 +6,7 @@ from memory.trace import latest_trace
 
 
 def test_sources_render_only_final_selected_evidence():
+    """验证“sources渲染onlyfinalselectedevidence”场景的预期行为与回归边界。"""
     selected = [
         {
             "id": "mem-garden",
@@ -29,6 +30,7 @@ def test_sources_render_only_final_selected_evidence():
 
 
 def test_sources_limit_memory_and_notes_independently():
+    """验证“sources限制记忆and笔记列表independently”场景的预期行为与回归边界。"""
     memories = [
         {"id": f"mem-{index}", "memory_type": "fact", "sources": []}
         for index in range(6)
@@ -48,6 +50,7 @@ def test_sources_limit_memory_and_notes_independently():
 
 
 def test_complex_query_sources_follow_fused_final_evidence(monkeypatch):
+    """验证“complex查询sourcesfollowfusedfinalevidence”场景的预期行为与回归边界。"""
     question = "我喜欢喝什么，我找什么工作，什么时候去的植物园？"
     preferences = [
         {
@@ -103,6 +106,7 @@ def test_complex_query_sources_follow_fused_final_evidence(monkeypatch):
 
 
 def test_complex_query_augments_each_clause_with_note_evidence(monkeypatch):
+    """验证“complex查询augmentseachclausewith笔记evidence”场景的预期行为与回归边界。"""
     question = "我喜欢喝什么？我什么时候去的植物园？"
     plan = QueryPlan(
         complexity="complex",
@@ -124,6 +128,7 @@ def test_complex_query_augments_each_clause_with_note_evidence(monkeypatch):
     calls: list[tuple[str, str]] = []
 
     def fake_run_tool(space_id, action, args, **kwargs):
+        """验证“fake运行工具”场景的预期行为与回归边界。"""
         calls.append((action, args["query"]))
         if action == "memory_note_fallback":
             return notes[args["query"]]
@@ -155,6 +160,7 @@ def test_complex_query_augments_each_clause_with_note_evidence(monkeypatch):
 
 
 def test_answer_question_writes_query_trace_with_safe_steps(monkeypatch):
+    """验证“answerquestionwrites查询追踪with安全steps”场景的预期行为与回归边界。"""
     decisions = iter(
         [
             {"thought": "查长期记忆", "action": "memory_search", "args": {"query": "我喜欢什么", "memory_type": "preference"}},
@@ -193,7 +199,9 @@ def test_answer_question_writes_query_trace_with_safe_steps(monkeypatch):
 
 
 def test_answer_question_falls_back_when_react_llm_fails_after_prefetch(monkeypatch):
+    """验证“answerquestionfallsbackwhenreactLLMfails后置prefetch”场景的预期行为与回归边界。"""
     def fail_complete_json(system_prompt, user_prompt):
+        """验证“失败完成JSON”场景的预期行为与回归边界。"""
         raise RuntimeError("LLM returned no message content")
 
     monkeypatch.setattr(query_agent, "complete_json", fail_complete_json)

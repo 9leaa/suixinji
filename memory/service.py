@@ -52,6 +52,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _note_value(note: Any, key: str, default: Any = None) -> Any:
+    """负责“读取笔记对象中的字段值”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if is_dataclass(note):
         return asdict(note).get(key, default)
     if isinstance(note, dict):
@@ -60,6 +64,10 @@ def _note_value(note: Any, key: str, default: Any = None) -> Any:
 
 
 def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None = None) -> dict[str, Any]:
+    """负责“处理笔记记忆实现”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     note_id = str(_note_value(note, "id", ""))
     space_id = str(_note_value(note, "space_id", ""))
     tenant_id = str(_note_value(note, "tenant_id", "default") or "default")
@@ -324,6 +332,10 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
 
 
 def process_note_memory(note: Any, classification: dict[str, Any] | None = None) -> dict[str, Any]:
+    """负责“处理笔记记忆”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     note_id = str(_note_value(note, "id", ""))
     space_id = str(_note_value(note, "space_id", ""))
     context = AgentRunContext.create(
@@ -354,6 +366,10 @@ def memory_search(
     min_score: float = MEMORY_QUERY_MIN_SCORE,
     limit: int = 8,
 ) -> list[dict[str, Any]]:
+    """负责“记忆检索”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     trace = start_trace("memory_query", space_id, query_len=len(query))
     add_step(trace, "query_received", input_summary={"query_len": len(query), "memory_type": memory_type, "min_score": min_score})
     results = [
@@ -371,6 +387,10 @@ def memory_search(
 
 
 def _format_memory(memory: dict[str, Any]) -> str:
+    """负责“格式化记忆”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     source_count = len(memory.get("sources") or [])
     score = memory.get("score")
     score_text = f"｜score={score}" if score is not None else ""
@@ -382,6 +402,10 @@ def _format_memory(memory: dict[str, Any]) -> str:
 
 
 def format_memory_list(space_id: str, *, status: str = "active", limit: int = 20) -> str:
+    """负责“格式化记忆列出”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     memories = [
         memory.to_dict()
         for memory in list_memories(space_id, status=status, limit=limit)
@@ -393,6 +417,10 @@ def format_memory_list(space_id: str, *, status: str = "active", limit: int = 20
 
 
 def format_memory_show(memory_id: str) -> str:
+    """负责“格式化记忆详情”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     memory = get_memory(memory_id)
     if memory is None or contains_sensitive_data(memory.content):
         return f"没有找到记忆：{memory_id}"
@@ -417,6 +445,10 @@ def format_memory_show(memory_id: str) -> str:
 
 
 def format_memory_search(space_id: str, query: str) -> str:
+    """负责“格式化记忆检索”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     results = memory_search(space_id, query)
     if not results:
         return "没有找到匹配的长期记忆。"
@@ -424,6 +456,10 @@ def format_memory_search(space_id: str, query: str) -> str:
 
 
 def format_memory_forget(memory_id: str) -> str:
+    """负责“格式化记忆forget”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     existing = get_memory(memory_id)
     if existing is None:
         return f"没有找到记忆：{memory_id}"
@@ -440,6 +476,10 @@ def format_memory_forget(memory_id: str) -> str:
 
 
 def format_memory_purge(memory_id: str) -> str:
+    """负责“格式化记忆清除”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     existing = get_memory(memory_id)
     if existing is None:
         return f"没有找到记忆：{memory_id}"
@@ -455,6 +495,10 @@ def format_memory_purge(memory_id: str) -> str:
 
 
 def format_memory_correct(memory_id: str, content: str, task_status: str | None = None) -> str:
+    """负责“格式化记忆correct”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     existing = get_memory(memory_id)
     if existing is None:
         return f"没有找到记忆：{memory_id}"
@@ -491,6 +535,10 @@ def format_memory_correct(memory_id: str, content: str, task_status: str | None 
 
 
 def format_memory_conflicts(space_id: str) -> str:
+    """负责“格式化记忆conflicts”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     memories = [memory.to_dict() for memory in list_memories(space_id, status="conflicted", limit=50)]
     if not memories:
         return "当前没有 conflicted 记忆。"
@@ -498,6 +546,10 @@ def format_memory_conflicts(space_id: str) -> str:
 
 
 def format_memory_pending(space_id: str) -> str:
+    """负责“格式化记忆待处理”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     memories = [memory.to_dict() for memory in list_memories(space_id, status="pending_review", limit=50)]
     if not memories:
         return "当前没有 pending_review 记忆。"
@@ -505,6 +557,10 @@ def format_memory_pending(space_id: str) -> str:
 
 
 def format_memory_reject(memory_id: str, reason: str = "user_rejected_pending_memory") -> str:
+    """负责“格式化记忆reject”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     memory = reject_pending_memory(memory_id, reason=reason)
     if memory is None:
         return f"没有找到待审记忆：{memory_id}"
@@ -512,6 +568,10 @@ def format_memory_reject(memory_id: str, reason: str = "user_rejected_pending_me
 
 
 def format_memory_edit(memory_id: str, content: str) -> str:
+    """负责“格式化记忆edit”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if contains_sensitive_data(content):
         return "修正内容包含敏感凭据，未写入长期记忆。"
     memory = edit_pending_memory(memory_id, content)
@@ -521,6 +581,10 @@ def format_memory_edit(memory_id: str, content: str) -> str:
 
 
 def format_memory_resolve(memory_id: str, resolution: str, content: str | None = None) -> str:
+    """负责“格式化记忆处理”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     memory = resolve_memory_conflict(memory_id, resolution=resolution, content=content)
     if memory is None:
         return f"没有找到冲突记忆：{memory_id}"
@@ -528,6 +592,10 @@ def format_memory_resolve(memory_id: str, resolution: str, content: str | None =
 
 
 def format_memory_approve(memory_id: str) -> str:
+    """负责“格式化记忆审批”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     existing = get_memory(memory_id)
     if existing is None or existing.status != "pending_review":
         return f"没有找到待审记忆：{memory_id}"
@@ -548,6 +616,10 @@ def format_memory_approve(memory_id: str) -> str:
 
 
 def format_memory_decisions(space_id: str, *, limit: int = 10) -> str:
+    """负责“格式化记忆decisions”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     decisions = list_memory_decisions(space_id, limit=limit)
     if not decisions:
         return "还没有记忆审理记录。"
@@ -562,6 +634,10 @@ def format_memory_decisions(space_id: str, *, limit: int = 10) -> str:
 
 
 def format_memory_profile(space_id: str) -> str:
+    """负责“格式化记忆画像”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     memories = list_memories(space_id, status="active", limit=100)
     if not memories:
         return "还没有足够的长期记忆生成用户画像。"
@@ -596,6 +672,10 @@ def format_memory_profile(space_id: str) -> str:
 
 
 def format_memory_stats(space_id: str) -> str:
+    """负责“格式化记忆统计”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     data = stats(space_id)
     return (
         f"记忆统计：total={data['total']}｜by_type={data['by_type']}｜by_status={data['by_status']}｜"
@@ -605,6 +685,10 @@ def format_memory_stats(space_id: str) -> str:
 
 
 def format_memory_consolidate(space_id: str, cadence: str) -> str:
+    """负责“格式化记忆整合”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cadence = cadence.strip().lower()
     if cadence not in {"daily", "weekly", "monthly"}:
         return "用法：/memory consolidate daily｜weekly｜monthly"
@@ -619,6 +703,10 @@ def format_memory_consolidate(space_id: str, cadence: str) -> str:
 
 
 def format_trace_latest() -> str:
+    """负责“格式化追踪最新”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     trace = latest_trace()
     if trace is None:
         return "还没有 trace。"
@@ -626,6 +714,10 @@ def format_trace_latest() -> str:
 
 
 def format_trace_id(trace_id: str) -> str:
+    """负责“格式化追踪标识”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     trace = get_trace(trace_id)
     if trace is None:
         return f"没有找到 trace：{trace_id}"
@@ -633,6 +725,10 @@ def format_trace_id(trace_id: str) -> str:
 
 
 def format_trace_memory(memory_id: str) -> str:
+    """负责“格式化追踪记忆”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     traces = find_traces_by_memory(memory_id)
     if not traces:
         return f"没有找到记忆相关 trace：{memory_id}"
@@ -643,6 +739,10 @@ def format_trace_memory(memory_id: str) -> str:
 
 
 def _trace_candidate_lines(trace: dict[str, Any]) -> list[str]:
+    """负责“追踪候选lines”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     extracted = [step for step in trace.get("steps", []) if step.get("step") == "candidate_extracted"]
     if not extracted:
         return []
@@ -687,6 +787,10 @@ def _trace_candidate_lines(trace: dict[str, Any]) -> list[str]:
 
 
 def format_trace(trace: dict[str, Any]) -> str:
+    """负责“格式化追踪”。
+
+    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     lines = [
         f"Trace {trace.get('trace_id')}：",
         f"- type：{trace.get('trace_type')}",

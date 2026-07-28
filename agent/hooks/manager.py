@@ -16,12 +16,21 @@ _default_lock = threading.Lock()
 
 class HookManager:
     def __init__(self, hooks: list[AgentHook] | None = None) -> None:
+        """初始化`HookManager` 实例并建立后续调用所需的状态。"""
         self.hooks = list(hooks or [])
 
     def register(self, hook: AgentHook) -> None:
+        """负责“register”。
+
+        该函数是 `agent.hooks.manager` 中的`HookManager` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         self.hooks.append(hook)
 
     def run_agent(self, context: AgentRunContext, callable_: Callable[[], T]) -> T:
+        """负责“运行Agent”。
+
+        该函数是 `agent.hooks.manager` 中的`HookManager` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         try:
             for hook in self.hooks:
                 hook.before_agent(context)
@@ -34,6 +43,10 @@ class HookManager:
             raise
 
     def run_llm(self, context: AgentRunContext, request: dict[str, Any], callable_: Callable[[], T]) -> T:
+        """负责“运行LLM”。
+
+        该函数是 `agent.hooks.manager` 中的`HookManager` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         try:
             for hook in self.hooks:
                 hook.before_llm(context, request)
@@ -52,6 +65,10 @@ class HookManager:
         args: dict[str, Any],
         callable_: Callable[[], T],
     ) -> T:
+        """负责“运行工具”。
+
+        该函数是 `agent.hooks.manager` 中的`HookManager` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         cache_marker = f"tool_cache_hit:{tool_name}"
         try:
             for hook in self.hooks:
@@ -68,6 +85,10 @@ class HookManager:
             raise
 
     def _on_error(self, context: AgentRunContext, error: Exception, scope: str) -> None:
+        """负责“错误”。
+
+        该函数是 `agent.hooks.manager` 中的`HookManager` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         for hook in reversed(self.hooks):
             try:
                 hook.on_error(context, error, scope)
@@ -76,6 +97,10 @@ class HookManager:
 
 
 def _build_default_manager() -> HookManager:
+    """负责“构建默认manager”。
+
+    该函数是 `agent.hooks.manager` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     from core.settings import AGENT_HOOKS_ENABLED
 
     if not AGENT_HOOKS_ENABLED:
@@ -102,6 +127,10 @@ def _build_default_manager() -> HookManager:
 
 
 def get_default_hook_manager() -> HookManager:
+    """负责“获取默认hookmanager”。
+
+    该函数是 `agent.hooks.manager` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     global _default_manager
     if _default_manager is None:
         with _default_lock:
@@ -111,5 +140,9 @@ def get_default_hook_manager() -> HookManager:
 
 
 def set_default_hook_manager(manager: HookManager | None) -> None:
+    """负责“设置默认hookmanager”。
+
+    该函数是 `agent.hooks.manager` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     global _default_manager
     _default_manager = manager

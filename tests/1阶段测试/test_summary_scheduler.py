@@ -7,6 +7,7 @@ TZ = timezone(timedelta(hours=8))
 
 
 def test_is_due_before_after_and_already_sent():
+    """验证“是否为due前置后置andalreadysent”场景的预期行为与回归边界。"""
     sub = SummarySubscription(space_id="space1", chat_id="chat1", time="22:00")
 
     assert scheduler._is_due(sub, datetime(2026, 6, 7, 21, 59, tzinfo=TZ)) is False
@@ -23,6 +24,7 @@ def test_is_due_before_after_and_already_sent():
 
 
 def test_run_scheduler_once_sends_due_subscription(monkeypatch):
+    """验证“运行scheduleroncesendsduesubscription”场景的预期行为与回归边界。"""
     sub = SummarySubscription(space_id="space1", chat_id="chat1", time="00:00")
     marked = []
     submitted = []
@@ -33,6 +35,7 @@ def test_run_scheduler_once_sends_due_subscription(monkeypatch):
 
     class FakeExecutor:
         def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None, delivery_key=None, delivery_type=None):
+            """验证“submit总结”场景的预期行为与回归边界。"""
             submitted.append((space_id, range_key, chat_id, message_id, delivery_key, delivery_type))
             if on_success is not None:
                 on_success()
@@ -47,6 +50,7 @@ def test_run_scheduler_once_sends_due_subscription(monkeypatch):
 
 
 def test_run_scheduler_once_skips_before_configured_time(monkeypatch):
+    """验证“运行scheduleronceskips前置configuredtime”场景的预期行为与回归边界。"""
     sub = SummarySubscription(space_id="space1", chat_id="chat1", time="22:00")
     submitted = []
 
@@ -54,6 +58,7 @@ def test_run_scheduler_once_skips_before_configured_time(monkeypatch):
 
     class FakeExecutor:
         def submit_summary(self, *args, **kwargs):
+            """验证“submit总结”场景的预期行为与回归边界。"""
             submitted.append((args, kwargs))
             raise AssertionError("should not submit before configured time")
 
@@ -68,6 +73,7 @@ def test_run_scheduler_once_skips_before_configured_time(monkeypatch):
 
 
 def test_run_scheduler_once_sends_at_configured_time(monkeypatch):
+    """验证“运行scheduleroncesendsatconfiguredtime”场景的预期行为与回归边界。"""
     sub = SummarySubscription(space_id="space1", chat_id="chat1", time="22:00")
     submitted = []
 
@@ -75,6 +81,7 @@ def test_run_scheduler_once_sends_at_configured_time(monkeypatch):
 
     class FakeExecutor:
         def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None, delivery_key=None, delivery_type=None):
+            """验证“submit总结”场景的预期行为与回归边界。"""
             submitted.append((space_id, range_key, chat_id, delivery_key, delivery_type))
             return create_task("summary", space_id, {})
 
@@ -90,6 +97,7 @@ def test_run_scheduler_once_sends_at_configured_time(monkeypatch):
 
 
 def test_run_scheduler_once_does_not_mark_when_task_is_rejected(monkeypatch):
+    """验证“运行scheduleroncedoesnot标记when任务是否为rejected”场景的预期行为与回归边界。"""
     sub = SummarySubscription(space_id="space1", chat_id="chat1", time="00:00")
     marked = []
 
@@ -98,6 +106,7 @@ def test_run_scheduler_once_does_not_mark_when_task_is_rejected(monkeypatch):
 
     class FakeExecutor:
         def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None, delivery_key=None, delivery_type=None):
+            """验证“submit总结”场景的预期行为与回归边界。"""
             task = create_task("summary", space_id, {"range_key": range_key, "chat_id": chat_id}, status="rejected")
             task.error = "task queue is full"
             return task

@@ -43,6 +43,10 @@ _SCHEMA_LOCK = threading.RLock()
 
 
 def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
+    """负责“connect”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     path = Path(db_path or DB_PATH)
     path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(path, timeout=max(MEMORY_DB_BUSY_TIMEOUT_MS, 1) / 1000)
@@ -55,10 +59,18 @@ def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
 
 
 def _is_locked_error(exc: Exception) -> bool:
+    """负责“是否为locked错误”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return isinstance(exc, sqlite3.OperationalError) and "locked" in str(exc).casefold()
 
 
 def _run_write(operation: Callable[[], T], *, max_attempts: int | None = None) -> T:
+    """负责“运行写入”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     attempts = max(1, int(max_attempts or MEMORY_DB_WRITE_MAX_ATTEMPTS))
     delay = 0.05
     for attempt in range(1, attempts + 1):
@@ -73,6 +85,10 @@ def _run_write(operation: Callable[[], T], *, max_attempts: int | None = None) -
 
 
 def _parse_iso(value: str | None) -> datetime | None:
+    """负责“解析iso”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not value:
         return None
     try:
@@ -85,6 +101,10 @@ def _parse_iso(value: str | None) -> datetime | None:
 
 
 def _is_stale(value: str | None, *, lease_seconds: int) -> bool:
+    """负责“是否为stale”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     parsed = _parse_iso(value)
     if parsed is None:
         return True
@@ -99,11 +119,19 @@ def _ensure_column(conn: sqlite3.Connection, table: str, column: str, definition
 
 
 def init_db(db_path: str | Path | None = None) -> None:
+    """负责“初始化db”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with _SCHEMA_LOCK:
         _init_db(db_path)
 
 
 def _init_db(db_path: str | Path | None = None) -> None:
+    """负责“初始化db”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with _connect(db_path) as conn:
         conn.executescript(
             """
@@ -348,6 +376,10 @@ def _init_db(db_path: str | Path | None = None) -> None:
 
 
 def _memory_from_row(row: sqlite3.Row, *, sources: list[MemorySource] | None = None, versions: list[MemoryVersion] | None = None) -> MemoryRecord:
+    """负责“记忆fromrow”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     try:
         scope = json.loads(row["scope_json"] or "{}")
     except (TypeError, json.JSONDecodeError):
@@ -383,6 +415,10 @@ def _memory_from_row(row: sqlite3.Row, *, sources: list[MemorySource] | None = N
 
 
 def _candidate_from_row(row: sqlite3.Row) -> MemoryCandidate:
+    """负责“候选fromrow”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     try:
         scope = json.loads(row["scope_json"] or "{}")
     except (TypeError, json.JSONDecodeError):
@@ -434,6 +470,10 @@ def save_memory_candidate(
     now = utc_now_iso()
 
     def _operation() -> None:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`save_memory_candidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             existing = conn.execute(
                 "SELECT status, attempt_count FROM memory_candidates WHERE candidate_id = ?",
@@ -503,6 +543,10 @@ def save_memory_candidate(
 
 
 def get_memory_candidate(candidate_id: str, db_path: str | Path | None = None) -> MemoryCandidate | None:
+    """负责“获取记忆候选”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     with _connect(db_path) as conn:
         row = conn.execute("SELECT * FROM memory_candidates WHERE candidate_id = ?", (candidate_id,)).fetchone()
@@ -510,6 +554,10 @@ def get_memory_candidate(candidate_id: str, db_path: str | Path | None = None) -
 
 
 def get_memory_candidate_status(candidate_id: str, db_path: str | Path | None = None) -> str | None:
+    """负责“获取记忆候选状态”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     with _connect(db_path) as conn:
         row = conn.execute("SELECT status FROM memory_candidates WHERE candidate_id = ?", (candidate_id,)).fetchone()
@@ -524,6 +572,10 @@ def mark_memory_candidate(
     decision_id: str | None = None,
     db_path: str | Path | None = None,
 ) -> bool:
+    """负责“标记记忆候选”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     allowed = {"extracted", "validated", "adjudicated", "applied", "pending_review", "discarded", "failed", "processing"}
     if status not in allowed:
         raise ValueError(f"invalid memory candidate status: {status}")
@@ -531,6 +583,10 @@ def mark_memory_candidate(
     now = utc_now_iso()
 
     def _operation() -> bool:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`mark_memory_candidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             result = conn.execute(
                 """
@@ -547,6 +603,10 @@ def mark_memory_candidate(
 
 
 def list_retryable_memory_candidates(space_id: str, *, limit: int = 100, db_path: str | Path | None = None) -> list[MemoryCandidate]:
+    """负责“列出retryable记忆candidates”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     with _connect(db_path) as conn:
         rows = conn.execute(
@@ -561,6 +621,10 @@ def list_retryable_memory_candidates(space_id: str, *, limit: int = 100, db_path
 
 
 def _extraction_state_from_row(row: sqlite3.Row) -> MemoryExtractionState:
+    """负责“extraction状态fromrow”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return MemoryExtractionState(
         note_id=str(row["note_id"]),
         space_id=str(row["space_id"]),
@@ -576,6 +640,10 @@ def _extraction_state_from_row(row: sqlite3.Row) -> MemoryExtractionState:
 
 
 def _consolidation_run_from_row(row: sqlite3.Row) -> ConsolidationRun:
+    """负责“consolidation运行fromrow”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return ConsolidationRun(
         id=str(row["id"]),
         space_id=str(row["space_id"]),
@@ -590,6 +658,10 @@ def _consolidation_run_from_row(row: sqlite3.Row) -> ConsolidationRun:
 
 
 def _load_sources(conn: sqlite3.Connection, memory_id: str) -> list[MemorySource]:
+    """负责“加载sources”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     rows = conn.execute(
         "SELECT memory_id, note_id, relation, created_at FROM memory_sources WHERE memory_id = ? ORDER BY created_at",
         (memory_id,),
@@ -598,6 +670,10 @@ def _load_sources(conn: sqlite3.Connection, memory_id: str) -> list[MemorySource
 
 
 def _load_versions(conn: sqlite3.Connection, memory_id: str) -> list[MemoryVersion]:
+    """负责“加载versions”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     rows = conn.execute(
         """
         SELECT id, memory_id, version, content, status, task_status, confidence, importance,
@@ -641,6 +717,10 @@ def _add_version(
     reason: str | None = None,
     source_note_id: str | None = None,
 ) -> None:
+    """负责“添加版本”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     conn.execute(
         """
         INSERT INTO memory_versions(
@@ -668,6 +748,10 @@ def _add_version(
 
 
 def _add_source_row(conn: sqlite3.Connection, memory_id: str, note_id: str, relation: str, *, now: str | None = None) -> bool:
+    """负责“添加来源row”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if relation not in SOURCE_RELATIONS:
         raise ValueError(f"invalid source relation: {relation}")
     existing = conn.execute(
@@ -697,6 +781,10 @@ def _insert_memory_row(
     memory_id: str | None = None,
     now: str | None = None,
 ) -> str:
+    """负责“插入记忆row”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if status not in MEMORY_STATUSES:
         raise ValueError(f"invalid memory status: {status}")
     created_at = now or utc_now_iso()
@@ -766,6 +854,10 @@ def _add_relation_row(
     decision_id: str | None,
     now: str,
 ) -> None:
+    """负责“添加关系row”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if relation not in MEMORY_RELATION_TYPES:
         raise ValueError(f"invalid memory relation: {relation}")
     existing = conn.execute(
@@ -799,6 +891,10 @@ def _insert_decision_row(
     error: str | None = None,
     now: str | None = None,
 ) -> None:
+    """负责“插入决策row”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if decision.recommended_action not in DECISION_ACTIONS:
         raise ValueError(f"invalid decision action: {decision.recommended_action}")
     created_at = now or utc_now_iso()
@@ -839,9 +935,17 @@ def _insert_decision_row(
 
 
 def add_source(memory_id: str, note_id: str, relation: str, db_path: str | Path | None = None) -> bool:
+    """负责“添加来源”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
 
     def _operation() -> bool:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`add_source` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             return _add_source_row(conn, memory_id, note_id, relation)
 
@@ -857,12 +961,20 @@ def insert_memory(
     status: str = "active",
     db_path: str | Path | None = None,
 ) -> MemoryRecord:
+    """负责“插入记忆”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if status not in MEMORY_STATUSES:
         raise ValueError(f"invalid memory status: {status}")
     init_db(db_path)
     memory_id = new_id("mem")
 
     def _operation() -> None:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`insert_memory` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             _insert_memory_row(
                 conn,
@@ -883,6 +995,10 @@ def insert_memory(
 
 
 def get_memory(memory_id: str, db_path: str | Path | None = None) -> MemoryRecord | None:
+    """负责“获取记忆”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     with _connect(db_path) as conn:
         row = conn.execute("SELECT * FROM memories WHERE id = ?", (memory_id,)).fetchone()
@@ -901,6 +1017,10 @@ def list_memories(
     limit: int = 20,
     db_path: str | Path | None = None,
 ) -> list[MemoryRecord]:
+    """负责“列出memories”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     clauses = ["space_id = ?"]
     params: list[Any] = [space_id]
@@ -931,6 +1051,10 @@ def list_adjudication_candidates(
     limit: int = 200,
     db_path: str | Path | None = None,
 ) -> list[MemoryRecord]:
+    """负责“列出adjudicationcandidates”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     memories = list_memories(
         space_id,
         status="active",
@@ -950,6 +1074,10 @@ def hybrid_adjudication_candidates(
     limit: int = 20,
     db_path: str | Path | None = None,
 ) -> list[MemoryRecord]:
+    """负责“混合adjudicationcandidates”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del query_embedding
     from memory.canonicalizer import task_identity_compatible
     init_db(db_path)
@@ -1009,6 +1137,10 @@ def hybrid_adjudication_candidates(
         memories = [_memory_from_row(row) for row in rows_by_id.values()]
 
     def _matches(memory: MemoryRecord) -> bool:
+        """负责“matches”。
+
+        该函数是 `memory.repository` 中的`hybrid_adjudication_candidates` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if memory.effective_memory_key == candidate.effective_memory_key:
             return True
         if candidate.memory_type == "task" and task_identity_compatible(candidate, memory):
@@ -1031,10 +1163,18 @@ def expire_due_memories(
     limit: int = 500,
     db_path: str | Path | None = None,
 ) -> int:
+    """负责“expireduememories”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     now = utc_now_iso()
 
     def _operation() -> int:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`expire_due_memories` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             clauses = ["status = 'active'", "valid_until IS NOT NULL", "valid_until <= ?"]
             params: list[Any] = [now]
@@ -1074,9 +1214,17 @@ def update_memory(
     source_note_id: str | None = None,
     db_path: str | Path | None = None,
 ) -> MemoryRecord | None:
+    """负责“更新记忆”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
 
     def _operation() -> bool:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`update_memory` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             row = conn.execute("SELECT * FROM memories WHERE id = ?", (memory_id,)).fetchone()
             if row is None:
@@ -1168,6 +1316,10 @@ def _versioned_update_row(
     source_note_id: str | None,
     now: str,
 ) -> None:
+    """负责“versioned更新row”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     next_version = int(row["current_version"] or 1) + 1
     next_content = content if content is not None else str(row["content"])
     next_status = status if status is not None else str(row["status"])
@@ -1295,6 +1447,10 @@ def apply_memory_decision(
     init_db(db_path)
 
     def _operation() -> dict[str, Any]:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`apply_memory_decision` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
             now = utc_now_iso()
@@ -1488,6 +1644,10 @@ def apply_memory_decision(
         error_type = type(exc).__name__
 
         def _record_failure() -> None:
+            """负责“记录failure”。
+
+            该函数是 `memory.repository` 中的`apply_memory_decision` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+            """
             with _connect(db_path) as conn:
                 _insert_decision_row(
                     conn,
@@ -1506,12 +1666,20 @@ def apply_memory_decision(
 
 
 def mark_accessed(memory_ids: list[str], db_path: str | Path | None = None) -> None:
+    """负责“标记accessed”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not memory_ids:
         return
     init_db(db_path)
     now = utc_now_iso()
 
     def _operation() -> None:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`mark_accessed` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             conn.executemany(
                 "UPDATE memories SET last_accessed_at = ?, access_count = access_count + 1 WHERE id = ?",
@@ -1522,11 +1690,19 @@ def mark_accessed(memory_ids: list[str], db_path: str | Path | None = None) -> N
 
 
 def flush_access_counts(*, limit: int = 1000, db_path: str | Path | None = None) -> int:
+    """负责“刷新accesscounts”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del limit, db_path
     return 0
 
 
 def soft_delete_memory(memory_id: str, *, reason: str = "user_forget", db_path: str | Path | None = None) -> MemoryRecord | None:
+    """负责“soft删除记忆”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return update_memory(memory_id, status="deleted", reason=reason, db_path=db_path)
 
 
@@ -1538,6 +1714,10 @@ def correct_memory(
     reason: str = "user_correct",
     db_path: str | Path | None = None,
 ) -> MemoryRecord | None:
+    """负责“correct记忆”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     existing = get_memory(memory_id, db_path=db_path)
     if existing is None:
         return None
@@ -1568,6 +1748,10 @@ def purge_memory(memory_id: str, db_path: str | Path | None = None) -> bool:
     init_db(db_path)
 
     def _operation() -> bool:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`purge_memory` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             exists = conn.execute("SELECT 1 FROM memories WHERE id = ?", (memory_id,)).fetchone()
             if exists is None:
@@ -1587,6 +1771,10 @@ def approve_pending_memory(memory_id: str, db_path: str | Path | None = None) ->
     init_db(db_path)
 
     def _operation() -> str | None:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`approve_pending_memory` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
             pending = conn.execute("SELECT * FROM memories WHERE id = ? AND status = 'pending_review'", (memory_id,)).fetchone()
@@ -1793,6 +1981,10 @@ def approve_pending_memory(memory_id: str, db_path: str | Path | None = None) ->
 
 
 def reject_pending_memory(memory_id: str, *, reason: str = "user_rejected_pending_memory", db_path: str | Path | None = None) -> MemoryRecord | None:
+    """负责“reject待处理记忆”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     pending = get_memory(memory_id, db_path=db_path)
     if pending is None or pending.status != "pending_review":
         return None
@@ -1815,6 +2007,10 @@ def reject_pending_memory(memory_id: str, *, reason: str = "user_rejected_pendin
 
 
 def edit_pending_memory(memory_id: str, content: str, db_path: str | Path | None = None) -> MemoryRecord | None:
+    """负责“edit待处理记忆”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     pending = get_memory(memory_id, db_path=db_path)
     if pending is None or pending.status != "pending_review" or not content.strip():
         return None
@@ -1859,6 +2055,10 @@ def resolve_memory_conflict(
     content: str | None = None,
     db_path: str | Path | None = None,
 ) -> MemoryRecord | None:
+    """负责“处理记忆conflict”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if resolution not in {"keep", "merge", "archive"}:
         raise ValueError("resolution must be keep, merge, or archive")
     if resolution == "keep":
@@ -1878,6 +2078,10 @@ def list_memory_decisions(
     limit: int = 50,
     db_path: str | Path | None = None,
 ) -> list[dict[str, Any]]:
+    """负责“列出记忆decisions”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     clauses = ["space_id = ?"]
     params: list[Any] = [space_id]
@@ -1920,6 +2124,10 @@ def list_memory_relations(
     *,
     db_path: str | Path | None = None,
 ) -> list[MemoryRelation]:
+    """负责“列出记忆relations”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     with _connect(db_path) as conn:
         rows = conn.execute(
@@ -1954,9 +2162,17 @@ def add_memory_relation(
     decision_id: str | None = None,
     db_path: str | Path | None = None,
 ) -> None:
+    """负责“添加记忆关系”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
 
     def _operation() -> None:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`add_memory_relation` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             _add_relation_row(
                 conn,
@@ -1972,9 +2188,17 @@ def add_memory_relation(
 
 
 def save_memory_trace(trace: dict[str, Any], db_path: str | Path | None = None) -> None:
+    """负责“保存记忆追踪”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
 
     def _operation() -> None:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`save_memory_trace` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             conn.execute(
                 """
@@ -1998,6 +2222,10 @@ def save_memory_trace(trace: dict[str, Any], db_path: str | Path | None = None) 
 
 
 def note_has_memory(note_id: str, db_path: str | Path | None = None) -> bool:
+    """负责“笔记是否包含记忆”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     with _connect(db_path) as conn:
         row = conn.execute("SELECT 1 FROM memory_sources WHERE note_id = ? LIMIT 1", (note_id,)).fetchone()
@@ -2005,6 +2233,10 @@ def note_has_memory(note_id: str, db_path: str | Path | None = None) -> bool:
 
 
 def get_extraction_state(note_id: str, db_path: str | Path | None = None) -> MemoryExtractionState | None:
+    """负责“获取extraction状态”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     with _connect(db_path) as conn:
         row = conn.execute("SELECT * FROM memory_extraction_states WHERE note_id = ?", (note_id,)).fetchone()
@@ -2022,6 +2254,10 @@ def _mark_extraction_state(
     increment_attempt: bool = False,
     db_path: str | Path | None = None,
 ) -> MemoryExtractionState:
+    """负责“标记extraction状态”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if status not in MEMORY_EXTRACTION_STATUSES:
         raise ValueError(f"invalid memory extraction status: {status}")
     init_db(db_path)
@@ -2031,6 +2267,10 @@ def _mark_extraction_state(
     attempt_delta = 1 if increment_attempt else 0
 
     def _operation() -> None:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`_mark_extraction_state` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             conn.execute(
                 """
@@ -2073,6 +2313,10 @@ def _mark_extraction_state(
 
 
 def mark_extraction_processing(note_id: str, space_id: str, db_path: str | Path | None = None) -> MemoryExtractionState:
+    """负责“标记extractionprocessing”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(note_id, space_id, "processing", increment_attempt=True, db_path=db_path)
 
 
@@ -2084,6 +2328,10 @@ def mark_extraction_completed(
     processed_count: int,
     db_path: str | Path | None = None,
 ) -> MemoryExtractionState:
+    """负责“标记extractioncompleted”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(
         note_id,
         space_id,
@@ -2095,6 +2343,10 @@ def mark_extraction_completed(
 
 
 def mark_extraction_empty(note_id: str, space_id: str, db_path: str | Path | None = None) -> MemoryExtractionState:
+    """负责“标记extractionempty”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(note_id, space_id, "empty", db_path=db_path)
 
 
@@ -2103,6 +2355,10 @@ def mark_extraction_empty_attempt(
     space_id: str,
     db_path: str | Path | None = None,
 ) -> MemoryExtractionState:
+    """负责“标记extractionempty尝试”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(note_id, space_id, "empty", increment_attempt=True, db_path=db_path)
 
 
@@ -2115,6 +2371,10 @@ def mark_extraction_partial(
     error: str,
     db_path: str | Path | None = None,
 ) -> MemoryExtractionState:
+    """负责“标记extractionpartial”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(
         note_id,
         space_id,
@@ -2127,6 +2387,10 @@ def mark_extraction_partial(
 
 
 def mark_extraction_failed(note_id: str, space_id: str, *, error: str, db_path: str | Path | None = None) -> MemoryExtractionState:
+    """负责“标记extractionfailed”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(note_id, space_id, "failed", error=error, db_path=db_path)
 
 
@@ -2136,6 +2400,10 @@ def list_retryable_extraction_states(
     limit: int = 100,
     db_path: str | Path | None = None,
 ) -> list[MemoryExtractionState]:
+    """负责“列出retryableextractionstates”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     with _connect(db_path) as conn:
         rows = conn.execute(
@@ -2151,6 +2419,10 @@ def list_retryable_extraction_states(
 
 
 def consolidation_period_key(cadence: str, day: date) -> str:
+    """负责“consolidationperiod键”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cadence = cadence.strip().lower()
     if cadence == "daily":
         return day.isoformat()
@@ -2168,10 +2440,18 @@ def reserve_consolidation_run(
     period_key: str,
     db_path: str | Path | None = None,
 ) -> ConsolidationRun | None:
+    """负责“预约consolidation运行”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cadence = cadence.strip().lower()
     init_db(db_path)
 
     def _operation() -> str | None:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`reserve_consolidation_run` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
@@ -2217,6 +2497,10 @@ def reserve_consolidation_run(
 
 
 def get_consolidation_run(run_id: str, db_path: str | Path | None = None) -> ConsolidationRun | None:
+    """负责“获取consolidation运行”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     with _connect(db_path) as conn:
         row = conn.execute("SELECT * FROM memory_consolidation_runs WHERE id = ?", (run_id,)).fetchone()
@@ -2224,11 +2508,19 @@ def get_consolidation_run(run_id: str, db_path: str | Path | None = None) -> Con
 
 
 def mark_consolidation_completed(run_id: str, result: dict[str, Any], db_path: str | Path | None = None) -> None:
+    """负责“标记consolidationcompleted”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     now = utc_now_iso()
     payload = json.dumps(result, ensure_ascii=False, sort_keys=True)
 
     def _operation() -> None:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`mark_consolidation_completed` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             conn.execute(
                 """
@@ -2243,10 +2535,18 @@ def mark_consolidation_completed(run_id: str, result: dict[str, Any], db_path: s
 
 
 def mark_consolidation_failed(run_id: str, error: str, db_path: str | Path | None = None) -> None:
+    """负责“标记consolidationfailed”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     now = utc_now_iso()
 
     def _operation() -> None:
+        """负责“operation”。
+
+        该函数是 `memory.repository` 中的`mark_consolidation_failed` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with _connect(db_path) as conn:
             conn.execute(
                 """
@@ -2271,6 +2571,10 @@ def search_memories(
     mark_access: bool = True,
     db_path: str | Path | None = None,
 ) -> list[tuple[MemoryRecord, float]]:
+    """负责“检索memories”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     from memory.retriever import score_memory
 
     candidates = list_memories(
@@ -2290,6 +2594,10 @@ def search_memories(
 
 
 def stats(space_id: str, db_path: str | Path | None = None) -> dict[str, Any]:
+    """负责“统计”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     with _connect(db_path) as conn:
         rows = conn.execute(
@@ -2363,6 +2671,10 @@ def stats(space_id: str, db_path: str | Path | None = None) -> dict[str, Any]:
 
 
 def schema_tables(db_path: str | Path | None = None) -> set[str]:
+    """负责“模式tables”。
+
+    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     init_db(db_path)
     with _connect(db_path) as conn:
         rows = conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()

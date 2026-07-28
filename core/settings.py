@@ -11,6 +11,10 @@ load_dotenv()
 
 
 def _int_env(name: str, default: int) -> int:
+    """负责“intenv”。
+
+    该函数是 `core.settings` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = os.getenv(name)
     if value is None or not value.strip():
         return default
@@ -18,6 +22,10 @@ def _int_env(name: str, default: int) -> int:
 
 
 def _float_env(name: str, default: float) -> float:
+    """负责“floatenv”。
+
+    该函数是 `core.settings` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = os.getenv(name)
     if value is None or not value.strip():
         return default
@@ -25,6 +33,10 @@ def _float_env(name: str, default: float) -> float:
 
 
 def _bool_env(name: str, default: bool) -> bool:
+    """负责“boolenv”。
+
+    该函数是 `core.settings` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = os.getenv(name)
     if value is None or not value.strip():
         return default
@@ -119,6 +131,10 @@ API_PORT = _int_env("SUIXINJI_API_PORT", 8000)
 
 
 def database_pool_budget(role: str | None = None) -> tuple[int, int]:
+    """负责“databasepoolbudget”。
+
+    该函数是 `core.settings` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     resolved = (role or PROCESS_ROLE or "default").lower()
     if resolved == "worker-heartbeat":
         return 1, 0

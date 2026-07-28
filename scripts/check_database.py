@@ -17,6 +17,7 @@ from infrastructure.schema import Base
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     health = check_database_health()
     inspector = inspect(get_engine())
     expected = set(Base.metadata.tables)

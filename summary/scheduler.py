@@ -25,11 +25,19 @@ _started_lock = threading.Lock()
 
 
 def _minutes(value: str) -> int:
+    """负责“minutes”。
+
+    该函数是 `summary.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     hour, minute = value.split(":", 1)
     return int(hour) * 60 + int(minute)
 
 
 def _is_due(sub: SummarySubscription, now: datetime) -> bool:
+    """负责“是否为due”。
+
+    该函数是 `summary.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     today = now.date().isoformat()
     if sub.last_sent_date == today:
         return False
@@ -43,6 +51,10 @@ def run_summary_scheduler_once(
     *,
     now: datetime | None = None,
 ) -> int:
+    """负责“运行总结scheduleronce”。
+
+    该函数是 `summary.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = now or datetime.now().astimezone()
     today = now.date().isoformat()
     count = 0
@@ -84,6 +96,10 @@ def run_summary_scheduler_once(
                 success_ctx: dict[str, str] = dict(ctx),
                 success_range_key: str = range_key,
             ) -> None:
+                """负责“success”。
+
+                该函数是 `summary.scheduler` 中的`run_summary_scheduler_once` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+                """
                 mark_summary_sent(space_id, sent_date)
                 log_event(
                     "summary.auto.send",
@@ -146,6 +162,10 @@ def run_scheduler_tick_safely(
     send_text: Callable[[str, str], bool],
     executor: BoundedTaskExecutor | None = None,
 ) -> None:
+    """负责“运行schedulerticksafely”。
+
+    该函数是 `summary.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     tick_started = time.perf_counter()
     try:
         run_summary_scheduler_once(send_text, executor=executor)
@@ -169,6 +189,10 @@ def start_summary_scheduler(
     interval_seconds: int = 60,
     executor: BoundedTaskExecutor | None = None,
 ) -> None:
+    """负责“启动总结scheduler”。
+
+    该函数是 `summary.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     global _started
     with _started_lock:
         if _started:
@@ -176,6 +200,10 @@ def start_summary_scheduler(
         _started = True
 
     def loop() -> None:
+        """负责“loop”。
+
+        该函数是 `summary.scheduler` 中的`start_summary_scheduler` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         LOGGER.info("P4 summary scheduler started")
         while True:
             try:

@@ -15,6 +15,10 @@ from eval.common import aggregate_boolean_scores, load_jsonl, score_classificati
 
 
 def run(cases_path: Path, *, dry_run: bool = False, max_cases: int | None = None) -> dict[str, object]:
+    """负责“运行”。
+
+    该函数是 `eval.eval_classification` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cases = load_jsonl(cases_path)
     if max_cases is not None:
         cases = cases[:max_cases]
@@ -35,6 +39,7 @@ def run(cases_path: Path, *, dry_run: bool = False, max_cases: int | None = None
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser(description="Evaluate note classification quality.")
     parser.add_argument("--cases", default="eval/data/classification_cases.jsonl")
     parser.add_argument("--output", default="eval/results/classification_results.json")

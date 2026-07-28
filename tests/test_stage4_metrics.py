@@ -6,12 +6,14 @@ from runtime.distributed_metrics import build_report, percentile, reconcile_retr
 
 
 def test_percentile_uses_measured_values():
+    """验证“percentileusesmeasuredvalues”场景的预期行为与回归边界。"""
     assert percentile([], 0.95) is None
     assert percentile([1, 2, 3, 100], 0.50) == 3
     assert percentile([1, 2, 3, 100], 0.95) == 100
 
 
 def test_distributed_report_enforces_conservation():
+    """验证“distributed报告enforcesconservation”场景的预期行为与回归边界。"""
     database = {
         "accepted": 7,
         "root_task_status": {"completed": 5, "queued": 1, "dead_letter": 1},
@@ -34,6 +36,7 @@ def test_distributed_report_enforces_conservation():
 
 
 def test_distributed_report_reconciles_client_timeout_with_durable_inbox():
+    """验证“distributed报告reconcilesclient超时withdurableinbox”场景的预期行为与回归边界。"""
     database = {"accepted": 10, "root_task_status": {"completed": 10}}
     submission = {"submitted": 12, "accepted": 8, "duplicate": 2, "rate_limited": 0, "failed": 2}
     report = build_report(database, {}, submission=submission)
@@ -44,6 +47,7 @@ def test_distributed_report_reconciles_client_timeout_with_durable_inbox():
 
 
 def test_retry_reconciliation_separates_timeouts_from_intrinsic_duplicates():
+    """验证“重试reconciliationseparatestimeoutsfromintrinsicduplicates”场景的预期行为与回归边界。"""
     initial = {
         "submitted": 1000,
         "accepted": 866,
@@ -80,6 +84,7 @@ def test_retry_reconciliation_separates_timeouts_from_intrinsic_duplicates():
 
 
 def test_retry_reconciliation_rejects_a_different_request_corpus():
+    """验证“重试reconciliationrejectsadifferent请求corpus”场景的预期行为与回归边界。"""
     with pytest.raises(ValueError, match="same request corpus"):
         reconcile_retry_submission(
             {"submitted": 10},

@@ -40,6 +40,10 @@ RELATIONS = ("new", "same", "merge", "update_task", "supersede", "conflict")
 
 
 def _f1(precision_counts: tuple[int, int, int]) -> dict[str, float]:
+    """负责“f1”。
+
+    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     true_positive, false_positive, false_negative = precision_counts
     precision = true_positive / (true_positive + false_positive) if true_positive + false_positive else 0.0
     recall = true_positive / (true_positive + false_negative) if true_positive + false_negative else 0.0
@@ -51,6 +55,10 @@ def _f1(precision_counts: tuple[int, int, int]) -> dict[str, float]:
 
 
 def _extract_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
+    """负责“抽取报告”。
+
+    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     type_counts: Counter[str] = Counter()
     results: list[dict[str, Any]] = []
     exact_store = 0
@@ -95,6 +103,10 @@ def _extract_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _task_status(text: str, *, old: bool = False) -> str | None:
+    """负责“任务状态”。
+
+    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if "记得" in text or "待办" in text:
         return "todo"
     if "完成" in text or "已解决" in text:
@@ -107,6 +119,10 @@ def _task_status(text: str, *, old: bool = False) -> str | None:
 
 
 def _candidate(text: str, memory_type: str, note_id: str, *, old: bool = False) -> MemoryCandidate:
+    """负责“候选”。
+
+    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     signature = preference_signature(text) if memory_type == "preference" else None
     predicate = None
     if memory_type == "semantic":
@@ -129,6 +145,10 @@ def _candidate(text: str, memory_type: str, note_id: str, *, old: bool = False) 
 
 
 def _relation_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
+    """负责“关系报告”。
+
+    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     predictions: list[str] = []
     expected: list[str] = []
     results: list[dict[str, Any]] = []
@@ -177,6 +197,10 @@ def _relation_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _retrieval_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
+    """负责“retrieval报告”。
+
+    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     recalls: list[float] = []
     reciprocal_ranks: list[float] = []
     results: list[dict[str, Any]] = []
@@ -206,6 +230,10 @@ def _retrieval_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _e2e_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
+    """负责“e2e报告”。
+
+    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     results: list[dict[str, Any]] = []
     old_db = memory_repository.DB_PATH
     old_trace = memory_trace.TRACE_PATH
@@ -241,6 +269,10 @@ def _e2e_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _routing_plan() -> dict[str, Any]:
+    """负责“routing规划”。
+
+    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return {
         "baseline_external_calls": False,
         "fast_model": os.getenv("SUIXINJI_FAST_MODEL", "gpt-5.4-mini"),
@@ -258,6 +290,10 @@ def _routing_plan() -> dict[str, Any]:
 
 
 def run(*, output: Path) -> dict[str, Any]:
+    """负责“运行”。
+
+    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cases = load_jsonl(DATASET)
     grouped: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     for case in cases:
@@ -279,6 +315,7 @@ def run(*, output: Path) -> dict[str, Any]:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser(description="Run the offline Memory quality baseline")
     parser.add_argument("--output", type=Path, default=ROOT / "docs" / "memory_eval" / "baseline.json")
     args = parser.parse_args()

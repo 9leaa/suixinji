@@ -44,14 +44,17 @@ NOTES = [
 
 
 def patch_notes(monkeypatch):
+    """验证“patch笔记列表”场景的预期行为与回归边界。"""
     monkeypatch.setattr(query_agent, "load_index", lambda space_id: list(NOTES))
 
 
 def ids(items):
+    """验证“标识列表”场景的预期行为与回归边界。"""
     return [item["id"] for item in items]
 
 
 def test_filter_notes_by_type_sorts_desc(monkeypatch):
+    """验证“筛选笔记列表by类型sortsdesc”场景的预期行为与回归边界。"""
     patch_notes(monkeypatch)
 
     results = query_agent.filter_notes(SPACE_ID, note_type="生活")
@@ -61,6 +64,7 @@ def test_filter_notes_by_type_sorts_desc(monkeypatch):
 
 
 def test_filter_notes_by_all_tags(monkeypatch):
+    """验证“筛选笔记列表byalltags”场景的预期行为与回归边界。"""
     patch_notes(monkeypatch)
 
     results = query_agent.filter_notes(
@@ -74,6 +78,7 @@ def test_filter_notes_by_all_tags(monkeypatch):
 
 
 def test_filter_notes_by_any_tag(monkeypatch):
+    """验证“筛选笔记列表byanytag”场景的预期行为与回归边界。"""
     patch_notes(monkeypatch)
 
     results = query_agent.filter_notes(
@@ -86,6 +91,7 @@ def test_filter_notes_by_any_tag(monkeypatch):
 
 
 def test_filter_notes_rejects_invalid_type_or_tag(monkeypatch):
+    """验证“筛选笔记列表rejectsinvalid类型ortag”场景的预期行为与回归边界。"""
     patch_notes(monkeypatch)
 
     assert query_agent.filter_notes(SPACE_ID, note_type="工作") == []
@@ -93,6 +99,7 @@ def test_filter_notes_rejects_invalid_type_or_tag(monkeypatch):
 
 
 def test_by_type_and_by_tag_are_thin_wrappers(monkeypatch):
+    """验证“by类型andbytagarethinwrappers”场景的预期行为与回归边界。"""
     patch_notes(monkeypatch)
 
     assert ids(query_agent.by_type(SPACE_ID, "任务")) == ["n3"]
@@ -100,6 +107,7 @@ def test_by_type_and_by_tag_are_thin_wrappers(monkeypatch):
 
 
 def test_get_note_and_follow_links(monkeypatch):
+    """验证“获取笔记andfollowlinks”场景的预期行为与回归边界。"""
     patch_notes(monkeypatch)
 
     note = query_agent.get_note(SPACE_ID, "n3")
@@ -112,6 +120,7 @@ def test_get_note_and_follow_links(monkeypatch):
 
 
 def test_run_tool_coerces_filter_args(monkeypatch):
+    """验证“运行工具coerces筛选参数”场景的预期行为与回归边界。"""
     patch_notes(monkeypatch)
 
     result = query_agent._run_tool(

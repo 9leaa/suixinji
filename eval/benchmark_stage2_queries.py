@@ -31,21 +31,37 @@ NOTE_SIZES = (1_000, 10_000)
 
 
 def _percentile(values: list[float], ratio: float) -> float:
+    """负责“percentile”。
+
+    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     ordered = sorted(values)
     index = min(len(ordered) - 1, max(0, round((len(ordered) - 1) * ratio)))
     return round(ordered[index], 3)
 
 
 def _chunks(items: list[dict[str, Any]], size: int = 1_000) -> list[list[dict[str, Any]]]:
+    """负责“chunks”。
+
+    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return [items[index : index + size] for index in range(0, len(items), size)]
 
 
 def _bulk_insert(session: Any, model: Any, rows: list[dict[str, Any]]) -> None:
+    """负责“bulk插入”。
+
+    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     for chunk in _chunks(rows):
         session.execute(model.__table__.insert(), chunk)
 
 
 def _seed_notes(tenant_id: str, space_id: str, count: int) -> None:
+    """负责“seed笔记列表”。
+
+    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone()
     types = ("学习", "生活", "任务", "资料")
     type_tags = {"学习": "笔记", "生活": "饮食", "任务": "待办", "资料": "文档"}
@@ -91,6 +107,10 @@ def _seed_notes(tenant_id: str, space_id: str, count: int) -> None:
 
 
 def _seed_memories(tenant_id: str, space_id: str, count: int = 100) -> None:
+    """负责“seedmemories”。
+
+    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone().isoformat()
     memories: list[dict[str, Any]] = []
     sources: list[dict[str, Any]] = []
@@ -153,6 +173,10 @@ def _seed_memories(tenant_id: str, space_id: str, count: int = 100) -> None:
 
 
 def _measure(name: str, operation: Callable[[], Any], repetitions: int) -> dict[str, Any]:
+    """负责“measure”。
+
+    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     engine = get_engine()
     durations: list[float] = []
     sql_counts: list[int] = []
@@ -178,6 +202,10 @@ def _measure(name: str, operation: Callable[[], Any], repetitions: int) -> dict[
 
 
 def _explain(statement: str, **parameters: Any) -> dict[str, Any]:
+    """负责“explain”。
+
+    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with get_engine().connect() as connection:
         payload = connection.execute(
             text(f"EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) {statement}"),
@@ -187,11 +215,19 @@ def _explain(statement: str, **parameters: Any) -> dict[str, Any]:
 
 
 def _cleanup(tenant_id: str) -> None:
+    """负责“cleanup”。
+
+    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         session.execute(delete(Tenant).where(Tenant.id == tenant_id))
 
 
 def run(output: Path, *, repetitions: int) -> dict[str, Any]:
+    """负责“运行”。
+
+    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     tenant_id = f"stage2-benchmark-{uuid.uuid4().hex}"
     note_spaces = {size: f"{tenant_id}-notes-{size}" for size in NOTE_SIZES}
     memory_space = f"{tenant_id}-memories"
@@ -287,6 +323,7 @@ def run(output: Path, *, repetitions: int) -> dict[str, Any]:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--repetitions", type=int, default=3)

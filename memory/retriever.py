@@ -11,6 +11,10 @@ from memory.policies.preference import preference_polarity, preference_query_pol
 
 
 def _parse_ts(value: str | None) -> datetime | None:
+    """负责“解析ts”。
+
+    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not value:
         return None
     try:
@@ -35,6 +39,10 @@ _QUERY_FILLERS = (
 
 
 def retrieval_topic_text(value: str) -> str:
+    """负责“retrievaltopic文本”。
+
+    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     text = str(value or "").casefold()
     for filler in sorted(_QUERY_FILLERS, key=len, reverse=True):
         text = text.replace(filler, " ")
@@ -48,11 +56,19 @@ def _named_tokens(value: str) -> set[str]:
     # CJK family identifiers (生活-02) are as meaningful as ASCII issue keys
     # (PROJ-123). Match the complete identifier so a shared numeric suffix
     # cannot make two unrelated records look equivalent.
+    """负责“namedtokens”。
+
+    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     pattern = r"[\u4e00-\u9fffA-Za-z]+-\d+|[A-Za-z][A-Za-z0-9+#._-]*|\d+(?:[._-]\d+)*"
     return {token.casefold() for token in re.findall(pattern, value)}
 
 
 def _cjk_ngrams(value: str) -> set[str]:
+    """负责“cjkngrams”。
+
+    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     grams: set[str] = set()
     for run in re.findall(r"[\u4e00-\u9fff]+", value):
         if len(run) == 1:
@@ -92,6 +108,10 @@ def _overlap_score(query: str, content: str) -> float:
 
 
 def _query_memory_type(query: str) -> str | None:
+    """负责“查询记忆类型”。
+
+    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = str(query or "")
     preference = any(marker in value for marker in ("喜欢", "不喜欢", "偏好", "讨厌", "避开", "过敏"))
     task_status_question = any(
@@ -105,11 +125,19 @@ def _query_memory_type(query: str) -> str | None:
 
 
 def _intent_score(query: str, memory: MemoryRecord) -> float:
+    """负责“意图评分”。
+
+    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     expected = _query_memory_type(query)
     return 1.0 if expected is not None and memory.memory_type == expected else 0.0
 
 
 def _recency_score(memory: MemoryRecord) -> float:
+    """负责“recency评分”。
+
+    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     updated = _parse_ts(memory.updated_at)
     if updated is None:
         return 0.0
@@ -122,6 +150,10 @@ def _recency_score(memory: MemoryRecord) -> float:
 
 
 def score_memory(query: str, memory: MemoryRecord) -> float:
+    """负责“评分记忆”。
+
+    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     query_polarity = "unknown"
     memory_polarity = "unknown"
     if memory.memory_type == "preference":
@@ -193,6 +225,10 @@ def search(
     min_score: float = MEMORY_QUERY_MIN_SCORE,
     limit: int = 10,
 ) -> list[dict[str, object]]:
+    """负责“检索”。
+
+    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     from memory.repository import search_memories
 
     return [

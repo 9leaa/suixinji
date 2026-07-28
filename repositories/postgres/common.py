@@ -16,6 +16,10 @@ DEFAULT_TENANT_ID = "default"
 
 
 def parse_datetime(value: str | datetime | None) -> datetime:
+    """负责“解析datetime”。
+
+    该函数是 `repositories.postgres.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if isinstance(value, datetime):
         return value
     if value:
@@ -34,6 +38,10 @@ def ensure_tenant_space(
     source: str = "feishu",
     metadata: dict[str, Any] | None = None,
 ) -> str:
+    """负责“确保租户空间”。
+
+    该函数是 `repositories.postgres.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     source_space_id = str(space_id)
     internal_existing = session.get(Space, source_space_id)
     if internal_existing is not None and internal_existing.tenant_id == tenant_id:
@@ -52,6 +60,10 @@ def ensure_tenant_space(
         return str(existing)
 
     def _insert(preferred_id: str) -> str | None:
+        """负责“插入”。
+
+        该函数是 `repositories.postgres.common` 中的`ensure_tenant_space` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return session.execute(
             insert(Space)
             .values(
@@ -93,6 +105,10 @@ def ensure_user(
     source: str = "feishu",
     profile: dict[str, Any] | None = None,
 ) -> None:
+    """负责“确保用户”。
+
+    该函数是 `repositories.postgres.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     session.execute(
         insert(Tenant).values(id=tenant_id, name=tenant_id).on_conflict_do_nothing()
     )

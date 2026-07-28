@@ -21,6 +21,10 @@ from runtime.streams.client import GROUPS
 
 
 def percentile(values: list[int], ratio: float) -> int | None:
+    """负责“percentile”。
+
+    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not values:
         return None
     ordered = sorted(values)
@@ -29,12 +33,20 @@ def percentile(values: list[int], ratio: float) -> int | None:
 
 
 def _duration_ms(start: datetime | None, end: datetime | None) -> int | None:
+    """负责“durationms”。
+
+    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if start is None or end is None:
         return None
     return max(0, int((end - start).total_seconds() * 1000))
 
 
 def _status_counts(items: list[Any]) -> dict[str, int]:
+    """负责“状态counts”。
+
+    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     counts: dict[str, int] = {}
     for item in items:
         status = str(item.status)
@@ -43,6 +55,10 @@ def _status_counts(items: list[Any]) -> dict[str, int]:
 
 
 def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
+    """负责“collectdatabase指标”。
+
+    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         inbox = list(session.execute(select(InboxMessage).where(InboxMessage.tenant_id == tenant_id)).scalars())
         tasks = list(session.execute(select(Task).where(Task.tenant_id == tenant_id)).scalars())
@@ -153,6 +169,10 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
 
 
 def _grouped_status_counts(session: Any, model: Any, tenant_id: str) -> dict[str, int]:
+    """负责“grouped状态counts”。
+
+    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     rows = session.execute(
         select(model.status, func.count()).where(model.tenant_id == tenant_id).group_by(model.status)
     ).all()
@@ -246,6 +266,10 @@ def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
 
 
 def _collect_stream_metrics_once(keys: RedisKeys) -> dict[str, Any]:
+    """负责“collect流指标once”。
+
+    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     client = get_redis()
     lag = 0
     pending = 0
@@ -271,6 +295,10 @@ def _collect_stream_metrics_once(keys: RedisKeys) -> dict[str, Any]:
 
 
 def collect_stream_metrics(keys: RedisKeys = KEYS, *, max_attempts: int = 3) -> dict[str, Any]:
+    """负责“collect流指标”。
+
+    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     for attempt in range(max(1, max_attempts)):
         try:
             return _collect_stream_metrics_once(keys)
@@ -282,6 +310,10 @@ def collect_stream_metrics(keys: RedisKeys = KEYS, *, max_attempts: int = 3) -> 
 
 
 def collect_lock_metrics(*, since: str | None = None) -> dict[str, int | None]:
+    """负责“collect锁指标”。
+
+    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     since_dt = datetime.fromisoformat(since) if since else None
     values: list[int] = []
     log_dir = Path("data/logs")
@@ -352,6 +384,10 @@ def build_report(
     submission: dict[str, Any] | None = None,
     locks: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """负责“构建报告”。
+
+    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     submission = submission or {}
     root_status = database.get("root_task_status") or {}
     blocked = int(root_status.get("blocked") or 0)

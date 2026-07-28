@@ -92,6 +92,10 @@ _CURRENT_FACT_MARKERS = ("住在哪里", "住哪", "现在住", "目前住", "�
 
 
 def _clip(text: str | None, limit: int = 500) -> str:
+    """负责“clip”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not text:
         return ""
     text = str(text)
@@ -101,6 +105,10 @@ def _clip(text: str | None, limit: int = 500) -> str:
 
 
 def _parse_ts(ts: str | None) -> datetime | None:
+    """负责“解析ts”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not ts:
         return None
     try:
@@ -113,6 +121,10 @@ def _parse_ts(ts: str | None) -> datetime | None:
 
 
 def _coerce_tags(value: Any) -> list[str]:
+    """负责“coercetags”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if value is None:
         return []
     if isinstance(value, str):
@@ -123,6 +135,10 @@ def _coerce_tags(value: Any) -> list[str]:
 
 
 def _coerce_bool(value: Any, default: bool = True) -> bool:
+    """负责“coercebool”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if isinstance(value, bool):
         return value
     if value is None:
@@ -137,10 +153,18 @@ def _coerce_bool(value: Any, default: bool = True) -> bool:
 
 
 def _normalized_query(value: str) -> str:
+    """负责“normalized查询”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return " ".join(value.strip().casefold().rstrip("?？").split())
 
 
 def _deterministic_route(question: str) -> dict[str, Any] | None:
+    """负责“deterministic路由”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     normalized = _normalized_query(question)
     type_match = re.fullmatch(r"/(?:type|类型)\s+(.+)", normalized)
     tag_match = re.fullmatch(r"/(?:tag|标签)\s+(.+)", normalized)
@@ -264,6 +288,10 @@ def _intent_route(question: str, *, trace: dict[str, Any] | None = None) -> dict
 
 
 def _safe_tool_args(action: str, args: dict[str, Any]) -> dict[str, Any]:
+    """负责“安全工具参数”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     safe: dict[str, Any] = {"tool": action}
     for key in ("type", "note_type", "tags", "tag", "limit", "top_k", "min_score", "days", "note_id", "match_all_tags", "memory_type"):
         if key in args:
@@ -274,6 +302,10 @@ def _safe_tool_args(action: str, args: dict[str, Any]) -> dict[str, Any]:
 
 
 def _result_ids(result: Any) -> list[str]:
+    """负责“结果标识列表”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     ids: list[str] = []
     if isinstance(result, list):
         for item in result:
@@ -330,6 +362,10 @@ def _fuse_memory_results(groups: list[list[dict[str, Any]]], *, limit: int = 5) 
 
 
 def _evidence_items(evidence: Any) -> list[dict[str, Any]]:
+    """负责“evidence条目列表”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     items: list[dict[str, Any]] = []
     if isinstance(evidence, list):
         items.extend(item for item in evidence if isinstance(item, dict))
@@ -341,6 +377,10 @@ def _evidence_items(evidence: Any) -> list[dict[str, Any]]:
 
 
 def _merge_evidence(current: list[dict[str, Any]], result: Any) -> list[dict[str, Any]]:
+    """负责“合并evidence”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     merged = list(current)
     seen = {str(item.get("id")) for item in merged if item.get("id")}
     for item in _evidence_items(result):
@@ -352,6 +392,10 @@ def _merge_evidence(current: list[dict[str, Any]], result: Any) -> list[dict[str
 
 
 def _cited_evidence(observations: list[dict[str, Any]], evidence_ids: Any) -> list[dict[str, Any]]:
+    """负责“citedevidence”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not isinstance(evidence_ids, list):
         return []
     available: dict[str, dict[str, Any]] = {}
@@ -404,6 +448,10 @@ def _source_lines(
 
 
 def _with_sources(answer: str, selected_evidence: Any) -> str:
+    """负责“withsources”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     sources = _source_lines(selected_evidence)
     if not sources:
         return answer
@@ -417,6 +465,10 @@ def _log_final_answer(
     source: str,
     observations: list[dict[str, Any]] | None = None,
 ) -> None:
+    """负责“logfinalanswer”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     log_event(
         "query.final_answer",
         space_id=space_id,
@@ -429,6 +481,10 @@ def _log_final_answer(
 
 
 def _note_brief(note: dict[str, Any], *, text_limit: int = 500) -> dict[str, Any]:
+    """负责“笔记brief”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return {
         "id": note.get("id"),
         "time": note.get("ts"),
@@ -443,10 +499,18 @@ def _note_brief(note: dict[str, Any], *, text_limit: int = 500) -> dict[str, Any
 
 
 def _safe_notes(space_id: str) -> list[dict[str, Any]]:
+    """负责“安全笔记列表”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return [note for note in load_index(space_id) if is_note_queryable(note)]
 
 
 def _find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
+    """负责“查找笔记”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     for note in _safe_notes(space_id):
         if note.get("id") == note_id:
             return note
@@ -513,6 +577,10 @@ def filter_notes(
 
 
 def by_type(space_id: str, note_type: str, limit: int = 30) -> list[dict[str, Any]]:
+    """负责“by类型”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return filter_notes(
         space_id,
         note_type=note_type,
@@ -521,6 +589,10 @@ def by_type(space_id: str, note_type: str, limit: int = 30) -> list[dict[str, An
 
 
 def by_tag(space_id: str, tag: str, limit: int = 10) -> list[dict[str, Any]]:
+    """负责“bytag”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return filter_notes(
         space_id,
         tags=[tag],
@@ -535,6 +607,10 @@ def semantic_search(
     top_k: int = QUERY_TOP_K,
     min_score: float = DEFAULT_QUERY_MIN_SCORE,
 ) -> list[dict[str, Any]]:
+    """负责“semantic检索”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     query = query.strip()
     if not query:
         return []
@@ -606,6 +682,10 @@ _QUERY_FILLERS = (
 
 
 def _lexical_terms(text: str) -> set[str]:
+    """负责“lexicalterms”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = str(text or "").casefold()
     for filler in _QUERY_FILLERS:
         value = value.replace(filler, "")
@@ -673,6 +753,10 @@ def memory_note_fallback(
 
 
 def get_note(space_id: str, note_id: str) -> dict[str, Any]:
+    """负责“获取笔记”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     note = _postgres_find_note(space_id, note_id) if STORAGE_BACKEND == "postgres" else _find_note(space_id, note_id)
     if note is not None and not is_note_queryable(note):
         note = None
@@ -682,6 +766,10 @@ def get_note(space_id: str, note_id: str) -> dict[str, Any]:
 
 
 def list_recent(space_id: str, days: int = 7, limit: int = 10) -> list[dict[str, Any]]:
+    """负责“列出recent”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     days = max(1, min(int(days), 365))
     limit = max(1, min(int(limit), 30))
 
@@ -702,6 +790,10 @@ def list_recent(space_id: str, days: int = 7, limit: int = 10) -> list[dict[str,
 
 
 def follow_links(space_id: str, note_id: str, limit: int = 5) -> dict[str, Any]:
+    """负责“followlinks”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     limit = max(1, min(int(limit), 20))
     if STORAGE_BACKEND == "postgres":
         relations = _postgres_get_note_relations(space_id, note_id, limit=limit)
@@ -786,6 +878,10 @@ def related_notes(
 
 
 def _execute_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
+    """负责“execute工具”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if action == "by_type":
         return by_type(
             space_id,
@@ -850,7 +946,15 @@ def _run_tool(
     trace: dict[str, Any] | None = None,
     hook_context: AgentRunContext | None = None,
 ) -> Any:
+    """负责“运行工具”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     def execute() -> Any:
+        """负责“execute”。
+
+        该函数是 `agent.query_agent` 中的`_run_tool` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with observe(
             "query.tool_call",
             space_id=space_id,
@@ -870,6 +974,10 @@ def _run_tool(
 
 
 def _fallback_answer(observations: list[dict[str, Any]]) -> str:
+    """负责“fallbackanswer”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     candidates = []
     for observation in observations:
         result = observation.get("result")
@@ -903,6 +1011,10 @@ def _fallback_answer(observations: list[dict[str, Any]]) -> str:
 
 
 def _provisional_answer(notes: list[dict[str, Any]]) -> str:
+    """负责“provisionalanswer”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     lines = ["刚收到的记录还在后台完善分类，但已经可以查询："]
     for note in notes[:3]:
         content = note.get("text") or note.get("summary") or note.get("title") or ""
@@ -911,6 +1023,10 @@ def _provisional_answer(notes: list[dict[str, Any]]) -> str:
 
 
 def _memory_still_updating_answer(notes: list[dict[str, Any]]) -> str:
+    """负责“记忆stillupdatinganswer”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     prefix = "最新记录已保存，长期记忆仍在更新。"
     if not notes:
         return prefix + "请稍后再问一次。"
@@ -926,7 +1042,15 @@ def _complete_json_with_hooks(
     model_role: str = "balanced",
     llm_task: str | None = None,
 ) -> dict[str, Any]:
+    """负责“完成JSONwithhooks”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     def call() -> dict[str, Any]:
+        """负责“call”。
+
+        该函数是 `agent.query_agent` 中的`_complete_json_with_hooks` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         try:
             return complete_json(system_prompt=system_prompt, user_prompt=user_prompt, model_role=model_role, llm_task=llm_task)
         except TypeError as exc:
@@ -950,6 +1074,10 @@ def _complete_json_with_hooks(
 
 
 def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hook_context: AgentRunContext | None = None) -> str:
+    """负责“synthesizeanswer”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     payload = {
         "question": question,
         "observations": observations,
@@ -970,6 +1098,10 @@ def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hoo
 
 
 def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_context: AgentRunContext | None) -> str:
+    """负责“answerquestion实现”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     question = question.strip()
     max_steps = max(1, min(int(max_steps), 4))
     trace = start_trace("memory_query", space_id, query_len=len(question))
@@ -1420,6 +1552,10 @@ def answer_question(
     message_id: str | None = None,
     task_id: str | None = None,
 ) -> str:
+    """负责“answerquestion”。
+
+    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     context = AgentRunContext.create(
         space_id=space_id,
         run_type="query",

@@ -11,6 +11,10 @@ OUTPUT = Path(__file__).resolve().parent / "memory" / "quality_cases.jsonl"
 
 
 def _extraction_cases() -> list[dict[str, object]]:
+    """负责“extractioncases”。
+
+    该函数是 `eval.build_memory_quality_dataset` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     positives = [
         ("preference", "我喜欢喝{item}。", ["{item}"], "explicit_preference"),
         ("preference", "我不喜欢吃{item}，以后尽量避开。", ["{item}"], "negative_preference"),
@@ -72,6 +76,10 @@ def _extraction_cases() -> list[dict[str, object]]:
 
 
 def _relation_cases() -> list[dict[str, object]]:
+    """负责“关系cases”。
+
+    该函数是 `eval.build_memory_quality_dataset` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     templates = {
         "same": [
             ("我喜欢喝{item}。", "我喜欢喝{item}。", "preference", "preference"),
@@ -131,6 +139,10 @@ def _relation_cases() -> list[dict[str, object]]:
 
 
 def _retrieval_cases() -> list[dict[str, object]]:
+    """负责“retrievalcases”。
+
+    该函数是 `eval.build_memory_quality_dataset` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     topics = [
         ("preference", "喜欢喝{item}", "我想知道饮品偏好", "{item}"),
         ("preference", "不喜欢吃{item}", "哪些食物需要避开", "{item}"),
@@ -174,6 +186,10 @@ def _retrieval_cases() -> list[dict[str, object]]:
 
 
 def _e2e_cases() -> list[dict[str, object]]:
+    """负责“e2ecases”。
+
+    该函数是 `eval.build_memory_quality_dataset` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     templates = [
         ("preference", ["我喜欢喝牛奶。"], "我喜欢喝什么", "牛奶"),
         ("preference", ["我喜欢喝牛奶。", "我讨厌喝牛奶。"], "我喜欢喝什么", None),
@@ -201,6 +217,10 @@ def _e2e_cases() -> list[dict[str, object]]:
 
 
 def build_cases() -> list[dict[str, object]]:
+    """负责“构建cases”。
+
+    该函数是 `eval.build_memory_quality_dataset` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cases = _extraction_cases() + _relation_cases() + _retrieval_cases() + _e2e_cases()
     assert len(cases) == 360, len(cases)
     assert len({str(case["case_id"]) for case in cases}) == len(cases)
@@ -208,6 +228,7 @@ def build_cases() -> list[dict[str, object]]:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=OUTPUT)
     args = parser.parse_args()

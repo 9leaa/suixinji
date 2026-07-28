@@ -17,6 +17,10 @@ from storage.vector_store import cosine_similarity
 
 
 def note_search_text(note: dict[str, Any]) -> str:
+    """负责“笔记检索文本”。
+
+    该函数是 `eval.eval_retrieval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     tags = " ".join(str(tag) for tag in note.get("tags", []))
     related = " ".join(str(item) for item in note.get("related", []))
     return "\n".join(
@@ -34,6 +38,10 @@ def note_search_text(note: dict[str, Any]) -> str:
 
 
 def rank_notes(query: str, notes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """负责“rank笔记列表”。
+
+    该函数是 `eval.eval_retrieval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     query_embedding = embed_text(query)
     ranked = []
     for note in notes:
@@ -50,6 +58,10 @@ def rank_notes(query: str, notes: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def run(cases_path: Path, *, dry_run: bool = False, max_cases: int | None = None) -> dict[str, object]:
+    """负责“运行”。
+
+    该函数是 `eval.eval_retrieval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cases = load_jsonl(cases_path)
     if max_cases is not None:
         cases = cases[:max_cases]
@@ -74,6 +86,7 @@ def run(cases_path: Path, *, dry_run: bool = False, max_cases: int | None = None
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser(description="Evaluate embedding retrieval quality.")
     parser.add_argument("--cases", default="eval/data/retrieval_cases.jsonl")
     parser.add_argument("--output", default="eval/results/retrieval_results.json")

@@ -24,6 +24,10 @@ def start_agent_run(
     run_type: str,
     started_at: datetime,
 ) -> None:
+    """负责“启动Agent运行”。
+
+    该函数是 `repositories.postgres.agent_runs` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         session.execute(
             insert(AgentRun)
@@ -42,6 +46,10 @@ def start_agent_run(
 
 
 def finish_agent_run(run_id: str, status: str, *, error_type: str | None = None) -> None:
+    """负责“finishAgent运行”。
+
+    该函数是 `repositories.postgres.agent_runs` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         session.execute(
             update(AgentRun)
@@ -62,6 +70,10 @@ def add_agent_step(
     safe_output: dict[str, Any] | None = None,
     error_type: str | None = None,
 ) -> None:
+    """负责“添加Agent步骤”。
+
+    该函数是 `repositories.postgres.agent_runs` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         session.add(
             AgentStep(
@@ -86,6 +98,10 @@ def add_llm_usage(
     output_tokens: int = 0,
     estimated_cost: Decimal | float = 0,
 ) -> None:
+    """负责“添加LLMusage”。
+
+    该函数是 `repositories.postgres.agent_runs` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         session.add(
             LlmUsage(

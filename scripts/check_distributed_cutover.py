@@ -40,10 +40,18 @@ REQUIRED_TABLES = {
 
 
 def _add(report: dict[str, Any], level: str, check: str, detail: Any) -> None:
+    """负责“添加”。
+
+    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     report[level].append({"check": check, "detail": detail})
 
 
 def check_configuration(report: dict[str, Any]) -> None:
+    """负责“检查configuration”。
+
+    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     expected = {
         "STORAGE_BACKEND": "postgres",
         "COORDINATION_BACKEND": "redis",
@@ -60,6 +68,10 @@ def check_configuration(report: dict[str, Any]) -> None:
 
 
 def check_postgres(report: dict[str, Any], *, allow_pending: bool) -> None:
+    """负责“检查postgres”。
+
+    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     try:
         engine = get_engine()
         with engine.connect() as conn:
@@ -94,6 +106,10 @@ def check_postgres(report: dict[str, Any], *, allow_pending: bool) -> None:
 
 
 def check_redis(report: dict[str, Any]) -> None:
+    """负责“检查redis”。
+
+    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     try:
         client = get_redis()
         client.ping()
@@ -117,6 +133,10 @@ def check_redis(report: dict[str, Any]) -> None:
 
 
 def check_local_recovery_assets(report: dict[str, Any]) -> None:
+    """负责“检查localrecoveryassets”。
+
+    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cache_files = list((ROOT / "data" / "cache").glob("*.jsonl"))
     note_indexes = list((ROOT / "data" / "notes").glob("*/index.json"))
     backups = list((ROOT / "backups").glob("*")) if (ROOT / "backups").exists() else []
@@ -132,6 +152,10 @@ def check_local_recovery_assets(report: dict[str, Any]) -> None:
 
 
 def parse_args() -> argparse.Namespace:
+    """负责“解析参数”。
+
+    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--allow-pending", action="store_true")
     parser.add_argument("--output", type=Path)
@@ -139,6 +163,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     args = parse_args()
     report: dict[str, Any] = {"passed": [], "warnings": [], "blockers": []}
     check_configuration(report)

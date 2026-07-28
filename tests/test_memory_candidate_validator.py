@@ -3,6 +3,7 @@ from memory.models import MemoryCandidate
 
 
 def test_candidate_validator_rejects_sensitive_note_even_when_candidate_looks_safe():
+    """验证“候选validatorrejectssensitive笔记evenwhen候选looks安全”场景的预期行为与回归边界。"""
     candidate = MemoryCandidate("semantic", "用户正在开发项目", 0.8, 0.9)
 
     checked, rejection = validate_candidate(candidate, note_text="项目密码: abc123456")
@@ -12,6 +13,7 @@ def test_candidate_validator_rejects_sensitive_note_even_when_candidate_looks_sa
 
 
 def test_candidate_validator_clamps_scores_and_deduplicates_entities():
+    """验证“候选validatorclampsscoresanddeduplicatesentities”场景的预期行为与回归边界。"""
     candidate = MemoryCandidate(
         "semantic",
         "用户正在开发随心记项目",
@@ -30,4 +32,5 @@ def test_candidate_validator_clamps_scores_and_deduplicates_entities():
 
 
 def test_sensitive_pattern_detection_handles_long_financial_numbers():
+    """验证“sensitivepatterndetectionhandleslongfinancialnumbers”场景的预期行为与回归边界。"""
     assert contains_sensitive_data("账号 6222021234567890123") is True

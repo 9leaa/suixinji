@@ -20,6 +20,7 @@ pytestmark = pytest.mark.skipif(not os.getenv("REDIS_URL"), reason="Redis integr
 
 @pytest.fixture
 def redis_namespace():
+    """验证“redisnamespace”场景的预期行为与回归边界。"""
     client = get_redis()
     keys = RedisKeys(env=f"test-{uuid.uuid4().hex}")
     yield client, keys
@@ -28,6 +29,7 @@ def redis_namespace():
 
 
 def test_rate_limit_is_shared_and_user_isolated(redis_namespace):
+    """验证“rate限制是否为sharedand用户isolated”场景的预期行为与回归边界。"""
     client, keys = redis_namespace
     limiter = RedisRateLimiter(client)
     first_user = keys.rate_user("t1", "u1", "ask")
@@ -41,6 +43,7 @@ def test_rate_limit_is_shared_and_user_isolated(redis_namespace):
 
 
 def test_idempotency_has_single_concurrent_winner(redis_namespace):
+    """验证“idempotency是否包含singleconcurrentwinner”场景的预期行为与回归边界。"""
     client, keys = redis_namespace
     store = IdempotencyStore(client, ttl_seconds=10)
     key = keys.idempotency("t1", "test", "message")
@@ -52,6 +55,7 @@ def test_idempotency_has_single_concurrent_winner(redis_namespace):
 
 
 def test_lock_token_cache_version_and_session_ttl(redis_namespace):
+    """验证“锁token缓存版本and会话ttl”场景的预期行为与回归边界。"""
     client, keys = redis_namespace
     first = RedisDistributedLock(keys.lock_space("t1", "s1"), client=client, ttl_ms=1000)
     second = RedisDistributedLock(keys.lock_space("t1", "s1"), client=client, ttl_ms=1000)
@@ -79,6 +83,7 @@ def test_lock_token_cache_version_and_session_ttl(redis_namespace):
 
 
 def test_business_redis_keys_are_tenant_isolated():
+    """验证“businessredis键列表are租户isolated”场景的预期行为与回归边界。"""
     keys = RedisKeys(env="test-stage4")
     assert keys.rate_user("tenant-a", "same-user", "ask") != keys.rate_user("tenant-b", "same-user", "ask")
     assert keys.idempotency("tenant-a", "api", "same-message") != keys.idempotency("tenant-b", "api", "same-message")

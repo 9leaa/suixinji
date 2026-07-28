@@ -6,12 +6,14 @@ from runtime.executor import BoundedTaskExecutor
 
 
 def isolate_delivery_store(monkeypatch, tmp_path):
+    """验证“isolate投递存储”场景的预期行为与回归边界。"""
     monkeypatch.setattr(delivery_store, "DATA_DIR", tmp_path)
     monkeypatch.setattr(delivery_store, "DELIVERY_DIR", tmp_path / "deliveries")
     monkeypatch.setattr(delivery_store, "DELIVERY_PATH", tmp_path / "deliveries" / "index.json")
 
 
 def test_auto_summary_delivery_is_sent_once(monkeypatch, tmp_path):
+    """验证“auto总结投递是否为sentonce”场景的预期行为与回归边界。"""
     isolate_delivery_store(monkeypatch, tmp_path)
     monkeypatch.setattr(
         "runtime.executor.generate_summary",

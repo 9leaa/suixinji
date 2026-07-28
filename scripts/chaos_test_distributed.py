@@ -27,6 +27,10 @@ ROLE_COMMANDS = {
 
 
 def load_state() -> dict[str, str]:
+    """负责“加载状态”。
+
+    该函数是 `scripts.chaos_test_distributed` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not STATE_FILE.exists():
         raise SystemExit(f"Stage 4 state is missing: {STATE_FILE}")
     state = {}
@@ -38,6 +42,10 @@ def load_state() -> dict[str, str]:
 
 
 def process_env(state: dict[str, str]) -> dict[str, str]:
+    """负责“处理env”。
+
+    该函数是 `scripts.chaos_test_distributed` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return {
         **os.environ,
         "STORAGE_BACKEND": "postgres",
@@ -60,10 +68,18 @@ def process_env(state: dict[str, str]) -> dict[str, str]:
 
 
 def pid_for(role: str) -> int:
+    """负责“pidfor”。
+
+    该函数是 `scripts.chaos_test_distributed` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return int((PID_DIR / f"{role}.pid").read_text(encoding="utf-8"))
 
 
 def restart(role: str, state: dict[str, str]) -> int:
+    """负责“restart”。
+
+    该函数是 `scripts.chaos_test_distributed` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     command = [part.format(redis_env=state["REDIS_ENV"]) for part in ROLE_COMMANDS[role]]
     log_handle = (LOG_DIR / f"{role}.log").open("a", encoding="utf-8")
     process = subprocess.Popen(command, cwd=ROOT, env=process_env(state), stdout=log_handle, stderr=subprocess.STDOUT, start_new_session=True)
@@ -72,6 +88,10 @@ def restart(role: str, state: dict[str, str]) -> int:
 
 
 def parse_args() -> argparse.Namespace:
+    """负责“解析参数”。
+
+    该函数是 `scripts.chaos_test_distributed` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--pause-seconds", type=float, default=1.0)
@@ -80,6 +100,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     args = parse_args()
     state = load_state()
     steps: list[dict[str, Any]] = []

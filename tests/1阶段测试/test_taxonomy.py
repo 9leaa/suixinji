@@ -11,6 +11,7 @@ from core.taxonomy import (
 
 
 def test_fixed_types_and_tags_are_valid():
+    """验证“fixedtypesandtagsarevalid”场景的预期行为与回归边界。"""
     assert is_valid_type("任务")
     assert is_valid_type("生活")
     assert not is_valid_type("工作")
@@ -21,12 +22,14 @@ def test_fixed_types_and_tags_are_valid():
 
 
 def test_normalize_type_falls_back_to_resource_type():
+    """验证“normalize类型fallsback转换为resource类型”场景的预期行为与回归边界。"""
     assert normalize_type("任务") == "任务"
     assert normalize_type("不存在的类型") == "资料"
     assert normalize_type(None) == "资料"
 
 
 def test_normalize_tags_keeps_only_allowed_fixed_tags():
+    """验证“normalizetagskeepsonlyallowedfixedtags”场景的预期行为与回归边界。"""
     tags = normalize_tags(
         ["待办", "提醒", "任务", "自由标签", "#截止时间", "待办"],
         "任务",
@@ -38,6 +41,7 @@ def test_normalize_tags_keeps_only_allowed_fixed_tags():
 
 
 def test_normalize_tags_fills_missing_tags_from_type_pool():
+    """验证“normalizetagsfillsmissingtagsfrom类型pool”场景的预期行为与回归边界。"""
     tags = normalize_tags([], "生活")
 
     assert len(tags) == 2
@@ -45,6 +49,7 @@ def test_normalize_tags_fills_missing_tags_from_type_pool():
 
 
 def test_normalize_classification_data_normalizes_type_and_tags():
+    """验证“normalizeclassification数据normalizes类型andtags”场景的预期行为与回归边界。"""
     data = normalize_classification_data(
         {
             "title": "买菜",
@@ -59,4 +64,5 @@ def test_normalize_classification_data_normalizes_type_and_tags():
 
 
 def test_normalize_tag_strips_hash_and_spaces():
+    """验证“normalizetagstripshashandspaces”场景的预期行为与回归边界。"""
     assert normalize_tag(" #饮食 ") == "饮食"

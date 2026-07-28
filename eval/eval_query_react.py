@@ -19,11 +19,19 @@ from storage.vector_store import cosine_similarity
 
 
 def _clip(text: str | None, limit: int = 500) -> str:
+    """负责“clip”。
+
+    该函数是 `eval.eval_query_react` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     text = str(text or "")
     return text if len(text) <= limit else text[:limit] + "..."
 
 
 def local_semantic_search(notes: list[dict[str, Any]], query: str, top_k: int, min_score: float) -> list[dict[str, Any]]:
+    """负责“localsemantic检索”。
+
+    该函数是 `eval.eval_query_react` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     query_embedding = embed_text(query)
     ranked = []
     for note in notes:
@@ -50,6 +58,10 @@ def local_semantic_search(notes: list[dict[str, Any]], query: str, top_k: int, m
 
 
 def run_case(case: dict[str, Any]) -> dict[str, Any]:
+    """负责“运行case”。
+
+    该函数是 `eval.eval_query_react` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     notes = list(case.get("notes", []))
     tool_calls: list[dict[str, Any]] = []
 
@@ -58,12 +70,24 @@ def run_case(case: dict[str, Any]) -> dict[str, Any]:
     original_run_tool = query_agent._run_tool
 
     def fake_load_index(space_id: str) -> list[dict[str, Any]]:
+        """负责“fake加载索引”。
+
+        该函数是 `eval.eval_query_react` 中的`run_case` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return notes
 
     def fake_semantic_search(space_id: str, query: str, top_k: int = 5, min_score: float = query_agent.DEFAULT_QUERY_MIN_SCORE):
+        """负责“fakesemantic检索”。
+
+        该函数是 `eval.eval_query_react` 中的`run_case` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return local_semantic_search(notes, query, top_k, min_score)
 
     def recording_run_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
+        """负责“recording运行工具”。
+
+        该函数是 `eval.eval_query_react` 中的`run_case` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         result = original_run_tool(space_id, action, args)
         tool_calls.append({"tool": action, "args": args, "result": result})
         return result
@@ -88,6 +112,10 @@ def run_case(case: dict[str, Any]) -> dict[str, Any]:
 
 
 def run(cases_path: Path, *, dry_run: bool = False, max_cases: int | None = None) -> dict[str, object]:
+    """负责“运行”。
+
+    该函数是 `eval.eval_query_react` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cases = load_jsonl(cases_path)
     if max_cases is not None:
         cases = cases[:max_cases]
@@ -104,6 +132,7 @@ def run(cases_path: Path, *, dry_run: bool = False, max_cases: int | None = None
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser(description="Evaluate complete ReAct query behavior.")
     parser.add_argument("--cases", default="eval/data/query_cases.jsonl")
     parser.add_argument("--output", default="eval/results/query_react_results.json")

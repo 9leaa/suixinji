@@ -23,14 +23,26 @@ from summary.subscription import mark_summary_sent
 
 
 def _payload(task: dict[str, Any]) -> dict[str, Any]:
+    """负责“payload”。
+
+    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return dict(task.get("payload_json") or {})
 
 
 def _tenant_id(task: dict[str, Any]) -> str:
+    """负责“租户标识”。
+
+    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return str(task.get("tenant_id") or "default")
 
 
 def _enqueue_delivery(task: dict[str, Any], *, text: str, payload: dict[str, Any]) -> None:
+    """负责“enqueue投递”。
+
+    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     delivery_key = str(payload["delivery_key"])
     followup = {
         "chat_id": str(payload["chat_id"]),
@@ -51,6 +63,10 @@ def _enqueue_delivery(task: dict[str, Any], *, text: str, payload: dict[str, Any
 
 
 def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
+    """负责“处理接收写入”。
+
+    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     payload = _payload(task)
     inbox_id = str(payload.get("inbox_id") or "")
     record = load_inbox_record(inbox_id)
@@ -111,6 +127,10 @@ def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
 
 
 def handle_query(task: dict[str, Any]) -> TaskOutcome:
+    """负责“处理查询”。
+
+    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     payload = _payload(task)
     inbox_id = str(payload.get("inbox_id") or "")
     if FAKE_EXTERNALS:
@@ -129,6 +149,10 @@ def handle_query(task: dict[str, Any]) -> TaskOutcome:
 
 
 def handle_summary(task: dict[str, Any]) -> TaskOutcome:
+    """负责“处理总结”。
+
+    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     payload = _payload(task)
     inbox_id = str(payload.get("inbox_id") or "")
     if FAKE_EXTERNALS:
@@ -148,6 +172,10 @@ def handle_summary(task: dict[str, Any]) -> TaskOutcome:
 
 
 def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
+    """负责“处理记忆”。
+
+    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     payload = _payload(task)
     operation = str(payload.get("operation") or "extract")
     note_id = str(payload.get("note_id") or "")
@@ -178,6 +206,10 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
 
 
 def handle_memory_embedding(task: dict[str, Any]) -> TaskOutcome | None:
+    """负责“处理记忆向量”。
+
+    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     from repositories.postgres.memory import claim_memory_vector, complete_memory_vector, fail_memory_vector
 
     payload = _payload(task)
@@ -212,6 +244,10 @@ def handle_memory_embedding(task: dict[str, Any]) -> TaskOutcome | None:
 
 
 def handle_enrichment(task: dict[str, Any]) -> None:
+    """负责“处理enrichment”。
+
+    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if FAKE_EXTERNALS:
         return
     payload = _payload(task)
@@ -224,6 +260,10 @@ def handle_enrichment(task: dict[str, Any]) -> None:
 
 
 def handle_delivery(task: dict[str, Any]) -> None:
+    """负责“处理投递”。
+
+    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     payload = _payload(task)
     key = str(payload["delivery_key"])
     reservation = reserve_delivery(

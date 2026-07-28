@@ -5,6 +5,7 @@ from agent import query_intent
 
 
 def test_query_intent_routes_natural_task_status_question(monkeypatch):
+    """验证“查询意图routesnatural任务状态question”场景的预期行为与回归边界。"""
     monkeypatch.setattr(
         query_intent,
         "complete_json",
@@ -30,6 +31,7 @@ def test_query_intent_routes_natural_task_status_question(monkeypatch):
 
 
 def test_query_agent_uses_intent_memory_first(monkeypatch):
+    """验证“查询Agentuses意图记忆首个”场景的预期行为与回归边界。"""
     from core import settings
 
     monkeypatch.setattr(settings, "QUERY_INTENT_MODEL_ENABLED", True)
@@ -55,6 +57,7 @@ def test_query_agent_uses_intent_memory_first(monkeypatch):
 
 
 def test_general_intent_suppresses_legacy_short_note_only_route(monkeypatch):
+    """验证“general意图suppresseslegacyshort笔记only路由”场景的预期行为与回归边界。"""
     monkeypatch.setattr(
         query_intent,
         "complete_json",
@@ -69,6 +72,7 @@ def test_general_intent_suppresses_legacy_short_note_only_route(monkeypatch):
 
 
 def test_task_intent_splits_embedded_ascii_topic_for_retrieval():
+    """验证“任务意图splitsembeddedasciitopicforretrieval”场景的预期行为与回归边界。"""
     intent = query_intent.QueryIntent(
         intent="task_status",
         entity="用户",
@@ -85,6 +89,7 @@ def test_task_intent_splits_embedded_ascii_topic_for_retrieval():
 
 
 def test_generic_task_inventory_falls_back_to_task_notes():
+    """验证“generic任务inventoryfallsback转换为任务笔记列表”场景的预期行为与回归边界。"""
     intent = query_intent.QueryIntent(
         intent="task_status",
         entity="用户",

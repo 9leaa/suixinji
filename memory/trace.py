@@ -19,6 +19,10 @@ _TRACE_LOCK = threading.RLock()
 
 
 def _safe_error(error: str | None) -> str | None:
+    """负责“安全错误”。
+
+    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not error:
         return None
     value = str(error)
@@ -31,6 +35,10 @@ def _safe_error(error: str | None) -> str | None:
 
 
 def _read_traces(path: str | Path | None = None) -> list[dict[str, Any]]:
+    """负责“读取traces”。
+
+    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if path is None and STORAGE_BACKEND == "postgres":
         from repositories.postgres.memory import list_memory_traces
 
@@ -49,6 +57,10 @@ def _read_traces(path: str | Path | None = None) -> list[dict[str, Any]]:
 
 
 def start_trace(trace_type: str, space_id: str, *, note_id: str | None = None, query_len: int | None = None) -> dict[str, Any]:
+    """负责“启动追踪”。
+
+    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     trace: dict[str, Any] = {
         "trace_id": new_id("trace"),
         "trace_type": trace_type,
@@ -73,6 +85,10 @@ def add_step(
     reason: str | None = None,
     error: str | None = None,
 ) -> None:
+    """负责“添加步骤”。
+
+    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if trace is None:
         return
     trace.setdefault("steps", []).append(
@@ -90,6 +106,10 @@ def add_step(
 
 
 def finish_trace(trace: dict[str, Any] | None, *, status: str = "success", path: str | Path | None = None) -> dict[str, Any] | None:
+    """负责“finish追踪”。
+
+    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if trace is None:
         return None
     trace["finished_at"] = utc_now_iso()
@@ -111,11 +131,19 @@ def finish_trace(trace: dict[str, Any] | None, *, status: str = "success", path:
 
 
 def latest_trace(path: str | Path | None = None) -> dict[str, Any] | None:
+    """负责“最新追踪”。
+
+    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     traces = _read_traces(path)
     return traces[-1] if traces else None
 
 
 def get_trace(trace_id: str, path: str | Path | None = None) -> dict[str, Any] | None:
+    """负责“获取追踪”。
+
+    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     for item in reversed(_read_traces(path)):
         if item.get("trace_id") == trace_id:
             return item
@@ -123,6 +151,10 @@ def get_trace(trace_id: str, path: str | Path | None = None) -> dict[str, Any] |
 
 
 def find_traces_by_memory(memory_id: str, path: str | Path | None = None) -> list[dict[str, Any]]:
+    """负责“查找tracesby记忆”。
+
+    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     matched = []
     for item in _read_traces(path):
         for step in item.get("steps", []):

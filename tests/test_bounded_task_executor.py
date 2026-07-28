@@ -8,11 +8,13 @@ from runtime.task import TASK_FAILED, TASK_REJECTED, TASK_SUCCESS
 
 
 def test_executor_rejects_when_queue_is_full(monkeypatch):
+    """验证“executorrejectswhenqueue是否为full”场景的预期行为与回归边界。"""
     started = threading.Event()
     release = threading.Event()
     sent_messages = []
 
     def fake_process_record(record):
+        """验证“fake处理记录”场景的预期行为与回归边界。"""
         started.set()
         release.wait(timeout=5)
 
@@ -42,6 +44,7 @@ def test_executor_rejects_when_queue_is_full(monkeypatch):
 
 
 def test_executor_runs_ingest_and_updates_stats(monkeypatch):
+    """验证“executorruns接收写入andupdates统计”场景的预期行为与回归边界。"""
     processed = []
     sent_messages = []
 
@@ -70,6 +73,7 @@ def test_executor_runs_ingest_and_updates_stats(monkeypatch):
 
 
 def test_query_failure_sends_visible_notice(monkeypatch):
+    """验证“查询failuresendsvisiblenotice”场景的预期行为与回归边界。"""
     sent_messages = []
     monkeypatch.setattr("runtime.executor.answer_question", lambda space_id, question: (_ for _ in ()).throw(RuntimeError("llm empty")))
     executor = BoundedTaskExecutor(
@@ -86,6 +90,7 @@ def test_query_failure_sends_visible_notice(monkeypatch):
 
 
 def test_ingest_ack_does_not_wait_for_background_enrichment(monkeypatch):
+    """验证“接收写入ackdoesnot等待forbackgroundenrichment”场景的预期行为与回归边界。"""
     enrichment_started = threading.Event()
     release_enrichment = threading.Event()
     archived_sent = threading.Event()
@@ -93,6 +98,7 @@ def test_ingest_ack_does_not_wait_for_background_enrichment(monkeypatch):
     monkeypatch.setattr("runtime.executor.process_record", lambda record: {"id": record["id"]})
 
     def fake_enrich(space_id, note_id):
+        """验证“fake富化”场景的预期行为与回归边界。"""
         enrichment_started.set()
         release_enrichment.wait(timeout=5)
         return True
@@ -122,6 +128,7 @@ def test_ingest_ack_does_not_wait_for_background_enrichment(monkeypatch):
 
 
 def test_query_flushes_pending_wal_before_reading(monkeypatch):
+    """验证“查询flushes待处理预写日志前置reading”场景的预期行为与回归边界。"""
     order = []
     monkeypatch.setattr("runtime.executor.process_pending", lambda space_id: order.append(("flush", space_id)) or 1)
     monkeypatch.setattr("runtime.executor.answer_question", lambda space_id, question: order.append(("answer", space_id)) or "ok")

@@ -72,6 +72,10 @@ def get_chat_config(model_role: str | None = None) -> ChatConfig:
     )
 
 def get_embedding_config() -> EmbeddingConfig:
+    """负责“获取向量配置”。
+
+    该函数是 `core.config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return EmbeddingConfig(
         api_key=os.getenv("DASHSCOPE_API_KEY") or os.getenv("OPENAI_API_KEY") or None,
         base_url=os.getenv("EMBEDDING_BASE_URL") or os.getenv("OPENAI_BASE_URL") or None,

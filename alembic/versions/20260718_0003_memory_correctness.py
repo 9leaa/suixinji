@@ -14,6 +14,10 @@ depends_on = None
 
 
 def _add_columns(inspector: sa.Inspector, table: str, definitions: dict[str, sa.Column]) -> None:
+    """负责“添加columns”。
+
+    该函数是 `alembic.versions.20260718_0003_memory_correctness` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not inspector.has_table(table):
         return
     existing = {column["name"] for column in inspector.get_columns(table)}
@@ -23,6 +27,10 @@ def _add_columns(inspector: sa.Inspector, table: str, definitions: dict[str, sa.
 
 
 def upgrade() -> None:
+    """负责“upgrade”。
+
+    该函数是 `alembic.versions.20260718_0003_memory_correctness` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     bind = op.get_bind()
     inspector = sa.inspect(bind)
     _add_columns(
@@ -111,6 +119,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """负责“downgrade”。
+
+    该函数是 `alembic.versions.20260718_0003_memory_correctness` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     bind = op.get_bind()
     inspector = sa.inspect(bind)
     if inspector.has_table("memory_candidates"):

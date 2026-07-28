@@ -26,6 +26,10 @@ DEFAULT_MEMORY_SCHEDULER_INTERVAL_SECONDS = 3600
 
 
 def list_memory_space_ids(notes_dir: Path | None = None) -> list[str]:
+    """负责“列出记忆空间标识列表”。
+
+    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if notes_dir is None:
         return list_note_space_ids()
     root = notes_dir or NOTES_DIR
@@ -35,6 +39,10 @@ def list_memory_space_ids(notes_dir: Path | None = None) -> list[str]:
 
 
 def run_memory_consolidation(space_id: str, cadence: str) -> dict[str, Any]:
+    """负责“运行记忆consolidation”。
+
+    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cadence = cadence.strip().lower()
     if cadence == "daily":
         return {**process_unextracted_notes(space_id), "expired_count": run_expiry_once(space_id=space_id)["expired_count"]}
@@ -46,6 +54,10 @@ def run_memory_consolidation(space_id: str, cadence: str) -> dict[str, Any]:
 
 
 def run_memory_consolidation_once(cadence: str, *, space_ids: list[str] | None = None, today: date | None = None) -> dict[str, Any]:
+    """负责“运行记忆consolidationonce”。
+
+    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     current_day = today or date.today()
     period_key = consolidation_period_key(cadence, current_day)
     targets = space_ids or list_memory_space_ids()
@@ -131,10 +143,18 @@ def run_memory_consolidation_once(cadence: str, *, space_ids: list[str] | None =
 
 
 def _report_has_failures(report: dict[str, Any]) -> bool:
+    """负责“报告是否包含failures”。
+
+    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return any(item.get("status") == "failed" for item in report.get("results", []))
 
 
 def _report_is_complete(report: dict[str, Any]) -> bool:
+    """负责“报告是否为完成”。
+
+    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     results = report.get("results", [])
     if not results:
         return True
@@ -142,6 +162,10 @@ def _report_is_complete(report: dict[str, Any]) -> bool:
 
 
 def due_cadences(today: date, last_run_dates: dict[str, str]) -> list[str]:
+    """负责“duecadences”。
+
+    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     due = []
     today_key = today.isoformat()
     if last_run_dates.get("daily") != today_key:
@@ -154,6 +178,10 @@ def due_cadences(today: date, last_run_dates: dict[str, str]) -> list[str]:
 
 
 def run_memory_scheduler_tick(last_run_dates: dict[str, str] | None = None, *, today: date | None = None) -> dict[str, Any]:
+    """负责“运行记忆schedulertick”。
+
+    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     state = last_run_dates if last_run_dates is not None else {}
     current_day = today or date.today()
     reports = []
@@ -182,9 +210,17 @@ def run_memory_scheduler_tick(last_run_dates: dict[str, str] | None = None, *, t
 
 
 def start_memory_scheduler(interval_seconds: int = DEFAULT_MEMORY_SCHEDULER_INTERVAL_SECONDS) -> threading.Thread:
+    """负责“启动记忆scheduler”。
+
+    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     last_run_dates: dict[str, str] = {}
 
     def _loop() -> None:
+        """负责“loop”。
+
+        该函数是 `memory.scheduler` 中的`start_memory_scheduler` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         while True:
             try:
                 run_memory_scheduler_tick(last_run_dates)

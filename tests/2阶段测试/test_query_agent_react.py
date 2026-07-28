@@ -21,6 +21,7 @@ NOTES = [
 
 
 def test_answer_question_empty_question_does_not_call_llm(monkeypatch):
+    """验证“answerquestionemptyquestiondoesnotcallLLM”场景的预期行为与回归边界。"""
     monkeypatch.setattr(query_agent, "complete_json", lambda **kwargs: (_ for _ in ()).throw(AssertionError("should not call llm")))
 
     answer = query_agent.answer_question(SPACE_ID, "   ")
@@ -29,9 +30,11 @@ def test_answer_question_empty_question_does_not_call_llm(monkeypatch):
 
 
 def test_answer_question_fast_routes_current_task_then_synthesizes_once(monkeypatch):
+    """验证“answerquestionfastroutescurrent任务thensynthesizesonce”场景的预期行为与回归边界。"""
     prompts = []
 
     def fake_complete_json(system_prompt, user_prompt, model_role=None):
+        """验证“fake完成JSON”场景的预期行为与回归边界。"""
         prompts.append(json.loads(user_prompt))
         assert model_role == "balanced"
         return {"final_answer": "你现在有 1 个任务：测试任务。"}
@@ -51,6 +54,7 @@ def test_answer_question_fast_routes_current_task_then_synthesizes_once(monkeypa
 
 
 def test_answer_question_defaults_to_semantic_search_when_llm_returns_no_action(monkeypatch):
+    """验证“answerquestiondefaults转换为semantic检索whenLLMreturns不action”场景的预期行为与回归边界。"""
     calls = []
     decisions = iter(
         [
@@ -75,6 +79,7 @@ def test_answer_question_defaults_to_semantic_search_when_llm_returns_no_action(
 
 
 def test_synthesize_answer_falls_back_when_llm_fails():
+    """验证“synthesizeanswerfallsbackwhenLLMfails”场景的预期行为与回归边界。"""
     observations = [
         {
             "tool": "filter_notes",

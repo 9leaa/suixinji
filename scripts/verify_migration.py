@@ -15,6 +15,7 @@ from scripts.migrate_local_to_postgres import _collect, _database_counts, _local
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=Path, default=Path("data"))
     args = parser.parse_args()

@@ -12,6 +12,10 @@ class SessionHook(AgentHook):
     name = "session"
 
     def before_agent(self, context: AgentRunContext) -> None:
+        """负责“Agent 执行前的 Hook 前置处理”。
+
+        该函数是 `agent.hooks.session` 中的`SessionHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if COORDINATION_BACKEND != "redis":
             return
         try:
@@ -20,6 +24,10 @@ class SessionHook(AgentHook):
             context.session = {}
 
     def after_agent(self, context: AgentRunContext, result: object) -> None:
+        """负责“Agent 执行后的 Hook 后置处理”。
+
+        该函数是 `agent.hooks.session` 中的`SessionHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if COORDINATION_BACKEND != "redis":
             return
         try:

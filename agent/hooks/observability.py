@@ -15,6 +15,10 @@ class ObservabilityHook(AgentHook):
     name = "observability"
 
     def before_agent(self, context: AgentRunContext) -> None:
+        """负责“Agent 执行前的 Hook 前置处理”。
+
+        该函数是 `agent.hooks.observability` 中的`ObservabilityHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         context.resources["agent_started_monotonic"] = time.monotonic()
         try:
             start_agent_run(
@@ -31,6 +35,10 @@ class ObservabilityHook(AgentHook):
         log_event("agent.before_agent", space_id=context.space_id, message_id=context.message_id, record_id=context.run_id, extra={"run_type": context.run_type})
 
     def after_agent(self, context: AgentRunContext, result: Any) -> None:
+        """负责“Agent 执行后的 Hook 后置处理”。
+
+        该函数是 `agent.hooks.observability` 中的`ObservabilityHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         try:
             finish_agent_run(context.run_id, "completed")
         except Exception:
@@ -38,20 +46,40 @@ class ObservabilityHook(AgentHook):
         log_event("agent.after_agent", space_id=context.space_id, message_id=context.message_id, record_id=context.run_id, extra={"run_type": context.run_type})
 
     def before_llm(self, context: AgentRunContext, request: dict[str, Any]) -> None:
+        """负责“LLM 调用前的 Hook 前置处理”。
+
+        该函数是 `agent.hooks.observability` 中的`ObservabilityHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         context.resources["llm_started_monotonic"] = time.monotonic()
 
     def after_llm(self, context: AgentRunContext, request: dict[str, Any], result: Any) -> None:
+        """负责“LLM 调用后的 Hook 后置处理”。
+
+        该函数是 `agent.hooks.observability` 中的`ObservabilityHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         self._step(context, "llm", str(request.get("name") or "complete_json"), "completed", started_key="llm_started_monotonic")
 
     def before_tool(self, context: AgentRunContext, tool_name: str, args: dict[str, Any]) -> None:
+        """负责“工具调用前的 Hook 前置处理”。
+
+        该函数是 `agent.hooks.observability` 中的`ObservabilityHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         context.resources[f"tool_started:{tool_name}"] = time.monotonic()
 
     def after_tool(self, context: AgentRunContext, tool_name: str, args: dict[str, Any], result: Any) -> None:
+        """负责“工具调用后的 Hook 后置处理”。
+
+        该函数是 `agent.hooks.observability` 中的`ObservabilityHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         safe_input = {"arg_keys": sorted(args), "arg_count": len(args)}
         safe_output = {"result_type": type(result).__name__, "result_count": len(result) if isinstance(result, (list, dict)) else None}
         self._step(context, "tool", tool_name, "completed", started_key=f"tool_started:{tool_name}", safe_input=safe_input, safe_output=safe_output)
 
     def on_error(self, context: AgentRunContext, error: Exception, scope: str) -> None:
+        """负责“异常发生时的 Hook 错误处理”。
+
+        该函数是 `agent.hooks.observability` 中的`ObservabilityHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if scope == "agent":
             try:
                 finish_agent_run(context.run_id, "failed", error_type=type(error).__name__)
@@ -81,6 +109,10 @@ class ObservabilityHook(AgentHook):
         safe_output: dict[str, Any] | None = None,
         error_type: str | None = None,
     ) -> None:
+        """负责“步骤”。
+
+        该函数是 `agent.hooks.observability` 中的`ObservabilityHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         duration_ms = None
         if started_key:
             started = context.resources.pop(started_key, None)

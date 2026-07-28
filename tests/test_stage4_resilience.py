@@ -21,6 +21,7 @@ from repositories.postgres.dispatch import DispatchResult
 
 
 def _api_request(task_type: str = "ingest") -> ReceiveRequest:
+    """验证“API请求”场景的预期行为与回归边界。"""
     return ReceiveRequest(
         message_id="stage4-message",
         space_id="stage4-space",
@@ -31,8 +32,10 @@ def _api_request(task_type: str = "ingest") -> ReceiveRequest:
 
 
 def test_api_keeps_accepting_when_redis_rate_limit_is_unavailable(monkeypatch):
+    """验证“APIkeepsacceptingwhenredisrate限制是否为unavailable”场景的预期行为与回归边界。"""
     class BrokenLimiter:
         def allow(self, *_args, **_kwargs):
+            """验证“allow”场景的预期行为与回归边界。"""
             raise ConnectionError("redis unavailable")
 
     monkeypatch.setattr(api, "COORDINATION_BACKEND", "redis")
@@ -42,8 +45,10 @@ def test_api_keeps_accepting_when_redis_rate_limit_is_unavailable(monkeypatch):
 
 
 def test_api_delays_summary_when_redis_rate_limit_is_unavailable(monkeypatch):
+    """验证“APIdelays总结whenredisrate限制是否为unavailable”场景的预期行为与回归边界。"""
     class BrokenLimiter:
         def allow(self, *_args, **_kwargs):
+            """验证“allow”场景的预期行为与回归边界。"""
             raise ConnectionError("redis unavailable")
 
     monkeypatch.setattr(api, "COORDINATION_BACKEND", "redis")
@@ -55,8 +60,10 @@ def test_api_delays_summary_when_redis_rate_limit_is_unavailable(monkeypatch):
 
 
 def test_api_returns_429_for_measured_rate_limit(monkeypatch):
+    """验证“APIreturns429formeasuredrate限制”场景的预期行为与回归边界。"""
     class RejectingLimiter:
         def allow(self, *_args, **_kwargs):
+            """验证“allow”场景的预期行为与回归边界。"""
             return SimpleNamespace(allowed=False, retry_after_ms=1500)
 
     monkeypatch.setattr(api, "COORDINATION_BACKEND", "redis")
@@ -68,8 +75,10 @@ def test_api_returns_429_for_measured_rate_limit(monkeypatch):
 
 
 def test_api_ignores_local_database_pressure_when_redis_rate_limit_is_available(monkeypatch):
+    """验证“APIignoreslocaldatabasepressurewhenredisrate限制是否为available”场景的预期行为与回归边界。"""
     class AllowingLimiter:
         def allow(self, *_args, **_kwargs):
+            """验证“allow”场景的预期行为与回归边界。"""
             return SimpleNamespace(allowed=True, retry_after_ms=0)
 
     monkeypatch.setattr(api, "COORDINATION_BACKEND", "redis")
@@ -83,8 +92,10 @@ def test_api_ignores_local_database_pressure_when_redis_rate_limit_is_available(
 
 
 def test_api_rejects_query_when_redis_and_database_are_unavailable(monkeypatch):
+    """验证“APIrejects查询whenredisanddatabaseareunavailable”场景的预期行为与回归边界。"""
     class BrokenLimiter:
         def allow(self, *_args, **_kwargs):
+            """验证“allow”场景的预期行为与回归边界。"""
             raise ConnectionError("redis unavailable")
 
     monkeypatch.setattr(api, "COORDINATION_BACKEND", "redis")
@@ -96,6 +107,7 @@ def test_api_rejects_query_when_redis_and_database_are_unavailable(monkeypatch):
 
 
 def test_api_returns_retryable_503_when_receiver_pool_times_out(monkeypatch):
+    """验证“APIreturnsretryable503whenreceiverpooltimesout”场景的预期行为与回归边界。"""
     monkeypatch.setattr(api, "TEST_API_ENABLED", True)
     monkeypatch.setattr(api, "TEST_API_TOKEN", "stage4-token")
     monkeypatch.setattr(api, "SUIXINJI_ENV", "stage4")
@@ -109,6 +121,7 @@ def test_api_returns_retryable_503_when_receiver_pool_times_out(monkeypatch):
 
 
 def test_test_api_rejects_disabled_and_unauthenticated_access(monkeypatch):
+    """验证“APIrejectsdisabledandunauthenticatedaccess”场景的预期行为与回归边界。"""
     monkeypatch.setattr(api, "TEST_API_ENABLED", False)
     with pytest.raises(HTTPException) as exc_info:
         api.commands(_api_request())
@@ -123,6 +136,7 @@ def test_test_api_rejects_disabled_and_unauthenticated_access(monkeypatch):
 
 
 def test_test_api_ignores_body_tenant_and_uses_auth_context(monkeypatch):
+    """验证“APIignoresbody租户andusesauth上下文”场景的预期行为与回归边界。"""
     captured = {}
     monkeypatch.setattr(api, "TEST_API_ENABLED", True)
     monkeypatch.setattr(api, "TEST_API_TOKEN", "stage4-token")
@@ -130,6 +144,7 @@ def test_test_api_ignores_body_tenant_and_uses_auth_context(monkeypatch):
     monkeypatch.setattr(api, "_check_rate_limit", lambda _request, _context=None: None)
 
     def receive_command(command):
+        """验证“receive命令”场景的预期行为与回归边界。"""
         captured["tenant_id"] = command.tenant_id
         captured["sender"] = command.sender
         return DispatchResult("inbox-1", "task-1", True, False)
@@ -148,8 +163,10 @@ def test_test_api_ignores_body_tenant_and_uses_auth_context(monkeypatch):
 
 
 def test_receiver_falls_back_to_postgres_when_redis_idempotency_is_down(monkeypatch):
+    """验证“receiverfallsback转换为postgreswhenredisidempotency是否为down”场景的预期行为与回归边界。"""
     class BrokenIdempotency:
         def __init__(self):
+            """初始化`BrokenIdempotency` 实例并建立后续调用所需的状态。"""
             raise ConnectionError("redis unavailable")
 
     expected = DispatchResult("inbox-1", "task-1", True, False)
@@ -170,8 +187,10 @@ def test_receiver_falls_back_to_postgres_when_redis_idempotency_is_down(monkeypa
 
 
 def test_receiver_returns_in_progress_without_postgres_for_processing_idempotency(monkeypatch):
+    """验证“receiverreturnsprogresswithoutpostgresforprocessingidempotency”场景的预期行为与回归边界。"""
     class ProcessingIdempotency:
         def get(self, _key):
+            """验证“获取”场景的预期行为与回归边界。"""
             return "processing"
 
     monkeypatch.setattr(receiver, "COORDINATION_BACKEND", "redis")
@@ -196,10 +215,12 @@ def test_receiver_returns_in_progress_without_postgres_for_processing_idempotenc
 
 
 def test_fake_delivery_never_calls_external_sender(monkeypatch):
+    """验证“fake投递nevercallsexternalsender”场景的预期行为与回归边界。"""
     sent = []
     reservation_kwargs = {}
 
     def reserve(*_args, **kwargs):
+        """验证“预约”场景的预期行为与回归边界。"""
         reservation_kwargs.update(kwargs)
         return SimpleNamespace(status="reserved")
 
@@ -227,6 +248,7 @@ def test_fake_delivery_never_calls_external_sender(monkeypatch):
 
 @pytest.mark.skipif(not os.getenv("DATABASE_URL"), reason="PostgreSQL integration URL is not configured")
 def test_memory_insert_inherits_space_tenant():
+    """验证“记忆插入inherits空间租户”场景的预期行为与回归边界。"""
     suffix = uuid.uuid4().hex
     tenant_id = f"stage4-tenant-{suffix}"
     space_id = f"stage4-space-{suffix}"
@@ -247,11 +269,13 @@ def test_memory_insert_inherits_space_tenant():
 
 @pytest.mark.skipif(not os.getenv("DATABASE_URL"), reason="PostgreSQL integration URL is not configured")
 def test_concurrent_space_creation_handles_all_unique_constraints():
+    """验证“concurrent空间creationhandlesalluniqueconstraints”场景的预期行为与回归边界。"""
     suffix = uuid.uuid4().hex
     tenant_id = f"stage4-tenant-{suffix}"
     space_id = f"stage4-space-{suffix}"
 
     def create_space(_index: int) -> None:
+        """验证“创建空间”场景的预期行为与回归边界。"""
         with session_scope() as session:
             ensure_tenant_space(session, space_id, tenant_id=tenant_id, source="stage4")
 
@@ -265,6 +289,7 @@ def test_concurrent_space_creation_handles_all_unique_constraints():
 
 @pytest.mark.skipif(not os.getenv("DATABASE_URL"), reason="PostgreSQL integration URL is not configured")
 def test_same_source_space_and_message_are_isolated_by_tenant():
+    """验证“same来源空间and消息areisolatedby租户”场景的预期行为与回归边界。"""
     suffix = uuid.uuid4().hex
     tenant_a = f"stage4-tenant-a-{suffix}"
     tenant_b = f"stage4-tenant-b-{suffix}"

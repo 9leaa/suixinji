@@ -3,6 +3,7 @@ from memory.service import format_trace, process_note_memory
 
 
 def test_memory_command_list_and_stats():
+    """验证“记忆命令列出and统计”场景的预期行为与回归边界。"""
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "记得完善 README"})
 
     assert "长期记忆" in _handle_memory_command("space-1", "/memory list")
@@ -12,17 +13,20 @@ def test_memory_command_list_and_stats():
 
 
 def test_memory_command_search_usage():
+    """验证“记忆命令检索usage”场景的预期行为与回归边界。"""
     assert "用法" in _handle_memory_command("space-1", "/memory")
     assert "没有找到" in _handle_memory_command("space-1", "/memory search 不存在")
 
 
 def test_trace_command_latest():
+    """验证“追踪命令最新”场景的预期行为与回归边界。"""
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我正在学习 Agent"})
 
     assert "Trace" in _handle_trace_command("/trace latest")
 
 
 def test_trace_formatter_shows_all_steps_and_candidate_summary():
+    """验证“追踪formattershowsallstepsand候选总结”场景的预期行为与回归边界。"""
     steps = [
         {
             "step": f"step-{index}",

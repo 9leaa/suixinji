@@ -19,6 +19,10 @@ DELIVERY_UNKNOWN = "unknown"
 
 
 def _record(row: Delivery):
+    """负责“记录”。
+
+    该函数是 `repositories.postgres.delivery` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     from runtime.delivery_store import DeliveryRecord
     return DeliveryRecord(
         delivery_key=row.delivery_key,
@@ -36,10 +40,18 @@ def _record(row: Delivery):
 
 
 def _future_dt(seconds: int) -> datetime:
+    """负责“futuredt”。
+
+    该函数是 `repositories.postgres.delivery` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return datetime.now().astimezone() + timedelta(seconds=seconds)
 
 
 def _parse_iso(value: str | datetime) -> datetime:
+    """负责“解析iso”。
+
+    该函数是 `repositories.postgres.delivery` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     parsed = value if isinstance(value, datetime) else datetime.fromisoformat(value)
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=datetime.now().astimezone().tzinfo)
@@ -47,6 +59,10 @@ def _parse_iso(value: str | datetime) -> datetime:
 
 
 def is_reservation_expired(record, now: datetime | None = None) -> bool:
+    """负责“是否为reservationexpired”。
+
+    该函数是 `repositories.postgres.delivery` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if record.status != DELIVERY_RESERVED:
         return False
     if not record.lease_expires_at:
@@ -62,6 +78,10 @@ def reserve_delivery(
     message_id: str | None = None,
     tenant_id: str = DEFAULT_TENANT_ID,
 ):
+    """负责“预约投递”。
+
+    该函数是 `repositories.postgres.delivery` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         space_id = ensure_tenant_space(session, space_id, tenant_id=tenant_id)
         session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:delivery_key))"), {"delivery_key": delivery_key})
@@ -114,6 +134,10 @@ def reserve_delivery(
 
 
 def _update_status(delivery_key: str, status: str, error: str | None) -> None:
+    """负责“更新状态”。
+
+    该函数是 `repositories.postgres.delivery` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone()
     with session_scope() as session:
         row = session.execute(select(Delivery).where(Delivery.delivery_key == delivery_key).with_for_update()).scalar_one_or_none()
@@ -130,24 +154,44 @@ def _update_status(delivery_key: str, status: str, error: str | None) -> None:
 
 
 def mark_sent(delivery_key: str) -> None:
+    """负责“标记sent”。
+
+    该函数是 `repositories.postgres.delivery` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     _update_status(delivery_key, DELIVERY_SENT, None)
 
 
 def mark_failed(delivery_key: str, error: str) -> None:
+    """负责“标记failed”。
+
+    该函数是 `repositories.postgres.delivery` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     _update_status(delivery_key, DELIVERY_FAILED, error)
 
 
 def mark_unknown(delivery_key: str, error: str) -> None:
+    """负责“标记unknown”。
+
+    该函数是 `repositories.postgres.delivery` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     _update_status(delivery_key, DELIVERY_UNKNOWN, error)
 
 
 def get_delivery(delivery_key: str):
+    """负责“获取投递”。
+
+    该函数是 `repositories.postgres.delivery` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         row = session.get(Delivery, delivery_key)
         return _record(row) if row is not None else None
 
 
 def recover_stale_reserved_deliveries() -> int:
+    """负责“恢复stalereserveddeliveries”。
+
+    该函数是 `repositories.postgres.delivery` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone()
     with session_scope() as session:
         rows = list(session.execute(select(Delivery).where(Delivery.status == DELIVERY_RESERVED).with_for_update()).scalars())

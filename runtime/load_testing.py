@@ -45,6 +45,10 @@ class LoadRequest:
     tenant_id: str
 
     def api_payload(self) -> dict[str, Any]:
+        """负责“APIpayload”。
+
+        该函数是 `runtime.load_testing` 中的`LoadRequest` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return {
             "message_id": self.message_id,
             "space_id": self.space_id,
@@ -65,6 +69,10 @@ class SubmissionResult:
 
 
 def percentile(values: list[int], ratio: float) -> int | None:
+    """负责“percentile”。
+
+    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not values:
         return None
     ordered = sorted(values)
@@ -73,6 +81,10 @@ def percentile(values: list[int], ratio: float) -> int | None:
 
 
 def _user_profile(index: int) -> str:
+    """负责“用户画像”。
+
+    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     marker = index % 100
     if marker < 70:
         return "ordinary"
@@ -84,6 +96,10 @@ def _user_profile(index: int) -> str:
 
 
 def _operation(rng: random.Random, user_profile: str) -> str:
+    """负责“operation”。
+
+    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if user_profile == "malicious" and rng.random() < 0.8:
         return "query"
     marker = rng.random()
@@ -97,6 +113,10 @@ def _operation(rng: random.Random, user_profile: str) -> str:
 
 
 def _request_content(operation: str, *, user_id: str, space_id: str, chat_id: str, sequence: int) -> tuple[str, str, dict[str, Any]]:
+    """负责“请求content”。
+
+    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     delivery_key = f"stage4:{space_id}:{sequence}:{operation}"
     common = {"chat_id": chat_id, "user_id": user_id, "delivery_key": delivery_key}
     if operation == "ingest":
@@ -119,6 +139,10 @@ def generate_requests(
     run_id: str | None = None,
     seed: int = 20260718,
 ) -> list[LoadRequest]:
+    """负责“生成requests”。
+
+    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     run_id = run_id or uuid.uuid4().hex[:12]
     tenant_id = f"load-{run_id}"
     rng = random.Random(seed)
@@ -161,6 +185,10 @@ def generate_requests(
 
 
 def summarize_plan(requests: list[LoadRequest]) -> dict[str, Any]:
+    """负责“summarize规划”。
+
+    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     operations: dict[str, int] = {}
     profiles: dict[str, int] = {}
     for item in requests:
@@ -178,6 +206,10 @@ def summarize_plan(requests: list[LoadRequest]) -> dict[str, Any]:
 
 
 def submit_request(endpoint: str, item: LoadRequest, *, timeout_seconds: float = 10.0) -> SubmissionResult:
+    """负责“submit请求”。
+
+    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     started = time.perf_counter()
     headers = {
         "Content-Type": "application/json",
@@ -212,6 +244,10 @@ def execute_load(
     concurrency: int,
     timeout_seconds: float = 10.0,
 ) -> dict[str, Any]:
+    """负责“execute加载”。
+
+    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     endpoints = [endpoint] if isinstance(endpoint, str) else list(endpoint)
     if not endpoints:
         raise ValueError("at least one endpoint is required")

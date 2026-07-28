@@ -14,6 +14,10 @@ from infrastructure.schema import Note, NoteEmbedding
 
 
 def _vector_item(row: NoteEmbedding) -> Any:
+    """负责“向量条目”。
+
+    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     from storage.vector_store import VectorItem
     metadata = dict(row.metadata_json or {})
     return VectorItem(
@@ -26,6 +30,10 @@ def _vector_item(row: NoteEmbedding) -> Any:
 
 
 def load_vector_items(space_id: str) -> list[Any]:
+    """负责“加载向量条目列表”。
+
+    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         rows = session.execute(
             select(NoteEmbedding)
@@ -37,6 +45,10 @@ def load_vector_items(space_id: str) -> list[Any]:
 
 
 def save_vector_items(space_id: str, items: list[Any]) -> None:
+    """负责“保存向量条目列表”。
+
+    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     existing = {item.note_id for item in load_vector_items(space_id)}
     incoming = {item.note_id for item in items}
     for note_id in existing - incoming:
@@ -46,6 +58,10 @@ def save_vector_items(space_id: str, items: list[Any]) -> None:
 
 
 def vector_item_exists(space_id: str, note_id: str, message_id: str | None = None) -> bool:
+    """负责“向量条目exists”。
+
+    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         statement = select(NoteEmbedding.note_id).join(Note).where(Note.space_id == space_id)
         if note_id:
@@ -56,6 +72,10 @@ def vector_item_exists(space_id: str, note_id: str, message_id: str | None = Non
 
 
 def add_vector_item(space_id: str, item: Any) -> bool:
+    """负责“添加向量条目”。
+
+    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if len(item.embedding) != 1024:
         raise ValueError(f"PostgreSQL note embedding must have 1024 dimensions, got {len(item.embedding)}")
     model = str(item.metadata.get("embedding_model") or get_embedding_config().model)
@@ -84,6 +104,10 @@ def add_vector_item(space_id: str, item: Any) -> bool:
 
 
 def remove_vector_item(space_id: str, note_id: str) -> bool:
+    """负责“移除向量条目”。
+
+    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         result = session.execute(
             delete(NoteEmbedding)
@@ -101,6 +125,10 @@ def search_related(
     exclude_note_id: str | None = None,
     min_score: float | None = None,
 ) -> list[Any]:
+    """负责“检索related”。
+
+    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     from storage.vector_store import SearchResult
     if top_k <= 0:
         return []
@@ -130,4 +158,8 @@ def search_related(
 
 
 def search_related_note_ids(space_id: str, query_embedding: list[float], **kwargs: Any) -> list[str]:
+    """负责“检索related笔记标识列表”。
+
+    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return [result.note_id for result in search_related(space_id, query_embedding, **kwargs)]

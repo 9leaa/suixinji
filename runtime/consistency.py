@@ -48,6 +48,10 @@ NOTE_QUERY_MARKERS = (
 
 
 def query_consistency(question: str) -> str:
+    """负责“查询一致性”。
+
+    该函数是 `runtime.consistency` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     normalized = " ".join(str(question or "").strip().casefold().split())
     if any(marker in normalized for marker in MEMORY_QUERY_MARKERS):
         return "memory"
@@ -57,6 +61,10 @@ def query_consistency(question: str) -> str:
 
 
 def task_consistency(task_type: str, payload: dict[str, Any]) -> str:
+    """负责“任务一致性”。
+
+    该函数是 `runtime.consistency` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     explicit = str(payload.get("consistency") or "").strip().lower()
     if explicit in {"note", "memory", "weak"}:
         return explicit

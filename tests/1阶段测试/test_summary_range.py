@@ -8,6 +8,7 @@ TZ = timezone(timedelta(hours=8))
 
 
 def test_parse_summary_range_aliases():
+    """验证“解析总结rangealiases”场景的预期行为与回归边界。"""
     assert daily_summary.parse_summary_range("今天") == "today"
     assert daily_summary.parse_summary_range(" 昨天 ") == "yesterday"
     assert daily_summary.parse_summary_range("7天") == "week"
@@ -29,6 +30,7 @@ def test_parse_summary_range_aliases():
     ],
 )
 def test_build_time_range(range_key, start, end):
+    """验证“构建timerange”场景的预期行为与回归边界。"""
     now = datetime(2026, 6, 7, 15, 30, tzinfo=TZ)
 
     got_start, got_end = daily_summary.build_time_range(range_key, now)
@@ -38,11 +40,13 @@ def test_build_time_range(range_key, start, end):
 
 
 def test_build_time_range_rejects_unknown_range():
+    """验证“构建timerangerejectsunknownrange”场景的预期行为与回归边界。"""
     with pytest.raises(ValueError):
         daily_summary.build_time_range("bad")
 
 
 def test_load_notes_in_range_filters_and_sorts(monkeypatch):
+    """验证“加载笔记列表rangefiltersandsorts”场景的预期行为与回归边界。"""
     notes = [
         {"id": "outside", "ts": "2026-06-05T23:59:59+08:00"},
         {"id": "later", "ts": "2026-06-06T10:00:00+08:00"},

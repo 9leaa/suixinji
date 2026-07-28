@@ -40,6 +40,10 @@ def identifiers_compatible(left_content: str, right_content: str) -> bool:
 
 
 def can_transition(old_status: str | None, new_status: str | None) -> bool:
+    """负责“cantransition”。
+
+    该函数是 `memory.policies.task` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if new_status is None or old_status == new_status:
         return True
     if old_status is None:
@@ -48,4 +52,8 @@ def can_transition(old_status: str | None, new_status: str | None) -> bool:
 
 
 def is_terminal(status: str | None) -> bool:
+    """负责“是否为terminal”。
+
+    该函数是 `memory.policies.task` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return status in {"done", "cancelled"}

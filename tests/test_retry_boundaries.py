@@ -8,9 +8,11 @@ from runtime.task import TASK_FAILED
 
 
 def test_task_runner_failure_does_not_retry_whole_ingest(monkeypatch):
+    """验证“任务runnerfailuredoesnot重试whole接收写入”场景的预期行为与回归边界。"""
     calls = []
 
     def fail_once(record):
+        """验证“失败once”场景的预期行为与回归边界。"""
         calls.append(record["id"])
         raise RuntimeError("boom")
 
@@ -25,6 +27,7 @@ def test_task_runner_failure_does_not_retry_whole_ingest(monkeypatch):
 
 
 def test_send_success_then_state_update_failure_does_not_resend(monkeypatch, tmp_path):
+    """验证“发送successthen状态更新failuredoesnotresend”场景的预期行为与回归边界。"""
     from runtime import delivery_store
 
     monkeypatch.setattr(delivery_store, "DATA_DIR", tmp_path)
@@ -37,6 +40,7 @@ def test_send_success_then_state_update_failure_does_not_resend(monkeypatch, tmp
     sent = []
 
     def on_success():
+        """验证“success”场景的预期行为与回归边界。"""
         raise RuntimeError("state update failed")
 
     executor = BoundedTaskExecutor(
@@ -53,9 +57,11 @@ def test_send_success_then_state_update_failure_does_not_resend(monkeypatch, tmp
 
 
 def test_retry_external_call_uses_explicit_retryable_predicate():
+    """验证“重试externalcallusesexplicitretryablepredicate”场景的预期行为与回归边界。"""
     calls = []
 
     def flaky():
+        """验证“flaky”场景的预期行为与回归边界。"""
         calls.append("call")
         if len(calls) < 2:
             raise TimeoutError("temporary")
@@ -66,9 +72,11 @@ def test_retry_external_call_uses_explicit_retryable_predicate():
 
 
 def test_retry_external_call_does_not_retry_non_retryable_error():
+    """验证“重试externalcalldoesnot重试nonretryable错误”场景的预期行为与回归边界。"""
     calls = []
 
     def bad_json():
+        """验证“badJSON”场景的预期行为与回归边界。"""
         calls.append("call")
         raise ValueError("invalid json")
 

@@ -37,6 +37,10 @@ class AgentRunContext:
         trace_id: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> "AgentRunContext":
+        """负责“创建”。
+
+        该函数是 `agent.hooks.context` 中的`AgentRunContext` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return cls(
             run_id=new_id("agent"),
             tenant_id=tenant_id or "default",
@@ -50,6 +54,10 @@ class AgentRunContext:
         )
 
     def next_step(self) -> int:
+        """负责“下一步步骤”。
+
+        该函数是 `agent.hooks.context` 中的`AgentRunContext` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         value = int(self.resources.get("step_no") or 0) + 1
         self.resources["step_no"] = value
         return value

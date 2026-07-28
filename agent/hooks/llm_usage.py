@@ -16,6 +16,10 @@ class LlmCapacityExceeded(RuntimeError):
 
 
 def _estimate_tokens(text: str) -> int:
+    """负责“estimatetokens”。
+
+    该函数是 `agent.hooks.llm_usage` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return max(1, len(text) // 4)
 
 
@@ -23,6 +27,10 @@ class LlmUsageHook(AgentHook):
     name = "llm_usage"
 
     def before_llm(self, context: AgentRunContext, request: dict[str, object]) -> None:
+        """负责“LLM 调用前的 Hook 前置处理”。
+
+        该函数是 `agent.hooks.llm_usage` 中的`LlmUsageHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         limiter = LOCAL_RATE_LIMITER
         if COORDINATION_BACKEND == "redis":
             try:
@@ -55,6 +63,10 @@ class LlmUsageHook(AgentHook):
         request["estimated_input_tokens"] = _estimate_tokens(str(request.get("user_prompt") or ""))
 
     def after_llm(self, context: AgentRunContext, request: dict[str, object], result: object) -> None:
+        """负责“LLM 调用后的 Hook 后置处理”。
+
+        该函数是 `agent.hooks.llm_usage` 中的`LlmUsageHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         self._release(context)
         input_tokens = int(request.get("estimated_input_tokens") or 0)
         output_tokens = _estimate_tokens(str(result))
@@ -69,11 +81,19 @@ class LlmUsageHook(AgentHook):
             return
 
     def on_error(self, context: AgentRunContext, error: Exception, scope: str) -> None:
+        """负责“异常发生时的 Hook 错误处理”。
+
+        该函数是 `agent.hooks.llm_usage` 中的`LlmUsageHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if scope in {"llm", "agent"}:
             self._release(context)
 
     @staticmethod
     def _release(context: AgentRunContext) -> None:
+        """负责“释放”。
+
+        该函数是 `agent.hooks.llm_usage` 中的`LlmUsageHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         resources = context.resources.get("llm_slots") or []
         while resources:
             limiter, key, token = resources.pop()

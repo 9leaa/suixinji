@@ -14,6 +14,7 @@ from memory.service import format_trace_id, format_trace_latest, format_trace_me
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser(description="Show a Memory V2 trace.")
     parser.add_argument("--trace-id")
     parser.add_argument("--memory-id")

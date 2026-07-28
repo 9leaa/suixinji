@@ -23,6 +23,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _safe_log_value(value: Any) -> Any:
+    """负责“安全log字段值”。
+
+    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if isinstance(value, str):
         if assess_sensitive_text(value).blocks_storage:
             return "[sensitive content redacted]"
@@ -35,14 +39,26 @@ def _safe_log_value(value: Any) -> Any:
 
 
 def now_iso() -> str:
+    """负责“nowiso”。
+
+    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
 def _duration_ms(start: float) -> int:
+    """负责“durationms”。
+
+    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return int((time.perf_counter() - start) * 1000)
 
 
 def _log_path() -> Path:
+    """负责“logpath”。
+
+    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return LOG_DIR / f"app-{datetime.now().strftime('%Y-%m-%d')}.jsonl"
 
 
@@ -85,6 +101,10 @@ def log_event(
 
 
 def _code_revision() -> str | None:
+    """负责“coderevision”。
+
+    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     try:
         result = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
@@ -100,6 +120,10 @@ def _code_revision() -> str | None:
 
 
 def log_process_started(role: str | None = None, *, action: str = "runtime.process_started") -> None:
+    """负责“log处理started”。
+
+    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     from core.settings import (
         PROCESS_ROLE,
         REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS,
@@ -182,6 +206,10 @@ def read_recent_events(limit: int = 100) -> list[dict[str, Any]]:
 
 
 def recent_errors(limit: int = 5) -> list[dict[str, Any]]:
+    """负责“recenterrors”。
+
+    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return [
         event
         for event in read_recent_events(limit=200)
@@ -190,6 +218,10 @@ def recent_errors(limit: int = 5) -> list[dict[str, Any]]:
 
 
 def latest_success(actions: set[str] | None = None) -> dict[str, Any] | None:
+    """负责“最新success”。
+
+    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     for event in read_recent_events(limit=200):
         if event.get("status") != "success":
             continue

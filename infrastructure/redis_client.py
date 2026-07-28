@@ -22,6 +22,10 @@ _blocking_client: Redis | None = None
 
 
 def get_redis() -> Redis:
+    """负责“获取redis”。
+
+    该函数是 `infrastructure.redis_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     global _pool, _client
     if _client is not None:
         return _client
@@ -40,6 +44,10 @@ def get_redis() -> Redis:
 
 
 def get_blocking_redis() -> Redis:
+    """负责“获取blockingredis”。
+
+    该函数是 `infrastructure.redis_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     global _blocking_pool, _blocking_client
     if _blocking_client is not None:
         return _blocking_client
@@ -58,6 +66,10 @@ def get_blocking_redis() -> Redis:
 
 
 def check_redis_health() -> dict[str, str]:
+    """负责“检查redishealth”。
+
+    该函数是 `infrastructure.redis_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     client = get_redis()
     client.ping()
     info = client.info(section="server")
@@ -65,6 +77,10 @@ def check_redis_health() -> dict[str, str]:
 
 
 def close_redis() -> None:
+    """负责“closeredis”。
+
+    该函数是 `infrastructure.redis_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     global _pool, _client, _blocking_pool, _blocking_client
     if _client is not None:
         _client.close()

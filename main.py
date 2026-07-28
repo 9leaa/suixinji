@@ -14,6 +14,10 @@ DEFAULT_SPACE_ID = "p_local_demo"
 
 
 def ingest_local_message(text: str, space_id: str = DEFAULT_SPACE_ID) -> None:
+    """负责“接收写入local消息”。
+
+    该函数是 `main` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     message_id = f"local_{int(time.time() * 1000)}"
 
     record = create_pending_record(
@@ -38,6 +42,7 @@ def ingest_local_message(text: str, space_id: str = DEFAULT_SPACE_ID) -> None:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser(description="随心记 Agent 本地模拟入口")
     parser.add_argument("text", help="要记录的一句话")
     parser.add_argument("--space-id", default=DEFAULT_SPACE_ID)

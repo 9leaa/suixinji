@@ -43,6 +43,10 @@ NEGATIVE_AT = "2026-07-15T21:16:29+08:00"
 
 
 def _stable_id(prefix: str, value: str) -> str:
+    """负责“stable标识”。
+
+    该函数是 `scripts.repair_20260715_validation_artifacts` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
     return f"{prefix}_{digest}"
 
@@ -51,12 +55,20 @@ POSITIVE_APPLE_MEMORY_ID = _stable_id("mem", f"repair:{POSITIVE_APPLE_NOTE_ID}")
 
 
 def _write_json(path: Path, value: Any) -> None:
+    """负责“写入JSON”。
+
+    该函数是 `scripts.repair_20260715_validation_artifacts` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     temporary = path.with_name(f".{path.name}.repair.tmp")
     temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
     os.replace(temporary, path)
 
 
 def _repair_memories() -> dict[str, int]:
+    """负责“repairmemories”。
+
+    该函数是 `scripts.repair_20260715_validation_artifacts` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone().isoformat(timespec="seconds")
     counts = {"memory_rows": 0, "decision_rows": 0, "relation_rows": 0}
     with sqlite3.connect(DB_PATH) as conn:
@@ -267,6 +279,10 @@ def _repair_memories() -> dict[str, int]:
 
 
 def _remove_sensitive_note() -> dict[str, int]:
+    """负责“移除sensitive笔记”。
+
+    该函数是 `scripts.repair_20260715_validation_artifacts` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     counts = {"index_rows": 0, "markdown_blocks": 0, "vector_rows": 0, "wal_rows": 0, "trace_rows": 0}
     secret_text = ""
 
@@ -360,6 +376,10 @@ def _remove_sensitive_note() -> dict[str, int]:
 
 
 def _verify() -> None:
+    """负责“verify”。
+
+    该函数是 `scripts.repair_20260715_validation_artifacts` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         latte = conn.execute("SELECT * FROM memories WHERE id = ?", (LATTE_MEMORY_ID,)).fetchone()
@@ -391,6 +411,7 @@ def _verify() -> None:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     memory_counts = _repair_memories()
     privacy_counts = _remove_sensitive_note()
     _verify()

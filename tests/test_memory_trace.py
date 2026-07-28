@@ -3,6 +3,7 @@ from memory.repository import _connect
 
 
 def test_trace_round_trip_and_memory_lookup():
+    """验证“追踪roundtripand记忆lookup”场景的预期行为与回归边界。"""
     trace = start_trace("memory_write", "space-1", note_id="note-1")
     add_step(trace, "memory_inserted", output_summary={"memory_id": "mem-1"})
     finished = finish_trace(trace)
@@ -18,6 +19,7 @@ def test_trace_round_trip_and_memory_lookup():
 
 
 def test_trace_redacts_llm_previews_and_secret_values():
+    """验证“追踪redactsLLMpreviewsandsecretvalues”场景的预期行为与回归边界。"""
     trace = start_trace("memory_write", "space-1", note_id="note-1")
     add_step(trace, "memory_write_failed", status="failed", error="text_preview='密码: abc' token=secret-value")
     finish_trace(trace, status="failed")

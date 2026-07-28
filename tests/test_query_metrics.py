@@ -6,6 +6,7 @@ from runtime.query_metrics import capture_sql_queries
 
 
 def test_capture_sql_queries_records_success_and_failure() -> None:
+    """验证“capturesqlqueriesrecordssuccessandfailure”场景的预期行为与回归边界。"""
     engine = create_engine("sqlite:///:memory:")
     with capture_sql_queries(engine) as stats:
         with engine.begin() as connection:
@@ -20,6 +21,7 @@ def test_capture_sql_queries_records_success_and_failure() -> None:
 
 
 def test_capture_sql_queries_tracks_failed_execution() -> None:
+    """验证“capturesqlqueriestracksfailedexecution”场景的预期行为与回归边界。"""
     engine = create_engine("sqlite:///:memory:")
     with capture_sql_queries(engine) as stats:
         try:

@@ -30,12 +30,14 @@ NOTES = [
 
 
 def patch_summary_io(monkeypatch, tmp_path, notes=None):
+    """验证“patch总结io”场景的预期行为与回归边界。"""
     monkeypatch.setattr(daily_summary, "build_time_range", lambda range_key: (START, END))
     monkeypatch.setattr(daily_summary, "load_notes_in_range", lambda space_id, start, end: list(notes if notes is not None else NOTES))
     monkeypatch.setattr(daily_summary, "note_dir", lambda space_id: tmp_path / space_id)
 
 
 def test_generate_summary_uses_draft_then_reflection_and_saves_result(monkeypatch, tmp_path):
+    """验证“生成总结usesdraftthenreflectionandsaves结果”场景的预期行为与回归边界。"""
     patch_summary_io(monkeypatch, tmp_path)
     calls = []
     responses = iter(
@@ -46,6 +48,7 @@ def test_generate_summary_uses_draft_then_reflection_and_saves_result(monkeypatc
     )
 
     def fake_complete_json(system_prompt, user_prompt):
+        """验证“fake完成JSON”场景的预期行为与回归边界。"""
         calls.append((system_prompt, json.loads(user_prompt)))
         return next(responses)
 
@@ -69,6 +72,7 @@ def test_generate_summary_uses_draft_then_reflection_and_saves_result(monkeypatc
 
 
 def test_generate_summary_falls_back_when_llm_raises(monkeypatch, tmp_path):
+    """验证“生成总结fallsbackwhenLLMraises”场景的预期行为与回归边界。"""
     patch_summary_io(monkeypatch, tmp_path)
     monkeypatch.setattr(daily_summary, "complete_json", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("llm failed")))
 
@@ -80,6 +84,7 @@ def test_generate_summary_falls_back_when_llm_raises(monkeypatch, tmp_path):
 
 
 def test_generate_summary_with_no_notes_skips_llm(monkeypatch, tmp_path):
+    """验证“生成总结with不笔记列表skipsLLM”场景的预期行为与回归边界。"""
     patch_summary_io(monkeypatch, tmp_path, notes=[])
     monkeypatch.setattr(daily_summary, "complete_json", lambda **kwargs: (_ for _ in ()).throw(AssertionError("should not call llm")))
 
@@ -90,6 +95,7 @@ def test_generate_summary_with_no_notes_skips_llm(monkeypatch, tmp_path):
 
 
 def test_generate_summary_includes_memory_state_changes(monkeypatch, tmp_path):
+    """验证“生成总结includes记忆状态changes”场景的预期行为与回归边界。"""
     patch_summary_io(monkeypatch, tmp_path)
     memory_changes = [
         {
@@ -107,6 +113,7 @@ def test_generate_summary_includes_memory_state_changes(monkeypatch, tmp_path):
     responses = iter([{"summary_markdown": "草稿"}, {"final_summary": "含记忆状态的总结"}])
 
     def fake_complete_json(system_prompt, user_prompt):
+        """验证“fake完成JSON”场景的预期行为与回归边界。"""
         calls.append(json.loads(user_prompt))
         return next(responses)
 

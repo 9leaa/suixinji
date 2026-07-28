@@ -7,6 +7,7 @@ from core.sensitive import assess_sensitive_text, safe_text_preview
 
 
 def test_sensitive_detector_is_general_not_value_specific():
+    """验证“sensitivedetector是否为generalnot字段值specific”场景的预期行为与回归边界。"""
     samples = [
         "密码是Abcd1234",
         "API_KEY: sk-examplevalue123456",
@@ -20,6 +21,7 @@ def test_sensitive_detector_is_general_not_value_specific():
 
 
 def test_sensitive_query_returns_locally_without_model_or_embedding(monkeypatch):
+    """验证“sensitive查询returnslocallywithout模型or向量”场景的预期行为与回归边界。"""
     monkeypatch.setattr(query_agent, "complete_json", lambda **kwargs: (_ for _ in ()).throw(AssertionError("must not call model")))
     monkeypatch.setattr(query_agent, "embed_text", lambda text: (_ for _ in ()).throw(AssertionError("must not embed")))
     monkeypatch.setattr(query_agent, "memory_search", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("must not search")))
@@ -30,6 +32,7 @@ def test_sensitive_query_returns_locally_without_model_or_embedding(monkeypatch)
 
 
 def test_query_reads_provisional_note_without_waiting_for_model(monkeypatch):
+    """验证“查询readsprovisional笔记withoutwaitingfor模型”场景的预期行为与回归边界。"""
     notes = [
         {
             "id": "note-new",
@@ -58,6 +61,7 @@ def test_query_reads_provisional_note_without_waiting_for_model(monkeypatch):
 
 
 def test_legacy_sensitive_note_is_filtered_from_deterministic_queries(monkeypatch):
+    """验证“legacysensitive笔记是否为filteredfromdeterministicqueries”场景的预期行为与回归边界。"""
     notes = [
         {
             "id": "secret-note",
@@ -77,6 +81,7 @@ def test_legacy_sensitive_note_is_filtered_from_deterministic_queries(monkeypatc
 
 
 def test_feishu_ingress_blocks_secret_before_command_or_wal_raw_text(monkeypatch):
+    """验证“feishuingressblockssecret前置命令or预写日志raw文本”场景的预期行为与回归边界。"""
     records = []
     replies = []
     message = SimpleNamespace(

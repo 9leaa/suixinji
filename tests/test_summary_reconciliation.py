@@ -15,11 +15,13 @@ FIXED_NOW = datetime(2026, 7, 14, 23, 0, tzinfo=timezone.utc)
 
 
 def isolate_subscription_file(monkeypatch, tmp_path):
+    """验证“isolatesubscriptionfile”场景的预期行为与回归边界。"""
     monkeypatch.setattr(subscription, "DATA_DIR", tmp_path)
     monkeypatch.setattr(subscription, "SUBSCRIPTIONS_PATH", tmp_path / "summary_subscriptions.json")
 
 
 def test_reconcile_sent_delivery_repairs_subscription_without_resend(monkeypatch, tmp_path):
+    """验证“reconcilesent投递repairssubscriptionwithoutresend”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
     today = datetime.now().astimezone().date().isoformat()
     key = auto_summary_key("space1", "today", today)
@@ -31,6 +33,7 @@ def test_reconcile_sent_delivery_repairs_subscription_without_resend(monkeypatch
 
     class FakeExecutor:
         def submit_summary(self, *args, **kwargs):
+            """验证“submit总结”场景的预期行为与回归边界。"""
             called.append((args, kwargs))
             raise AssertionError("should not submit summary when delivery is already sent")
 
@@ -42,6 +45,7 @@ def test_reconcile_sent_delivery_repairs_subscription_without_resend(monkeypatch
 
 
 def test_sent_delivery_with_failed_subscription_update_is_repaired_next_tick(monkeypatch, tmp_path):
+    """验证“sent投递withfailedsubscription更新是否为repaired下一步tick”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
     today = datetime.now().astimezone().date().isoformat()
     key = auto_summary_key("space1", "today", today)
@@ -54,6 +58,7 @@ def test_sent_delivery_with_failed_subscription_update_is_repaired_next_tick(mon
 
 
 def test_unknown_delivery_skips_auto_summary(monkeypatch, tmp_path):
+    """验证“unknown投递skipsauto总结”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
     today = datetime.now().astimezone().date().isoformat()
     key = auto_summary_key("space1", "today", today)
@@ -65,6 +70,7 @@ def test_unknown_delivery_skips_auto_summary(monkeypatch, tmp_path):
 
     class FakeExecutor:
         def submit_summary(self, *args, **kwargs):
+            """验证“submit总结”场景的预期行为与回归边界。"""
             called.append((args, kwargs))
             raise AssertionError("unknown delivery should not be resent automatically")
 
@@ -74,6 +80,7 @@ def test_unknown_delivery_skips_auto_summary(monkeypatch, tmp_path):
 
 
 def test_failed_delivery_allows_scheduler_to_submit_again(monkeypatch, tmp_path):
+    """验证“failed投递allowsscheduler转换为submitagain”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
     today = FIXED_NOW.date().isoformat()
     key = auto_summary_key("space1", "today", today)
@@ -85,6 +92,7 @@ def test_failed_delivery_allows_scheduler_to_submit_again(monkeypatch, tmp_path)
 
     class FakeExecutor:
         def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None, delivery_key=None, delivery_type=None):
+            """验证“submit总结”场景的预期行为与回归边界。"""
             submitted.append((space_id, range_key, chat_id, delivery_key, delivery_type))
             return create_task("summary", space_id, {})
 
@@ -93,6 +101,7 @@ def test_failed_delivery_allows_scheduler_to_submit_again(monkeypatch, tmp_path)
 
 
 def test_expired_reserved_auto_summary_can_be_submitted_again(monkeypatch, tmp_path):
+    """验证“expiredreservedauto总结canbesubmittedagain”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
     today = FIXED_NOW.date().isoformat()
     key = auto_summary_key("space1", "today", today)
@@ -108,6 +117,7 @@ def test_expired_reserved_auto_summary_can_be_submitted_again(monkeypatch, tmp_p
 
     class FakeExecutor:
         def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None, delivery_key=None, delivery_type=None):
+            """验证“submit总结”场景的预期行为与回归边界。"""
             submitted.append((space_id, range_key, chat_id, delivery_key, delivery_type))
             return create_task("summary", space_id, {})
 
@@ -116,6 +126,7 @@ def test_expired_reserved_auto_summary_can_be_submitted_again(monkeypatch, tmp_p
 
 
 def _patch_delivery(tmp_path, key, **updates):
+    """验证“patch投递”场景的预期行为与回归边界。"""
     path = tmp_path / "deliveries" / "index.json"
     raw = json.loads(path.read_text(encoding="utf-8"))
     raw[key].update(updates)

@@ -10,11 +10,13 @@ FIXED_NOW = datetime(2026, 7, 14, 23, 0, tzinfo=timezone.utc)
 
 
 def isolate_subscription_file(monkeypatch, tmp_path):
+    """验证“isolatesubscriptionfile”场景的预期行为与回归边界。"""
     monkeypatch.setattr(subscription, "DATA_DIR", tmp_path)
     monkeypatch.setattr(subscription, "SUBSCRIPTIONS_PATH", tmp_path / "summary_subscriptions.json")
 
 
 def test_reconcile_failure_skips_subscription_without_submitting(monkeypatch, tmp_path):
+    """验证“reconcilefailureskipssubscriptionwithoutsubmitting”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
     today = datetime.now().astimezone().date().isoformat()
     key = auto_summary_key("space1", "today", today)
@@ -26,6 +28,7 @@ def test_reconcile_failure_skips_subscription_without_submitting(monkeypatch, tm
 
     class FakeExecutor:
         def submit_summary(self, *args, **kwargs):
+            """验证“submit总结”场景的预期行为与回归边界。"""
             submitted.append((args, kwargs))
             raise AssertionError("should not submit when sent delivery reconciliation fails")
 
@@ -35,6 +38,7 @@ def test_reconcile_failure_skips_subscription_without_submitting(monkeypatch, tm
 
 
 def test_next_tick_repairs_subscription_after_previous_reconcile_failure(monkeypatch, tmp_path):
+    """验证“下一步tickrepairssubscription后置previousreconcilefailure”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
     today = datetime.now().astimezone().date().isoformat()
     key = auto_summary_key("space1", "today", today)
@@ -44,6 +48,7 @@ def test_next_tick_repairs_subscription_after_previous_reconcile_failure(monkeyp
     calls = {"count": 0}
 
     def flaky_mark(space_id, day):
+        """验证“flaky标记”场景的预期行为与回归边界。"""
         calls["count"] += 1
         if calls["count"] == 1:
             raise RuntimeError("write failed")
@@ -53,6 +58,7 @@ def test_next_tick_repairs_subscription_after_previous_reconcile_failure(monkeyp
 
     class FakeExecutor:
         def submit_summary(self, *args, **kwargs):
+            """验证“submit总结”场景的预期行为与回归边界。"""
             raise AssertionError("sent delivery reconciliation should not submit summary")
 
     assert scheduler.run_summary_scheduler_once(lambda chat_id, text: True, executor=FakeExecutor()) == 0
@@ -63,6 +69,7 @@ def test_next_tick_repairs_subscription_after_previous_reconcile_failure(monkeyp
 
 
 def test_one_subscription_reconcile_failure_does_not_block_other_subscription(monkeypatch, tmp_path):
+    """验证“onesubscriptionreconcilefailuredoesnotblockothersubscription”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
     today = FIXED_NOW.date().isoformat()
     key = auto_summary_key("space_a", "today", today)
@@ -74,6 +81,7 @@ def test_one_subscription_reconcile_failure_does_not_block_other_subscription(mo
     mark_sent(key)
 
     def fail_for_space_a(space_id, day):
+        """验证“失败for空间a”场景的预期行为与回归边界。"""
         if space_id == "space_a":
             raise RuntimeError("write failed")
         subscription.mark_summary_sent(space_id, day)
@@ -83,6 +91,7 @@ def test_one_subscription_reconcile_failure_does_not_block_other_subscription(mo
 
     class FakeExecutor:
         def submit_summary(self, space_id, range_key, chat_id, message_id=None, on_success=None, delivery_key=None, delivery_type=None):
+            """验证“submit总结”场景的预期行为与回归边界。"""
             submitted.append((space_id, range_key, chat_id, delivery_key, delivery_type))
             return create_task("summary", space_id, {})
 
@@ -91,9 +100,11 @@ def test_one_subscription_reconcile_failure_does_not_block_other_subscription(mo
 
 
 def test_run_scheduler_tick_safely_catches_tick_failure(monkeypatch):
+    """验证“运行schedulerticksafelycatchestickfailure”场景的预期行为与回归边界。"""
     calls = {"count": 0}
 
     def fake_run_once(send_text, executor=None):
+        """验证“fake运行once”场景的预期行为与回归边界。"""
         calls["count"] += 1
         if calls["count"] == 1:
             raise RuntimeError("tick failed")
@@ -107,6 +118,7 @@ def test_run_scheduler_tick_safely_catches_tick_failure(monkeypatch):
 
 
 def test_run_scheduler_tick_safely_survives_failure_logging_error(monkeypatch):
+    """验证“运行schedulerticksafelysurvivesfailurelogging错误”场景的预期行为与回归边界。"""
     monkeypatch.setattr(scheduler, "run_summary_scheduler_once", lambda send_text, executor=None: (_ for _ in ()).throw(RuntimeError("tick failed")))
     monkeypatch.setattr(scheduler, "log_event", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("log failed")))
 

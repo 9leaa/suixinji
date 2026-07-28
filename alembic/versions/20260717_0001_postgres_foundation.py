@@ -15,6 +15,10 @@ FROZEN_SCHEMA_FINGERPRINT = "346fac3151d262ba6ed3de7d10180dace448e8b5f5907d094f1
 
 
 def _metadata_fingerprint() -> str:
+    """负责“metadatafingerprint”。
+
+    该函数是 `alembic.versions.20260717_0001_postgres_foundation` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     parts: list[str] = []
     for table in sorted(Base.metadata.tables.values(), key=lambda item: item.name):
         parts.append(f"T:{table.name}")
@@ -41,6 +45,10 @@ def _metadata_fingerprint() -> str:
 
 
 def upgrade() -> None:
+    """负责“upgrade”。
+
+    该函数是 `alembic.versions.20260717_0001_postgres_foundation` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     fingerprint = _metadata_fingerprint()
     if fingerprint != FROZEN_SCHEMA_FINGERPRINT:
@@ -52,4 +60,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """负责“downgrade”。
+
+    该函数是 `alembic.versions.20260717_0001_postgres_foundation` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     Base.metadata.drop_all(bind=op.get_bind(), checkfirst=True)

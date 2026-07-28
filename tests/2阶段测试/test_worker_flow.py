@@ -13,6 +13,7 @@ RECORD = {
 
 
 def test_process_record_saves_provisional_note_without_waiting_for_llm(monkeypatch):
+    """验证“处理记录savesprovisional笔记withoutwaitingforLLM”场景的预期行为与回归边界。"""
     saved_notes = []
     marked = []
 
@@ -50,6 +51,7 @@ def test_process_record_saves_provisional_note_without_waiting_for_llm(monkeypat
 
 
 def test_process_record_can_defer_memory_and_wal_completion(monkeypatch):
+    """验证“处理记录candefer记忆and预写日志completion”场景的预期行为与回归边界。"""
     saved_notes = []
     marked = []
 
@@ -74,6 +76,7 @@ def test_process_record_can_defer_memory_and_wal_completion(monkeypatch):
 
 
 def test_process_record_existing_note_marks_processed_without_slow_backfill(monkeypatch):
+    """验证“处理记录existing笔记marksprocessedwithoutslowbackfill”场景的预期行为与回归边界。"""
     calls = []
     existing_note = {"id": "record-1", "message_id": "message-1", "space_id": "space-1", "text": "正文"}
 
@@ -90,6 +93,7 @@ def test_process_record_existing_note_marks_processed_without_slow_backfill(monk
 
 
 def test_process_record_existing_note_recovers_retryable_memory_once(monkeypatch):
+    """验证“处理记录existing笔记recoversretryable记忆once”场景的预期行为与回归边界。"""
     calls = []
     existing_note = {"id": "note-1", "message_id": "message-1", "space_id": "space-1", "text": "我喜欢咖啡"}
 
@@ -109,6 +113,7 @@ def test_process_record_existing_note_recovers_retryable_memory_once(monkeypatch
 
 
 def test_backfill_vector_if_missing_writes_vector_from_existing_note(monkeypatch):
+    """验证“backfill向量ifmissingwrites向量fromexisting笔记”场景的预期行为与回归边界。"""
     added = []
     notes = [
         {
@@ -141,6 +146,7 @@ def test_backfill_vector_if_missing_writes_vector_from_existing_note(monkeypatch
 
 
 def test_backfill_vector_if_missing_skips_existing_vector(monkeypatch):
+    """验证“backfill向量ifmissingskipsexisting向量”场景的预期行为与回归边界。"""
     notes = [{"id": "note-1", "message_id": "message-1", "text": "正文"}]
 
     monkeypatch.setattr(worker, "load_index", lambda space_id: notes)
@@ -151,6 +157,7 @@ def test_backfill_vector_if_missing_skips_existing_vector(monkeypatch):
 
 
 def test_enrich_note_runs_slow_work_and_marks_ready(monkeypatch):
+    """验证“富化笔记runsslowworkandmarksready”场景的预期行为与回归边界。"""
     updates = []
     vectors = []
     note = {
@@ -181,6 +188,7 @@ def test_enrich_note_runs_slow_work_and_marks_ready(monkeypatch):
 
 
 def test_process_record_redacts_sensitive_pending_wal_before_storage(monkeypatch):
+    """验证“处理记录redactssensitive待处理预写日志前置storage”场景的预期行为与回归边界。"""
     blocked = []
     record = {**RECORD, "text": "密码是Abcd1234"}
     monkeypatch.setattr(
@@ -195,6 +203,7 @@ def test_process_record_redacts_sensitive_pending_wal_before_storage(monkeypatch
 
 
 def test_process_record_redacts_sensitive_text_but_preserves_distributed_pending(monkeypatch):
+    """验证“处理记录redactssensitive文本butpreservesdistributed待处理”场景的预期行为与回归边界。"""
     blocked = []
     record = {**RECORD, "text": "\u5bc6\u7801\u662fAbcd1234"}
     monkeypatch.setattr(
@@ -208,6 +217,7 @@ def test_process_record_redacts_sensitive_text_but_preserves_distributed_pending
 
 
 def test_process_pending_skips_duplicate_message_ids(monkeypatch):
+    """验证“处理待处理skips重复消息标识列表”场景的预期行为与回归边界。"""
     records = [
         {"id": "r1", "message_id": "m1", "space_id": "space-1"},
         {"id": "r2", "message_id": "m1", "space_id": "space-1"},

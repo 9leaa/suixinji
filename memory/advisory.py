@@ -24,6 +24,10 @@ def maybe_memory_relation_advisory(
     memories: list[MemoryRecord],
     decision: MemoryDecision,
 ) -> dict[str, Any] | None:
+    """负责“maybe记忆关系advisory”。
+
+    该函数是 `memory.advisory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not settings.STRONG_ESCALATION_ENABLED or decision.recommended_action not in HIGH_RISK_ACTIONS:
         return None
     payload = {

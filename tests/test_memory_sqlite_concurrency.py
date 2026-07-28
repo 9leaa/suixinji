@@ -8,9 +8,11 @@ from memory.repository import _run_write, add_source, get_memory, insert_memory,
 
 
 def test_run_write_retries_locked_errors():
+    """验证“运行写入retrieslockederrors”场景的预期行为与回归边界。"""
     attempts = {"count": 0}
 
     def operation():
+        """验证“operation”场景的预期行为与回归边界。"""
         attempts["count"] += 1
         if attempts["count"] < 3:
             raise sqlite3.OperationalError("database is locked")
@@ -21,9 +23,11 @@ def test_run_write_retries_locked_errors():
 
 
 def test_run_write_does_not_retry_non_locked_errors():
+    """验证“运行写入doesnot重试nonlockederrors”场景的预期行为与回归边界。"""
     attempts = {"count": 0}
 
     def operation():
+        """验证“operation”场景的预期行为与回归边界。"""
         attempts["count"] += 1
         raise ValueError("bad input")
 
@@ -33,7 +37,9 @@ def test_run_write_does_not_retry_non_locked_errors():
 
 
 def test_concurrent_memory_writes_keep_sources_and_versions():
+    """验证“concurrent记忆writeskeepsourcesandversions”场景的预期行为与回归边界。"""
     def write(idx: int) -> str:
+        """验证“写入”场景的预期行为与回归边界。"""
         memory = insert_memory(
             f"space-{idx % 4}",
             MemoryCandidate("semantic", f"用户正在测试并发写入 {idx}", 0.8, 0.9),

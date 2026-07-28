@@ -61,6 +61,10 @@ MIGRATED_MODELS = (
 
 
 def _json(value: Any, default: Any) -> Any:
+    """负责“JSON”。
+
+    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if value is None or value == "":
         return default
     if isinstance(value, (dict, list)):
@@ -72,12 +76,20 @@ def _json(value: Any, default: Any) -> Any:
 
 
 def _read_json(path: Path, default: Any) -> Any:
+    """负责“读取JSON”。
+
+    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not path.exists():
         return default
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _iter_jsonl(path: Path) -> Iterable[dict[str, Any]]:
+    """负责“iterjsonl”。
+
+    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with path.open("r", encoding="utf-8") as handle:
         for line_no, line in enumerate(handle, 1):
             value = line.strip()
@@ -90,6 +102,10 @@ def _iter_jsonl(path: Path) -> Iterable[dict[str, Any]]:
 
 
 def _collect(data_dir: Path) -> tuple[dict[str, Any], list[dict[str, str]]]:
+    """负责“collect”。
+
+    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     failures: list[dict[str, str]] = []
     payload: dict[str, Any] = {
         "wal": [], "notes": [], "vectors": [], "memory": {}, "deliveries": {}, "subscriptions": {},
@@ -136,6 +152,10 @@ def _collect(data_dir: Path) -> tuple[dict[str, Any], list[dict[str, str]]]:
 
 
 def _local_counts(payload: dict[str, Any]) -> dict[str, int]:
+    """负责“localcounts”。
+
+    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     unique_messages = {
         (str(item.get("source") or "feishu"), str(item.get("message_id") or ""))
         for item in payload["wal"]
@@ -154,6 +174,10 @@ def _local_counts(payload: dict[str, Any]) -> dict[str, int]:
 
 
 def _database_counts() -> dict[str, int]:
+    """负责“databasecounts”。
+
+    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     existing = set(inspect(get_engine()).get_table_names())
     counts: dict[str, int] = {}
     with session_scope() as session:
@@ -165,6 +189,10 @@ def _database_counts() -> dict[str, int]:
 
 
 def _space_ids(payload: dict[str, Any]) -> set[str]:
+    """负责“空间标识列表”。
+
+    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     ids = {str(item.get("space_id") or "") for item in payload["wal"] + payload["notes"] + payload["vectors"]}
     for table in ("memories", "memory_extraction_states", "memory_consolidation_runs", "memory_decisions", "memory_relations", "memory_traces"):
         ids.update(str(item.get("space_id") or "") for item in payload["memory"].get(table, []))
@@ -174,6 +202,10 @@ def _space_ids(payload: dict[str, Any]) -> set[str]:
 
 
 def _insert_once(session: Any, model: Any, values: dict[str, Any]) -> int:
+    """负责“插入once”。
+
+    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session.begin_nested():
         primary_key = list(model.__table__.primary_key.columns)
         result = session.execute(insert(model).values(**values).on_conflict_do_nothing().returning(*primary_key))
@@ -181,6 +213,10 @@ def _insert_once(session: Any, model: Any, values: dict[str, Any]) -> int:
 
 
 def _migrate(payload: dict[str, Any], failures: list[dict[str, str]]) -> dict[str, int]:
+    """负责“migrate”。
+
+    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     inserted: Counter[str] = Counter()
     with session_scope() as session:
         session.execute(insert(Tenant).values(id=DEFAULT_TENANT_ID, name=DEFAULT_TENANT_ID).on_conflict_do_nothing())
@@ -356,6 +392,7 @@ def _migrate(payload: dict[str, Any], failures: list[dict[str, str]]) -> dict[st
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=Path, default=Path("data"))
     parser.add_argument("--dry-run", action="store_true")

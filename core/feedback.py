@@ -25,6 +25,10 @@ class FeedbackRecord:
 
 
 def feedback_path(space_id: str) -> Path:
+    """负责“反馈path”。
+
+    该函数是 `core.feedback` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     FEEDBACK_DIR.mkdir(parents=True, exist_ok=True)
     return FEEDBACK_DIR / f"{safe_space_id(space_id)}.jsonl"
 
@@ -35,6 +39,10 @@ def create_feedback_record(
     text: str,
     message_id: str | None = None,
 ) -> FeedbackRecord:
+    """负责“创建反馈记录”。
+
+    该函数是 `core.feedback` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return FeedbackRecord(
         id=str(uuid.uuid4()),
         ts=datetime.now().astimezone().isoformat(),
@@ -46,6 +54,10 @@ def create_feedback_record(
 
 
 def append_feedback(record: FeedbackRecord) -> None:
+    """负责“追加反馈”。
+
+    该函数是 `core.feedback` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     path = feedback_path(record.space_id)
     with locked_space(record.space_id):
         with path.open("a", encoding="utf-8") as f:
@@ -58,6 +70,10 @@ def save_feedback(
     text: str,
     message_id: str | None = None,
 ) -> FeedbackRecord:
+    """负责“保存反馈”。
+
+    该函数是 `core.feedback` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     record = create_feedback_record(
         space_id=space_id,
         text=text,
@@ -68,6 +84,10 @@ def save_feedback(
 
 
 def list_feedback(space_id: str) -> list[dict]:
+    """负责“列出反馈”。
+
+    该函数是 `core.feedback` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     path = feedback_path(space_id)
     if not path.exists():
         return []

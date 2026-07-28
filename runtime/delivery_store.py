@@ -95,18 +95,34 @@ def reserve_delivery(
 
 
 def mark_sent(delivery_key: str) -> None:
+    """负责“标记sent”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     _update_status(delivery_key, DELIVERY_SENT, None)
 
 
 def mark_failed(delivery_key: str, error: str) -> None:
+    """负责“标记failed”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     _update_status(delivery_key, DELIVERY_FAILED, error)
 
 
 def mark_unknown(delivery_key: str, error: str) -> None:
+    """负责“标记unknown”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     _update_status(delivery_key, DELIVERY_UNKNOWN, error)
 
 
 def get_delivery(delivery_key: str) -> DeliveryRecord | None:
+    """负责“获取投递”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     raw = _load_raw().get(delivery_key)
     if raw is None:
         return None
@@ -114,6 +130,10 @@ def get_delivery(delivery_key: str) -> DeliveryRecord | None:
 
 
 def is_reservation_expired(record: DeliveryRecord, now: datetime | None = None) -> bool:
+    """负责“是否为reservationexpired”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if record.status != DELIVERY_RESERVED:
         return False
     if not record.lease_expires_at:
@@ -151,6 +171,10 @@ def recover_stale_reserved_deliveries() -> int:
 
 
 def _update_status(delivery_key: str, status: str, error: str | None) -> None:
+    """负责“更新状态”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with _LOCK:
         items = _load_raw()
         raw = items.get(delivery_key)
@@ -164,6 +188,10 @@ def _update_status(delivery_key: str, status: str, error: str | None) -> None:
 
 
 def _load_raw() -> dict[str, dict[str, Any]]:
+    """负责“加载raw”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with _LOCK:
         if not DELIVERY_PATH.exists():
             return {}
@@ -171,6 +199,10 @@ def _load_raw() -> dict[str, dict[str, Any]]:
 
 
 def _save_raw(items: dict[str, dict[str, Any]]) -> None:
+    """负责“保存raw”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with _LOCK:
         DELIVERY_DIR.mkdir(parents=True, exist_ok=True)
         DELIVERY_PATH.write_text(
@@ -180,6 +212,10 @@ def _save_raw(items: dict[str, dict[str, Any]]) -> None:
 
 
 def _record_from_raw(raw: dict[str, Any]) -> DeliveryRecord:
+    """负责“记录fromraw”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return DeliveryRecord(
         delivery_key=str(raw["delivery_key"]),
         delivery_type=str(raw["delivery_type"]),
@@ -196,10 +232,18 @@ def _record_from_raw(raw: dict[str, Any]) -> DeliveryRecord:
 
 
 def _future_iso(seconds: int) -> str:
+    """负责“futureiso”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return (datetime.now().astimezone() + timedelta(seconds=seconds)).isoformat(timespec="milliseconds")
 
 
 def _parse_iso(value: str) -> datetime:
+    """负责“解析iso”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     parsed = datetime.fromisoformat(value)
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=datetime.now().astimezone().tzinfo)
@@ -207,18 +251,34 @@ def _parse_iso(value: str) -> datetime:
 
 
 def ingest_archived_key(space_id: str, message_id: str) -> str:
+    """负责“接收写入archived键”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return f"ingest:{space_id}:{message_id}:archived"
 
 
 def query_key(space_id: str, message_id: str) -> str:
+    """负责“查询键”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return f"query:{space_id}:{message_id}"
 
 
 def manual_summary_key(space_id: str, message_id: str) -> str:
+    """负责“manual总结键”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return f"manual_summary:{space_id}:{message_id}"
 
 
 def auto_summary_key(space_id: str, range_key: str, date: str) -> str:
+    """负责“auto总结键”。
+
+    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return f"auto_summary:{space_id}:{range_key}:{date}"
 
 

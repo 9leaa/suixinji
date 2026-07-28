@@ -38,6 +38,10 @@ class LifecyclePoint:
 
 
 def _parse_point(value: str) -> LifecyclePoint:
+    """负责“解析point”。
+
+    该函数是 `scripts.reconcile_task_lifecycle` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     try:
         note_id, status, content = value.split("|", 2)
     except ValueError as exc:
@@ -50,6 +54,10 @@ def _parse_point(value: str) -> LifecyclePoint:
 
 
 def _report(space_id: str, task_key_value: str, points: list[LifecyclePoint], archived_ids: list[str], memory_id: str | None, *, executed: bool) -> dict[str, Any]:
+    """负责“报告”。
+
+    该函数是 `scripts.reconcile_task_lifecycle` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return {
         "mode": "executed" if executed else "dry_run",
         "space_id": space_id,
@@ -72,6 +80,10 @@ def reconcile_task_lifecycle(
     points: list[LifecyclePoint],
     execute: bool = False,
 ) -> dict[str, Any]:
+    """负责“reconcile任务生命周期”。
+
+    该函数是 `scripts.reconcile_task_lifecycle` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if len(points) < 2:
         raise ValueError("at least two reviewed lifecycle points are required")
     if len({point.note_id for point in points}) != len(points):
@@ -227,6 +239,7 @@ def reconcile_task_lifecycle(
 
 
 def main() -> int:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser(description="Reconcile an explicitly reviewed split task lifecycle")
     parser.add_argument("--space-id", required=True)
     parser.add_argument("--entity", required=True)

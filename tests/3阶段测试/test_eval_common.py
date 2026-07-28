@@ -13,6 +13,7 @@ from eval.common import (
 
 
 def test_score_classification_accepts_multiple_types_and_requires_two_tag_hits():
+    """验证“评分classificationacceptsmultipletypesandrequirestwotaghits”场景的预期行为与回归边界。"""
     score = score_classification(
         {"type": "任务", "tags": ["提醒", "待办"]},
         {
@@ -29,6 +30,7 @@ def test_score_classification_accepts_multiple_types_and_requires_two_tag_hits()
 
 
 def test_score_classification_fails_when_only_one_tag_hits():
+    """验证“评分classificationfailswhenonlyonetaghits”场景的预期行为与回归边界。"""
     score = score_classification(
         {"type": "任务", "tags": ["提醒", "检查"]},
         {
@@ -45,6 +47,7 @@ def test_score_classification_fails_when_only_one_tag_hits():
 
 
 def test_score_classification_fails_on_unacceptable_type():
+    """验证“评分classificationfailsunacceptable类型”场景的预期行为与回归边界。"""
     score = score_classification(
         {"type": "生活", "tags": ["提醒", "待办"]},
         {"case_id": "c1", "acceptable_types": ["任务"], "expected_tags_any": ["提醒", "待办"]},
@@ -55,6 +58,7 @@ def test_score_classification_fails_on_unacceptable_type():
 
 
 def test_hit_recall_and_score_retrieval_multi_answer():
+    """验证“hitrecalland评分retrievalmultianswer”场景的预期行为与回归边界。"""
     ranked_ids = ["n3", "n2", "n1", "n4"]
     assert hit_at_k(ranked_ids, ["n2"], 1) is False
     assert hit_at_k(ranked_ids, ["n2"], 2) is True
@@ -71,6 +75,7 @@ def test_hit_recall_and_score_retrieval_multi_answer():
 
 
 def test_score_retrieval_no_result_uses_min_score():
+    """验证“评分retrieval不结果usesmin评分”场景的预期行为与回归边界。"""
     passed = score_retrieval(
         ["n1", "n2"],
         {"case_id": "no1", "expected_no_result": True, "expected_note_ids": [], "min_score": 0.55},
@@ -89,6 +94,7 @@ def test_score_retrieval_no_result_uses_min_score():
 
 
 def test_score_query_react_checks_tools_notes_and_answer_terms():
+    """验证“评分查询reactcheckstools笔记列表andanswerterms”场景的预期行为与回归边界。"""
     score = score_query_react(
         [
             {
@@ -112,6 +118,7 @@ def test_score_query_react_checks_tools_notes_and_answer_terms():
 
 
 def test_score_summary_checks_required_and_forbidden_terms():
+    """验证“评分总结checksrequiredandforbiddenterms”场景的预期行为与回归边界。"""
     score = score_summary(
         "今天记录了馅饼和 P4 自动总结测试。",
         {"case_id": "s1", "must_include": ["馅饼", "P4"], "must_not_include": ["会议"]},
@@ -128,6 +135,7 @@ def test_score_summary_checks_required_and_forbidden_terms():
 
 
 def test_aggregate_boolean_scores():
+    """验证“aggregatebooleanscores”场景的预期行为与回归边界。"""
     summary = aggregate_boolean_scores([
         {"passed": True},
         {"passed": False},
@@ -138,6 +146,7 @@ def test_aggregate_boolean_scores():
 
 
 def test_load_jsonl(tmp_path):
+    """验证“加载jsonl”场景的预期行为与回归边界。"""
     path = tmp_path / "cases.jsonl"
     lines = [
         json.dumps({"case_id": "a"}),

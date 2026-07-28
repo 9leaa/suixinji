@@ -6,6 +6,10 @@ from datetime import datetime
 
 
 def age_days(created_at: str, *, now: datetime | None = None) -> float:
+    """负责“agedays”。
+
+    该函数是 `memory.policies.episodic` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     try:
         created = datetime.fromisoformat(created_at)
     except ValueError:
@@ -17,5 +21,9 @@ def age_days(created_at: str, *, now: datetime | None = None) -> float:
 
 
 def recency_weight(created_at: str, *, now: datetime | None = None) -> float:
+    """负责“recencyweight”。
+
+    该函数是 `memory.policies.episodic` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     age = age_days(created_at, now=now)
     return max(0.15, 1.0 - min(age, 365.0) / 365.0)

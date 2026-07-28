@@ -141,6 +141,10 @@ def load_index(space_id: str) -> list[dict[str, Any]]:
 
 
 def list_note_space_ids() -> list[str]:
+    """负责“列出笔记空间标识列表”。
+
+    该函数是 `storage.note_storage` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not NOTES_DIR.exists():
         return []
     return sorted(path.name for path in NOTES_DIR.iterdir() if path.is_dir())
@@ -160,6 +164,10 @@ def load_queryable_index(space_id: str) -> list[dict[str, Any]]:
 
 
 def find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
+    """负责“查找笔记”。
+
+    该函数是 `storage.note_storage` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     for note in load_index(space_id):
         if str(note.get("id") or "") == str(note_id):
             return note
@@ -332,6 +340,10 @@ if _STORAGE_BACKEND == "postgres":
     list_note_space_ids = _postgres_notes.list_space_ids
 
     def load_queryable_index(space_id: str) -> list[dict[str, Any]]:
+        """负责“加载queryable索引”。
+
+        该函数是 `storage.note_storage` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return [note for note in load_index(space_id) if is_note_queryable(note)]
 
     find_note = _postgres_notes.find_note

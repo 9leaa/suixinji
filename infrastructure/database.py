@@ -25,6 +25,10 @@ _role_session_factories: dict[str, sessionmaker[Session]] = {}
 
 
 def _normalized_database_url(url: str) -> str:
+    """负责“normalizeddatabaseurl”。
+
+    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if url.startswith("postgres://"):
         return "postgresql+psycopg://" + url.removeprefix("postgres://")
     if url.startswith("postgresql://") and "+" not in url.split("://", 1)[0]:
@@ -33,10 +37,18 @@ def _normalized_database_url(url: str) -> str:
 
 
 def _resolved_role(role: str | None = None) -> str:
+    """负责“resolvedrole”。
+
+    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return (role or PROCESS_ROLE or "default").strip().lower() or "default"
 
 
 def get_engine(role: str | None = None) -> Engine:
+    """负责“获取engine”。
+
+    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     global _engine, _session_factory
     resolved = _resolved_role(role)
     default_role = _resolved_role(None)
@@ -69,6 +81,10 @@ def get_engine(role: str | None = None) -> Engine:
 
 
 def get_session_factory(role: str | None = None) -> sessionmaker[Session]:
+    """负责“获取会话factory”。
+
+    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     resolved = _resolved_role(role)
     default_role = _resolved_role(None)
     if resolved == default_role:
@@ -83,6 +99,10 @@ def get_session_factory(role: str | None = None) -> sessionmaker[Session]:
 
 @contextmanager
 def session_scope(role: str | None = None) -> Iterator[Session]:
+    """负责“会话scope”。
+
+    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     session = get_session_factory(role)()
     try:
         with session.begin():
@@ -92,12 +112,20 @@ def session_scope(role: str | None = None) -> Iterator[Session]:
 
 
 def check_database_health() -> dict[str, str]:
+    """负责“检查databasehealth”。
+
+    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with get_engine().connect() as conn:
         version = str(conn.execute(text("SELECT current_database() || ' / ' || version()" )).scalar_one())
     return {"status": "ok", "database": version}
 
 
 def dispose_engine(role: str | None = None) -> None:
+    """负责“disposeengine”。
+
+    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     global _engine, _session_factory
     if role is None:
         if _engine is not None:

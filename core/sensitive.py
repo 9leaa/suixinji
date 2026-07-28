@@ -63,6 +63,10 @@ class SensitiveAssessment:
 
 
 def assess_sensitive_text(text: str) -> SensitiveAssessment:
+    """负责“评估sensitive文本”。
+
+    该函数是 `core.sensitive` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = str(text or "")
     if _PRIVATE_KEY_RE.search(value):
         return SensitiveAssessment(True, "private_key", "private_key_block", True)
@@ -88,15 +92,27 @@ def assess_sensitive_text(text: str) -> SensitiveAssessment:
 
 
 def contains_sensitive_data(text: str) -> bool:
+    """负责“containssensitive数据”。
+
+    该函数是 `core.sensitive` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return assess_sensitive_text(text).sensitive
 
 
 def mentions_sensitive_topic(text: str) -> bool:
+    """负责“mentionssensitivetopic”。
+
+    该函数是 `core.sensitive` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     compact = str(text or "").casefold()
     return any(keyword in compact for keyword in SENSITIVE_TOPIC_KEYWORDS)
 
 
 def redact_sensitive_text(text: str) -> str:
+    """负责“redactsensitive文本”。
+
+    该函数是 `core.sensitive` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     value = str(text or "")
     value = _PRIVATE_KEY_RE.sub("[PRIVATE_KEY_REDACTED]", value)
     value = _BEARER_RE.sub("Bearer [REDACTED]", value)
@@ -112,6 +128,10 @@ def redact_sensitive_text(text: str) -> str:
 
 
 def safe_text_preview(text: str, limit: int = 80) -> str:
+    """负责“安全文本preview”。
+
+    该函数是 `core.sensitive` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if assess_sensitive_text(text).blocks_storage:
         return "[sensitive content redacted]"
     return redact_sensitive_text(str(text or "").replace("\n", " "))[:limit]

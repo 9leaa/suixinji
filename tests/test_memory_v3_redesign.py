@@ -11,6 +11,7 @@ from memory.service import process_note_memory
 
 
 def _enable_v3(monkeypatch) -> None:
+    """验证“启用v3”场景的预期行为与回归边界。"""
     from core import settings
 
     monkeypatch.setattr(settings, "MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED", True)
@@ -20,6 +21,7 @@ def _enable_v3(monkeypatch) -> None:
 
 
 def test_v3_task_lifecycle_keeps_one_memory_and_versions(monkeypatch):
+    """验证“v3任务生命周期keepsone记忆andversions”场景的预期行为与回归边界。"""
     _enable_v3(monkeypatch)
     notes = [
         "记得给随心记的大模型换一个供应商",
@@ -42,6 +44,7 @@ def test_v3_task_lifecycle_keeps_one_memory_and_versions(monkeypatch):
 
 
 def test_v3_task_keys_prevent_template_based_false_merge(monkeypatch):
+    """验证“v3任务键列表preventtemplatebasedfalse合并”场景的预期行为与回归边界。"""
     _enable_v3(monkeypatch)
     process_note_memory({"id": "task-a", "space_id": "v3-space", "text": "记得给随心记的大模型换一个供应商"})
     process_note_memory({"id": "task-b", "space_id": "v3-space", "text": "记得制作首页消息路径图"})
@@ -53,6 +56,7 @@ def test_v3_task_keys_prevent_template_based_false_merge(monkeypatch):
 
 
 def test_v3_generic_semantic_facts_do_not_auto_merge(monkeypatch):
+    """验证“v3genericsemanticfactsdonotauto合并”场景的预期行为与回归边界。"""
     _enable_v3(monkeypatch)
     old = canonicalize_candidate(
         MemoryCandidate(
@@ -85,6 +89,7 @@ def test_v3_generic_semantic_facts_do_not_auto_merge(monkeypatch):
 
 
 def test_hybrid_uses_model_candidates_without_union(monkeypatch):
+    """验证“混合uses模型candidateswithoutunion”场景的预期行为与回归边界。"""
     from core import settings
 
     _enable_v3(monkeypatch)
@@ -125,6 +130,7 @@ def test_hybrid_uses_model_candidates_without_union(monkeypatch):
 
 
 def test_learning_task_lifecycle_is_stable_when_model_labels_vary_or_is_empty(monkeypatch):
+    """验证“learning任务生命周期是否为stablewhen模型labelsvaryor是否为empty”场景的预期行为与回归边界。"""
     _enable_v3(monkeypatch)
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
     model_outputs = iter(
@@ -197,6 +203,7 @@ def test_learning_task_lifecycle_is_stable_when_model_labels_vary_or_is_empty(mo
 
 
 def test_completion_wording_ignores_drifting_model_slots_for_one_lifecycle(monkeypatch):
+    """验证“completionwordingignoresdrifting模型slotsforone生命周期”场景的预期行为与回归边界。"""
     _enable_v3(monkeypatch)
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
     model_outputs = iter(
@@ -223,6 +230,7 @@ def test_completion_wording_ignores_drifting_model_slots_for_one_lifecycle(monke
 
 
 def test_specific_task_name_refines_an_existing_short_name(monkeypatch):
+    """验证“specific任务名称refinesanexistingshort名称”场景的预期行为与回归边界。"""
     _enable_v3(monkeypatch)
 
     for index, text in enumerate(

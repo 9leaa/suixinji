@@ -35,6 +35,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _find_note_by_message_id(space_id: str, message_id: str) -> dict[str, Any] | None:
+    """负责“查找笔记by消息标识”。
+
+    该函数是 `core.worker` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     for note in load_index(space_id):
         if note.get("message_id") == message_id:
             return note

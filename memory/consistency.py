@@ -39,6 +39,10 @@ def wait_for_memory_barrier(
         return {"status": "skipped", "reason": "space_not_found", "waited_ms": 0}
 
     def ready(progress: dict[str, int | None]) -> bool:
+        """负责“ready”。
+
+        该函数是 `memory.consistency` 中的`wait_for_memory_barrier` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return int(progress.get("memory_watermark") or 0) >= int(progress.get("note_watermark") or 0)
 
     while not ready(latest):

@@ -20,6 +20,7 @@ from infrastructure.schema import AgentRun, AgentStep, LlmUsage, Space, User
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     space_id = "hook-smoke-" + uuid.uuid4().hex
     query_agent.memory_search = lambda *args, **kwargs: [
         {"id": "m-smoke", "content": "用户喜欢茶", "memory_type": "preference", "sources": []}

@@ -17,6 +17,10 @@ class RateLimitHook(AgentHook):
     name = "rate_limit"
 
     def before_agent(self, context: AgentRunContext) -> None:
+        """负责“Agent 执行前的 Hook 前置处理”。
+
+        该函数是 `agent.hooks.rate_limit` 中的`RateLimitHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         action = "ingest" if context.run_type in {"ingest", "memory"} else "ask"
         limit = RATE_LIMIT_INGEST_PER_MINUTE if action == "ingest" else RATE_LIMIT_ASK_PER_MINUTE
         key = KEYS.rate_user(context.tenant_id, context.user_id, action)

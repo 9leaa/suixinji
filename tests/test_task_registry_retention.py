@@ -3,6 +3,7 @@ from runtime.task_registry import TaskRegistry
 
 
 def test_task_registry_prunes_finished_tasks_but_keeps_counts():
+    """验证“任务registryprunesfinishedtasksbutkeepscounts”场景的预期行为与回归边界。"""
     registry = TaskRegistry(history_limit=3, history_ttl_hours=0)
 
     for index in range(8):
@@ -17,6 +18,7 @@ def test_task_registry_prunes_finished_tasks_but_keeps_counts():
 
 
 def test_task_registry_keeps_queued_and_running_tasks():
+    """验证“任务registrykeepsqueuedandrunningtasks”场景的预期行为与回归边界。"""
     registry = TaskRegistry(history_limit=1, history_ttl_hours=0)
     queued = create_task("query", "s1", {}, message_id="queued")
     running = create_task("query", "s1", {}, message_id="running")

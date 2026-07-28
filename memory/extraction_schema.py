@@ -30,6 +30,10 @@ class ExtractedMemoryCandidate(BaseModel):
     @field_validator("entity", "attribute", "operation", "canonical_topic", "old_value", "new_value", "content")
     @classmethod
     def _strip_optional_text(cls, value: str | None) -> str | None:
+        """负责“stripoptional文本”。
+
+        该函数是 `memory.extraction_schema` 中的`ExtractedMemoryCandidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if value is None:
             return None
         stripped = str(value).strip()
@@ -37,6 +41,10 @@ class ExtractedMemoryCandidate(BaseModel):
 
     @model_validator(mode="after")
     def _validate_task_identity(self) -> "ExtractedMemoryCandidate":
+        """负责“校验任务identity”。
+
+        该函数是 `memory.extraction_schema` 中的`ExtractedMemoryCandidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if self.memory_type == "task" and self.should_store:
             if not all((self.entity, self.attribute, self.operation, self.task_status, self.canonical_topic)):
                 raise ValueError("task candidates require entity, attribute, operation, canonical_topic, and task_status")
@@ -45,10 +53,18 @@ class ExtractedMemoryCandidate(BaseModel):
         return self
 
     def evidence_is_grounded(self, source_text: str) -> bool:
+        """负责“evidence是否为grounded”。
+
+        该函数是 `memory.extraction_schema` 中的`ExtractedMemoryCandidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return bool(self.evidence_span and self.evidence_span in source_text)
 
 
 def parse_extracted_candidate(row: object, source_text: str) -> ExtractedMemoryCandidate | None:
+    """负责“解析extracted候选”。
+
+    该函数是 `memory.extraction_schema` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not isinstance(row, dict):
         return None
     try:

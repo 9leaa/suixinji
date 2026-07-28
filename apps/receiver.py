@@ -30,6 +30,10 @@ class InboxCommand:
 
 
 def receive(command: InboxCommand) -> DispatchResult:
+    """负责“receive”。
+
+    该函数是 `apps.receiver` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     store = None
     idem_key = KEYS.idempotency(command.tenant_id, command.source, command.message_id)
     if COORDINATION_BACKEND == "redis":

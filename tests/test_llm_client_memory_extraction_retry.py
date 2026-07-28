@@ -11,6 +11,7 @@ class FakeTimeout(Exception):
 
 
 def _response(content: str = '{"ok": true}') -> SimpleNamespace:
+    """验证“response”场景的预期行为与回归边界。"""
     return SimpleNamespace(
         choices=[SimpleNamespace(message=SimpleNamespace(content=content))],
         usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1, total_tokens=2),
@@ -18,6 +19,7 @@ def _response(content: str = '{"ok": true}') -> SimpleNamespace:
 
 
 def _install_fake_config(monkeypatch) -> list[ChatConfig]:
+    """验证“installfake配置”场景的预期行为与回归边界。"""
     configs: list[ChatConfig] = []
 
     monkeypatch.setattr(llm_client, "APITimeoutError", FakeTimeout)
@@ -38,12 +40,14 @@ def _install_fake_config(monkeypatch) -> list[ChatConfig]:
 
 
 def test_memory_extraction_uses_dedicated_timeout_and_retries_one_timeout(monkeypatch):
+    """验证“记忆extractionusesdedicated超时andretriesone超时”场景的预期行为与回归边界。"""
     configs = _install_fake_config(monkeypatch)
     events = []
     calls = []
 
     class FakeCompletions:
         def create(self, **kwargs):
+            """验证“创建”场景的预期行为与回归边界。"""
             calls.append(kwargs)
             if len(calls) == 1:
                 raise FakeTimeout("Request timed out.")
@@ -72,6 +76,7 @@ def test_memory_extraction_uses_dedicated_timeout_and_retries_one_timeout(monkey
 
 
 def test_memory_extraction_timeout_retry_is_capped_at_one(monkeypatch):
+    """验证“记忆extraction超时重试是否为cappedatone”场景的预期行为与回归边界。"""
     configs = _install_fake_config(monkeypatch)
     events = []
     calls = []
@@ -79,6 +84,7 @@ def test_memory_extraction_timeout_retry_is_capped_at_one(monkeypatch):
 
     class FakeCompletions:
         def create(self, **kwargs):
+            """验证“创建”场景的预期行为与回归边界。"""
             calls.append(kwargs)
             raise FakeTimeout("Request timed out.")
 
@@ -101,12 +107,14 @@ def test_memory_extraction_timeout_retry_is_capped_at_one(monkeypatch):
 
 
 def test_timeout_retry_does_not_apply_to_other_llm_tasks(monkeypatch):
+    """验证“超时重试doesnotapply转换为otherLLMtasks”场景的预期行为与回归边界。"""
     configs = _install_fake_config(monkeypatch)
     events = []
     calls = []
 
     class FakeCompletions:
         def create(self, **kwargs):
+            """验证“创建”场景的预期行为与回归边界。"""
             calls.append(kwargs)
             raise FakeTimeout("Request timed out.")
 

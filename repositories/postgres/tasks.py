@@ -23,6 +23,10 @@ from repositories.postgres.dispatch import (
 
 
 def create_task(task: dict[str, Any]) -> bool:
+    """负责“创建任务”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     space_id = str(task["space_id"])
     tenant_id = str(task.get("tenant_id") or DEFAULT_TENANT_ID)
     with session_scope() as session:
@@ -52,6 +56,10 @@ def create_task(task: dict[str, Any]) -> bool:
 
 
 def get_task(task_id: str) -> dict[str, Any] | None:
+    """负责“获取任务”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         row = session.get(Task, task_id)
         if row is None:
@@ -60,6 +68,10 @@ def get_task(task_id: str) -> dict[str, Any] | None:
 
 
 def update_task_status(task_id: str, status: str, **updates: Any) -> None:
+    """负责“更新任务状态”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     allowed = {
         "attempt_count",
         "failure_count",
@@ -76,6 +88,10 @@ def update_task_status(task_id: str, status: str, **updates: Any) -> None:
 
 
 def claim_task(task_id: str, worker_id: str, *, stale_after_seconds: int = TASK_LEASE_SECONDS) -> dict[str, Any] | None:
+    """负责“认领任务”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone()
     stale_before = now - timedelta(seconds=max(1, stale_after_seconds))
     lease_token = uuid.uuid4().hex
@@ -154,6 +170,10 @@ def renew_task_lease(
     lease_seconds: int = TASK_LEASE_SECONDS,
     session_role: str | None = None,
 ) -> bool:
+    """负责“renew任务lease”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone()
     with session_scope(role=session_role) as session:
         renewed = session.execute(
@@ -178,6 +198,10 @@ def _owned_running_task(
     claim_version: int,
     now: datetime,
 ) -> Task | None:
+    """负责“ownedrunning任务”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return session.execute(
         select(Task)
         .where(
@@ -203,6 +227,10 @@ def _complete_task_with_inbox_outcome(
     finalize: bool,
     now: datetime,
 ) -> bool:
+    """负责“完成任务withinboxoutcome”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     completed = session.execute(
         text(
             """
@@ -404,6 +432,10 @@ def complete_task(
     memory_ready_inbox_id: str | None = None,
     ingest_complete_inbox_id: str | None = None,
 ) -> bool:
+    """负责“完成任务”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     outcomes = [release_inbox_id, activate_task_id, note_ready_inbox_id, memory_ready_inbox_id, ingest_complete_inbox_id]
     if sum(value is not None for value in outcomes) > 1:
         raise ValueError("a task may produce only one Inbox/dependency outcome")
@@ -507,12 +539,20 @@ def complete_task(
 
 
 def _barrier_inbox_id(row: Task) -> str | None:
+    """负责“barrierinbox标识”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     payload = dict(row.payload_json or {})
     value = payload.get("barrier_inbox_id") or payload.get("inbox_id")
     return str(value) if value else None
 
 
 def _cancel_blocked_dependents(session: Any, parent_task_id: str, error: str, now: datetime) -> None:
+    """负责“cancelblockeddependents”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     rows = list(
         session.execute(
             select(Task)
@@ -537,6 +577,10 @@ def fail_task(
     lease_token: str,
     claim_version: int,
 ) -> str:
+    """负责“失败任务”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone()
     with session_scope() as session:
         row = _owned_running_task(
@@ -592,6 +636,10 @@ def defer_task(
     lease_token: str,
     claim_version: int,
 ) -> bool:
+    """负责“defer任务”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone()
     with session_scope() as session:
         row = _owned_running_task(
@@ -619,6 +667,10 @@ def defer_task(
 
 
 def enqueue_due_retries(*, limit: int = 50, task_ids: list[str] | None = None) -> int:
+    """负责“enqueuedueretries”。
+
+    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = datetime.now().astimezone()
     count = 0
     with session_scope() as session:

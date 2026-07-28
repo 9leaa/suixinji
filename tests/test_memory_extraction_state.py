@@ -16,6 +16,7 @@ from memory.repository import (
 
 
 def test_process_note_memory_marks_completed_and_empty(monkeypatch):
+    """验证“处理笔记记忆markscompletedandempty”场景的预期行为与回归边界。"""
     monkeypatch.setattr(service, "extract_candidates", lambda note_id, text, classification=None: [])
 
     empty = service.process_note_memory({"id": "note-empty", "space_id": "space-1", "text": "你好"})
@@ -38,6 +39,7 @@ def test_process_note_memory_marks_completed_and_empty(monkeypatch):
 
 
 def test_process_note_memory_marks_partial_and_failed(monkeypatch):
+    """验证“处理笔记记忆markspartialandfailed”场景的预期行为与回归边界。"""
     candidates = [
         MemoryCandidate("semantic", "用户学习 Agent", 0.8, 0.9),
         MemoryCandidate("preference", "用户喜欢咖啡", 0.7, 0.8),
@@ -46,6 +48,7 @@ def test_process_note_memory_marks_partial_and_failed(monkeypatch):
     monkeypatch.setattr(service, "extract_candidates", lambda note_id, text, classification=None: candidates)
 
     def partial_consolidate(space_id, note_id, candidate, trace=None):
+        """验证“partial整合”场景的预期行为与回归边界。"""
         if candidate.memory_type == "preference":
             raise RuntimeError("boom")
         return {"action": "insert", "memory_id": "mem-1"}
@@ -68,6 +71,7 @@ def test_process_note_memory_marks_partial_and_failed(monkeypatch):
 
 
 def test_attempt_count_increments_on_processing():
+    """验证“尝试统计incrementsprocessing”场景的预期行为与回归边界。"""
     first = mark_extraction_processing("note-1", "space-1")
     second = mark_extraction_processing("note-1", "space-1")
 
@@ -76,6 +80,7 @@ def test_attempt_count_increments_on_processing():
 
 
 def test_daily_consolidation_uses_extraction_state(monkeypatch):
+    """验证“dailyconsolidationusesextraction状态”场景的预期行为与回归边界。"""
     notes = [
         {"id": "note-completed", "space_id": "space-1", "text": "done"},
         {"id": "note-empty", "space_id": "space-1", "text": "empty"},
@@ -101,6 +106,7 @@ def test_daily_consolidation_uses_extraction_state(monkeypatch):
 
 
 def test_stale_processing_is_retried(monkeypatch):
+    """验证“staleprocessing是否为retried”场景的预期行为与回归边界。"""
     mark_extraction_processing("note-stale", "space-1")
     old = (datetime.now().astimezone() - timedelta(minutes=30)).isoformat(timespec="seconds")
     with _connect() as conn:

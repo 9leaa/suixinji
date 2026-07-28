@@ -22,6 +22,10 @@ class CandidateRejection:
 
 
 def _safe_score(value: float) -> float:
+    """负责“安全评分”。
+
+    该函数是 `memory.candidate_validator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     score = float(value)
     if not math.isfinite(score):
         return 0.0
@@ -86,6 +90,10 @@ def validate_candidates(
     *,
     note_text: str = "",
 ) -> tuple[list[MemoryCandidate], list[CandidateRejection]]:
+    """负责“校验candidates”。
+
+    该函数是 `memory.candidate_validator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     valid: list[MemoryCandidate] = []
     rejected: list[CandidateRejection] = []
     seen: set[tuple[str, str]] = set()

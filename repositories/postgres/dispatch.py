@@ -26,6 +26,10 @@ class DispatchResult:
 
 
 def _publish_task_request(session: Any, task: Task | str, task_type: str | None = None, *, attempt: int = 1) -> str:
+    """负责“发布任务请求”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     task_id = str(task.id if isinstance(task, Task) else task)
     resolved_type = str(task.task_type if isinstance(task, Task) else task_type or "")
     event_id = new_id("event")
@@ -55,6 +59,10 @@ def _enqueue_task_in_session(
     initial_status: str = "queued",
     publish: bool = True,
 ) -> tuple[str, bool]:
+    """负责“enqueue任务会话”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if publish and initial_status != "queued":
         raise ValueError("only queued tasks may be published")
     task_id = new_id("task")
@@ -99,6 +107,10 @@ def enqueue_task(
     initial_status: str = "queued",
     publish: bool = True,
 ) -> tuple[str, bool]:
+    """负责“enqueue任务”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         space_id = ensure_tenant_space(session, space_id, tenant_id=tenant_id)
         return _enqueue_task_in_session(
@@ -133,6 +145,10 @@ def receive_command(
     sensitivity: str = "normal",
     max_attempts: int = 5,
 ) -> DispatchResult:
+    """负责“receive命令”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     tenant_id = tenant_id or DEFAULT_TENANT_ID
     with session_scope() as session:
         source_space_id = space_id
@@ -214,6 +230,10 @@ def receive_command(
 
 
 def load_inbox_record(inbox_id: str) -> dict[str, Any] | None:
+    """负责“加载inbox记录”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         row = session.get(InboxMessage, inbox_id)
         if row is None:
@@ -237,6 +257,10 @@ def load_inbox_record(inbox_id: str) -> dict[str, Any] | None:
 
 
 def is_next_inbox_message(inbox_id: str) -> bool:
+    """负责“是否为下一步inbox消息”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         row = session.get(InboxMessage, inbox_id)
         if row is None:
@@ -254,6 +278,10 @@ def is_next_inbox_message(inbox_id: str) -> bool:
 
 
 def activate_task_in_session(session: Any, task_id: str) -> str | None:
+    """负责“activate任务会话”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     row = session.execute(select(Task).where(Task.id == task_id).with_for_update()).scalar_one_or_none()
     if row is None:
         raise ValueError(f"task not found: {task_id}")
@@ -269,6 +297,10 @@ def activate_task_in_session(session: Any, task_id: str) -> str | None:
 
 
 def _activate_ready_tasks_in_session(session: Any, space: Space) -> int:
+    """负责“activatereadytasks会话”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     rows = list(
         session.execute(
             select(Task)
@@ -304,6 +336,10 @@ def _activate_ready_tasks_in_session(session: Any, space: Space) -> int:
 
 
 def _advance_watermarks_in_session(session: Any, space: Space) -> None:
+    """负责“推进watermarks会话”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     note_current = int(space.note_watermark or 0)
     memory_current = int(space.memory_watermark or 0)
     note_open = func.min(InboxMessage.sequence_no).filter(
@@ -418,6 +454,10 @@ def complete_inbox_stage_in_session(
     success: bool = True,
     error: str | None = None,
 ) -> None:
+    """负责“完成inboxstage会话”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     inbox = session.execute(
         select(InboxMessage).where(InboxMessage.id == inbox_id).with_for_update()
     ).scalar_one_or_none()
@@ -482,6 +522,10 @@ def mark_inbox_note_completed_in_session(
     success: bool = True,
     error: str | None = None,
 ) -> None:
+    """负责“标记inbox笔记completed会话”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     complete_inbox_stage_in_session(session, inbox_id, note=True, success=success, error=error)
 
 
@@ -492,10 +536,18 @@ def mark_inbox_memory_completed_in_session(
     success: bool = True,
     error: str | None = None,
 ) -> None:
+    """负责“标记inbox记忆completed会话”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     complete_inbox_stage_in_session(session, inbox_id, memory=True, success=success, error=error)
 
 
 def task_watermark_ready(task: dict[str, Any]) -> bool:
+    """负责“任务watermarkready”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     payload = dict(task.get("payload_json") or {})
     consistency = str(payload.get("consistency") or "weak")
     if consistency not in {"note", "memory"}:
@@ -510,6 +562,10 @@ def task_watermark_ready(task: dict[str, Any]) -> bool:
 
 
 def _root_task_for_inbox(session: Any, inbox: InboxMessage) -> Task | None:
+    """负责“root任务forinbox”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return session.execute(
         select(Task)
         .where(
@@ -529,21 +585,37 @@ def finalize_inbox_in_session(
     success: bool,
     error: str | None = None,
 ) -> str | None:
+    """负责“finalizeinbox会话”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     complete_inbox_stage_in_session(session, inbox_id, finalize=True, success=success, error=error)
     return None
 
 
 def mark_inbox_processed(inbox_id: str) -> str | None:
+    """负责“标记inboxprocessed”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         return finalize_inbox_in_session(session, inbox_id, success=True)
 
 
 def mark_inbox_failed(inbox_id: str, error: str) -> str | None:
+    """负责“标记inboxfailed”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         return finalize_inbox_in_session(session, inbox_id, success=False, error=error)
 
 
 def get_space_progress(space_id: str) -> dict[str, int | None] | None:
+    """负责“获取空间progress”。
+
+    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         row = session.get(Space, space_id)
         if row is None:

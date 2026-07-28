@@ -154,6 +154,10 @@ def _schedule_memory_embedding(session: Any, row: Memory, *, force: bool = False
 
 
 def _schedule_memory_embedding_if_enabled(session: Any, row: Memory, *, force: bool = False) -> None:
+    """负责“schedule记忆向量ifenabled”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     try:
         _schedule_memory_embedding(session, row, force=force)
     except Exception:
@@ -162,6 +166,10 @@ def _schedule_memory_embedding_if_enabled(session: Any, row: Memory, *, force: b
 
 
 def _iso(value: Any) -> str | None:
+    """负责“iso”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if value is None:
         return None
     if isinstance(value, datetime):
@@ -170,16 +178,28 @@ def _iso(value: Any) -> str | None:
 
 
 def _dt(value: Any) -> datetime | None:
+    """负责“dt”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if value is None:
         return None
     return parse_datetime(value)
 
 
 def init_db(db_path: Any = None) -> None:
+    """负责“初始化db”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
 
 
 def _sources(session: Any, memory_id: str) -> list[MemorySource]:
+    """负责“sources”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     rows = session.execute(
         select(MemorySourceRow).where(MemorySourceRow.memory_id == memory_id).order_by(MemorySourceRow.created_at)
     ).scalars()
@@ -187,6 +207,10 @@ def _sources(session: Any, memory_id: str) -> list[MemorySource]:
 
 
 def _versions(session: Any, memory_id: str) -> list[MemoryVersion]:
+    """负责“versions”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     rows = session.execute(
         select(MemoryVersionRow).where(MemoryVersionRow.memory_id == memory_id).order_by(MemoryVersionRow.version)
     ).scalars()
@@ -211,6 +235,10 @@ def _versions(session: Any, memory_id: str) -> list[MemoryVersion]:
 
 
 def _source_map(session: Any, memory_ids: list[str]) -> dict[str, list[MemorySource]]:
+    """负责“来源map”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     result: dict[str, list[MemorySource]] = {memory_id: [] for memory_id in memory_ids}
     if not memory_ids:
         return result
@@ -232,6 +260,10 @@ def _record(
     sources: list[MemorySource] | None = None,
     versions: list[MemoryVersion] | None = None,
 ) -> MemoryRecord:
+    """负责“记录”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return MemoryRecord(
         id=row.id,
         space_id=row.space_id,
@@ -263,6 +295,10 @@ def _record(
 
 
 def _records(session: Any, rows: list[Memory], *, include_sources: bool = True) -> list[MemoryRecord]:
+    """负责“records”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     source_map = _source_map(session, [row.id for row in rows]) if include_sources else {}
     return [
         _record(
@@ -276,6 +312,10 @@ def _records(session: Any, rows: list[Memory], *, include_sources: bool = True) 
 
 
 def _state(row: MemoryExtractionStateRow) -> MemoryExtractionState:
+    """负责“状态”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return MemoryExtractionState(
         row.note_id, row.space_id, row.status, row.candidate_count, row.processed_count,
         row.attempt_count, row.last_error, _iso(row.started_at), _iso(row.completed_at), _iso(row.updated_at) or "",
@@ -283,6 +323,10 @@ def _state(row: MemoryExtractionStateRow) -> MemoryExtractionState:
 
 
 def _run(row: MemoryConsolidationRun) -> ConsolidationRun:
+    """负责“运行”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return ConsolidationRun(
         row.id,
         row.space_id,
@@ -297,6 +341,10 @@ def _run(row: MemoryConsolidationRun) -> ConsolidationRun:
 
 
 def _add_source(session: Any, memory_id: str, note_id: str, relation: str, *, now: str | None = None) -> bool:
+    """负责“添加来源”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if relation not in SOURCE_RELATIONS:
         raise ValueError(f"invalid source relation: {relation}")
     created = session.execute(
@@ -309,6 +357,10 @@ def _add_source(session: Any, memory_id: str, note_id: str, relation: str, *, no
 
 
 def _add_version(session: Any, row: Memory, *, reason: str | None, source_note_id: str | None) -> None:
+    """负责“添加版本”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     session.add(
         MemoryVersionRow(
             id=new_id("ver"),
@@ -339,6 +391,10 @@ def _insert_memory(
     memory_id: str | None = None,
     now: str | None = None,
 ) -> Memory:
+    """负责“插入记忆”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if status not in MEMORY_STATUSES:
         raise ValueError(f"invalid memory status: {status}")
     space = session.get(Space, space_id)
@@ -396,6 +452,10 @@ def _versioned_update(
     reason: str | None,
     source_note_id: str | None,
 ) -> None:
+    """负责“versioned更新”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if status is not None and status not in MEMORY_STATUSES:
         raise ValueError(f"invalid memory status: {status}")
     content_changed = content is not None
@@ -477,6 +537,10 @@ def _archive_terminal_task_duplicates(
 
 
 def _add_relation(session: Any, space_id: str, source_id: str, target_id: str, relation: str, decision_id: str | None, now: str) -> None:
+    """负责“添加关系”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if relation not in MEMORY_RELATION_TYPES:
         raise ValueError(f"invalid memory relation: {relation}")
     session.execute(
@@ -499,6 +563,10 @@ def _save_decision(
     result_ids: list[str] | None = None,
     error: str | None = None,
 ) -> None:
+    """负责“保存决策”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     now = utc_now_iso()
     session.execute(
         insert(MemoryDecisionRow)
@@ -534,6 +602,10 @@ def _save_decision(
 
 
 def add_source(memory_id: str, note_id: str, relation: str, db_path: Any = None) -> bool:
+    """负责“添加来源”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.execute(select(Memory).where(Memory.id == memory_id).with_for_update()).scalar_one_or_none()
@@ -541,6 +613,10 @@ def add_source(memory_id: str, note_id: str, relation: str, db_path: Any = None)
 
 
 def insert_memory(space_id: str, candidate: MemoryCandidate, *, source_note_id: str, source_relation: str = "created_from", status: str = "active", db_path: Any = None) -> MemoryRecord:
+    """负责“插入记忆”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = _insert_memory(session, space_id, candidate, source_note_id=source_note_id, source_relation=source_relation, status=status)
@@ -550,6 +626,10 @@ def insert_memory(space_id: str, candidate: MemoryCandidate, *, source_note_id: 
 
 
 def get_memory(memory_id: str, db_path: Any = None) -> MemoryRecord | None:
+    """负责“获取记忆”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.get(Memory, memory_id)
@@ -566,6 +646,10 @@ def list_memories(
     limit: int = 20,
     db_path: Any = None,
 ) -> list[MemoryRecord]:
+    """负责“列出memories”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     statement = select(Memory).where(Memory.space_id == space_id)
     if status:
@@ -618,6 +702,10 @@ def _base_memory_statement(
     memory_type: str | None,
     include_inactive: bool = False,
 ) -> Any:
+    """负责“base记忆statement”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     statement = select(Memory).where(Memory.space_id == space_id)
     if memory_type:
         statement = statement.where(Memory.memory_type == memory_type)
@@ -632,6 +720,10 @@ def _base_memory_statement(
 
 
 def _text_document() -> Any:
+    """负责“文本document”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if hasattr(Memory, "search_document"):
         return Memory.search_document
     return func.to_tsvector(
@@ -650,6 +742,10 @@ def _query_terms(text: str, *, entities: list[str] | None = None) -> list[str]:
     # Put the intent-stripped topic first so bounded term expansion cannot be
     # exhausted by n-grams of generic question wording before reaching the
     # actual entity (for example, 发票 in “发票这项任务进展如何”).
+    """负责“查询terms”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     from memory.retriever import retrieval_topic_text
 
     topic = retrieval_topic_text(text)
@@ -658,6 +754,10 @@ def _query_terms(text: str, *, entities: list[str] | None = None) -> list[str]:
     terms: list[str] = []
 
     def add(value: str) -> None:
+        """负责“添加”。
+
+        该函数是 `repositories.postgres.memory` 中的`_query_terms` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         token = str(value or "").strip()
         if len(token) >= 2 and token not in terms:
             terms.append(token)
@@ -697,6 +797,10 @@ def _rrf_hits(
     predicate: str | None = None,
     limit: int = 20,
 ) -> list[MemoryRetrievalHit]:
+    """负责“rrfhits”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     scores: dict[str, float] = {}
     rows: dict[str, Memory] = {}
     ranks: dict[str, dict[str, int]] = {}
@@ -760,10 +864,18 @@ def _rrf_hits(
 
 class _NoSourceSession:
     def execute(self, *_args: Any, **_kwargs: Any) -> Any:
+        """负责“execute”。
+
+        该函数是 `repositories.postgres.memory` 中的`_NoSourceSession` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         raise RuntimeError("sources unavailable in lightweight retrieval hit")
 
 
 def _rrf_fuse(*args: Any, **kwargs: Any) -> list[Memory]:
+    """负责“rrffuse”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if args and args[0] and isinstance(args[0][0], list):
         channels = [(f"channel_{index}", ranked) for index, ranked in enumerate(args[0])]
         args = (channels, *args[1:])
@@ -771,6 +883,10 @@ def _rrf_fuse(*args: Any, **kwargs: Any) -> list[Memory]:
 
 
 def _ready_vector_count(space_id: str, memory_type: str | None = None) -> int:
+    """负责“ready向量统计”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         statement = (
             select(func.count())
@@ -789,6 +905,10 @@ def _ready_vector_count(space_id: str, memory_type: str | None = None) -> int:
 
 
 def _safe_embedding(space_id: str, text: str, *, memory_type: str | None = None) -> list[float] | None:
+    """负责“安全向量”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not MEMORY_HYBRID_VECTOR_ENABLED or FAKE_EXTERNALS or not text.strip():
         return None
     try:
@@ -894,6 +1014,10 @@ def complete_memory_vector(
     dimension: int,
     embedding_version: str,
 ) -> bool:
+    """负责“完成记忆向量”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if len(embedding) != int(dimension):
         raise ValueError(f"memory embedding dimension mismatch: expected {dimension}, got {len(embedding)}")
     with session_scope() as session:
@@ -920,6 +1044,10 @@ def complete_memory_vector(
 
 
 def fail_memory_vector(memory_id: str, *, content_hash: str, error: str) -> bool:
+    """负责“失败记忆向量”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         row = session.execute(
             select(MemoryVector)
@@ -937,6 +1065,10 @@ def fail_memory_vector(memory_id: str, *, content_hash: str, error: str) -> bool
 
 
 def list_memory_vector_backfill_candidates(*, status: str = "active", limit: int = 10000) -> list[dict[str, Any]]:
+    """负责“列出记忆向量backfillcandidates”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     model, dimension, version = current_embedding_contract()
     with session_scope() as session:
         rows = list(
@@ -1175,6 +1307,10 @@ def hybrid_adjudication_candidates(
 
 
 def expire_due_memories(space_id: str | None = None, *, limit: int = 500, db_path: Any = None) -> int:
+    """负责“expireduememories”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         statement = select(Memory).where(
@@ -1199,6 +1335,10 @@ def expire_due_memories(space_id: str | None = None, *, limit: int = 500, db_pat
 
 
 def _candidate_record(row: MemoryCandidateRow) -> MemoryCandidate:
+    """负责“候选记录”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return MemoryCandidate(
         memory_type=row.memory_type,
         content=row.content,
@@ -1237,6 +1377,10 @@ def save_memory_candidate(
     decision_id: str | None = None,
     db_path: Any = None,
 ) -> MemoryCandidate:
+    """负责“保存记忆候选”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         space = session.get(Space, space_id)
@@ -1283,6 +1427,10 @@ def save_memory_candidate(
 
 
 def get_memory_candidate(candidate_id: str, db_path: Any = None) -> MemoryCandidate | None:
+    """负责“获取记忆候选”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.get(MemoryCandidateRow, candidate_id)
@@ -1290,6 +1438,10 @@ def get_memory_candidate(candidate_id: str, db_path: Any = None) -> MemoryCandid
 
 
 def get_memory_candidate_status(candidate_id: str, db_path: Any = None) -> str | None:
+    """负责“获取记忆候选状态”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.get(MemoryCandidateRow, candidate_id)
@@ -1304,6 +1456,10 @@ def mark_memory_candidate(
     decision_id: str | None = None,
     db_path: Any = None,
 ) -> bool:
+    """负责“标记记忆候选”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.get(MemoryCandidateRow, candidate_id)
@@ -1320,6 +1476,10 @@ def mark_memory_candidate(
 
 
 def list_retryable_memory_candidates(space_id: str, *, limit: int = 100, db_path: Any = None) -> list[MemoryCandidate]:
+    """负责“列出retryable记忆candidates”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         rows = session.execute(
@@ -1345,6 +1505,10 @@ def update_memory(
     source_note_id: str | None = None,
     db_path: Any = None,
 ) -> MemoryRecord | None:
+    """负责“更新记忆”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.execute(select(Memory).where(Memory.id == memory_id).with_for_update()).scalar_one_or_none()
@@ -1367,6 +1531,10 @@ def apply_memory_decision(
     merged_content: str | None = None,
     db_path: Any = None,
 ) -> dict[str, Any]:
+    """负责“apply记忆决策”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     try:
         with session_scope() as session:
@@ -1469,6 +1637,10 @@ def apply_memory_decision(
 
 
 def mark_accessed(memory_ids: list[str], db_path: Any = None) -> None:
+    """负责“标记accessed”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     if not memory_ids:
         return
@@ -1501,6 +1673,10 @@ def flush_access_counts(
     tenant_id: str = DEFAULT_TENANT_ID,
     db_path: Any = None,
 ) -> int:
+    """负责“刷新accesscounts”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     if COORDINATION_BACKEND != "redis" or not MEMORY_ACCESS_BUFFER_ENABLED:
         return 0
@@ -1533,6 +1709,10 @@ def flush_access_counts(
 
 
 def soft_delete_memory(memory_id: str, *, reason: str = "user_forget", db_path: Any = None) -> MemoryRecord | None:
+    """负责“soft删除记忆”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return update_memory(memory_id, status="deleted", reason=reason, db_path=db_path)
 
 
@@ -1544,6 +1724,10 @@ def correct_memory(
     reason: str = "user_correct",
     db_path: Any = None,
 ) -> MemoryRecord | None:
+    """负责“correct记忆”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     from memory.task_state import infer_task_status, validate_task_status
     from memory.policies.task import can_transition
@@ -1574,6 +1758,10 @@ def correct_memory(
 
 
 def purge_memory(memory_id: str, db_path: Any = None) -> bool:
+    """负责“清除记忆”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.execute(select(Memory).where(Memory.id == memory_id).with_for_update()).scalar_one_or_none()
@@ -1585,6 +1773,10 @@ def purge_memory(memory_id: str, db_path: Any = None) -> bool:
 
 
 def approve_pending_memory(memory_id: str, db_path: Any = None) -> MemoryRecord | None:
+    """负责“审批待处理记忆”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         pending = session.execute(
@@ -1658,6 +1850,10 @@ def approve_pending_memory(memory_id: str, db_path: Any = None) -> MemoryRecord 
 
 
 def reject_pending_memory(memory_id: str, *, reason: str = "user_rejected_pending_memory", db_path: Any = None) -> MemoryRecord | None:
+    """负责“reject待处理记忆”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.execute(select(Memory).where(Memory.id == memory_id, Memory.status == "pending_review").with_for_update()).scalar_one_or_none()
@@ -1683,6 +1879,10 @@ def reject_pending_memory(memory_id: str, *, reason: str = "user_rejected_pendin
 
 
 def edit_pending_memory(memory_id: str, content: str, db_path: Any = None) -> MemoryRecord | None:
+    """负责“edit待处理记忆”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     if not content.strip():
         return None
@@ -1736,6 +1936,10 @@ def resolve_memory_conflict(
     content: str | None = None,
     db_path: Any = None,
 ) -> MemoryRecord | None:
+    """负责“处理记忆conflict”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     if resolution not in {"keep", "merge", "archive"}:
         raise ValueError("resolution must be keep, merge, or archive")
@@ -1758,6 +1962,10 @@ def resolve_memory_conflict(
 
 
 def list_memory_decisions(space_id: str, *, note_id: str | None = None, status: str | None = None, limit: int = 50, db_path: Any = None) -> list[dict[str, Any]]:
+    """负责“列出记忆decisions”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     statement = select(MemoryDecisionRow).where(MemoryDecisionRow.space_id == space_id)
     if note_id:
@@ -1780,6 +1988,10 @@ def list_memory_decisions(space_id: str, *, note_id: str | None = None, status: 
 
 
 def list_memory_relations(memory_id: str, *, db_path: Any = None) -> list[MemoryRelation]:
+    """负责“列出记忆relations”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         rows = session.execute(
@@ -1794,12 +2006,20 @@ def list_memory_relations(memory_id: str, *, db_path: Any = None) -> list[Memory
 
 
 def add_memory_relation(space_id: str, source_memory_id: str, target_memory_id: str, relation: str, *, decision_id: str | None = None, db_path: Any = None) -> None:
+    """负责“添加记忆关系”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         _add_relation(session, space_id, source_memory_id, target_memory_id, relation, decision_id, utc_now_iso())
 
 
 def save_memory_trace(trace: dict[str, Any], db_path: Any = None) -> None:
+    """负责“保存记忆追踪”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     space_id = str(trace.get("space_id") or "unknown")
     with session_scope() as session:
@@ -1820,6 +2040,10 @@ def save_memory_trace(trace: dict[str, Any], db_path: Any = None) -> None:
 
 
 def list_memory_traces(*, limit: int = 1000) -> list[dict[str, Any]]:
+    """负责“列出记忆traces”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         rows = list(session.execute(
             select(MemoryTrace.payload_json)
@@ -1831,12 +2055,20 @@ def list_memory_traces(*, limit: int = 1000) -> list[dict[str, Any]]:
 
 
 def note_has_memory(note_id: str, db_path: Any = None) -> bool:
+    """负责“笔记是否包含记忆”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         return session.execute(select(MemorySourceRow.memory_id).where(MemorySourceRow.note_id == note_id).limit(1)).scalar_one_or_none() is not None
 
 
 def get_extraction_state(note_id: str, db_path: Any = None) -> MemoryExtractionState | None:
+    """负责“获取extraction状态”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.get(MemoryExtractionStateRow, note_id)
@@ -1854,6 +2086,10 @@ def _mark_extraction_state(
     increment_attempt: bool = False,
     db_path: Any = None,
 ) -> MemoryExtractionState:
+    """负责“标记extraction状态”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     if status not in MEMORY_EXTRACTION_STATUSES:
         raise ValueError(f"invalid memory extraction status: {status}")
@@ -1891,30 +2127,58 @@ def _mark_extraction_state(
 
 
 def mark_extraction_processing(note_id: str, space_id: str, db_path: Any = None) -> MemoryExtractionState:
+    """负责“标记extractionprocessing”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(note_id, space_id, "processing", increment_attempt=True, db_path=db_path)
 
 
 def mark_extraction_completed(note_id: str, space_id: str, *, candidate_count: int, processed_count: int, db_path: Any = None) -> MemoryExtractionState:
+    """负责“标记extractioncompleted”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(note_id, space_id, "completed", candidate_count=candidate_count, processed_count=processed_count, db_path=db_path)
 
 
 def mark_extraction_empty(note_id: str, space_id: str, db_path: Any = None) -> MemoryExtractionState:
+    """负责“标记extractionempty”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(note_id, space_id, "empty", db_path=db_path)
 
 
 def mark_extraction_empty_attempt(note_id: str, space_id: str, db_path: Any = None) -> MemoryExtractionState:
+    """负责“标记extractionempty尝试”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(note_id, space_id, "empty", increment_attempt=True, db_path=db_path)
 
 
 def mark_extraction_partial(note_id: str, space_id: str, *, candidate_count: int, processed_count: int, error: str, db_path: Any = None) -> MemoryExtractionState:
+    """负责“标记extractionpartial”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(note_id, space_id, "partial", candidate_count=candidate_count, processed_count=processed_count, error=error, db_path=db_path)
 
 
 def mark_extraction_failed(note_id: str, space_id: str, *, error: str, db_path: Any = None) -> MemoryExtractionState:
+    """负责“标记extractionfailed”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return _mark_extraction_state(note_id, space_id, "failed", error=error, db_path=db_path)
 
 
 def list_retryable_extraction_states(space_id: str, *, limit: int = 100, db_path: Any = None) -> list[MemoryExtractionState]:
+    """负责“列出retryableextractionstates”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         rows = session.execute(
@@ -1927,6 +2191,10 @@ def list_retryable_extraction_states(space_id: str, *, limit: int = 100, db_path
 
 
 def consolidation_period_key(cadence: str, day: date) -> str:
+    """负责“consolidationperiod键”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cadence = cadence.strip().lower()
     if cadence == "daily":
         return day.isoformat()
@@ -1939,6 +2207,10 @@ def consolidation_period_key(cadence: str, day: date) -> str:
 
 
 def _stale(value: str | datetime | None) -> bool:
+    """负责“stale”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not value:
         return True
     parsed = value if isinstance(value, datetime) else datetime.fromisoformat(value)
@@ -1948,6 +2220,10 @@ def _stale(value: str | datetime | None) -> bool:
 
 
 def reserve_consolidation_run(space_id: str, cadence: str, period_key: str, db_path: Any = None) -> ConsolidationRun | None:
+    """负责“预约consolidation运行”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     cadence = cadence.strip().lower()
     with session_scope() as session:
@@ -1971,6 +2247,10 @@ def reserve_consolidation_run(space_id: str, cadence: str, period_key: str, db_p
 
 
 def get_consolidation_run(run_id: str, db_path: Any = None) -> ConsolidationRun | None:
+    """负责“获取consolidation运行”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.get(MemoryConsolidationRun, run_id)
@@ -1978,6 +2258,10 @@ def get_consolidation_run(run_id: str, db_path: Any = None) -> ConsolidationRun 
 
 
 def mark_consolidation_completed(run_id: str, result: dict[str, Any], db_path: Any = None) -> None:
+    """负责“标记consolidationcompleted”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.execute(select(MemoryConsolidationRun).where(MemoryConsolidationRun.id == run_id).with_for_update()).scalar_one_or_none()
@@ -1986,6 +2270,10 @@ def mark_consolidation_completed(run_id: str, result: dict[str, Any], db_path: A
 
 
 def mark_consolidation_failed(run_id: str, error: str, db_path: Any = None) -> None:
+    """负责“标记consolidationfailed”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         row = session.execute(select(MemoryConsolidationRun).where(MemoryConsolidationRun.id == run_id).with_for_update()).scalar_one_or_none()
@@ -2264,6 +2552,10 @@ def search_memories(
 
 
 def stats(space_id: str, db_path: Any = None) -> dict[str, Any]:
+    """负责“统计”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     with session_scope() as session:
         memory_rows = session.execute(
@@ -2308,6 +2600,10 @@ def stats(space_id: str, db_path: Any = None) -> dict[str, Any]:
 
 
 def schema_tables(db_path: Any = None) -> set[str]:
+    """负责“模式tables”。
+
+    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     del db_path
     from sqlalchemy import inspect
     from infrastructure.database import get_engine

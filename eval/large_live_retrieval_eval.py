@@ -118,6 +118,10 @@ FAMILIES = [
 
 
 def _atoms() -> list[dict[str, Any]]:
+    """负责“atoms”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     rows: list[dict[str, Any]] = []
     for family, items in FAMILIES:
         for index, item in enumerate(items):
@@ -144,6 +148,10 @@ def _atoms() -> list[dict[str, Any]]:
 
 
 def _generate_dataset() -> dict[str, Any]:
+    """负责“生成dataset”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     atoms = _atoms()
     notes = []
     memories = []
@@ -264,14 +272,26 @@ def _generate_dataset() -> dict[str, Any]:
 
 
 def _now(offset: int = 0) -> str:
+    """负责“now”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return (datetime.now().astimezone() - timedelta(seconds=offset)).isoformat()
 
 
 def _note_text(note: dict[str, Any]) -> str:
+    """负责“笔记文本”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return "\n".join(str(value) for value in (note["title"], note["type"], " ".join(note["tags"]), note["summary"], note["text"]) if value)
 
 
 def _insert_corpus(space_id: str, dataset: dict[str, Any], embed: Any) -> tuple[dict[str, str], dict[str, str]]:
+    """负责“插入corpus”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     note_ids: dict[str, str] = {}
     memory_ids: dict[str, str] = {}
     model = str(get_embedding_config().model)
@@ -309,10 +329,18 @@ def _insert_corpus(space_id: str, dataset: dict[str, Any], embed: Any) -> tuple[
 
 
 def _metrics(rank_sets: list[list[int | None]]) -> dict[str, float]:
+    """负责“指标”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not rank_sets:
         return {"cases": 0, "hit_rate": 0.0, "recall_at_1": 0.0, "recall_at_3": 0.0, "recall_at_5": 0.0, "mrr": 0.0}
 
     def recall_at(k: int) -> float:
+        """负责“recallat”。
+
+        该函数是 `eval.large_live_retrieval_eval` 中的`_metrics` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return statistics.mean(sum(rank is not None and rank <= k for rank in ranks) / len(ranks) for ranks in rank_sets)
 
     first_ranks = [min((rank for rank in ranks if rank is not None), default=None) for ranks in rank_sets]
@@ -327,6 +355,10 @@ def _metrics(rank_sets: list[list[int | None]]) -> dict[str, float]:
 
 
 def _latency(results: list[dict[str, Any]]) -> dict[str, float]:
+    """负责“latency”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     values = sorted(float(item["latency_ms"]) for item in results)
     if not values:
         return {"avg_latency_ms": 0.0, "p95_latency_ms": 0.0}
@@ -334,6 +366,10 @@ def _latency(results: list[dict[str, Any]]) -> dict[str, float]:
 
 
 def _run_retrieval(space_id: str, cases: list[dict[str, Any]], note_ids: dict[str, str], memory_ids: dict[str, str], embed: Any) -> dict[str, Any]:
+    """负责“运行retrieval”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     note_results: list[dict[str, Any]] = []
     memory_results: list[dict[str, Any]] = []
     note_ranks: list[list[int | None]] = []
@@ -392,6 +428,10 @@ def _run_retrieval(space_id: str, cases: list[dict[str, Any]], note_ids: dict[st
 
 
 def _run_policy(cases: list[dict[str, Any]]) -> dict[str, Any]:
+    """负责“运行policy”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     results = []
     for case in cases:
         if case["kind"] == "safety":
@@ -404,10 +444,18 @@ def _run_policy(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _run_llm(space_id: str, cases: list[dict[str, Any]]) -> dict[str, Any]:
+    """负责“运行LLM”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     original = query_agent._complete_json_with_hooks
     calls = 0
 
     def counted(*args: Any, **kwargs: Any) -> Any:
+        """负责“counted”。
+
+        该函数是 `eval.large_live_retrieval_eval` 中的`_run_llm` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         nonlocal calls
         calls += 1
         return original(*args, **kwargs)
@@ -432,11 +480,19 @@ def _run_llm(space_id: str, cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _cleanup(space_id: str) -> None:
+    """负责“cleanup”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         session.execute(delete(Space).where(Space.id == space_id))
 
 
 def run(*, keep: bool = False) -> dict[str, Any]:
+    """负责“运行”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     dataset = _generate_dataset()
     write_json(DATASET_OUTPUT, dataset)
     space_id = f"eval_live_1000_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
@@ -444,6 +500,10 @@ def run(*, keep: bool = False) -> dict[str, Any]:
     original_embed = llm_client.embed_text
 
     def cached_embed(text: str) -> list[float]:
+        """负责“cachedembed”。
+
+        该函数是 `eval.large_live_retrieval_eval` 中的`run` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         key = str(text)
         if key not in cache:
             cache[key] = original_embed(key)
@@ -466,6 +526,10 @@ def run(*, keep: bool = False) -> dict[str, Any]:
 
 
 def _print(report: dict[str, Any]) -> None:
+    """负责“print”。
+
+    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     print(json.dumps({key: report[key] for key in ("version", "space_id", "total_cases", "unique_embedding_calls", "real_embedding", "real_llm", "kept")}, ensure_ascii=False))
     print("section\tcases\thit/accuracy\tR@1\tR@3\tR@5\tMRR\tstate_acc\tpolarity_acc\tanswer_acc\tavg_ms\tp95_ms")
     for name in ("note", "memory"):
@@ -477,6 +541,7 @@ def _print(report: dict[str, Any]) -> None:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser()
     parser.add_argument("--keep", action="store_true")
     parser.add_argument("--output", default=None)

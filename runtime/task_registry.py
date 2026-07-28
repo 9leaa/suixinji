@@ -18,6 +18,7 @@ class TaskRegistry:
         history_limit: int = TASK_HISTORY_LIMIT,
         history_ttl_hours: int = TASK_HISTORY_TTL_HOURS,
     ) -> None:
+        """初始化`TaskRegistry` 实例并建立后续调用所需的状态。"""
         self._lock = threading.RLock()
         self._tasks: dict[str, Task] = {}
         self._history_limit = history_limit
@@ -29,11 +30,19 @@ class TaskRegistry:
         self._last_llm_timeout_error: str | None = None
 
     def add(self, task: Task) -> Task:
+        """负责“添加”。
+
+        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._lock:
             self._tasks[task.id] = task
         return task
 
     def reject(self, task: Task, error: str) -> Task:
+        """负责“reject”。
+
+        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._lock:
             task.status = TASK_REJECTED
             task.finished_at = now_iso()
@@ -45,6 +54,10 @@ class TaskRegistry:
         return task
 
     def mark_running(self, task_id: str) -> None:
+        """负责“标记running”。
+
+        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._lock:
             task = self._tasks[task_id]
             task.status = TASK_RUNNING
@@ -52,6 +65,10 @@ class TaskRegistry:
             task.queue_wait_ms = _duration_ms(task.created_at, task.started_at)
 
     def mark_success(self, task_id: str) -> None:
+        """负责“标记success”。
+
+        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._lock:
             task = self._tasks[task_id]
             task.status = TASK_SUCCESS
@@ -62,6 +79,10 @@ class TaskRegistry:
             self._prune_finished_tasks()
 
     def mark_failed(self, task_id: str, error: str) -> None:
+        """负责“标记failed”。
+
+        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._lock:
             task = self._tasks[task_id]
             task.status = TASK_FAILED
@@ -76,6 +97,10 @@ class TaskRegistry:
             self._prune_finished_tasks()
 
     def get_stats(self) -> dict[str, Any]:
+        """负责“获取统计”。
+
+        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._lock:
             queued = [task for task in self._tasks.values() if task.status == TASK_QUEUED]
             running = [task for task in self._tasks.values() if task.status == TASK_RUNNING]
@@ -98,10 +123,18 @@ class TaskRegistry:
             }
 
     def retained_count(self) -> int:
+        """负责“retained统计”。
+
+        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._lock:
             return len(self._tasks)
 
     def _prune_finished_tasks(self) -> None:
+        """负责“prunefinishedtasks”。
+
+        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         protected = {
             task_id
             for task_id, task in self._tasks.items()
@@ -137,6 +170,10 @@ class TaskRegistry:
 
 
 def _age_seconds(value: str) -> int:
+    """负责“ageseconds”。
+
+    该函数是 `runtime.task_registry` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     try:
         created = datetime.fromisoformat(value)
     except ValueError:
@@ -145,6 +182,10 @@ def _age_seconds(value: str) -> int:
 
 
 def _duration_ms(start: str | None, end: str | None) -> int | None:
+    """负责“durationms”。
+
+    该函数是 `runtime.task_registry` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not start or not end:
         return None
     try:
@@ -154,6 +195,10 @@ def _duration_ms(start: str | None, end: str | None) -> int | None:
 
 
 def _parse_iso(value: str | None) -> datetime:
+    """负责“解析iso”。
+
+    该函数是 `runtime.task_registry` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not value:
         return datetime.min.replace(tzinfo=datetime.now().astimezone().tzinfo)
     parsed = datetime.fromisoformat(value)
@@ -163,5 +208,9 @@ def _parse_iso(value: str | None) -> datetime:
 
 
 def _looks_like_timeout(error: str) -> bool:
+    """负责“lookslike超时”。
+
+    该函数是 `runtime.task_registry` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     lowered = error.casefold()
     return "timeout" in lowered or "timed out" in lowered or "超时" in lowered

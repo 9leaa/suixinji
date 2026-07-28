@@ -26,6 +26,10 @@ def infer_task_status(text: str) -> str | None:
 
 
 def validate_task_status(value: str | None) -> str | None:
+    """负责“校验任务状态”。
+
+    该函数是 `memory.task_state` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if value is None:
         return None
     normalized = str(value).strip().lower()

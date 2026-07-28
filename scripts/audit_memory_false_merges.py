@@ -23,6 +23,10 @@ from memory.repository import list_memories
 
 
 def audit_space(space_id: str, *, limit: int = 2_000) -> dict[str, Any]:
+    """负责“审计空间”。
+
+    该函数是 `scripts.audit_memory_false_merges` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     findings: list[dict[str, Any]] = []
     scanned = list_memories(space_id, status=None, limit=max(1, min(int(limit), 10_000)))
     keys: dict[tuple[str, str], list[Any]] = {}
@@ -57,6 +61,7 @@ def audit_space(space_id: str, *, limit: int = 2_000) -> dict[str, Any]:
 
 
 def main() -> int:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser(description="Read-only Memory V3 false-merge audit")
     parser.add_argument("--space-id", required=True, help="target space; required to avoid accidental global scans")
     parser.add_argument("--limit", type=int, default=2_000)

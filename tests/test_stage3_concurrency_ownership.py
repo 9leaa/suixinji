@@ -12,6 +12,7 @@ from runtime.streams.worker import StreamWorker
 
 
 def test_stage4_role_connection_plan_stays_within_global_budget() -> None:
+    """验证“stage4roleconnection规划stayswithinglobalbudget”场景的预期行为与回归边界。"""
     roles = {
         "receiver": 2,
         "outbox-relay": 2,
@@ -29,22 +30,27 @@ def test_stage4_role_connection_plan_stays_within_global_budget() -> None:
 
 
 def test_stream_worker_reads_new_messages_before_periodic_reclaim() -> None:
+    """验证“流工作器readsnewmessages前置periodicreclaim”场景的预期行为与回归边界。"""
     new_message = StreamMessage("stream", "1-0", {"task_id": "new"})
     reclaimed_message = StreamMessage("stream", "0-1", {"task_id": "old"})
 
     class FakeClient:
         def __init__(self):
+            """初始化`FakeClient` 实例并建立后续调用所需的状态。"""
             self.read_results = [[new_message], []]
             self.reclaim_calls = 0
 
         def read(self, *_args, **_kwargs):
+            """验证“读取”场景的预期行为与回归边界。"""
             return self.read_results.pop(0)
 
         def reclaim(self, *_args, **_kwargs):
+            """验证“reclaim”场景的预期行为与回归边界。"""
             self.reclaim_calls += 1
             return [reclaimed_message]
 
         def reclaim_cursor(self, *_args):
+            """验证“reclaimcursor”场景的预期行为与回归边界。"""
             return "2-0"
 
     client = FakeClient()
@@ -62,11 +68,13 @@ def test_stream_worker_reads_new_messages_before_periodic_reclaim() -> None:
 
 
 def test_same_memory_key_evolution_is_mutually_exclusive(monkeypatch) -> None:
+    """验证“same记忆键演化是否为mutuallyexclusive”场景的预期行为与回归边界。"""
     active = 0
     max_active = 0
     guard = threading.Lock()
 
     def candidate(note_id: str) -> MemoryCandidate:
+        """验证“候选”场景的预期行为与回归边界。"""
         return MemoryCandidate(
             "preference",
             "用户喜欢绿茶",
@@ -87,6 +95,7 @@ def test_same_memory_key_evolution_is_mutually_exclusive(monkeypatch) -> None:
     monkeypatch.setattr(service, "validate_candidates", lambda candidates, note_text: (candidates, []))
 
     def consolidate(_space_id, _note_id, memory_candidate, trace=None):
+        """验证“整合”场景的预期行为与回归边界。"""
         nonlocal active, max_active
         with guard:
             active += 1

@@ -9,15 +9,18 @@ from runtime.streams.client import StreamClient
 
 class _FakePool:
     def __init__(self, kwargs: dict) -> None:
+        """初始化`_FakePool` 实例并建立后续调用所需的状态。"""
         self.kwargs = kwargs
         self.disconnected = False
 
     def disconnect(self) -> None:
+        """验证“disconnect”场景的预期行为与回归边界。"""
         self.disconnected = True
 
 
 class _FakeRedis:
     def __init__(self, connection_pool: _FakePool | None = None, *, responses: list | None = None) -> None:
+        """初始化`_FakeRedis` 实例并建立后续调用所需的状态。"""
         self.connection_pool = connection_pool
         self.responses = list(responses or [])
         self.closed = False
@@ -25,12 +28,15 @@ class _FakeRedis:
         self.xreadgroup_calls: list[tuple[str, str, dict, int | None]] = []
 
     def close(self) -> None:
+        """验证“close”场景的预期行为与回归边界。"""
         self.closed = True
 
     def xgroup_create(self, stream: str, group: str, **_kwargs) -> None:
+        """验证“xgroup创建”场景的预期行为与回归边界。"""
         self.xgroup_create_calls.append((stream, group))
 
     def xreadgroup(self, group: str, consumer: str, streams: dict, *, count: int, block: int):
+        """验证“xreadgroup”场景的预期行为与回归边界。"""
         self.xreadgroup_calls.append((group, consumer, streams, block))
         if self.responses:
             response = self.responses.pop(0)
@@ -42,10 +48,12 @@ class _FakeRedis:
 
 
 def test_blocking_redis_has_independent_timeout_and_pool(monkeypatch) -> None:
+    """验证“blockingredis是否包含independent超时andpool”场景的预期行为与回归边界。"""
     redis_client.close_redis()
     pools: list[_FakePool] = []
 
     def fake_from_url(_url: str, **kwargs) -> _FakePool:
+        """验证“fakefromurl”场景的预期行为与回归边界。"""
         pool = _FakePool(kwargs)
         pools.append(pool)
         return pool
@@ -74,6 +82,7 @@ def test_blocking_redis_has_independent_timeout_and_pool(monkeypatch) -> None:
 
 
 def test_stream_read_uses_blocking_client_for_xreadgroup() -> None:
+    """验证“流读取usesblockingclientforxreadgroup”场景的预期行为与回归边界。"""
     keys = RedisKeys(env="test-blocking")
     stream = keys.stream("ingest")
     normal = _FakeRedis()
@@ -90,6 +99,7 @@ def test_stream_read_uses_blocking_client_for_xreadgroup() -> None:
 
 
 def test_stream_read_recovers_nogroup_with_blocking_client() -> None:
+    """验证“流读取recoversnogroupwithblockingclient”场景的预期行为与回归边界。"""
     keys = RedisKeys(env="test-nogroup")
     stream = keys.stream("ingest")
     normal = _FakeRedis()

@@ -38,6 +38,10 @@ class TaskOutcome:
     ingest_complete_inbox_id: str | None = None
 
     def __post_init__(self) -> None:
+        """负责“post初始化”。
+
+        该函数是 `runtime.streams.worker` 中的`TaskOutcome` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         outcomes = (
             self.release_inbox_id,
             self.activate_task_id,
@@ -53,6 +57,10 @@ TaskHandler = Callable[[dict[str, Any]], TaskOutcome | None]
 
 
 def _elapsed_ms(start: datetime | None, end: datetime | None = None) -> int | None:
+    """负责“elapsedms”。
+
+    该函数是 `runtime.streams.worker` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if start is None:
         return None
     end = end or datetime.now().astimezone()
@@ -60,6 +68,10 @@ def _elapsed_ms(start: datetime | None, end: datetime | None = None) -> int | No
 
 
 def _safe_iso(value: Any) -> str | None:
+    """负责“安全iso”。
+
+    该函数是 `runtime.streams.worker` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if value is None:
         return None
     if isinstance(value, datetime):
@@ -68,12 +80,20 @@ def _safe_iso(value: Any) -> str | None:
 
 
 def _lease_hash(value: str | None) -> str | None:
+    """负责“leasehash”。
+
+    该函数是 `runtime.streams.worker` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not value:
         return None
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
 
 
 def _default_outcome(task: dict[str, Any]) -> TaskOutcome:
+    """负责“默认outcome”。
+
+    该函数是 `runtime.streams.worker` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     payload = dict(task.get("payload_json") or {})
     inbox_id = payload.get("inbox_id")
     return TaskOutcome(release_inbox_id=str(inbox_id)) if inbox_id else TaskOutcome()
@@ -81,6 +101,7 @@ def _default_outcome(task: dict[str, Any]) -> TaskOutcome:
 
 class RetryLater(RuntimeError):
     def __init__(self, message: str, delay_seconds: float = 1.0) -> None:
+        """初始化`RetryLater` 实例并建立后续调用所需的状态。"""
         super().__init__(message)
         self.delay_seconds = delay_seconds
 
@@ -94,6 +115,7 @@ class StreamWorker:
         client: StreamClient | None = None,
         worker_id: str | None = None,
     ) -> None:
+        """初始化`StreamWorker` 实例并建立后续调用所需的状态。"""
         self.task_type = task_type
         self.handler = handler
         self.client = client or StreamClient()
@@ -103,6 +125,10 @@ class StreamWorker:
         self._next_reclaim_at = time.monotonic() + stagger
 
     def run_once(self, *, block_ms: int = 1000) -> int:
+        """负责“运行once”。
+
+        该函数是 `runtime.streams.worker` 中的`StreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         messages = self.client.read(self.task_type, self.worker_id, block_ms=block_ms)
         if not messages:
             messages = self._reclaim_if_due()
@@ -111,6 +137,10 @@ class StreamWorker:
         return len(messages)
 
     def _reclaim_if_due(self) -> list[StreamMessage]:
+        """负责“reclaimifdue”。
+
+        该函数是 `runtime.streams.worker` 中的`StreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         now = time.monotonic()
         if now < self._next_reclaim_at:
             return []
@@ -145,6 +175,10 @@ class StreamWorker:
         return messages
 
     def run_forever(self) -> None:
+        """负责“运行forever”。
+
+        该函数是 `runtime.streams.worker` 中的`StreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         while self.running:
             try:
                 self.run_once()
@@ -153,9 +187,17 @@ class StreamWorker:
                 time.sleep(1)
 
     def stop(self) -> None:
+        """负责“stop”。
+
+        该函数是 `runtime.streams.worker` 中的`StreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         self.running = False
 
     def _handle(self, message: StreamMessage) -> None:
+        """负责“处理”。
+
+        该函数是 `runtime.streams.worker` 中的`StreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         task_id = str(message.fields.get("task_id") or "")
         stream_extra = {
             "pid": os.getpid(),
@@ -203,6 +245,10 @@ class StreamWorker:
         ownership_lost = threading.Event()
 
         def renew_lease() -> None:
+            """负责“renewlease”。
+
+            该函数是 `runtime.streams.worker` 中的`_handle` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+            """
             interval = max(0.5, TASK_LEASE_SECONDS / 3)
             while not stop_heartbeat.wait(interval):
                 renew_started = time.perf_counter()
@@ -299,6 +345,10 @@ class StreamWorker:
         heartbeat.start()
 
         def finish_heartbeat() -> None:
+            """负责“finishheartbeat”。
+
+            该函数是 `runtime.streams.worker` 中的`_handle` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+            """
             stop_heartbeat.set()
             heartbeat.join(timeout=1)
 
@@ -495,6 +545,7 @@ class AdaptiveStreamWorker:
         client: StreamClient | None = None,
         worker_id: str | None = None,
     ) -> None:
+        """初始化`AdaptiveStreamWorker` 实例并建立后续调用所需的状态。"""
         self.client = client or StreamClient()
         self.worker_id = worker_id or f"{socket.gethostname()}-adaptive-{uuid.uuid4().hex[:8]}"
         self.task_types = list(handlers)
@@ -522,9 +573,17 @@ class AdaptiveStreamWorker:
 
     @staticmethod
     def _rotated(task_types: list[str], cursor: int) -> list[str]:
+        """负责“rotated”。
+
+        该函数是 `runtime.streams.worker` 中的`AdaptiveStreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return task_types[cursor:] + task_types[:cursor]
 
     def _handle_messages(self, messages: list[StreamMessage]) -> None:
+        """负责“处理messages”。
+
+        该函数是 `runtime.streams.worker` 中的`AdaptiveStreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         for message in messages:
             task_type = str(message.fields.get("task_type") or "")
             worker = self.workers.get(task_type)
@@ -534,6 +593,10 @@ class AdaptiveStreamWorker:
             worker._handle(message)
 
     def run_once(self) -> int:
+        """负责“运行once”。
+
+        该函数是 `runtime.streams.worker` 中的`AdaptiveStreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         foreground = self._rotated(self.foreground_task_types, self._foreground_cursor)
         background = self._rotated(self.background_task_types, self._background_cursor)
         lanes = [(foreground, True), (background, False)]
@@ -564,6 +627,10 @@ class AdaptiveStreamWorker:
         return 0
 
     def run_forever(self) -> None:
+        """负责“运行forever”。
+
+        该函数是 `runtime.streams.worker` 中的`AdaptiveStreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         idle_sleep = 0.02
         while self.running:
             try:
@@ -578,4 +645,8 @@ class AdaptiveStreamWorker:
                 time.sleep(1)
 
     def stop(self) -> None:
+        """负责“stop”。
+
+        该函数是 `runtime.streams.worker` 中的`AdaptiveStreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         self.running = False

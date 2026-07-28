@@ -14,6 +14,10 @@ from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space,
 
 
 def _as_record(row: InboxMessage) -> dict[str, Any]:
+    """负责“as记录”。
+
+    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return {
         "id": row.id,
         "source": row.source,
@@ -31,6 +35,10 @@ def _as_record(row: InboxMessage) -> dict[str, Any]:
 
 
 def append_message_once(record: Any) -> bool:
+    """负责“追加消息once”。
+
+    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     values = asdict(record) if not isinstance(record, dict) else dict(record)
     source = str(values.get("source") or "feishu")
     space_id = str(values["space_id"])
@@ -69,15 +77,27 @@ def append_message_once(record: Any) -> bool:
 
 
 def append_record(record: Any) -> None:
+    """负责“追加记录”。
+
+    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     append_message_once(record)
 
 
 def list_wal_space_ids() -> list[str]:
+    """负责“列出预写日志空间标识列表”。
+
+    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         return list(session.execute(select(InboxMessage.space_id).distinct().order_by(InboxMessage.space_id)).scalars())
 
 
 def load_records(space_id: str) -> list[dict[str, Any]]:
+    """负责“加载records”。
+
+    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         rows = session.execute(
             select(InboxMessage).where(InboxMessage.space_id == space_id).order_by(InboxMessage.sequence_no)
@@ -86,6 +106,10 @@ def load_records(space_id: str) -> list[dict[str, Any]]:
 
 
 def message_exists(space_id: str, message_id: str) -> bool:
+    """负责“消息exists”。
+
+    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         resolved_space_id = ensure_tenant_space(session, space_id)
         return session.execute(
@@ -97,6 +121,10 @@ def message_exists(space_id: str, message_id: str) -> bool:
 
 
 def load_pending_records(space_id: str) -> list[dict[str, Any]]:
+    """负责“加载待处理records”。
+
+    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         rows = session.execute(
             select(InboxMessage)
@@ -107,6 +135,10 @@ def load_pending_records(space_id: str) -> list[dict[str, Any]]:
 
 
 def mark_processed(space_id: str, record_id: str) -> None:
+    """负责“标记processed”。
+
+    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         session.execute(
             update(InboxMessage)
@@ -122,6 +154,10 @@ def mark_sensitive_blocked(
     *,
     preserve_pending: bool = False,
 ) -> None:
+    """负责“标记sensitiveblocked”。
+
+    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     with session_scope() as session:
         session.execute(
             update(InboxMessage)

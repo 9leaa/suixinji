@@ -39,6 +39,7 @@ class BoundedTaskExecutor:
         queue_size: int = TASK_QUEUE_SIZE,
         send_text: SendText | None = None,
     ) -> None:
+        """初始化`BoundedTaskExecutor` 实例并建立后续调用所需的状态。"""
         self._pool = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="suixinji-task")
         self._enrichment_pool = ThreadPoolExecutor(
             max_workers=ENRICHMENT_MAX_WORKERS,
@@ -61,6 +62,10 @@ class BoundedTaskExecutor:
         self._shutdown_lock = threading.Lock()
 
     def set_send_text(self, send_text: SendText) -> None:
+        """负责“设置发送文本”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         self._send_text = send_text
 
     def submit_ingest(
@@ -71,6 +76,10 @@ class BoundedTaskExecutor:
         notify_on_success: bool = False,
         source: str = "direct",
     ) -> Task:
+        """负责“submit接收写入”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         record_dict = _record_to_dict(record)
         message_id = str(record_dict.get("message_id") or "")
         task = create_task("ingest", record_dict["space_id"], {}, message_id=message_id or None)
@@ -98,6 +107,10 @@ class BoundedTaskExecutor:
         return submitted
 
     def submit_query(self, space_id: str, question: str, chat_id: str, message_id: str | None = None) -> Task:
+        """负责“submit查询”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         delivery_key = query_key(space_id, message_id) if message_id else query_key(space_id, "unknown")
         task = create_task(
             "query",
@@ -122,6 +135,10 @@ class BoundedTaskExecutor:
         delivery_key: str | None = None,
         delivery_type: str | None = None,
     ) -> Task:
+        """负责“submit总结”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if delivery_key is None and message_id:
             delivery_key = manual_summary_key(space_id, message_id)
         task = create_task(
@@ -139,6 +156,10 @@ class BoundedTaskExecutor:
         return self._submit(task, self._run_summary)
 
     def get_stats(self) -> dict[str, Any]:
+        """负责“获取统计”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         stats = self._registry.get_stats()
         stats.update(
             {
@@ -153,21 +174,41 @@ class BoundedTaskExecutor:
         return stats
 
     def remaining_slots(self) -> int:
+        """负责“remainingslots”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return int(getattr(self._slots, "_value", 0))
 
     def has_inflight_ingest(self, space_id: str, message_id: str) -> bool:
+        """负责“是否包含inflight接收写入”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._inflight_ingest_lock:
             return (space_id, message_id) in self._inflight_ingest_keys
 
     def inflight_ingest_count(self) -> int:
+        """负责“inflight接收写入统计”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._inflight_ingest_lock:
             return len(self._inflight_ingest_keys)
 
     def inflight_enrichment_count(self) -> int:
+        """负责“inflightenrichment统计”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._inflight_enrichment_lock:
             return len(self._inflight_enrichment)
 
     def submit_enrichment(self, space_id: str, note_id: str) -> bool:
+        """负责“submitenrichment”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         key = (str(space_id), str(note_id))
         if not key[0] or not key[1]:
             return False
@@ -184,6 +225,10 @@ class BoundedTaskExecutor:
         return True
 
     def shutdown(self) -> None:
+        """负责“shutdown”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._shutdown_lock:
             self._shutdown = True
         self._pool.shutdown(wait=True)
@@ -196,6 +241,10 @@ class BoundedTaskExecutor:
         *,
         on_finished: Callable[[], None] | None = None,
     ) -> Task:
+        """负责“submit”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._shutdown_lock:
             if self._shutdown:
                 return self._reject(task, "executor is shutting down")
@@ -215,6 +264,10 @@ class BoundedTaskExecutor:
         return task
 
     def _reject(self, task: Task, error: str) -> Task:
+        """负责“reject”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         rejected = self._registry.reject(task, error)
         log_event(
             "runtime.task_rejected",
@@ -229,6 +282,10 @@ class BoundedTaskExecutor:
         return rejected
 
     def _run_task(self, task: Task, runner: Callable[[Task], None], on_finished: Callable[[], None] | None = None) -> None:
+        """负责“运行任务”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         self._registry.mark_running(task.id)
         log_event(
             "runtime.task_running",
@@ -268,6 +325,10 @@ class BoundedTaskExecutor:
             self._slots.release()
 
     def _run_ingest(self, task: Task) -> None:
+        """负责“运行接收写入”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         record = task.payload["record"]
         chat_id = task.payload.get("chat_id")
         with get_space_lock(task.space_id):
@@ -286,6 +347,10 @@ class BoundedTaskExecutor:
             self.submit_enrichment(task.space_id, note_id)
 
     def _run_query(self, task: Task) -> None:
+        """负责“运行查询”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         question = str(task.payload["question"])
         chat_id = str(task.payload["chat_id"])
         try:
@@ -306,6 +371,10 @@ class BoundedTaskExecutor:
         )
 
     def _run_enrichment(self, key: tuple[str, str]) -> None:
+        """负责“运行enrichment”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         space_id, note_id = key
         log_event("worker.enrichment_queued", space_id=space_id, record_id=note_id)
         try:
@@ -333,6 +402,10 @@ class BoundedTaskExecutor:
             self._enrichment_slots.release()
 
     def _run_summary(self, task: Task) -> None:
+        """负责“运行总结”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         range_key = str(task.payload["range_key"])
         chat_id = str(task.payload["chat_id"])
         lock = self._summary_lock(task.space_id)
@@ -360,6 +433,10 @@ class BoundedTaskExecutor:
         task: Task,
         on_sent: Callable[[], None] | None = None,
     ) -> None:
+        """负责“deliver”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if self._send_text is None:
             return
         reserved = reserve_delivery(
@@ -399,6 +476,10 @@ class BoundedTaskExecutor:
             on_sent()
 
     def _deliver_query_failure_notice(self, chat_id: str, task: Task) -> None:
+        """负责“deliver查询failurenotice”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         try:
             self._deliver(
                 chat_id,
@@ -411,6 +492,10 @@ class BoundedTaskExecutor:
             LOGGER.exception("Failed to send query failure notice: task_id=%s", task.id)
 
     def _summary_lock(self, space_id: str) -> threading.Lock:
+        """负责“总结锁”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._summary_locks_guard:
             lock = self._summary_locks.get(space_id)
             if lock is None:
@@ -419,6 +504,10 @@ class BoundedTaskExecutor:
             return lock
 
     def _reserve_inflight_ingest(self, key: tuple[str, str]) -> bool:
+        """负责“预约inflight接收写入”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._inflight_ingest_lock:
             if key in self._inflight_ingest_keys:
                 return False
@@ -426,17 +515,29 @@ class BoundedTaskExecutor:
             return True
 
     def _release_inflight_ingest(self, key: tuple[str, str]) -> None:
+        """负责“释放inflight接收写入”。
+
+        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         with self._inflight_ingest_lock:
             self._inflight_ingest_keys.discard(key)
 
 
 def _record_to_dict(record: Any) -> dict[str, Any]:
+    """负责“记录转换为dict”。
+
+    该函数是 `runtime.executor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if isinstance(record, dict):
         return dict(record)
     return asdict(record)
 
 
 def _note_id(note: Any) -> str:
+    """负责“笔记标识”。
+
+    该函数是 `runtime.executor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if note is None:
         return ""
     if isinstance(note, dict):
@@ -445,6 +546,10 @@ def _note_id(note: Any) -> str:
 
 
 def _task_timing(task: Task) -> dict[str, int | None]:
+    """负责“任务timing”。
+
+    该函数是 `runtime.executor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return {
         "queue_wait_ms": task.queue_wait_ms,
         "execution_ms": task.execution_ms,
@@ -453,6 +558,10 @@ def _task_timing(task: Task) -> dict[str, int | None]:
 
 
 def _looks_uncertain_send_error(exc: BaseException) -> bool:
+    """负责“looksuncertain发送错误”。
+
+    该函数是 `runtime.executor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     text = f"{type(exc).__name__}: {exc}".casefold()
     return "timeout" in text or "timed out" in text or "connection" in text
 
@@ -462,6 +571,10 @@ _default_lock = threading.Lock()
 
 
 def get_task_executor(send_text: SendText | None = None) -> BoundedTaskExecutor:
+    """负责“获取任务executor”。
+
+    该函数是 `runtime.executor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     global _default_executor
     with _default_lock:
         if _default_executor is None:

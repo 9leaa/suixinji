@@ -17,6 +17,7 @@ from memory import trace as memory_trace
 
 @pytest.fixture(autouse=True)
 def isolate_delivery_store(monkeypatch, tmp_path):
+    """验证“isolate投递存储”场景的预期行为与回归边界。"""
     monkeypatch.setattr(delivery_store, "DATA_DIR", tmp_path)
     monkeypatch.setattr(delivery_store, "DELIVERY_DIR", tmp_path / "deliveries")
     monkeypatch.setattr(delivery_store, "DELIVERY_PATH", tmp_path / "deliveries" / "index.json")
@@ -24,5 +25,6 @@ def isolate_delivery_store(monkeypatch, tmp_path):
 
 @pytest.fixture(autouse=True)
 def isolate_memory_store(monkeypatch, tmp_path):
+    """验证“isolate记忆存储”场景的预期行为与回归边界。"""
     monkeypatch.setattr(memory_repository, "DB_PATH", tmp_path / "memory.db")
     monkeypatch.setattr(memory_trace, "TRACE_PATH", tmp_path / "traces.jsonl")

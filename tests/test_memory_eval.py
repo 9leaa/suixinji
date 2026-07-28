@@ -4,6 +4,7 @@ from eval import eval_memory
 
 
 def test_memory_eval_dry_run(tmp_path):
+    """验证“记忆评测dry运行”场景的预期行为与回归边界。"""
     report = eval_memory.run(dry_run=True, output_dir=tmp_path)
 
     assert report["mode"] == "dry_run"
@@ -12,6 +13,7 @@ def test_memory_eval_dry_run(tmp_path):
 
 
 def test_memory_eval_full_run(tmp_path):
+    """验证“记忆评测full运行”场景的预期行为与回归边界。"""
     report = eval_memory.run(dry_run=False, output_dir=tmp_path)
 
     assert report["mode"] == "memory"

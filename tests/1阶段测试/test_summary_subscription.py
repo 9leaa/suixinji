@@ -6,11 +6,13 @@ from summary import subscription
 
 
 def isolate_subscription_file(monkeypatch, tmp_path):
+    """验证“isolatesubscriptionfile”场景的预期行为与回归边界。"""
     monkeypatch.setattr(subscription, "DATA_DIR", tmp_path)
     monkeypatch.setattr(subscription, "SUBSCRIPTIONS_PATH", tmp_path / "summary_subscriptions.json")
 
 
 def test_parse_summary_time_accepts_hh_mm_only():
+    """验证“解析总结timeacceptshhmmonly”场景的预期行为与回归边界。"""
     assert subscription.parse_summary_time("22:00") == "22:00"
     assert subscription.parse_summary_time("00:05") == "00:05"
     assert subscription.parse_summary_time("24:00") is None
@@ -19,6 +21,7 @@ def test_parse_summary_time_accepts_hh_mm_only():
 
 
 def test_enable_disable_and_status(monkeypatch, tmp_path):
+    """验证“启用disableand状态”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
 
     sub = subscription.enable_summary_subscription("space1", "chat1")
@@ -36,6 +39,7 @@ def test_enable_disable_and_status(monkeypatch, tmp_path):
 
 
 def test_update_summary_time_preserves_existing_state(monkeypatch, tmp_path):
+    """验证“更新总结timepreservesexisting状态”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
     subscription.enable_summary_subscription("space1", "chat1")
     subscription.mark_summary_sent("space1", "2026-06-07")
@@ -51,6 +55,7 @@ def test_update_summary_time_preserves_existing_state(monkeypatch, tmp_path):
 
 
 def test_update_summary_time_rejects_invalid_time(monkeypatch, tmp_path):
+    """验证“更新总结timerejectsinvalidtime”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
 
     with pytest.raises(ValueError):
@@ -58,6 +63,7 @@ def test_update_summary_time_rejects_invalid_time(monkeypatch, tmp_path):
 
 
 def test_mark_summary_sent_is_noop_for_missing_subscription(monkeypatch, tmp_path):
+    """验证“标记总结sent是否为noopformissingsubscription”场景的预期行为与回归边界。"""
     isolate_subscription_file(monkeypatch, tmp_path)
 
     subscription.mark_summary_sent("missing", "2026-06-07")

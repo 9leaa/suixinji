@@ -38,6 +38,7 @@ class StreamClient:
         blocking_client: Redis | None = None,
         keys: RedisKeys = KEYS,
     ) -> None:
+        """初始化`StreamClient` 实例并建立后续调用所需的状态。"""
         self.client = client or get_redis()
         self.blocking_client = blocking_client or (client if client is not None else get_blocking_redis())
         self.keys = keys
@@ -45,6 +46,10 @@ class StreamClient:
         self._ensured_groups: set[str] = set()
 
     def ensure_group(self, task_type: str) -> tuple[str, str]:
+        """负责“确保group”。
+
+        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         stream = self.keys.stream(task_type)
         group = GROUPS[task_type]
         if task_type in self._ensured_groups:
@@ -58,6 +63,10 @@ class StreamClient:
         return stream, group
 
     def publish_task(self, event_id: str, payload: dict[str, Any]) -> str:
+        """负责“发布任务”。
+
+        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         task_type = str(payload["task_type"])
         stream = self.keys.stream(task_type)
         fields = {
@@ -69,6 +78,10 @@ class StreamClient:
         return str(self.client.xadd(stream, fields, maxlen=max(1000, STREAM_MAXLEN), approximate=True))
 
     def read(self, task_type: str, consumer: str, *, count: int = STREAM_BATCH_SIZE, block_ms: int = STREAM_BLOCK_MS) -> list[StreamMessage]:
+        """负责“读取”。
+
+        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         stream, group = self.ensure_group(task_type)
         try:
             response = self.blocking_client.xreadgroup(
@@ -118,6 +131,10 @@ class StreamClient:
         return messages
 
     def reclaim(self, task_type: str, consumer: str, *, min_idle_ms: int = STREAM_CLAIM_IDLE_MS, count: int = STREAM_BATCH_SIZE) -> list[StreamMessage]:
+        """负责“reclaim”。
+
+        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         stream, group = self.ensure_group(task_type)
         cursor_key = (task_type, consumer)
         response = self.client.xautoclaim(
@@ -133,18 +150,34 @@ class StreamClient:
         return [StreamMessage(stream, str(message_id), {str(key): str(value) for key, value in fields.items()}) for message_id, fields in entries]
 
     def reclaim_cursor(self, task_type: str, consumer: str) -> str:
+        """负责“reclaimcursor”。
+
+        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return self._reclaim_cursors.get((task_type, consumer), "0-0")
 
     def ack(self, task_type: str, message_id: str) -> int:
+        """负责“ack”。
+
+        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         stream, group = self.ensure_group(task_type)
         return int(self.client.xack(stream, group, message_id))
 
     def dead_letter(self, message: StreamMessage, *, error: str) -> str:
+        """负责“deadletter”。
+
+        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         fields = {**message.fields, "source_stream": message.stream, "source_message_id": message.message_id, "error": error[:1000]}
         return str(self.client.xadd(self.keys.dead_letter_stream(), fields, maxlen=max(1000, STREAM_MAXLEN), approximate=True))
 
     @staticmethod
     def _messages(response: Any) -> list[StreamMessage]:
+        """负责“messages”。
+
+        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         messages: list[StreamMessage] = []
         for stream, entries in response or []:
             for message_id, fields in entries:

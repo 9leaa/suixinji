@@ -12,6 +12,10 @@ from runtime.task import Task
 
 class StreamTaskDispatcher:
     def submit_query(self, space_id: str, question: str, chat_id: str, message_id: str | None = None) -> Task:
+        """负责“submit查询”。
+
+        该函数是 `runtime.stream_dispatcher` 中的`StreamTaskDispatcher` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         message_key = message_id or "unknown"
         payload = {
             "question": question,
@@ -39,6 +43,10 @@ class StreamTaskDispatcher:
         delivery_key: str | None = None,
         delivery_type: str | None = None,
     ) -> Task:
+        """负责“submit总结”。
+
+        该函数是 `runtime.stream_dispatcher` 中的`StreamTaskDispatcher` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         del on_success
         key = delivery_key or manual_summary_key(space_id, message_id or "scheduled")
         payload = {

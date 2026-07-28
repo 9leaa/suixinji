@@ -4,6 +4,7 @@ from memory.consistency import wait_for_memory_barrier
 
 
 def test_memory_barrier_is_a_noop_when_feature_is_disabled(monkeypatch):
+    """验证“记忆barrier是否为anoopwhenfeature是否为disabled”场景的预期行为与回归边界。"""
     from core import settings
 
     monkeypatch.setattr(settings, "QUERY_MEMORY_BARRIER_ENABLED", False)
@@ -14,6 +15,7 @@ def test_memory_barrier_is_a_noop_when_feature_is_disabled(monkeypatch):
 
 
 def test_memory_barrier_accepts_caught_up_watermarks(monkeypatch):
+    """验证“记忆barrieracceptscaughtupwatermarks”场景的预期行为与回归边界。"""
     from core import settings
 
     monkeypatch.setattr(settings, "QUERY_MEMORY_BARRIER_ENABLED", True)

@@ -16,6 +16,10 @@ class TaskDispatchHook(AgentHook):
     name = "task_dispatch"
 
     def before_tool(self, context: AgentRunContext, tool_name: str, args: dict[str, Any]) -> None:
+        """负责“工具调用前的 Hook 前置处理”。
+
+        该函数是 `agent.hooks.task_dispatch` 中的`TaskDispatchHook` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if TASK_QUEUE_BACKEND != "redis_streams" or not context.metadata.get("allow_tool_dispatch"):
             return
         task_type = ASYNC_TOOLS.get(tool_name)

@@ -13,6 +13,10 @@ OUTPUT_PATH = Path("docs/metrics/latest.json")
 
 
 def load_events() -> list[dict[str, Any]]:
+    """负责“加载events”。
+
+    该函数是 `scripts.build_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     events: list[dict[str, Any]] = []
     if not LOG_DIR.exists():
         return events
@@ -28,6 +32,10 @@ def load_events() -> list[dict[str, Any]]:
 
 
 def percentile(values: list[int], ratio: float) -> int | None:
+    """负责“percentile”。
+
+    该函数是 `scripts.build_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not values:
         return None
     values = sorted(values)
@@ -36,6 +44,10 @@ def percentile(values: list[int], ratio: float) -> int | None:
 
 
 def build_metrics(events: list[dict[str, Any]]) -> dict[str, Any]:
+    """负责“构建指标”。
+
+    该函数是 `scripts.build_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     success_events = [
         event
         for event in events
@@ -58,6 +70,10 @@ def build_metrics(events: list[dict[str, Any]]) -> dict[str, Any]:
         by_type.setdefault(task_type, []).append(event)
 
     def durations(task_type: str, field: str) -> list[int]:
+        """负责“durations”。
+
+        该函数是 `scripts.build_metrics` 中的`build_metrics` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         values = []
         for event in by_type.get(task_type, []):
             value = (event.get("extra") or {}).get(field)
@@ -86,6 +102,7 @@ def build_metrics(events: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     existing = {}
     if OUTPUT_PATH.exists():

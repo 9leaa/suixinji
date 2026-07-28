@@ -57,14 +57,26 @@ class StructuralRouteDecision:
 
     @property
     def is_confident_simple(self) -> bool:
+        """负责“是否为confidentsimple”。
+
+        该函数是 `agent.query_route_features` 中的`StructuralRouteDecision` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return self.complexity == "simple" and self.confidence >= 0.90
 
 
 def _clean(value: object) -> str:
+    """负责“清理”。
+
+    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return " ".join(str(value or "").split()).strip()
 
 
 def _active_markers(text: str, markers: tuple[str, ...]) -> tuple[str, ...]:
+    """负责“activemarkers”。
+
+    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     active: list[str] = []
     for marker in markers:
         for match in re.finditer(re.escape(marker), text, flags=re.IGNORECASE):
@@ -77,11 +89,19 @@ def _active_markers(text: str, markers: tuple[str, ...]) -> tuple[str, ...]:
 
 
 def _split_clauses(text: str) -> tuple[str, ...]:
+    """负责“切分clauses”。
+
+    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     parts = [_clean(part.strip(" ，,。！？?!")) for part in _CLAUSE_SPLIT_RE.split(text)]
     return tuple(dict.fromkeys(part for part in parts if len(part) >= 2))
 
 
 def _compare_entities(text: str) -> list[str]:
+    """负责“compareentities”。
+
+    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     patterns = (
         r"(?:比较|对比)\s*([^，,。；;？?]{2,40}?)\s*(?:和|与|及|vs\.?|VS\.?|versus)\s*([^，,。；;？?的]{2,40})",
         r"compare\s+(.+?)\s+(?:and|vs\.?|versus)\s+(.+?)(?:\s+and\s+|\s+which\b|$)",
@@ -96,6 +116,10 @@ def _compare_entities(text: str) -> list[str]:
 
 
 def _contains_anaphora(text: str) -> bool:
+    """负责“containsanaphora”。
+
+    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     lowered = text.casefold()
     for marker in _ANAPHORA_MARKERS:
         if marker == "它" and "其它" in text:
@@ -111,6 +135,10 @@ def _contains_anaphora(text: str) -> bool:
 
 
 def extract_route_features(question: str) -> QueryRouteFeatures:
+    """负责“抽取路由features”。
+
+    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     text = _clean(question)
     has_cjk = bool(re.search(r"[\u3400-\u9fff]", text))
     has_ascii = bool(re.search(r"[A-Za-z]", text))
@@ -178,6 +206,10 @@ def extract_route_features(question: str) -> QueryRouteFeatures:
 
 
 def classify_structural_route(features: QueryRouteFeatures) -> StructuralRouteDecision:
+    """负责“分类structural路由”。
+
+    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not features.normalized_query:
         return StructuralRouteDecision("simple", 1.0, ("none",), ("empty_query",))
 
@@ -240,6 +272,10 @@ def classify_structural_route(features: QueryRouteFeatures) -> StructuralRouteDe
 
 
 def structural_route(question: str) -> tuple[QueryRouteFeatures, StructuralRouteDecision]:
+    """负责“structural路由”。
+
+    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     features = extract_route_features(question)
     return features, classify_structural_route(features)
 

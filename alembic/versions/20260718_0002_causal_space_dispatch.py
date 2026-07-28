@@ -10,6 +10,10 @@ depends_on = None
 
 
 def upgrade() -> None:
+    """负责“upgrade”。
+
+    该函数是 `alembic.versions.20260718_0002_causal_space_dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     inspector = sa.inspect(op.get_bind())
     space_columns = {column["name"] for column in inspector.get_columns("spaces")}
     task_columns = {column["name"] for column in inspector.get_columns("tasks")}
@@ -59,6 +63,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """负责“downgrade”。
+
+    该函数是 `alembic.versions.20260718_0002_causal_space_dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     inspector = sa.inspect(op.get_bind())
     space_columns = {column["name"] for column in inspector.get_columns("spaces")}
     task_columns = {column["name"] for column in inspector.get_columns("tasks")}

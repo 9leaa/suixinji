@@ -4,6 +4,7 @@ from memory.repository import mark_extraction_completed, mark_extraction_failed
 
 
 def test_process_unextracted_notes_isolates_bad_note(monkeypatch):
+    """验证“处理unextracted笔记列表isolatesbad笔记”场景的预期行为与回归边界。"""
     notes = [
         {"id": "note-a", "space_id": "space-1", "text": "a"},
         {"id": "note-b", "space_id": "space-1", "text": "b"},
@@ -12,6 +13,7 @@ def test_process_unextracted_notes_isolates_bad_note(monkeypatch):
     calls = []
 
     def fake_process(note):
+        """验证“fake处理”场景的预期行为与回归边界。"""
         calls.append(note["id"])
         if note["id"] == "note-b":
             mark_extraction_failed(note["id"], "space-1", error="bad note")
@@ -32,6 +34,7 @@ def test_process_unextracted_notes_isolates_bad_note(monkeypatch):
 
 
 def test_process_unextracted_notes_next_round_retries_only_failed_note(monkeypatch):
+    """验证“处理unextracted笔记列表下一步roundretriesonlyfailed笔记”场景的预期行为与回归边界。"""
     notes = [
         {"id": "note-a", "space_id": "space-1", "text": "a"},
         {"id": "note-b", "space_id": "space-1", "text": "b"},
@@ -41,6 +44,7 @@ def test_process_unextracted_notes_next_round_retries_only_failed_note(monkeypat
     second_calls = []
 
     def first_process(note):
+        """验证“首个处理”场景的预期行为与回归边界。"""
         first_calls.append(note["id"])
         if note["id"] == "note-b":
             mark_extraction_failed(note["id"], "space-1", error="bad note")
@@ -49,6 +53,7 @@ def test_process_unextracted_notes_next_round_retries_only_failed_note(monkeypat
         return {"trace_id": f"trace-{note['id']}", "candidates": 1, "extraction_status": "completed"}
 
     def second_process(note):
+        """验证“second处理”场景的预期行为与回归边界。"""
         second_calls.append(note["id"])
         mark_extraction_completed(note["id"], "space-1", candidate_count=1, processed_count=1)
         return {"trace_id": f"trace-{note['id']}", "candidates": 1, "extraction_status": "completed"}
@@ -68,6 +73,7 @@ def test_process_unextracted_notes_next_round_retries_only_failed_note(monkeypat
 
 
 def test_process_unextracted_notes_does_not_swallow_unexpected_state_checks(monkeypatch):
+    """验证“处理unextracted笔记列表doesnotswallowunexpected状态checks”场景的预期行为与回归边界。"""
     monkeypatch.setattr("memory.consolidator.load_index", lambda space_id: [{"id": "", "space_id": "space-1"}])
 
     report = process_unextracted_notes("space-1")

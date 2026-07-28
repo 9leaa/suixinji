@@ -27,15 +27,27 @@ REQUIRED = [
 
 
 def ok(message: str) -> None:
+    """负责“ok”。
+
+    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     print(f"[OK] {message}")
 
 
 def fail(message: str) -> None:
+    """负责“失败”。
+
+    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     print(f"[FAIL] {message}")
     raise SystemExit(1)
 
 
 def check_env_file() -> None:
+    """负责“检查envfile”。
+
+    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not ENV_PATH.exists():
         fail(".env 不存在，请先从 .env.example 复制并填写")
     load_dotenv(ENV_PATH)
@@ -43,6 +55,10 @@ def check_env_file() -> None:
 
 
 def check_required_env() -> None:
+    """负责“检查requiredenv”。
+
+    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     missing = [key for key in REQUIRED if not os.getenv(key)]
     if missing:
         fail("缺少环境变量: " + ", ".join(missing))
@@ -59,6 +75,10 @@ def check_required_env() -> None:
 
 
 def check_memory_config() -> None:
+    """负责“检查记忆配置”。
+
+    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     mode = os.getenv("SUIXINJI_MEMORY_EXTRACTOR_MODE", "rules").strip().lower()
     if mode not in {"rules", "llm", "hybrid"}:
         fail("SUIXINJI_MEMORY_EXTRACTOR_MODE 必须是 rules、llm 或 hybrid")
@@ -98,6 +118,10 @@ def check_memory_config() -> None:
 
 
 def check_data_dir() -> None:
+    """负责“检查数据dir”。
+
+    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     test_file = DATA_DIR / ".write_test"
     try:
@@ -110,6 +134,10 @@ def check_data_dir() -> None:
 
 
 def check_storage_backend() -> None:
+    """负责“检查storagebackend”。
+
+    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     backend = os.getenv("STORAGE_BACKEND", "local").strip().lower()
     if backend not in {"local", "postgres"}:
         fail("STORAGE_BACKEND 必须是 local 或 postgres")
@@ -128,6 +156,10 @@ def check_storage_backend() -> None:
 
 
 def check_database_budget() -> None:
+    """负责“检查databasebudget”。
+
+    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     backend = os.getenv("STORAGE_BACKEND", "local").strip().lower()
     if backend != "postgres":
         ok("database connection budget skipped for local storage")
@@ -155,6 +187,10 @@ def check_database_budget() -> None:
 
 
 def check_api_config() -> None:
+    """负责“检查API配置”。
+
+    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     from core.settings import API_HOST, API_PORT
 
     if not API_HOST:
@@ -167,6 +203,10 @@ def check_api_config() -> None:
 
 
 def check_coordination_backend() -> None:
+    """负责“检查coordinationbackend”。
+
+    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     coordination = os.getenv("COORDINATION_BACKEND", "local").strip().lower()
     queue = os.getenv("TASK_QUEUE_BACKEND", "local").strip().lower()
     if coordination not in {"local", "redis"}:
@@ -190,6 +230,7 @@ def check_coordination_backend() -> None:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     check_env_file()
     check_required_env()
     check_memory_config()

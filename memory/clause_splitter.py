@@ -19,6 +19,10 @@ _LEADING_CONNECTOR_RE = re.compile(r"^(?:并且|而且|但是|不过|同时|然�
 
 
 def split_clauses(text: str, *, max_clauses: int = 8) -> list[Clause]:
+    """负责“切分clauses”。
+
+    该函数是 `memory.clause_splitter` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     raw = str(text or "")
     clauses: list[Clause] = []
     start = 0
@@ -34,6 +38,10 @@ def split_clauses(text: str, *, max_clauses: int = 8) -> list[Clause]:
 
 
 def _append_clause(clauses: list[Clause], raw: str, start: int, end: int, max_clauses: int) -> None:
+    """负责“追加clause”。
+
+    该函数是 `memory.clause_splitter` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if len(clauses) >= max_clauses:
         return
     segment = raw[start:end].strip()

@@ -12,6 +12,10 @@ from memory.repository import hybrid_adjudication_candidates, list_adjudication_
 
 
 def _char_similarity(left: str, right: str) -> float:
+    """负责“charsimilarity”。
+
+    该函数是 `memory.candidate_retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     left_set = set(normalize_content(left))
     right_set = set(normalize_content(right))
     if not left_set or not right_set:
@@ -20,6 +24,10 @@ def _char_similarity(left: str, right: str) -> float:
 
 
 def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> float:
+    """负责“候选similarity”。
+
+    该函数是 `memory.candidate_retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     exact_key = candidate.effective_memory_key == memory.effective_memory_key
     if exact_key:
         return 1.0

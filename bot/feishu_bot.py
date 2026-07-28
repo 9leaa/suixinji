@@ -207,6 +207,10 @@ def build_space_id(chat_type: str, chat_id: str | None, sender: dict[str, Any]) 
 
 
 def _parse_limit(value: Any, default: int) -> int:
+    """负责“解析限制”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     try:
         return max(1, min(int(value), 100))
     except (TypeError, ValueError):
@@ -214,6 +218,10 @@ def _parse_limit(value: Any, default: int) -> int:
 
 
 def _split_tags(value: str) -> list[str]:
+    """负责“切分tags”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return [
         item.strip()
         for item in re.split(r"[,，、]", value)
@@ -222,6 +230,10 @@ def _split_tags(value: str) -> list[str]:
 
 
 def _format_note_results(notes: list[dict[str, Any]], title: str, limit: int = 8) -> str:
+    """负责“格式化笔记results”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not notes:
         return f"{title}：没有找到匹配的笔记。"
 
@@ -239,6 +251,10 @@ def _format_note_results(notes: list[dict[str, Any]], title: str, limit: int = 8
 
 
 def _parse_filter_args(raw: str) -> dict[str, str]:
+    """负责“解析筛选参数”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     args: dict[str, str] = {}
     for part in raw.split():
         if "=" not in part:
@@ -251,6 +267,10 @@ def _parse_filter_args(raw: str) -> dict[str, str]:
     return args
 
 def _format_summary_auto_status(space_id: str) -> str:
+    """负责“格式化总结auto状态”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     sub = get_summary_subscription(space_id)
     if sub is None:
         return "自动总结：未开启。"
@@ -266,10 +286,18 @@ def _format_summary_auto_status(space_id: str) -> str:
 
 
 def _clip_status_text(value: Any, limit: int = 80) -> str:
+    """负责“clip状态文本”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return safe_text_preview(str(value or ""), limit=limit)
 
 
 def _format_system_status(space_id: str) -> str:
+    """负责“格式化system状态”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     pending_count = len(load_pending_records(space_id))
     sub = get_summary_subscription(space_id)
     auto_status = "未开启"
@@ -317,6 +345,10 @@ def _format_system_status(space_id: str) -> str:
 
 
 def _handle_summary_auto_command(space_id: str, chat_id: str, text: str) -> str | None:
+    """负责“处理总结auto命令”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not (text == "/summary_auto" or text.startswith("/summary_auto ")):
         return None
 
@@ -352,6 +384,10 @@ def _handle_summary_auto_command(space_id: str, chat_id: str, text: str) -> str 
     return "用法：/summary_auto on｜off｜status｜time 22:00"
 
 def _handle_direct_query_command(space_id: str, text: str) -> str | None:
+    """负责“处理direct查询命令”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if text.startswith("/type"):
         raw = text.removeprefix("/type").strip()
         if not raw:
@@ -405,6 +441,10 @@ def _handle_direct_query_command(space_id: str, text: str) -> str | None:
 
 
 def _handle_memory_command(space_id: str, text: str) -> str | None:
+    """负责“处理记忆命令”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not (text == "/memory" or text.startswith("/memory ")):
         return None
 
@@ -460,6 +500,10 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
 
 
 def _handle_trace_command(text: str) -> str | None:
+    """负责“处理追踪命令”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not (text == "/trace" or text.startswith("/trace ")):
         return None
 
@@ -482,6 +526,10 @@ def _log_duplicate_event(
     command: str,
     in_progress: bool = False,
 ) -> None:
+    """负责“log重复事件”。
+
+    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     log_event(
         "feishu.message.duplicate",
         status="in_progress" if in_progress else "duplicate",

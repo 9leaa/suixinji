@@ -19,10 +19,18 @@ DESTRUCTIVE_ACTIONS = {"merge", "update_task", "supersede", "conflict"}
 
 
 def _combined_confidence(candidate: MemoryCandidate, relation_confidence: float) -> float:
+    """负责“combinedconfidence”。
+
+    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return 0.6 * float(candidate.confidence) + 0.4 * relation_confidence
 
 
 def _safe_evidence(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> list[str]:
+    """负责“安全evidence”。
+
+    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     evidence = [f"note:{candidate.note_id}"] if candidate.note_id else []
     evidence.extend(f"memory:{memory.id}" for memory in memories[:8])
     return evidence
@@ -36,6 +44,10 @@ def _decision(
     reason: str,
     targets: list[MemoryRecord] | None = None,
 ) -> MemoryDecision:
+    """负责“决策”。
+
+    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     target_memories = targets or []
     bounded_confidence = min(1.0, max(0.0, float(confidence)))
     recommended_action = action
@@ -59,6 +71,10 @@ def _decision(
 
 
 def _shares_topic(candidate: MemoryCandidate, memory: MemoryRecord, similarity: float) -> bool:
+    """负责“sharestopic”。
+
+    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if candidate.effective_memory_key == memory.effective_memory_key:
         return True
     if candidate.memory_type == "preference" and memory.memory_type == "preference":
@@ -91,6 +107,10 @@ def _shares_topic(candidate: MemoryCandidate, memory: MemoryRecord, similarity: 
 
 
 def _near_same(candidate: MemoryCandidate, memory: MemoryRecord, similarity: float) -> bool:
+    """负责“nearsame”。
+
+    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     left = candidate.normalized_content
     right = memory.normalized_content
     if left == right:
@@ -118,12 +138,20 @@ def _near_same(candidate: MemoryCandidate, memory: MemoryRecord, similarity: flo
 
 
 def _shares_named_token(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
+    """负责“sharesnamedtoken”。
+
+    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     candidate_tokens = {token.casefold() for token in re.findall(r"[A-Za-z][A-Za-z0-9+#.-]*", candidate.content)}
     memory_tokens = {token.casefold() for token in re.findall(r"[A-Za-z][A-Za-z0-9+#.-]*", memory.content)}
     return bool(candidate_tokens & memory_tokens)
 
 
 def _semantic_conflict(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
+    """负责“semanticconflict”。
+
+    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if candidate.predicate == memory.predicate == "location":
         return not semantic_policy.explicitly_replaces(candidate.content, predicate="location")
     negative_markers = ("没有", "不是", "并非", "无问题", "不存在")

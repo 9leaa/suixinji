@@ -26,6 +26,10 @@ _SENSITIVE_URL_KEYS = {"api_key", "apikey", "key", "token", "secret", "access_to
 
 
 def _safe_base_url(value: str | None) -> str | None:
+    """负责“安全baseurl”。
+
+    该函数是 `core.llm_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not value:
         return value
     try:
@@ -45,11 +49,19 @@ def _safe_base_url(value: str | None) -> str | None:
 
 
 def _is_memory_extraction_task(route: Any) -> bool:
+    """负责“是否为记忆extraction任务”。
+
+    该函数是 `core.llm_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     task = getattr(route, "task", None)
     return str(getattr(task, "value", task) or "") == "memory_extraction"
 
 
 def _config_for_route(route: Any) -> ChatConfig:
+    """负责“配置for路由”。
+
+    该函数是 `core.llm_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     config = get_chat_config(route.role.value)
     if not _is_memory_extraction_task(route):
         return config
@@ -63,6 +75,10 @@ def _config_for_route(route: Any) -> ChatConfig:
 
 
 def _timeout_retries_for_route(route: Any) -> int:
+    """负责“超时retriesfor路由”。
+
+    该函数是 `core.llm_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if not _is_memory_extraction_task(route):
         return 0
     return min(1, max(0, int(settings.MEMORY_EXTRACTION_LLM_MAX_RETRIES)))

@@ -8,6 +8,7 @@ from infrastructure import redis_cache
 
 
 def test_common_query_fast_path_coverage_is_at_least_70_percent() -> None:
+    """验证“common查询fastpathcoverage是否为atleast70percent”场景的预期行为与回归边界。"""
     common_queries = (
         "/type 学习",
         "/tag 饮食",
@@ -26,18 +27,22 @@ def test_common_query_fast_path_coverage_is_at_least_70_percent() -> None:
 
 
 def test_embedding_cache_avoids_duplicate_external_call(monkeypatch) -> None:
+    """验证“向量缓存avoids重复externalcall”场景的预期行为与回归边界。"""
     store: dict[tuple[str, str], list[float]] = {}
     external_calls = []
 
     class FakeEmbeddingCache:
         def get(self, model: str, text: str):
+            """验证“获取”场景的预期行为与回归边界。"""
             return store.get((model, text))
 
         def set(self, model: str, text: str, embedding: list[float]):
+            """验证“设置”场景的预期行为与回归边界。"""
             store[(model, text)] = embedding
 
     class FakeEmbeddings:
         def create(self, **kwargs):
+            """验证“创建”场景的预期行为与回归边界。"""
             external_calls.append(kwargs)
             return SimpleNamespace(data=[SimpleNamespace(embedding=[0.1, 0.2, 0.3])])
 

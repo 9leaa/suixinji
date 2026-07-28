@@ -8,6 +8,10 @@ from typing import Any
 
 
 def load_jsonl(path: str | Path) -> list[dict[str, Any]]:
+    """负责“加载jsonl”。
+
+    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     items: list[dict[str, Any]] = []
     with Path(path).open("r", encoding="utf-8") as f:
         for line_no, line in enumerate(f, start=1):
@@ -25,6 +29,10 @@ def load_jsonl(path: str | Path) -> list[dict[str, Any]]:
 
 
 def write_json(path: str | Path, data: Any) -> None:
+    """负责“写入JSON”。
+
+    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     Path(path).write_text(
         json.dumps(data, ensure_ascii=False, indent=2) + "\n",
@@ -33,12 +41,20 @@ def write_json(path: str | Path, data: Any) -> None:
 
 
 def _get_value(data: Any, key: str, default: Any = None) -> Any:
+    """负责“获取字段值”。
+
+    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if isinstance(data, dict):
         return data.get(key, default)
     return getattr(data, key, default)
 
 
 def _expected_types(case: dict[str, Any]) -> list[str]:
+    """负责“expectedtypes”。
+
+    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     values = case.get("acceptable_types")
     if values is None:
         values = case.get("expected_types")
@@ -51,6 +67,10 @@ def _expected_types(case: dict[str, Any]) -> list[str]:
 
 
 def score_classification(prediction: Any, case: dict[str, Any]) -> dict[str, Any]:
+    """负责“评分classification”。
+
+    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     pred_type = str(_get_value(prediction, "type", ""))
     pred_tags = set(str(tag) for tag in (_get_value(prediction, "tags", []) or []))
 
@@ -85,12 +105,20 @@ def score_classification(prediction: Any, case: dict[str, Any]) -> dict[str, Any
 
 
 def hit_at_k(ranked_ids: list[str], expected_ids: list[str], k: int) -> bool:
+    """负责“hitatk”。
+
+    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     if k <= 0:
         return False
     return bool(set(ranked_ids[:k]) & set(expected_ids))
 
 
 def recall_at_k(ranked_ids: list[str], expected_ids: list[str], k: int) -> float:
+    """负责“recallatk”。
+
+    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     expected = set(expected_ids)
     if not expected or k <= 0:
         return 0.0
@@ -104,6 +132,10 @@ def score_retrieval(
     ks: tuple[int, ...] = (1, 3, 5, 10),
     scores_by_id: dict[str, float] | None = None,
 ) -> dict[str, Any]:
+    """负责“评分retrieval”。
+
+    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     expected_ids = [str(item) for item in case.get("expected_note_ids", [])]
     scores_by_id = scores_by_id or {}
     result: dict[str, Any] = {
@@ -139,6 +171,10 @@ def score_query_react(
     answer: str,
     case: dict[str, Any],
 ) -> dict[str, Any]:
+    """负责“评分查询react”。
+
+    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     tools_used = [str(call.get("tool")) for call in tool_calls]
     expected_tools_all = [str(item) for item in case.get("expected_tools_all", [])]
     expected_tools_any = [str(item) for item in case.get("expected_tools_any", [])]
@@ -180,6 +216,10 @@ def score_query_react(
 
 
 def score_summary(summary: str, case: dict[str, Any]) -> dict[str, Any]:
+    """负责“评分总结”。
+
+    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     must_include = [str(item) for item in case.get("must_include", [])]
     must_not_include = [str(item) for item in case.get("must_not_include", [])]
 
@@ -199,6 +239,10 @@ def score_summary(summary: str, case: dict[str, Any]) -> dict[str, Any]:
 
 
 def aggregate_boolean_scores(results: list[dict[str, Any]], field: str = "passed") -> dict[str, Any]:
+    """负责“aggregatebooleanscores”。
+
+    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     total = len(results)
     passed = sum(1 for item in results if item.get(field))
     return {

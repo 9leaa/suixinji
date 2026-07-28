@@ -19,6 +19,10 @@ from summary.daily_summary import REFLECTION_SYSTEM_PROMPT, SUMMARY_SYSTEM_PROMP
 
 
 def _stats(notes: list[dict[str, Any]]) -> dict[str, Any]:
+    """负责“统计”。
+
+    该函数是 `eval.eval_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     type_counter = Counter(str(note.get("type") or "未分类") for note in notes)
     tag_counter: Counter[str] = Counter()
     for note in notes:
@@ -31,6 +35,10 @@ def _stats(notes: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def generate_case_summary(case: dict[str, Any]) -> str:
+    """负责“生成case总结”。
+
+    该函数是 `eval.eval_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     notes = list(case.get("notes", []))
     payload = {
         "range_label": case.get("range_label", "评测范围"),
@@ -51,6 +59,10 @@ def generate_case_summary(case: dict[str, Any]) -> str:
 
 
 def run(cases_path: Path, *, dry_run: bool = False, max_cases: int | None = None) -> dict[str, object]:
+    """负责“运行”。
+
+    该函数是 `eval.eval_summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     cases = load_jsonl(cases_path)
     if max_cases is not None:
         cases = cases[:max_cases]
@@ -73,6 +85,7 @@ def run(cases_path: Path, *, dry_run: bool = False, max_cases: int | None = None
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     parser = argparse.ArgumentParser(description="Evaluate summary coverage quality.")
     parser.add_argument("--cases", default="eval/data/summary_cases.jsonl")
     parser.add_argument("--output", default="eval/results/summary_results.json")

@@ -22,6 +22,7 @@ from memory.service import process_note_memory
 
 
 def test_candidate_is_persisted_and_terminal_retry_is_idempotent() -> None:
+    """验证“候选是否为persistedandterminal重试是否为idempotent”场景的预期行为与回归边界。"""
     note = {"id": "note-candidate", "space_id": "space-1", "text": "我喜欢喝牛奶"}
     first = process_note_memory(note)
     second = process_note_memory(note)
@@ -35,6 +36,7 @@ def test_candidate_is_persisted_and_terminal_retry_is_idempotent() -> None:
 
 
 def test_model_roles_are_configurable(monkeypatch) -> None:
+    """验证“模型rolesareconfigurable”场景的预期行为与回归边界。"""
     monkeypatch.setenv("SUIXINJI_FAST_MODEL", "fast-test")
     monkeypatch.setenv("SUIXINJI_BALANCED_MODEL", "balanced-test")
     monkeypatch.setenv("SUIXINJI_STRONG_MODEL", "strong-test")
@@ -45,6 +47,7 @@ def test_model_roles_are_configurable(monkeypatch) -> None:
 
 
 def test_partial_retry_skips_applied_candidate(monkeypatch) -> None:
+    """验证“partial重试skipsapplied候选”场景的预期行为与回归边界。"""
     import memory.service as service
 
     first = MemoryCandidate("semantic", "用户正在学习数据库", 0.8, 0.9)
@@ -56,6 +59,7 @@ def test_partial_retry_skips_applied_candidate(monkeypatch) -> None:
     monkeypatch.setattr(service, "extract_candidates", lambda *args, **kwargs: [first, second])
 
     def consolidate(space_id, note_id, candidate, trace=None):
+        """验证“整合”场景的预期行为与回归边界。"""
         calls.append(candidate.memory_type)
         if candidate.memory_type == "preference" and not failed_once["value"]:
             failed_once["value"] = True
@@ -71,6 +75,7 @@ def test_partial_retry_skips_applied_candidate(monkeypatch) -> None:
 
 
 def test_negative_preference_does_not_answer_positive_preference_query() -> None:
+    """验证“negative偏好doesnotanswerpositive偏好查询”场景的预期行为与回归边界。"""
     process_note_memory({"id": "note-like", "space_id": "space-1", "text": "我喜欢喝牛奶"})
     process_note_memory({"id": "note-dislike", "space_id": "space-1", "text": "我讨厌喝牛奶"})
 
@@ -80,6 +85,7 @@ def test_negative_preference_does_not_answer_positive_preference_query() -> None
 
 
 def test_valid_until_is_filtered_and_expiry_worker_versions_state() -> None:
+    """验证“validuntil是否为filteredandexpiry工作器versions状态”场景的预期行为与回归边界。"""
     expired_at = (datetime.now().astimezone() - timedelta(minutes=1)).isoformat(timespec="seconds")
     memory = insert_memory(
         "space-1",
@@ -97,6 +103,7 @@ def test_valid_until_is_filtered_and_expiry_worker_versions_state() -> None:
 
 
 def test_monthly_consolidation_is_domain_neutral() -> None:
+    """验证“monthlyconsolidation是否为domainneutral”场景的预期行为与回归边界。"""
     for index, text in enumerate(("周末练习烘焙面包", "记录一次跑步训练", "整理旅行照片")):
         insert_memory("space-1", MemoryCandidate("episodic", text, 0.7, 0.8), source_note_id=f"note-{index}")
 
@@ -110,6 +117,7 @@ def test_monthly_consolidation_is_domain_neutral() -> None:
 
 
 def _pending_memory(note_id: str, content: str) -> str:
+    """验证“待处理记忆”场景的预期行为与回归边界。"""
     candidate = replace(
         MemoryCandidate("preference", content, 0.8, 0.9),
         note_id=note_id,
@@ -128,6 +136,7 @@ def _pending_memory(note_id: str, content: str) -> str:
 
 
 def test_review_reject_edit_and_conflict_resolution() -> None:
+    """验证“reviewrejecteditandconflictresolution”场景的预期行为与回归边界。"""
     rejected_id = _pending_memory("note-reject", "用户喜欢咖啡")
     rejected = reject_pending_memory(rejected_id, reason="not_user_fact")
     assert rejected is not None and rejected.status == "archived"

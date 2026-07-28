@@ -2,6 +2,7 @@ from core import feedback
 
 
 def test_save_feedback_writes_jsonl(tmp_path, monkeypatch):
+    """验证“保存反馈writesjsonl”场景的预期行为与回归边界。"""
     monkeypatch.setattr(feedback, "FEEDBACK_DIR", tmp_path)
 
     record = feedback.save_feedback(
@@ -21,6 +22,7 @@ def test_save_feedback_writes_jsonl(tmp_path, monkeypatch):
 
 
 def test_create_feedback_strips_text():
+    """验证“创建反馈strips文本”场景的预期行为与回归边界。"""
     record = feedback.create_feedback_record(
         space_id="space1",
         message_id=None,

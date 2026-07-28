@@ -37,6 +37,10 @@ class QueryIntent(BaseModel):
     @field_validator("entity", "attribute", "topic", mode="before")
     @classmethod
     def _clean_optional_text(cls, value: object) -> str | None:
+        """负责“清理optional文本”。
+
+        该函数是 `agent.query_intent` 中的`QueryIntent` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if value is None:
             return None
         text = str(value).strip()
@@ -92,6 +96,10 @@ def is_task_inventory_question(question: str) -> bool:
 
 
 def _query_plan_payload(intent: QueryIntent) -> dict[str, object]:
+    """负责“查询规划payload”。
+
+    该函数是 `agent.query_intent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return {
         "complexity": intent.complexity,
         "strategies": list(intent.strategies),

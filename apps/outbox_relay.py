@@ -15,6 +15,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 def run_once(client: StreamClient | None = None) -> dict[str, int]:
+    """负责“运行once”。
+
+    该函数是 `apps.outbox_relay` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     retry_count = enqueue_due_retries(limit=OUTBOX_BATCH_SIZE)
     if retry_count:
         log_event(
@@ -36,6 +40,7 @@ def run_once(client: StreamClient | None = None) -> dict[str, int]:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     logging.basicConfig(level=logging.INFO)
     log_process_started("outbox-relay")
     client = StreamClient()

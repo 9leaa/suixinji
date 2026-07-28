@@ -21,6 +21,10 @@ LOGGER = logging.getLogger(__name__)
 
 
 def run_once() -> bool:
+    """负责“运行once”。
+
+    该函数是 `apps.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     lock = RedisDistributedLock(KEYS.lock_scheduler("distributed"), ttl_ms=SCHEDULER_LEADER_TTL_MS)
     if not lock.acquire(wait_seconds=0):
         return False
@@ -56,6 +60,7 @@ def run_once() -> bool:
 
 
 def main() -> None:
+    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
     logging.basicConfig(level=logging.INFO)
     log_process_started("scheduler")
     while True:

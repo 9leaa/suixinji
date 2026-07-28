@@ -35,6 +35,7 @@ _LOCAL_GUARD = threading.Lock()
 
 class RedisDistributedLock:
     def __init__(self, key: str, *, client: Redis | None = None, ttl_ms: int = SPACE_LOCK_TTL_MS) -> None:
+        """初始化`RedisDistributedLock` 实例并建立后续调用所需的状态。"""
         self.client = client or get_redis()
         self.key = key
         self.ttl_ms = max(100, int(ttl_ms))
@@ -42,6 +43,10 @@ class RedisDistributedLock:
         self.acquired = False
 
     def acquire(self, wait_seconds: float = SPACE_LOCK_WAIT_SECONDS) -> bool:
+        """负责“acquire”。
+
+        该函数是 `infrastructure.redis_lock` 中的`RedisDistributedLock` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         deadline = time.monotonic() + max(0.0, float(wait_seconds))
         while True:
             if self.client.set(self.key, self.token, nx=True, px=self.ttl_ms):
@@ -52,9 +57,17 @@ class RedisDistributedLock:
             time.sleep(0.05)
 
     def renew(self) -> bool:
+        """负责“renew”。
+
+        该函数是 `infrastructure.redis_lock` 中的`RedisDistributedLock` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         return bool(self.client.eval(_RENEW_LUA, 1, self.key, self.token, self.ttl_ms))
 
     def release(self) -> bool:
+        """负责“释放”。
+
+        该函数是 `infrastructure.redis_lock` 中的`RedisDistributedLock` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         if not self.acquired:
             return False
         released = bool(self.client.eval(_RELEASE_LUA, 1, self.key, self.token))
@@ -64,6 +77,10 @@ class RedisDistributedLock:
 
 @contextmanager
 def postgres_advisory_lock(key: str) -> Iterator[None]:
+    """负责“postgresadvisory锁”。
+
+    该函数是 `infrastructure.redis_lock` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     connection = get_engine().connect()
     try:
         connection.exec_driver_sql("SELECT pg_advisory_lock(hashtext(%s))", (key,))
@@ -77,9 +94,17 @@ def postgres_advisory_lock(key: str) -> Iterator[None]:
 
 @contextmanager
 def coordinated_lock(key: str, *, critical: bool = True, wait_seconds: float = SPACE_LOCK_WAIT_SECONDS) -> Iterator[str]:
+    """负责“coordinated锁”。
+
+    该函数是 `infrastructure.redis_lock` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     started = time.monotonic()
 
     def record(backend: str) -> None:
+        """负责“记录”。
+
+        该函数是 `infrastructure.redis_lock` 中的`coordinated_lock` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """
         wait_ms = int((time.monotonic() - started) * 1000)
         log_event(
             "runtime.lock_acquired",
@@ -103,6 +128,10 @@ def coordinated_lock(key: str, *, critical: bool = True, wait_seconds: float = S
             stop_renewal = threading.Event()
 
             def renew_loop() -> None:
+                """负责“renewloop”。
+
+                该函数是 `infrastructure.redis_lock` 中的`coordinated_lock` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+                """
                 interval = max(0.1, lock.ttl_ms / 3000)
                 while not stop_renewal.wait(interval):
                     try:

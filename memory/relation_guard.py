@@ -19,14 +19,26 @@ class RelationGuardResult:
 
 
 def _same(left: str | None, right: str | None) -> bool:
+    """负责“same”。
+
+    该函数是 `memory.relation_guard` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return bool(left and right and normalize_content(left) == normalize_content(right))
 
 
 def _scope(memory: MemoryRecord, key: str, default: str = "") -> str:
+    """负责“scope”。
+
+    该函数是 `memory.relation_guard` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return str(memory.scope.get(key) or default)
 
 
 def is_v3_candidate(candidate: MemoryCandidate) -> bool:
+    """负责“是否为v3候选”。
+
+    该函数是 `memory.relation_guard` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """
     return candidate.memory_key_version == MEMORY_KEY_V3_VERSION or candidate.scope.get("memory_key_version") == MEMORY_KEY_V3_VERSION
 
 
