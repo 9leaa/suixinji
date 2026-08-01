@@ -1,4 +1,9 @@
-"""Compare local source counts with PostgreSQL after migration."""
+"""文件作用：迁移校验。
+
+项目关系：本文件依赖 `scripts.migrate_local_to_postgres`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -15,7 +20,12 @@ from scripts.migrate_local_to_postgres import _collect, _database_counts, _local
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：迁移校验。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=Path, default=Path("data"))
     args = parser.parse_args()

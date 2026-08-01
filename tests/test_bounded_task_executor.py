@@ -1,3 +1,9 @@
+"""文件作用：本地有界队列、拒绝和任务状态。
+
+项目关系：本文件依赖 `runtime.executor`、`runtime.task`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from __future__ import annotations
 
 import threading
@@ -8,13 +14,23 @@ from runtime.task import TASK_FAILED, TASK_REJECTED, TASK_SUCCESS
 
 
 def test_executor_rejects_when_queue_is_full(monkeypatch):
-    """验证“executorrejectswhenqueue是否为full”场景的预期行为与回归边界。"""
+    """函数功能：`test_executor_rejects_when_queue_is_full` 负责验证 executor rejects when queue is full 场景，服务于本文件职责：本地有界队列、拒绝和任务状态。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     started = threading.Event()
     release = threading.Event()
     sent_messages = []
 
     def fake_process_record(record):
-        """验证“fake处理记录”场景的预期行为与回归边界。"""
+        """函数功能：`fake_process_record` 负责处理 record，服务于本文件职责：本地有界队列、拒绝和任务状态。
+        传参：
+            record: 待处理或持久化的记录对象。
+        返回结果说明：
+            无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         started.set()
         release.wait(timeout=5)
 
@@ -44,7 +60,12 @@ def test_executor_rejects_when_queue_is_full(monkeypatch):
 
 
 def test_executor_runs_ingest_and_updates_stats(monkeypatch):
-    """验证“executorruns接收写入andupdates统计”场景的预期行为与回归边界。"""
+    """函数功能：`test_executor_runs_ingest_and_updates_stats` 负责验证 executor runs ingest and updates stats 场景，服务于本文件职责：本地有界队列、拒绝和任务状态。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     processed = []
     sent_messages = []
 
@@ -73,7 +94,12 @@ def test_executor_runs_ingest_and_updates_stats(monkeypatch):
 
 
 def test_query_failure_sends_visible_notice(monkeypatch):
-    """验证“查询failuresendsvisiblenotice”场景的预期行为与回归边界。"""
+    """函数功能：`test_query_failure_sends_visible_notice` 负责验证 query failure sends visible notice 场景，服务于本文件职责：本地有界队列、拒绝和任务状态。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     sent_messages = []
     monkeypatch.setattr("runtime.executor.answer_question", lambda space_id, question: (_ for _ in ()).throw(RuntimeError("llm empty")))
     executor = BoundedTaskExecutor(
@@ -90,7 +116,12 @@ def test_query_failure_sends_visible_notice(monkeypatch):
 
 
 def test_ingest_ack_does_not_wait_for_background_enrichment(monkeypatch):
-    """验证“接收写入ackdoesnot等待forbackgroundenrichment”场景的预期行为与回归边界。"""
+    """函数功能：`test_ingest_ack_does_not_wait_for_background_enrichment` 负责验证 ingest ack does not wait for background enrichment 场景，服务于本文件职责：本地有界队列、拒绝和任务状态。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     enrichment_started = threading.Event()
     release_enrichment = threading.Event()
     archived_sent = threading.Event()
@@ -98,7 +129,13 @@ def test_ingest_ack_does_not_wait_for_background_enrichment(monkeypatch):
     monkeypatch.setattr("runtime.executor.process_record", lambda record: {"id": record["id"]})
 
     def fake_enrich(space_id, note_id):
-        """验证“fake富化”场景的预期行为与回归边界。"""
+        """函数功能：`fake_enrich` 负责处理 fake enrich，服务于本文件职责：本地有界队列、拒绝和任务状态。
+        传参：
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据。
+            note_id: Note 标识，用于定位原始记录。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         enrichment_started.set()
         release_enrichment.wait(timeout=5)
         return True
@@ -128,7 +165,12 @@ def test_ingest_ack_does_not_wait_for_background_enrichment(monkeypatch):
 
 
 def test_query_flushes_pending_wal_before_reading(monkeypatch):
-    """验证“查询flushes待处理预写日志前置reading”场景的预期行为与回归边界。"""
+    """函数功能：`test_query_flushes_pending_wal_before_reading` 负责验证 query flushes pending wal before reading 场景，服务于本文件职责：本地有界队列、拒绝和任务状态。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     order = []
     monkeypatch.setattr("runtime.executor.process_pending", lambda space_id: order.append(("flush", space_id)) or 1)
     monkeypatch.setattr("runtime.executor.answer_question", lambda space_id, question: order.append(("answer", space_id)) or "ok")

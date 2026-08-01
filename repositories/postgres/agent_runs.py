@@ -1,4 +1,9 @@
-"""PostgreSQL persistence for Agent runs, steps, and LLM usage."""
+"""文件作用：Agent 审计数据访问。
+
+项目关系：本文件依赖 `infrastructure.database`、`infrastructure.schema`、`repositories.postgres.common`；被 `agent.hooks.llm_usage`、`agent.hooks.observability`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -24,9 +29,17 @@ def start_agent_run(
     run_type: str,
     started_at: datetime,
 ) -> None:
-    """负责“启动Agent运行”。
-
-    该函数是 `repositories.postgres.agent_runs` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`start_agent_run` 负责启动 agent run，服务于本文件职责：Agent 审计数据访问。
+    传参：
+        run_id: run id 参数，由调用方传入，类型为 `str`。
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        user_id: 用户标识，用于鉴权、限流、会话和数据归属，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str | None`。
+        run_type: run type 参数，由调用方传入，类型为 `str`。
+        started_at: started at 参数，由调用方传入，类型为 `datetime`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with session_scope() as session:
         session.execute(
@@ -46,9 +59,13 @@ def start_agent_run(
 
 
 def finish_agent_run(run_id: str, status: str, *, error_type: str | None = None) -> None:
-    """负责“finishAgent运行”。
-
-    该函数是 `repositories.postgres.agent_runs` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`finish_agent_run` 负责运行 finish agent，服务于本文件职责：Agent 审计数据访问。
+    传参：
+        run_id: run id 参数，由调用方传入，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`。
+        error_type: error type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with session_scope() as session:
         session.execute(
@@ -70,9 +87,19 @@ def add_agent_step(
     safe_output: dict[str, Any] | None = None,
     error_type: str | None = None,
 ) -> None:
-    """负责“添加Agent步骤”。
-
-    该函数是 `repositories.postgres.agent_runs` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`add_agent_step` 负责处理 add agent step，服务于本文件职责：Agent 审计数据访问。
+    传参：
+        run_id: run id 参数，由调用方传入，类型为 `str`。
+        step_no: step no 参数，由调用方传入，类型为 `int`。
+        step_type: step type 参数，由调用方传入，类型为 `str`。
+        name: name 参数，由调用方传入，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`。
+        duration_ms: duration ms 参数，由调用方传入，类型为 `int | None`，默认值为 `None`。
+        safe_input: safe input 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+        safe_output: safe output 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+        error_type: error type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with session_scope() as session:
         session.add(
@@ -98,9 +125,15 @@ def add_llm_usage(
     output_tokens: int = 0,
     estimated_cost: Decimal | float = 0,
 ) -> None:
-    """负责“添加LLMusage”。
-
-    该函数是 `repositories.postgres.agent_runs` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`add_llm_usage` 负责处理 add llm usage，服务于本文件职责：Agent 审计数据访问。
+    传参：
+        run_id: run id 参数，由调用方传入，类型为 `str`。
+        model: model 参数，由调用方传入，类型为 `str`。
+        input_tokens: input tokens 参数，由调用方传入，类型为 `int`，默认值为 `0`。
+        output_tokens: output tokens 参数，由调用方传入，类型为 `int`，默认值为 `0`。
+        estimated_cost: estimated cost 参数，由调用方传入，类型为 `Decimal | float`，默认值为 `0`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with session_scope() as session:
         session.add(

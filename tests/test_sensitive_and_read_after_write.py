@@ -1,3 +1,9 @@
+"""文件作用：敏感拦截与读后写一致性。
+
+项目关系：本文件依赖 `agent`、`bot`、`core.sensitive`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 import json
 from types import SimpleNamespace
 
@@ -7,7 +13,12 @@ from core.sensitive import assess_sensitive_text, safe_text_preview
 
 
 def test_sensitive_detector_is_general_not_value_specific():
-    """验证“sensitivedetector是否为generalnot字段值specific”场景的预期行为与回归边界。"""
+    """函数功能：`test_sensitive_detector_is_general_not_value_specific` 负责验证 sensitive detector is general not value specific 场景，服务于本文件职责：敏感拦截与读后写一致性。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     samples = [
         "密码是Abcd1234",
         "API_KEY: sk-examplevalue123456",
@@ -21,7 +32,12 @@ def test_sensitive_detector_is_general_not_value_specific():
 
 
 def test_sensitive_query_returns_locally_without_model_or_embedding(monkeypatch):
-    """验证“sensitive查询returnslocallywithout模型or向量”场景的预期行为与回归边界。"""
+    """函数功能：`test_sensitive_query_returns_locally_without_model_or_embedding` 负责验证 sensitive query returns locally without model or embedding 场景，服务于本文件职责：敏感拦截与读后写一致性。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(query_agent, "complete_json", lambda **kwargs: (_ for _ in ()).throw(AssertionError("must not call model")))
     monkeypatch.setattr(query_agent, "embed_text", lambda text: (_ for _ in ()).throw(AssertionError("must not embed")))
     monkeypatch.setattr(query_agent, "memory_search", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("must not search")))
@@ -32,7 +48,12 @@ def test_sensitive_query_returns_locally_without_model_or_embedding(monkeypatch)
 
 
 def test_query_reads_provisional_note_without_waiting_for_model(monkeypatch):
-    """验证“查询readsprovisional笔记withoutwaitingfor模型”场景的预期行为与回归边界。"""
+    """函数功能：`test_query_reads_provisional_note_without_waiting_for_model` 负责验证 query reads provisional note without waiting for model 场景，服务于本文件职责：敏感拦截与读后写一致性。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     notes = [
         {
             "id": "note-new",
@@ -61,7 +82,12 @@ def test_query_reads_provisional_note_without_waiting_for_model(monkeypatch):
 
 
 def test_legacy_sensitive_note_is_filtered_from_deterministic_queries(monkeypatch):
-    """验证“legacysensitive笔记是否为filteredfromdeterministicqueries”场景的预期行为与回归边界。"""
+    """函数功能：`test_legacy_sensitive_note_is_filtered_from_deterministic_queries` 负责验证 legacy sensitive note is filtered from deterministic queries 场景，服务于本文件职责：敏感拦截与读后写一致性。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     notes = [
         {
             "id": "secret-note",
@@ -81,7 +107,12 @@ def test_legacy_sensitive_note_is_filtered_from_deterministic_queries(monkeypatc
 
 
 def test_feishu_ingress_blocks_secret_before_command_or_wal_raw_text(monkeypatch):
-    """验证“feishuingressblockssecret前置命令or预写日志raw文本”场景的预期行为与回归边界。"""
+    """函数功能：`test_feishu_ingress_blocks_secret_before_command_or_wal_raw_text` 负责验证 feishu ingress blocks secret before command or wal raw text 场景，服务于本文件职责：敏感拦截与读后写一致性。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     records = []
     replies = []
     message = SimpleNamespace(

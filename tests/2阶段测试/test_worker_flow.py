@@ -1,3 +1,9 @@
+"""文件作用：早期本地 worker 写入流程。
+
+项目关系：本文件依赖 `core`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from types import SimpleNamespace
 
 from core import worker
@@ -13,7 +19,12 @@ RECORD = {
 
 
 def test_process_record_saves_provisional_note_without_waiting_for_llm(monkeypatch):
-    """验证“处理记录savesprovisional笔记withoutwaitingforLLM”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_record_saves_provisional_note_without_waiting_for_llm` 负责验证 process record saves provisional note without waiting for llm 场景，服务于本文件职责：早期本地 worker 写入流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     saved_notes = []
     marked = []
 
@@ -51,7 +62,12 @@ def test_process_record_saves_provisional_note_without_waiting_for_llm(monkeypat
 
 
 def test_process_record_can_defer_memory_and_wal_completion(monkeypatch):
-    """验证“处理记录candefer记忆and预写日志completion”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_record_can_defer_memory_and_wal_completion` 负责验证 process record can defer memory and wal completion 场景，服务于本文件职责：早期本地 worker 写入流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     saved_notes = []
     marked = []
 
@@ -76,7 +92,12 @@ def test_process_record_can_defer_memory_and_wal_completion(monkeypatch):
 
 
 def test_process_record_existing_note_marks_processed_without_slow_backfill(monkeypatch):
-    """验证“处理记录existing笔记marksprocessedwithoutslowbackfill”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_record_existing_note_marks_processed_without_slow_backfill` 负责验证 process record existing note marks processed without slow backfill 场景，服务于本文件职责：早期本地 worker 写入流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     calls = []
     existing_note = {"id": "record-1", "message_id": "message-1", "space_id": "space-1", "text": "正文"}
 
@@ -93,7 +114,12 @@ def test_process_record_existing_note_marks_processed_without_slow_backfill(monk
 
 
 def test_process_record_existing_note_recovers_retryable_memory_once(monkeypatch):
-    """验证“处理记录existing笔记recoversretryable记忆once”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_record_existing_note_recovers_retryable_memory_once` 负责验证 process record existing note recovers retryable memory once 场景，服务于本文件职责：早期本地 worker 写入流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     calls = []
     existing_note = {"id": "note-1", "message_id": "message-1", "space_id": "space-1", "text": "我喜欢咖啡"}
 
@@ -113,7 +139,12 @@ def test_process_record_existing_note_recovers_retryable_memory_once(monkeypatch
 
 
 def test_backfill_vector_if_missing_writes_vector_from_existing_note(monkeypatch):
-    """验证“backfill向量ifmissingwrites向量fromexisting笔记”场景的预期行为与回归边界。"""
+    """函数功能：`test_backfill_vector_if_missing_writes_vector_from_existing_note` 负责验证 backfill vector if missing writes vector from existing note 场景，服务于本文件职责：早期本地 worker 写入流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     added = []
     notes = [
         {
@@ -146,7 +177,12 @@ def test_backfill_vector_if_missing_writes_vector_from_existing_note(monkeypatch
 
 
 def test_backfill_vector_if_missing_skips_existing_vector(monkeypatch):
-    """验证“backfill向量ifmissingskipsexisting向量”场景的预期行为与回归边界。"""
+    """函数功能：`test_backfill_vector_if_missing_skips_existing_vector` 负责验证 backfill vector if missing skips existing vector 场景，服务于本文件职责：早期本地 worker 写入流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     notes = [{"id": "note-1", "message_id": "message-1", "text": "正文"}]
 
     monkeypatch.setattr(worker, "load_index", lambda space_id: notes)
@@ -157,7 +193,12 @@ def test_backfill_vector_if_missing_skips_existing_vector(monkeypatch):
 
 
 def test_enrich_note_runs_slow_work_and_marks_ready(monkeypatch):
-    """验证“富化笔记runsslowworkandmarksready”场景的预期行为与回归边界。"""
+    """函数功能：`test_enrich_note_runs_slow_work_and_marks_ready` 负责验证 enrich note runs slow work and marks ready 场景，服务于本文件职责：早期本地 worker 写入流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     updates = []
     vectors = []
     note = {
@@ -188,7 +229,12 @@ def test_enrich_note_runs_slow_work_and_marks_ready(monkeypatch):
 
 
 def test_process_record_redacts_sensitive_pending_wal_before_storage(monkeypatch):
-    """验证“处理记录redactssensitive待处理预写日志前置storage”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_record_redacts_sensitive_pending_wal_before_storage` 负责验证 process record redacts sensitive pending wal before storage 场景，服务于本文件职责：早期本地 worker 写入流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     blocked = []
     record = {**RECORD, "text": "密码是Abcd1234"}
     monkeypatch.setattr(
@@ -203,7 +249,12 @@ def test_process_record_redacts_sensitive_pending_wal_before_storage(monkeypatch
 
 
 def test_process_record_redacts_sensitive_text_but_preserves_distributed_pending(monkeypatch):
-    """验证“处理记录redactssensitive文本butpreservesdistributed待处理”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_record_redacts_sensitive_text_but_preserves_distributed_pending` 负责验证 process record redacts sensitive text but preserves distributed pending 场景，服务于本文件职责：早期本地 worker 写入流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     blocked = []
     record = {**RECORD, "text": "\u5bc6\u7801\u662fAbcd1234"}
     monkeypatch.setattr(
@@ -217,7 +268,12 @@ def test_process_record_redacts_sensitive_text_but_preserves_distributed_pending
 
 
 def test_process_pending_skips_duplicate_message_ids(monkeypatch):
-    """验证“处理待处理skips重复消息标识列表”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_pending_skips_duplicate_message_ids` 负责验证 process pending skips duplicate message ids 场景，服务于本文件职责：早期本地 worker 写入流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     records = [
         {"id": "r1", "message_id": "m1", "space_id": "space-1"},
         {"id": "r2", "message_id": "m1", "space_id": "space-1"},

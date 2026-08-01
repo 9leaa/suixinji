@@ -1,3 +1,9 @@
+"""文件作用：查询意图规则/LLM 回退。
+
+项目关系：本文件依赖 `agent`、`core`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from __future__ import annotations
 
 from agent import query_agent
@@ -5,7 +11,12 @@ from agent import query_intent
 
 
 def test_query_intent_routes_natural_task_status_question(monkeypatch):
-    """验证“查询意图routesnatural任务状态question”场景的预期行为与回归边界。"""
+    """函数功能：`test_query_intent_routes_natural_task_status_question` 负责验证 query intent routes natural task status question 场景，服务于本文件职责：查询意图规则/LLM 回退。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(
         query_intent,
         "complete_json",
@@ -31,7 +42,12 @@ def test_query_intent_routes_natural_task_status_question(monkeypatch):
 
 
 def test_query_agent_uses_intent_memory_first(monkeypatch):
-    """验证“查询Agentuses意图记忆首个”场景的预期行为与回归边界。"""
+    """函数功能：`test_query_agent_uses_intent_memory_first` 负责验证 query agent uses intent memory first 场景，服务于本文件职责：查询意图规则/LLM 回退。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     from core import settings
 
     monkeypatch.setattr(settings, "QUERY_INTENT_MODEL_ENABLED", True)
@@ -57,7 +73,12 @@ def test_query_agent_uses_intent_memory_first(monkeypatch):
 
 
 def test_general_intent_suppresses_legacy_short_note_only_route(monkeypatch):
-    """验证“general意图suppresseslegacyshort笔记only路由”场景的预期行为与回归边界。"""
+    """函数功能：`test_general_intent_suppresses_legacy_short_note_only_route` 负责验证 general intent suppresses legacy short note only route 场景，服务于本文件职责：查询意图规则/LLM 回退。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(
         query_intent,
         "complete_json",
@@ -72,7 +93,12 @@ def test_general_intent_suppresses_legacy_short_note_only_route(monkeypatch):
 
 
 def test_task_intent_splits_embedded_ascii_topic_for_retrieval():
-    """验证“任务意图splitsembeddedasciitopicforretrieval”场景的预期行为与回归边界。"""
+    """函数功能：`test_task_intent_splits_embedded_ascii_topic_for_retrieval` 负责验证 task intent splits embedded ascii topic for retrieval 场景，服务于本文件职责：查询意图规则/LLM 回退。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     intent = query_intent.QueryIntent(
         intent="task_status",
         entity="用户",
@@ -89,7 +115,12 @@ def test_task_intent_splits_embedded_ascii_topic_for_retrieval():
 
 
 def test_generic_task_inventory_falls_back_to_task_notes():
-    """验证“generic任务inventoryfallsback转换为任务笔记列表”场景的预期行为与回归边界。"""
+    """函数功能：`test_generic_task_inventory_falls_back_to_task_notes` 负责验证 generic task inventory falls back to task notes 场景，服务于本文件职责：查询意图规则/LLM 回退。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     intent = query_intent.QueryIntent(
         intent="task_status",
         entity="用户",

@@ -1,3 +1,9 @@
+"""文件作用：rules/LLM/hybrid 抽取与回退。
+
+项目关系：本文件依赖 `memory`、`memory.extractor`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 import pytest
 
 from memory import extractor
@@ -5,14 +11,24 @@ from memory.extractor import extract_candidates
 
 
 def test_extractor_filters_low_value_text():
-    """验证“extractorfilterslow字段值文本”场景的预期行为与回归边界。"""
+    """函数功能：`test_extractor_filters_low_value_text` 负责验证 extractor filters low value text 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     assert extract_candidates("note-1", "你好") == []
     assert extract_candidates("note-2", "哈哈") == []
     assert extract_candidates("note-3", "可能以后会学 Java") == []
 
 
 def test_extractor_classifies_preference_and_semantic():
-    """验证“extractorclassifies偏好andsemantic”场景的预期行为与回归边界。"""
+    """函数功能：`test_extractor_classifies_preference_and_semantic` 负责验证 extractor classifies preference and semantic 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     candidates = extract_candidates("note-1", "我现在不想继续学习 Java，短期重点放在 Python Agent。")
     types = {candidate.memory_type for candidate in candidates}
 
@@ -22,7 +38,12 @@ def test_extractor_classifies_preference_and_semantic():
 
 
 def test_extractor_classifies_task_status():
-    """验证“extractorclassifies任务状态”场景的预期行为与回归边界。"""
+    """函数功能：`test_extractor_classifies_task_status` 负责验证 extractor classifies task status 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     candidates = extract_candidates("note-1", "记得完善随心记项目 README。")
 
     assert len(candidates) == 1
@@ -31,7 +52,12 @@ def test_extractor_classifies_task_status():
 
 
 def test_extractor_treats_allergy_as_preference_constraint():
-    """验证“extractortreatsallergyas偏好constraint”场景的预期行为与回归边界。"""
+    """函数功能：`test_extractor_treats_allergy_as_preference_constraint` 负责验证 extractor treats allergy as preference constraint 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     candidates = extract_candidates("note-1", "我苹果过敏")
 
     assert candidates
@@ -39,7 +65,12 @@ def test_extractor_treats_allergy_as_preference_constraint():
 
 
 def test_extractor_treats_dislike_as_preference_constraint():
-    """验证“extractortreatsdislikeas偏好constraint”场景的预期行为与回归边界。"""
+    """函数功能：`test_extractor_treats_dislike_as_preference_constraint` 负责验证 extractor treats dislike as preference constraint 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     candidates = extract_candidates("note-1", "我讨厌喝牛奶")
 
     assert candidates
@@ -49,7 +80,12 @@ def test_extractor_treats_dislike_as_preference_constraint():
 
 
 def test_preference_extractor_uses_the_object_as_topic_not_the_sentence_template():
-    """验证“偏好extractorusestheobjectastopicnotthesentencetemplate”场景的预期行为与回归边界。"""
+    """函数功能：`test_preference_extractor_uses_the_object_as_topic_not_the_sentence_template` 负责验证 preference extractor uses the object as topic not the sentence template 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     latte = extract_candidates("note-1", "我喜欢喝燕麦拿铁，通常选大杯")[0]
     apple = extract_candidates("note-2", "我喜欢吃苹果")[0]
 
@@ -69,14 +105,25 @@ def test_preference_extractor_uses_the_object_as_topic_not_the_sentence_template
     ],
 )
 def test_preference_topic_extraction_is_grammar_based(text, topic):
-    """验证“偏好topicextraction是否为grammarbased”场景的预期行为与回归边界。"""
+    """函数功能：`test_preference_topic_extraction_is_grammar_based` 负责验证 preference topic extraction is grammar based 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        text: 输入文本内容。
+        topic: topic 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     candidate = extract_candidates("note-generic", text)[0]
 
     assert candidate.object_value == topic
 
 
 def test_llm_extractor_returns_structured_candidates(monkeypatch):
-    """验证“LLMextractorreturnsstructuredcandidates”场景的预期行为与回归边界。"""
+    """函数功能：`test_llm_extractor_returns_structured_candidates` 负责验证 llm extractor returns structured candidates 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
     monkeypatch.setattr(
         extractor,
@@ -111,7 +158,12 @@ def test_llm_extractor_returns_structured_candidates(monkeypatch):
 
 
 def test_llm_extractor_falls_back_to_rules(monkeypatch):
-    """验证“LLMextractorfallsback转换为rules”场景的预期行为与回归边界。"""
+    """函数功能：`test_llm_extractor_falls_back_to_rules` 负责验证 llm extractor falls back to rules 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
     monkeypatch.setattr(extractor, "complete_json", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("model down")))
 
@@ -123,7 +175,12 @@ def test_llm_extractor_falls_back_to_rules(monkeypatch):
 
 
 def test_llm_fallback_logs_safe_degradation_without_raw_text_or_keys(monkeypatch):
-    """验证“LLMfallbacklogs安全degradationwithoutraw文本or键列表”场景的预期行为与回归边界。"""
+    """函数功能：`test_llm_fallback_logs_safe_degradation_without_raw_text_or_keys` 负责验证 llm fallback logs safe degradation without raw text or keys 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
     events = []
     raw_text = "我不喜欢喝牛奶，我也不爱工作，现在正在投递agent简历"
@@ -156,7 +213,12 @@ def test_llm_fallback_logs_safe_degradation_without_raw_text_or_keys(monkeypatch
 
 
 def test_memory_v3_e2e_diagnostic_prefix_is_ignored_for_rule_fallback(monkeypatch):
-    """验证“记忆v3e2ediagnosticprefix是否为ignoredforrulefallback”场景的预期行为与回归边界。"""
+    """函数功能：`test_memory_v3_e2e_diagnostic_prefix_is_ignored_for_rule_fallback` 负责验证 memory v3 e2e diagnostic prefix is ignored for rule fallback 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
     monkeypatch.setattr(extractor, "complete_json", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("model down")))
 
@@ -169,7 +231,12 @@ def test_memory_v3_e2e_diagnostic_prefix_is_ignored_for_rule_fallback(monkeypatc
 
 
 def test_extractor_filters_secret_shaped_values_before_model_call(monkeypatch):
-    """验证“extractorfilterssecretshapedvalues前置模型call”场景的预期行为与回归边界。"""
+    """函数功能：`test_extractor_filters_secret_shaped_values_before_model_call` 负责验证 extractor filters secret shaped values before model call 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
     monkeypatch.setattr(extractor, "complete_json", lambda **kwargs: (_ for _ in ()).throw(AssertionError("must not call model")))
 

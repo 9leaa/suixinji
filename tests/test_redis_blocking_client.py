@@ -1,3 +1,9 @@
+"""文件作用：Redis blocking 客户端连接预算。
+
+项目关系：本文件依赖 `infrastructure`、`infrastructure.redis_keys`、`runtime.streams.client`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from __future__ import annotations
 
 from redis.exceptions import ResponseError
@@ -8,19 +14,43 @@ from runtime.streams.client import StreamClient
 
 
 class _FakePool:
+    """类功能：`_FakePool` 封装与“Redis blocking 客户端连接预算”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def __init__(self, kwargs: dict) -> None:
-        """初始化`_FakePool` 实例并建立后续调用所需的状态。"""
+        """函数功能：`_FakePool.__init__` 在类 `_FakePool` 中负责初始化实例状态，服务于本文件职责：Redis blocking 客户端连接预算。
+        传参：
+            kwargs: kwargs 参数，由调用方传入，类型为 `dict`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.kwargs = kwargs
         self.disconnected = False
 
     def disconnect(self) -> None:
-        """验证“disconnect”场景的预期行为与回归边界。"""
+        """函数功能：`_FakePool.disconnect` 在类 `_FakePool` 中负责处理 disconnect，服务于本文件职责：Redis blocking 客户端连接预算。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.disconnected = True
 
 
 class _FakeRedis:
+    """类功能：`_FakeRedis` 封装与“Redis blocking 客户端连接预算”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def __init__(self, connection_pool: _FakePool | None = None, *, responses: list | None = None) -> None:
-        """初始化`_FakeRedis` 实例并建立后续调用所需的状态。"""
+        """函数功能：`_FakeRedis.__init__` 在类 `_FakeRedis` 中负责初始化实例状态，服务于本文件职责：Redis blocking 客户端连接预算。
+        传参：
+            connection_pool: connection pool 参数，由调用方传入，类型为 `_FakePool | None`，默认值为 `None`。
+            responses: responses 参数，由调用方传入，类型为 `list | None`，默认值为 `None`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.connection_pool = connection_pool
         self.responses = list(responses or [])
         self.closed = False
@@ -28,15 +58,36 @@ class _FakeRedis:
         self.xreadgroup_calls: list[tuple[str, str, dict, int | None]] = []
 
     def close(self) -> None:
-        """验证“close”场景的预期行为与回归边界。"""
+        """函数功能：`_FakeRedis.close` 在类 `_FakeRedis` 中负责关闭，服务于本文件职责：Redis blocking 客户端连接预算。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.closed = True
 
     def xgroup_create(self, stream: str, group: str, **_kwargs) -> None:
-        """验证“xgroup创建”场景的预期行为与回归边界。"""
+        """函数功能：`_FakeRedis.xgroup_create` 在类 `_FakeRedis` 中负责创建 xgroup，服务于本文件职责：Redis blocking 客户端连接预算。
+        传参：
+            stream: stream 参数，由调用方传入，类型为 `str`。
+            group: group 参数，由调用方传入，类型为 `str`。
+            **_kwargs:  kwargs 参数，由调用方传入。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.xgroup_create_calls.append((stream, group))
 
     def xreadgroup(self, group: str, consumer: str, streams: dict, *, count: int, block: int):
-        """验证“xreadgroup”场景的预期行为与回归边界。"""
+        """函数功能：`_FakeRedis.xreadgroup` 在类 `_FakeRedis` 中负责处理 xreadgroup，服务于本文件职责：Redis blocking 客户端连接预算。
+        传参：
+            group: group 参数，由调用方传入，类型为 `str`。
+            consumer: consumer 参数，由调用方传入，类型为 `str`。
+            streams: streams 参数，由调用方传入，类型为 `dict`。
+            count: count 参数，由调用方传入，类型为 `int`。
+            block: block 参数，由调用方传入，类型为 `int`。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         self.xreadgroup_calls.append((group, consumer, streams, block))
         if self.responses:
             response = self.responses.pop(0)
@@ -48,12 +99,23 @@ class _FakeRedis:
 
 
 def test_blocking_redis_has_independent_timeout_and_pool(monkeypatch) -> None:
-    """验证“blockingredis是否包含independent超时andpool”场景的预期行为与回归边界。"""
+    """函数功能：`test_blocking_redis_has_independent_timeout_and_pool` 负责验证 blocking redis has independent timeout and pool 场景，服务于本文件职责：Redis blocking 客户端连接预算。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     redis_client.close_redis()
     pools: list[_FakePool] = []
 
     def fake_from_url(_url: str, **kwargs) -> _FakePool:
-        """验证“fakefromurl”场景的预期行为与回归边界。"""
+        """函数功能：`fake_from_url` 负责处理 fake from url，服务于本文件职责：Redis blocking 客户端连接预算。
+        传参：
+            _url:  url 参数，由调用方传入，类型为 `str`。
+            **kwargs: kwargs 参数，由调用方传入。
+        返回结果说明：
+            返回 `_FakePool` 类型结果；具体字段和语义由调用方按该对象约定使用。
+        """
         pool = _FakePool(kwargs)
         pools.append(pool)
         return pool
@@ -82,7 +144,12 @@ def test_blocking_redis_has_independent_timeout_and_pool(monkeypatch) -> None:
 
 
 def test_stream_read_uses_blocking_client_for_xreadgroup() -> None:
-    """验证“流读取usesblockingclientforxreadgroup”场景的预期行为与回归边界。"""
+    """函数功能：`test_stream_read_uses_blocking_client_for_xreadgroup` 负责验证 stream read uses blocking client for xreadgroup 场景，服务于本文件职责：Redis blocking 客户端连接预算。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     keys = RedisKeys(env="test-blocking")
     stream = keys.stream("ingest")
     normal = _FakeRedis()
@@ -99,7 +166,12 @@ def test_stream_read_uses_blocking_client_for_xreadgroup() -> None:
 
 
 def test_stream_read_recovers_nogroup_with_blocking_client() -> None:
-    """验证“流读取recoversnogroupwithblockingclient”场景的预期行为与回归边界。"""
+    """函数功能：`test_stream_read_recovers_nogroup_with_blocking_client` 负责验证 stream read recovers nogroup with blocking client 场景，服务于本文件职责：Redis blocking 客户端连接预算。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     keys = RedisKeys(env="test-nogroup")
     stream = keys.stream("ingest")
     normal = _FakeRedis()

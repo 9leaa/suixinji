@@ -1,4 +1,9 @@
-"""SQLAlchemy schema for the shared PostgreSQL data store."""
+"""文件作用：PostgreSQL ORM schema。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 `alembic.env`、`alembic.versions.20260717_0001_postgres_foundation`、`eval.benchmark_stage2_queries`、`eval.large_live_retrieval_eval` 等 26 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -28,10 +33,20 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
+    """类功能：`Base` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `DeclarativeBase`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     pass
 
 
 class Tenant(Base):
+    """类功能：`Tenant` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "tenants"
     id: Mapped[str] = mapped_column(String(128), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -39,6 +54,11 @@ class Tenant(Base):
 
 
 class User(Base):
+    """类功能：`User` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "users"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
@@ -50,6 +70,11 @@ class User(Base):
 
 
 class Space(Base):
+    """类功能：`Space` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "spaces"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
@@ -66,6 +91,11 @@ class Space(Base):
 
 
 class SpaceMember(Base):
+    """类功能：`SpaceMember` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "space_members"
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), primary_key=True)
     space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), primary_key=True)
@@ -75,6 +105,11 @@ class SpaceMember(Base):
 
 
 class InboxMessage(Base):
+    """类功能：`InboxMessage` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "inbox_messages"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     source: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -104,6 +139,11 @@ class InboxMessage(Base):
 
 
 class OutboxEvent(Base):
+    """类功能：`OutboxEvent` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "outbox_events"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     event_type: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -129,6 +169,11 @@ class OutboxEvent(Base):
 
 
 class Task(Base):
+    """类功能：`Task` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "tasks"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     task_type: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -159,6 +204,11 @@ class Task(Base):
 
 
 class TaskAttempt(Base):
+    """类功能：`TaskAttempt` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "task_attempts"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     task_id: Mapped[str] = mapped_column(ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False)
@@ -173,6 +223,11 @@ class TaskAttempt(Base):
 
 
 class Note(Base):
+    """类功能：`Note` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "notes"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     message_id: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -199,6 +254,11 @@ class Note(Base):
 
 
 class NoteTag(Base):
+    """类功能：`NoteTag` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "note_tags"
     note_id: Mapped[str] = mapped_column(ForeignKey("notes.id", ondelete="CASCADE"), primary_key=True)
     tag: Mapped[str] = mapped_column(String(255), primary_key=True)
@@ -206,6 +266,11 @@ class NoteTag(Base):
 
 
 class NoteRelation(Base):
+    """类功能：`NoteRelation` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "note_relations"
     source_note_id: Mapped[str] = mapped_column(ForeignKey("notes.id", ondelete="CASCADE"), primary_key=True)
     target_note_id: Mapped[str] = mapped_column(String(255), primary_key=True)
@@ -215,6 +280,11 @@ class NoteRelation(Base):
 
 
 class NoteEmbedding(Base):
+    """类功能：`NoteEmbedding` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "note_embeddings"
     note_id: Mapped[str] = mapped_column(ForeignKey("notes.id", ondelete="CASCADE"), primary_key=True)
     model: Mapped[str] = mapped_column(String(255), primary_key=True)
@@ -226,6 +296,11 @@ class NoteEmbedding(Base):
 
 
 class Memory(Base):
+    """类功能：`Memory` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "memories"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
@@ -271,6 +346,11 @@ class Memory(Base):
 
 
 class MemoryCandidateRow(Base):
+    """类功能：`MemoryCandidateRow` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "memory_candidates"
     candidate_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, default="default")
@@ -313,6 +393,11 @@ class MemoryCandidateRow(Base):
 
 
 class MemorySource(Base):
+    """类功能：`MemorySource` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "memory_sources"
     memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), primary_key=True)
     note_id: Mapped[str] = mapped_column(String(255), primary_key=True)
@@ -321,6 +406,11 @@ class MemorySource(Base):
 
 
 class MemoryVersion(Base):
+    """类功能：`MemoryVersion` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "memory_versions"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), nullable=False)
@@ -339,6 +429,11 @@ class MemoryVersion(Base):
 
 
 class MemoryVector(Base):
+    """类功能：`MemoryVector` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "memory_vectors"
     memory_id: Mapped[str] = mapped_column(ForeignKey("memories.id", ondelete="CASCADE"), primary_key=True)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(int(os.getenv("EMBEDDING_DIMENSION", "1024"))))
@@ -355,6 +450,11 @@ class MemoryVector(Base):
 
 
 class MemoryExtractionState(Base):
+    """类功能：`MemoryExtractionState` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "memory_extraction_states"
     note_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
@@ -369,6 +469,11 @@ class MemoryExtractionState(Base):
 
 
 class MemoryConsolidationRun(Base):
+    """类功能：`MemoryConsolidationRun` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "memory_consolidation_runs"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
@@ -383,6 +488,11 @@ class MemoryConsolidationRun(Base):
 
 
 class MemoryDecision(Base):
+    """类功能：`MemoryDecision` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "memory_decisions"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
@@ -409,6 +519,11 @@ class MemoryDecision(Base):
 
 
 class MemoryRelation(Base):
+    """类功能：`MemoryRelation` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "memory_relations"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
@@ -421,6 +536,11 @@ class MemoryRelation(Base):
 
 
 class MemoryTrace(Base):
+    """类功能：`MemoryTrace` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "memory_traces"
     trace_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), nullable=False)
@@ -433,6 +553,11 @@ class MemoryTrace(Base):
 
 
 class SummarySubscriptionRow(Base):
+    """类功能：`SummarySubscriptionRow` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "summary_subscriptions"
     space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
@@ -445,6 +570,11 @@ class SummarySubscriptionRow(Base):
 
 
 class SummaryRun(Base):
+    """类功能：`SummaryRun` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "summary_runs"
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
@@ -460,6 +590,11 @@ class SummaryRun(Base):
 
 
 class Delivery(Base):
+    """类功能：`Delivery` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "deliveries"
     delivery_key: Mapped[str] = mapped_column(String(512), primary_key=True)
     delivery_type: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -476,6 +611,11 @@ class Delivery(Base):
 
 
 class DeliveryAttempt(Base):
+    """类功能：`DeliveryAttempt` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "delivery_attempts"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     delivery_key: Mapped[str] = mapped_column(ForeignKey("deliveries.delivery_key", ondelete="CASCADE"), nullable=False)
@@ -488,6 +628,11 @@ class DeliveryAttempt(Base):
 
 
 class AgentRun(Base):
+    """类功能：`AgentRun` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "agent_runs"
     run_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
@@ -502,6 +647,11 @@ class AgentRun(Base):
 
 
 class AgentStep(Base):
+    """类功能：`AgentStep` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "agent_steps"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.run_id", ondelete="CASCADE"), nullable=False)
@@ -517,6 +667,11 @@ class AgentStep(Base):
 
 
 class LlmUsage(Base):
+    """类功能：`LlmUsage` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
+    继承关系：继承 `Base`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     __tablename__ = "llm_usage"
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.run_id", ondelete="CASCADE"), nullable=False)

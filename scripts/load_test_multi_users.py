@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-"""Generate or execute a Stage 4 multi-user workload. Execution is opt-in."""
+"""文件作用：多用户压测。
+
+项目关系：本文件依赖 `runtime.load_testing`；被 `tests.test_api_bind_config`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -20,9 +25,11 @@ from runtime.load_testing import PROFILES, execute_load, generate_requests, summ
 
 
 def default_endpoint() -> str:
-    """负责“默认endpoint”。
-
-    该函数是 `scripts.load_test_multi_users` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`default_endpoint` 负责处理 default endpoint，服务于本文件职责：多用户压测。
+    传参：
+        无。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     values = dotenv_values(ROOT / ".env")
     host = os.environ.get("SUIXINJI_API_HOST") or values.get("SUIXINJI_API_HOST") or "127.0.0.1"
@@ -31,9 +38,11 @@ def default_endpoint() -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    """负责“解析参数”。
-
-    该函数是 `scripts.load_test_multi_users` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`parse_args` 负责解析 args，服务于本文件职责：多用户压测。
+    传参：
+        无。
+    返回结果说明：
+        返回 `argparse.Namespace` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--profile", choices=sorted(PROFILES), default="smoke")
@@ -50,7 +59,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：多用户压测。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     args = parse_args()
     profile = PROFILES[args.profile]
     users = args.users or profile.users

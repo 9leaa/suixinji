@@ -1,3 +1,9 @@
+"""文件作用：裁决到确定性演化动作。
+
+项目关系：本文件依赖 `memory`、`memory.adjudicator`、`memory.evolution`、`memory.models` 等 7 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 import pytest
 
 from memory import repository
@@ -18,7 +24,12 @@ from memory.service import process_note_memory
 
 
 def test_core_audit_schema_is_created():
-    """验证“core审计模式是否为created”场景的预期行为与回归边界。"""
+    """函数功能：`test_core_audit_schema_is_created` 负责验证 core audit schema is created 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     assert {
         "memories",
         "memory_sources",
@@ -31,7 +42,12 @@ def test_core_audit_schema_is_created():
 
 
 def test_same_memory_adds_evidence_and_confirmation_without_new_version():
-    """验证“same记忆addsevidenceandconfirmationwithoutnew版本”场景的预期行为与回归边界。"""
+    """函数功能：`test_same_memory_adds_evidence_and_confirmation_without_new_version` 负责验证 same memory adds evidence and confirmation without new version 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我喜欢咖啡"})
     first = list_memories("space-1")[0]
 
@@ -47,7 +63,12 @@ def test_same_memory_adds_evidence_and_confirmation_without_new_version():
 
 
 def test_legacy_relation_api_maps_formal_merge_name():
-    """验证“legacy关系APImapsformal合并名称”场景的预期行为与回归边界。"""
+    """函数功能：`test_legacy_relation_api_maps_formal_merge_name` 负责验证 legacy relation api maps formal merge name 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     old = insert_memory("space-1", MemoryCandidate("semantic", "用户正在学习 Agent", 0.8, 0.9), source_note_id="note-1")
     candidate = MemoryCandidate("semantic", "用户也在研究 Agent 和 RAG", 0.8, 0.9)
 
@@ -58,7 +79,12 @@ def test_legacy_relation_api_maps_formal_merge_name():
 
 
 def test_merge_updates_content_and_preserves_a_version():
-    """验证“合并updatescontentandpreservesa版本”场景的预期行为与回归边界。"""
+    """函数功能：`test_merge_updates_content_and_preserves_a_version` 负责验证 merge updates content and preserves a version 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我正在学习 Agent"})
     report = process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我正在学习 Agent，也在研究 RAG"})
 
@@ -71,7 +97,12 @@ def test_merge_updates_content_and_preserves_a_version():
 
 
 def test_supersede_is_audited_with_bidirectional_relations():
-    """验证“替代是否为auditedwithbidirectionalrelations”场景的预期行为与回归边界。"""
+    """函数功能：`test_supersede_is_audited_with_bidirectional_relations` 负责验证 supersede is audited with bidirectional relations 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我喜欢喝牛奶"})
     report = process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我讨厌喝牛奶"})
 
@@ -95,7 +126,13 @@ def test_supersede_is_audited_with_bidirectional_relations():
     ],
 )
 def test_unrelated_preference_topics_never_merge_from_template_overlap(first_topic, second_topic):
-    """验证“unrelated偏好topicsnever合并fromtemplateoverlap”场景的预期行为与回归边界。"""
+    """函数功能：`test_unrelated_preference_topics_never_merge_from_template_overlap` 负责验证 unrelated preference topics never merge from template overlap 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        first_topic: first topic 参数，由调用方传入。
+        second_topic: second topic 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": f"我喜欢{first_topic}"})
     report = process_note_memory({"id": "note-2", "space_id": "space-1", "text": f"我喜欢{second_topic}"})
 
@@ -115,7 +152,13 @@ def test_unrelated_preference_topics_never_merge_from_template_overlap(first_top
     ],
 )
 def test_distinct_named_or_versioned_preference_topics_never_merge(first_topic, second_topic):
-    """验证“distinctnamedorversioned偏好topicsnever合并”场景的预期行为与回归边界。"""
+    """函数功能：`test_distinct_named_or_versioned_preference_topics_never_merge` 负责验证 distinct named or versioned preference topics never merge 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        first_topic: first topic 参数，由调用方传入。
+        second_topic: second topic 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": f"我喜欢{first_topic}"})
     report = process_note_memory({"id": "note-2", "space_id": "space-1", "text": f"我喜欢{second_topic}"})
 
@@ -124,7 +167,12 @@ def test_distinct_named_or_versioned_preference_topics_never_merge(first_topic, 
 
 
 def test_versioned_preference_change_targets_only_the_exact_identifier():
-    """验证“versioned偏好changetargetsonlytheexactidentifier”场景的预期行为与回归边界。"""
+    """函数功能：`test_versioned_preference_change_targets_only_the_exact_identifier` 负责验证 versioned preference change targets only the exact identifier 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我喜欢饮品A1"})
     report = process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我现在不喜欢饮品A10了"})
 
@@ -134,7 +182,12 @@ def test_versioned_preference_change_targets_only_the_exact_identifier():
 
 
 def test_preference_supersede_targets_only_the_same_topic():
-    """验证“偏好替代targetsonlythesametopic”场景的预期行为与回归边界。"""
+    """函数功能：`test_preference_supersede_targets_only_the_same_topic` 负责验证 preference supersede targets only the same topic 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我喜欢喝燕麦拿铁"})
     process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我喜欢吃苹果"})
     report = process_note_memory({"id": "note-3", "space_id": "space-1", "text": "我现在不喜欢吃苹果了"})
@@ -152,7 +205,12 @@ def test_preference_supersede_targets_only_the_same_topic():
 
 
 def test_preference_scopes_do_not_overwrite_each_other():
-    """验证“偏好scopesdonotoverwriteeachother”场景的预期行为与回归边界。"""
+    """函数功能：`test_preference_scopes_do_not_overwrite_each_other` 负责验证 preference scopes do not overwrite each other 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我早上喜欢喝咖啡"})
     report = process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我晚上不喜欢喝咖啡"})
 
@@ -168,7 +226,13 @@ def test_preference_scopes_do_not_overwrite_each_other():
     ],
 )
 def test_comparative_alternatives_use_shared_context_not_named_examples(old_content, new_content):
-    """验证“comparativealternativesuseshared上下文notnamedexamples”场景的预期行为与回归边界。"""
+    """函数功能：`test_comparative_alternatives_use_shared_context_not_named_examples` 负责验证 comparative alternatives use shared context not named examples 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        old_content: old content 参数，由调用方传入。
+        new_content: new content 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     old = insert_memory(
         "space-1",
         MemoryCandidate("preference", old_content, 0.8, 0.9),
@@ -183,7 +247,12 @@ def test_comparative_alternatives_use_shared_context_not_named_examples(old_cont
 
 
 def test_same_category_noncomparative_preferences_remain_independent():
-    """验证“samecategorynoncomparativepreferencesremainindependent”场景的预期行为与回归边界。"""
+    """函数功能：`test_same_category_noncomparative_preferences_remain_independent` 负责验证 same category noncomparative preferences remain independent 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     old = insert_memory(
         "space-1",
         MemoryCandidate("preference", "用户喜欢拿铁咖啡", 0.8, 0.9),
@@ -204,7 +273,12 @@ def test_same_category_noncomparative_preferences_remain_independent():
 
 
 def test_negative_action_grammar_tracks_same_topic_without_named_values():
-    """验证“negativeactiongrammartrackssametopicwithoutnamedvalues”场景的预期行为与回归边界。"""
+    """函数功能：`test_negative_action_grammar_tracks_same_topic_without_named_values` 负责验证 negative action grammar tracks same topic without named values 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     old = insert_memory(
         "space-1",
         MemoryCandidate("preference", "用户喜欢用机械键盘", 0.8, 0.9),
@@ -226,7 +300,12 @@ def test_negative_action_grammar_tracks_same_topic_without_named_values():
 
 
 def test_medium_confidence_destructive_change_waits_for_review():
-    """验证“mediumconfidencedestructivechangewaitsforreview”场景的预期行为与回归边界。"""
+    """函数功能：`test_medium_confidence_destructive_change_waits_for_review` 负责验证 medium confidence destructive change waits for review 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     old_candidate = MemoryCandidate(
         "semantic",
         "用户正在学习 Agent",
@@ -270,7 +349,12 @@ def test_medium_confidence_destructive_change_waits_for_review():
 
 
 def test_completed_note_memory_processing_is_idempotent():
-    """验证“completed笔记记忆processing是否为idempotent”场景的预期行为与回归边界。"""
+    """函数功能：`test_completed_note_memory_processing_is_idempotent` 负责验证 completed note memory processing is idempotent 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     first = process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我住在北京"})
     second = process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我住在北京"})
 
@@ -280,7 +364,12 @@ def test_completed_note_memory_processing_is_idempotent():
 
 
 def test_supersede_rolls_back_old_state_when_new_insert_fails(monkeypatch):
-    """验证“替代rollsbackold状态whennew插入fails”场景的预期行为与回归边界。"""
+    """函数功能：`test_supersede_rolls_back_old_state_when_new_insert_fails` 负责验证 supersede rolls back old state when new insert fails 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     old_candidate = MemoryCandidate(
         "preference",
         "用户喜欢咖啡",
@@ -315,7 +404,12 @@ def test_supersede_rolls_back_old_state_when_new_insert_fails(monkeypatch):
 
 
 def test_approved_pending_supersede_reuses_candidate_memory_atomically():
-    """验证“approved待处理替代reuses候选记忆atomically”场景的预期行为与回归边界。"""
+    """函数功能：`test_approved_pending_supersede_reuses_candidate_memory_atomically` 负责验证 approved pending supersede reuses candidate memory atomically 场景，服务于本文件职责：裁决到确定性演化动作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     old_candidate = MemoryCandidate(
         "preference",
         "用户喜欢咖啡",

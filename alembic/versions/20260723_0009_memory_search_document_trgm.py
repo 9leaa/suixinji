@@ -1,4 +1,9 @@
-"""Add generated Memory search document and Chinese-friendly trigram indexes."""
+"""文件作用：Memory trigram 搜索迁移。
+
+项目关系：本文件依赖 `alembic`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -14,9 +19,12 @@ depends_on = None
 
 
 def _columns(inspector: sa.Inspector, table: str) -> set[str]:
-    """负责“columns”。
-
-    该函数是 `alembic.versions.20260723_0009_memory_search_document_trgm` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_columns` 负责处理 columns，服务于本文件职责：Memory trigram 搜索迁移。
+    传参：
+        inspector: inspector 参数，由调用方传入，类型为 `sa.Inspector`。
+        table: table 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `set[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if not inspector.has_table(table):
         return set()
@@ -24,9 +32,11 @@ def _columns(inspector: sa.Inspector, table: str) -> set[str]:
 
 
 def upgrade() -> None:
-    """负责“upgrade”。
-
-    该函数是 `alembic.versions.20260723_0009_memory_search_document_trgm` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`upgrade` 负责处理 upgrade，服务于本文件职责：Memory trigram 搜索迁移。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     bind = op.get_bind()
     inspector = sa.inspect(bind)
@@ -52,9 +62,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """负责“downgrade”。
-
-    该函数是 `alembic.versions.20260723_0009_memory_search_document_trgm` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`downgrade` 负责处理 downgrade，服务于本文件职责：Memory trigram 搜索迁移。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     op.execute("DROP INDEX IF EXISTS ix_memories_object_value_trgm")
     op.execute("DROP INDEX IF EXISTS ix_memories_content_trgm")

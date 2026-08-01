@@ -1,4 +1,9 @@
-"""Project configuration helpers loaded from environment variables."""
+"""文件作用：LLM 与 embedding provider 配置。
+
+项目关系：本文件依赖 `core.settings`；被 `agent.hooks.llm_usage`、`core.llm_client`、`eval.large_live_retrieval_eval`、`eval.live_retrieval_eval` 等 10 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -14,18 +19,9 @@ load_dotenv()
 
 @dataclass(frozen=True)
 class ChatConfig:
-    """LLM provider configuration.
-
-    功能说明:
-        保存 OpenAI 或 OpenAI-compatible 服务所需的基础配置，避免业务模块直接读取环境变量。
-
-    传参说明:
-        api_key: LLM 服务 API key，可为空；为空时交给 OpenAI SDK 默认环境变量处理。
-        base_url: LLM 服务地址；为空时使用 OpenAI SDK 默认官方地址。
-        model: 调用的模型名称。
-
-    返回类型说明:
-        LLMConfig: 一份不可变的 LLM 配置对象。
+    """类功能：`ChatConfig` 封装与“LLM 与 embedding provider 配置”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
     """
 
     api_key: str | None
@@ -36,6 +32,10 @@ class ChatConfig:
 
 @dataclass
 class EmbeddingConfig:
+    """类功能：`EmbeddingConfig` 封装与“LLM 与 embedding provider 配置”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     api_key: str | None
     base_url:str | None
     model:str
@@ -45,17 +45,11 @@ class EmbeddingConfig:
 
 
 def get_chat_config(model_role: str | None = None) -> ChatConfig:
-    """读取当前 LLM 配置。
-
-    功能说明:
-        从 `.env` 或系统环境变量读取 OPENAI_API_KEY、OPENAI_BASE_URL、OPENAI_MODEL，
-        并整理成统一的 LLMConfig。
-
-    传参说明:
-        无参数。
-
-    返回类型说明:
-        LLMConfig: 当前进程使用的 LLM 配置。
+    """函数功能：`get_chat_config` 负责获取 chat config，服务于本文件职责：LLM 与 embedding provider 配置。
+    传参：
+        model_role: model role 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `ChatConfig` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     role_models = {
         "fast": os.getenv("SUIXINJI_FAST_MODEL", "gpt-5.4-mini"),
@@ -72,9 +66,11 @@ def get_chat_config(model_role: str | None = None) -> ChatConfig:
     )
 
 def get_embedding_config() -> EmbeddingConfig:
-    """负责“获取向量配置”。
-
-    该函数是 `core.config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_embedding_config` 负责获取 embedding config，服务于本文件职责：LLM 与 embedding provider 配置。
+    传参：
+        无。
+    返回结果说明：
+        返回 `EmbeddingConfig` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return EmbeddingConfig(
         api_key=os.getenv("DASHSCOPE_API_KEY") or os.getenv("OPENAI_API_KEY") or None,

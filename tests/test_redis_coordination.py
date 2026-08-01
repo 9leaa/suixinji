@@ -1,3 +1,9 @@
+"""文件作用：Redis cache/idempotency/session/rate limit 协作。
+
+项目关系：本文件依赖 `infrastructure.redis_cache`、`infrastructure.redis_client`、`infrastructure.redis_idempotency`、`infrastructure.redis_keys` 等 7 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from __future__ import annotations
 
 import os
@@ -20,7 +26,12 @@ pytestmark = pytest.mark.skipif(not os.getenv("REDIS_URL"), reason="Redis integr
 
 @pytest.fixture
 def redis_namespace():
-    """验证“redisnamespace”场景的预期行为与回归边界。"""
+    """函数功能：`redis_namespace` 负责处理 redis namespace，服务于本文件职责：Redis cache/idempotency/session/rate limit 协作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     client = get_redis()
     keys = RedisKeys(env=f"test-{uuid.uuid4().hex}")
     yield client, keys
@@ -29,7 +40,12 @@ def redis_namespace():
 
 
 def test_rate_limit_is_shared_and_user_isolated(redis_namespace):
-    """验证“rate限制是否为sharedand用户isolated”场景的预期行为与回归边界。"""
+    """函数功能：`test_rate_limit_is_shared_and_user_isolated` 负责验证 rate limit is shared and user isolated 场景，服务于本文件职责：Redis cache/idempotency/session/rate limit 协作。
+    传参：
+        redis_namespace: redis namespace 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     client, keys = redis_namespace
     limiter = RedisRateLimiter(client)
     first_user = keys.rate_user("t1", "u1", "ask")
@@ -43,7 +59,12 @@ def test_rate_limit_is_shared_and_user_isolated(redis_namespace):
 
 
 def test_idempotency_has_single_concurrent_winner(redis_namespace):
-    """验证“idempotency是否包含singleconcurrentwinner”场景的预期行为与回归边界。"""
+    """函数功能：`test_idempotency_has_single_concurrent_winner` 负责验证 idempotency has single concurrent winner 场景，服务于本文件职责：Redis cache/idempotency/session/rate limit 协作。
+    传参：
+        redis_namespace: redis namespace 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     client, keys = redis_namespace
     store = IdempotencyStore(client, ttl_seconds=10)
     key = keys.idempotency("t1", "test", "message")
@@ -55,7 +76,12 @@ def test_idempotency_has_single_concurrent_winner(redis_namespace):
 
 
 def test_lock_token_cache_version_and_session_ttl(redis_namespace):
-    """验证“锁token缓存版本and会话ttl”场景的预期行为与回归边界。"""
+    """函数功能：`test_lock_token_cache_version_and_session_ttl` 负责验证 lock token cache version and session ttl 场景，服务于本文件职责：Redis cache/idempotency/session/rate limit 协作。
+    传参：
+        redis_namespace: redis namespace 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     client, keys = redis_namespace
     first = RedisDistributedLock(keys.lock_space("t1", "s1"), client=client, ttl_ms=1000)
     second = RedisDistributedLock(keys.lock_space("t1", "s1"), client=client, ttl_ms=1000)
@@ -83,7 +109,12 @@ def test_lock_token_cache_version_and_session_ttl(redis_namespace):
 
 
 def test_business_redis_keys_are_tenant_isolated():
-    """验证“businessredis键列表are租户isolated”场景的预期行为与回归边界。"""
+    """函数功能：`test_business_redis_keys_are_tenant_isolated` 负责验证 business redis keys are tenant isolated 场景，服务于本文件职责：Redis cache/idempotency/session/rate limit 协作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     keys = RedisKeys(env="test-stage4")
     assert keys.rate_user("tenant-a", "same-user", "ask") != keys.rate_user("tenant-b", "same-user", "ask")
     assert keys.idempotency("tenant-a", "api", "same-message") != keys.idempotency("tenant-b", "api", "same-message")

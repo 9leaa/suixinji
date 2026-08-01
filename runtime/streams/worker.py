@@ -1,4 +1,9 @@
-"""Generic Redis Streams worker with durable PostgreSQL task state."""
+"""文件作用：Redis Stream 消费器。
+
+项目关系：本文件依赖 `core.observability`、`core.settings`、`repositories.postgres.tasks`、`runtime.streams.client`；被 `apps.handlers`、`apps.worker`、`tests.test_stage3_concurrency_ownership`、`tests.test_stage5_dispatch_performance` 等 6 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -31,6 +36,10 @@ HEARTBEAT_SESSION_ROLE = "worker-heartbeat"
 
 @dataclass(frozen=True)
 class TaskOutcome:
+    """类功能：`TaskOutcome` 封装与“Redis Stream 消费器”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     release_inbox_id: str | None = None
     activate_task_id: str | None = None
     note_ready_inbox_id: str | None = None
@@ -38,9 +47,11 @@ class TaskOutcome:
     ingest_complete_inbox_id: str | None = None
 
     def __post_init__(self) -> None:
-        """负责“post初始化”。
-
-        该函数是 `runtime.streams.worker` 中的`TaskOutcome` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`TaskOutcome.__post_init__` 在类 `TaskOutcome` 中负责处理 post init，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         outcomes = (
             self.release_inbox_id,
@@ -57,9 +68,12 @@ TaskHandler = Callable[[dict[str, Any]], TaskOutcome | None]
 
 
 def _elapsed_ms(start: datetime | None, end: datetime | None = None) -> int | None:
-    """负责“elapsedms”。
-
-    该函数是 `runtime.streams.worker` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_elapsed_ms` 负责处理 elapsed ms，服务于本文件职责：Redis Stream 消费器。
+    传参：
+        start: start 参数，由调用方传入，类型为 `datetime | None`。
+        end: end 参数，由调用方传入，类型为 `datetime | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `int | None`；未命中或无需处理时可返回 `None`。
     """
     if start is None:
         return None
@@ -68,9 +82,11 @@ def _elapsed_ms(start: datetime | None, end: datetime | None = None) -> int | No
 
 
 def _safe_iso(value: Any) -> str | None:
-    """负责“安全iso”。
-
-    该函数是 `runtime.streams.worker` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_safe_iso` 负责处理 safe iso，服务于本文件职责：Redis Stream 消费器。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     if value is None:
         return None
@@ -80,9 +96,11 @@ def _safe_iso(value: Any) -> str | None:
 
 
 def _lease_hash(value: str | None) -> str | None:
-    """负责“leasehash”。
-
-    该函数是 `runtime.streams.worker` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_lease_hash` 负责处理 lease hash，服务于本文件职责：Redis Stream 消费器。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str | None`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     if not value:
         return None
@@ -90,9 +108,11 @@ def _lease_hash(value: str | None) -> str | None:
 
 
 def _default_outcome(task: dict[str, Any]) -> TaskOutcome:
-    """负责“默认outcome”。
-
-    该函数是 `runtime.streams.worker` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_default_outcome` 负责处理 default outcome，服务于本文件职责：Redis Stream 消费器。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `TaskOutcome` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     payload = dict(task.get("payload_json") or {})
     inbox_id = payload.get("inbox_id")
@@ -100,13 +120,28 @@ def _default_outcome(task: dict[str, Any]) -> TaskOutcome:
 
 
 class RetryLater(RuntimeError):
+    """类功能：`RetryLater` 封装与“Redis Stream 消费器”相关的数据结构、状态或行为。
+    继承关系：继承 `RuntimeError`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def __init__(self, message: str, delay_seconds: float = 1.0) -> None:
-        """初始化`RetryLater` 实例并建立后续调用所需的状态。"""
+        """函数功能：`RetryLater.__init__` 在类 `RetryLater` 中负责初始化实例状态，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            message: message 参数，由调用方传入，类型为 `str`。
+            delay_seconds: delay seconds 参数，由调用方传入，类型为 `float`，默认值为 `1.0`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         super().__init__(message)
         self.delay_seconds = delay_seconds
 
 
 class StreamWorker:
+    """类功能：`StreamWorker` 封装与“Redis Stream 消费器”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def __init__(
         self,
         task_type: str,
@@ -115,7 +150,15 @@ class StreamWorker:
         client: StreamClient | None = None,
         worker_id: str | None = None,
     ) -> None:
-        """初始化`StreamWorker` 实例并建立后续调用所需的状态。"""
+        """函数功能：`StreamWorker.__init__` 在类 `StreamWorker` 中负责初始化实例状态，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            task_type: task type 参数，由调用方传入，类型为 `str`。
+            handler: handler 参数，由调用方传入，类型为 `TaskHandler`。
+            client: 外部服务或基础设施客户端，类型为 `StreamClient | None`，默认值为 `None`。
+            worker_id: worker id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.task_type = task_type
         self.handler = handler
         self.client = client or StreamClient()
@@ -125,9 +168,11 @@ class StreamWorker:
         self._next_reclaim_at = time.monotonic() + stagger
 
     def run_once(self, *, block_ms: int = 1000) -> int:
-        """负责“运行once”。
-
-        该函数是 `runtime.streams.worker` 中的`StreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamWorker.run_once` 在类 `StreamWorker` 中负责运行 once，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            block_ms: block ms 参数，由调用方传入，类型为 `int`，默认值为 `1000`。
+        返回结果说明：
+            返回 `int`，表示计算得到的数值结果。
         """
         messages = self.client.read(self.task_type, self.worker_id, block_ms=block_ms)
         if not messages:
@@ -137,9 +182,11 @@ class StreamWorker:
         return len(messages)
 
     def _reclaim_if_due(self) -> list[StreamMessage]:
-        """负责“reclaimifdue”。
-
-        该函数是 `runtime.streams.worker` 中的`StreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamWorker._reclaim_if_due` 在类 `StreamWorker` 中负责处理 reclaim if due，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            无。
+        返回结果说明：
+            返回 `list[StreamMessage]`，表示按条件筛选、构造或查询得到的列表。
         """
         now = time.monotonic()
         if now < self._next_reclaim_at:
@@ -175,9 +222,11 @@ class StreamWorker:
         return messages
 
     def run_forever(self) -> None:
-        """负责“运行forever”。
-
-        该函数是 `runtime.streams.worker` 中的`StreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamWorker.run_forever` 在类 `StreamWorker` 中负责运行 forever，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         while self.running:
             try:
@@ -187,16 +236,20 @@ class StreamWorker:
                 time.sleep(1)
 
     def stop(self) -> None:
-        """负责“stop”。
-
-        该函数是 `runtime.streams.worker` 中的`StreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamWorker.stop` 在类 `StreamWorker` 中负责停止，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         self.running = False
 
     def _handle(self, message: StreamMessage) -> None:
-        """负责“处理”。
-
-        该函数是 `runtime.streams.worker` 中的`StreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamWorker._handle` 在类 `StreamWorker` 中负责处理，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            message: message 参数，由调用方传入，类型为 `StreamMessage`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         task_id = str(message.fields.get("task_id") or "")
         stream_extra = {
@@ -245,9 +298,11 @@ class StreamWorker:
         ownership_lost = threading.Event()
 
         def renew_lease() -> None:
-            """负责“renewlease”。
-
-            该函数是 `runtime.streams.worker` 中的`_handle` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+            """函数功能：`StreamWorker.renew_lease` 在类 `StreamWorker` 中负责处理 renew lease，服务于本文件职责：Redis Stream 消费器。
+            传参：
+                无。
+            返回结果说明：
+                无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
             """
             interval = max(0.5, TASK_LEASE_SECONDS / 3)
             while not stop_heartbeat.wait(interval):
@@ -345,9 +400,11 @@ class StreamWorker:
         heartbeat.start()
 
         def finish_heartbeat() -> None:
-            """负责“finishheartbeat”。
-
-            该函数是 `runtime.streams.worker` 中的`_handle` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+            """函数功能：`StreamWorker.finish_heartbeat` 在类 `StreamWorker` 中负责处理 finish heartbeat，服务于本文件职责：Redis Stream 消费器。
+            传参：
+                无。
+            返回结果说明：
+                无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
             """
             stop_heartbeat.set()
             heartbeat.join(timeout=1)
@@ -536,7 +593,10 @@ class StreamWorker:
 
 
 class AdaptiveStreamWorker:
-    """Share one process and DB connection budget across all task streams."""
+    """类功能：`AdaptiveStreamWorker` 封装与“Redis Stream 消费器”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
 
     def __init__(
         self,
@@ -545,7 +605,14 @@ class AdaptiveStreamWorker:
         client: StreamClient | None = None,
         worker_id: str | None = None,
     ) -> None:
-        """初始化`AdaptiveStreamWorker` 实例并建立后续调用所需的状态。"""
+        """函数功能：`AdaptiveStreamWorker.__init__` 在类 `AdaptiveStreamWorker` 中负责初始化实例状态，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            handlers: handlers 参数，由调用方传入，类型为 `dict[str, TaskHandler]`。
+            client: 外部服务或基础设施客户端，类型为 `StreamClient | None`，默认值为 `None`。
+            worker_id: worker id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.client = client or StreamClient()
         self.worker_id = worker_id or f"{socket.gethostname()}-adaptive-{uuid.uuid4().hex[:8]}"
         self.task_types = list(handlers)
@@ -573,16 +640,21 @@ class AdaptiveStreamWorker:
 
     @staticmethod
     def _rotated(task_types: list[str], cursor: int) -> list[str]:
-        """负责“rotated”。
-
-        该函数是 `runtime.streams.worker` 中的`AdaptiveStreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`AdaptiveStreamWorker._rotated` 在类 `AdaptiveStreamWorker` 中负责处理 rotated，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            task_types: task types 参数，由调用方传入，类型为 `list[str]`。
+            cursor: cursor 参数，由调用方传入，类型为 `int`。
+        返回结果说明：
+            返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
         """
         return task_types[cursor:] + task_types[:cursor]
 
     def _handle_messages(self, messages: list[StreamMessage]) -> None:
-        """负责“处理messages”。
-
-        该函数是 `runtime.streams.worker` 中的`AdaptiveStreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`AdaptiveStreamWorker._handle_messages` 在类 `AdaptiveStreamWorker` 中负责处理 messages，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            messages: messages 参数，由调用方传入，类型为 `list[StreamMessage]`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         for message in messages:
             task_type = str(message.fields.get("task_type") or "")
@@ -593,9 +665,11 @@ class AdaptiveStreamWorker:
             worker._handle(message)
 
     def run_once(self) -> int:
-        """负责“运行once”。
-
-        该函数是 `runtime.streams.worker` 中的`AdaptiveStreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`AdaptiveStreamWorker.run_once` 在类 `AdaptiveStreamWorker` 中负责运行 once，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            无。
+        返回结果说明：
+            返回 `int`，表示计算得到的数值结果。
         """
         foreground = self._rotated(self.foreground_task_types, self._foreground_cursor)
         background = self._rotated(self.background_task_types, self._background_cursor)
@@ -627,9 +701,11 @@ class AdaptiveStreamWorker:
         return 0
 
     def run_forever(self) -> None:
-        """负责“运行forever”。
-
-        该函数是 `runtime.streams.worker` 中的`AdaptiveStreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`AdaptiveStreamWorker.run_forever` 在类 `AdaptiveStreamWorker` 中负责运行 forever，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         idle_sleep = 0.02
         while self.running:
@@ -645,8 +721,10 @@ class AdaptiveStreamWorker:
                 time.sleep(1)
 
     def stop(self) -> None:
-        """负责“stop”。
-
-        该函数是 `runtime.streams.worker` 中的`AdaptiveStreamWorker` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`AdaptiveStreamWorker.stop` 在类 `AdaptiveStreamWorker` 中负责停止，服务于本文件职责：Redis Stream 消费器。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         self.running = False

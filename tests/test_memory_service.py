@@ -1,10 +1,21 @@
+"""文件作用：服务编排及命令输出。
+
+项目关系：本文件依赖 `memory`、`memory.repository`、`memory.service`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from memory import service
 from memory.service import format_memory_consolidate, format_memory_correct, format_memory_forget, format_memory_search, process_note_memory
 from memory.repository import list_memories
 
 
 def test_process_note_memory_merges_duplicate_sources():
-    """验证“处理笔记记忆merges重复sources”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_note_memory_merges_duplicate_sources` 负责验证 process note memory merges duplicate sources 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我喜欢咖啡"})
     process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我喜欢咖啡"})
 
@@ -14,7 +25,12 @@ def test_process_note_memory_merges_duplicate_sources():
 
 
 def test_process_note_memory_supersedes_changed_preference():
-    """验证“处理笔记记忆supersedeschanged偏好”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_note_memory_supersedes_changed_preference` 负责验证 process note memory supersedes changed preference 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我喜欢咖啡"})
     process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我暂时不喝咖啡"})
 
@@ -27,7 +43,12 @@ def test_process_note_memory_supersedes_changed_preference():
 
 
 def test_process_note_memory_supersedes_repeated_dislike_preference():
-    """验证“处理笔记记忆supersedesrepeateddislike偏好”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_note_memory_supersedes_repeated_dislike_preference` 负责验证 process note memory supersedes repeated dislike preference 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我喜欢喝牛奶"})
     process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我讨厌喝牛奶"})
     process_note_memory({"id": "note-3", "space_id": "space-1", "text": "我讨厌喝牛奶"})
@@ -45,7 +66,12 @@ def test_process_note_memory_supersedes_repeated_dislike_preference():
 
 
 def test_process_note_memory_supersedes_changed_city():
-    """验证“处理笔记记忆supersedeschangedcity”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_note_memory_supersedes_changed_city` 负责验证 process note memory supersedes changed city 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我住在北京"})
     process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我搬到上海了"})
 
@@ -58,7 +84,12 @@ def test_process_note_memory_supersedes_changed_city():
 
 
 def test_process_note_memory_preserves_ambiguous_preference_conflict():
-    """验证“处理笔记记忆preservesambiguous偏好conflict”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_note_memory_preserves_ambiguous_preference_conflict` 负责验证 process note memory preserves ambiguous preference conflict 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我喜欢远程工作"})
     process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我更喜欢去办公室工作"})
 
@@ -69,7 +100,12 @@ def test_process_note_memory_preserves_ambiguous_preference_conflict():
 
 
 def test_process_note_memory_updates_task_status_in_place():
-    """验证“处理笔记记忆updates任务状态place”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_note_memory_updates_task_status_in_place` 负责验证 process note memory updates task status in place 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "记得完善 README"})
     process_note_memory({"id": "note-2", "space_id": "space-1", "text": "完成 README"})
 
@@ -82,7 +118,12 @@ def test_process_note_memory_updates_task_status_in_place():
 
 
 def test_process_note_memory_keeps_distinct_numbered_tasks_separate():
-    """验证“处理笔记记忆keepsdistinctnumberedtasksseparate”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_note_memory_keeps_distinct_numbered_tasks_separate` 负责验证 process note memory keeps distinct numbered tasks separate 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "记得处理批量任务T1"})
     report = process_note_memory({"id": "note-2", "space_id": "space-1", "text": "记得处理批量任务T10"})
 
@@ -93,7 +134,12 @@ def test_process_note_memory_keeps_distinct_numbered_tasks_separate():
 
 
 def test_process_note_memory_keeps_distinct_ticket_or_version_tasks_separate():
-    """验证“处理笔记记忆keepsdistinctticketor版本tasksseparate”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_note_memory_keeps_distinct_ticket_or_version_tasks_separate` 负责验证 process note memory keeps distinct ticket or version tasks separate 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "记得处理工单PROJ-123"})
     report = process_note_memory({"id": "note-2", "space_id": "space-1", "text": "记得处理工单PROJ-124"})
 
@@ -104,7 +150,12 @@ def test_process_note_memory_keeps_distinct_ticket_or_version_tasks_separate():
 
 
 def test_process_note_memory_updates_status_for_the_same_numbered_task():
-    """验证“处理笔记记忆updates状态forthesamenumbered任务”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_note_memory_updates_status_for_the_same_numbered_task` 负责验证 process note memory updates status for the same numbered task 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "记得处理批量任务T1"})
     process_note_memory({"id": "note-2", "space_id": "space-1", "text": "完成批量任务T1"})
 
@@ -116,7 +167,12 @@ def test_process_note_memory_updates_status_for_the_same_numbered_task():
 
 
 def test_preference_retrieval_keeps_exact_numbered_topic_in_a_large_similar_set():
-    """验证“偏好retrievalkeepsexactnumberedtopicalargesimilar设置”场景的预期行为与回归边界。"""
+    """函数功能：`test_preference_retrieval_keeps_exact_numbered_topic_in_a_large_similar_set` 负责验证 preference retrieval keeps exact numbered topic in a large similar set 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     for index in range(12):
         process_note_memory({"id": f"note-{index}", "space_id": "space-1", "text": f"我喜欢喝饮品A{index}"})
 
@@ -131,7 +187,12 @@ def test_preference_retrieval_keeps_exact_numbered_topic_in_a_large_similar_set(
 
 
 def test_task_retrieval_updates_exact_numbered_task_in_a_large_similar_set():
-    """验证“任务retrievalupdatesexactnumbered任务alargesimilar设置”场景的预期行为与回归边界。"""
+    """函数功能：`test_task_retrieval_updates_exact_numbered_task_in_a_large_similar_set` 负责验证 task retrieval updates exact numbered task in a large similar set 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     for index in range(12):
         process_note_memory({"id": f"note-{index}", "space_id": "space-1", "text": f"记得处理批量任务T{index}"})
 
@@ -145,7 +206,12 @@ def test_task_retrieval_updates_exact_numbered_task_in_a_large_similar_set():
 
 
 def test_memory_commands_correct_forget_and_search():
-    """验证“记忆commandscorrectforgetand检索”场景的预期行为与回归边界。"""
+    """函数功能：`test_memory_commands_correct_forget_and_search` 负责验证 memory commands correct forget and search 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     report = process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我住在北京"})
     memory_id = report["results"][0]["memory_id"]
 
@@ -156,7 +222,12 @@ def test_memory_commands_correct_forget_and_search():
 
 
 def test_memory_correction_rejects_sensitive_credentials():
-    """验证“记忆correctionrejectssensitivecredentials”场景的预期行为与回归边界。"""
+    """函数功能：`test_memory_correction_rejects_sensitive_credentials` 负责验证 memory correction rejects sensitive credentials 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     report = process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我住在北京"})
     memory_id = report["results"][0]["memory_id"]
 
@@ -167,11 +238,23 @@ def test_memory_correction_rejects_sensitive_credentials():
 
 
 def test_format_memory_consolidate_uses_idempotent_scheduler(monkeypatch):
-    """验证“格式化记忆整合usesidempotentscheduler”场景的预期行为与回归边界。"""
+    """函数功能：`test_format_memory_consolidate_uses_idempotent_scheduler` 负责验证 format memory consolidate uses idempotent scheduler 场景，服务于本文件职责：服务编排及命令输出。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     calls = []
 
     def fake_run_once(cadence, *, space_ids=None, today=None):
-        """验证“fake运行once”场景的预期行为与回归边界。"""
+        """函数功能：`fake_run_once` 负责运行 once，服务于本文件职责：服务编排及命令输出。
+        传参：
+            cadence: cadence 参数，由调用方传入。
+            space_ids: space ids 参数，由调用方传入，默认值为 `None`。
+            today: today 参数，由调用方传入，默认值为 `None`。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         calls.append((cadence, space_ids, today))
         status = "completed" if len(calls) == 1 else "skipped"
         return {"cadence": cadence, "results": [{"space_id": "space-1", "status": status}]}

@@ -1,10 +1,9 @@
-"""Bounded deterministic query planning for complex retrieval.
+"""文件作用：查询计划。
 
-The planner is deliberately conservative: it detects query shape and creates
-small, traceable retrieval variants. It never changes Memory/Note state and
-does not treat a similarity score as an update decision. An optional LLM
-planner can be layered on top later; this module remains the safe fallback.
+项目关系：本文件依赖 `agent.query_route_features`、`core`；被 `agent.query_agent`、`eval.large_live_retrieval_eval`、`eval.p4_query_routing_eval`、`eval.resume_memory_system_benchmark` 等 8 个模块。
 """
+
+
 
 from __future__ import annotations
 
@@ -21,9 +20,11 @@ _BOUNDARY_STRIP = " ，,。！？?!；;\n"
 
 
 def _max_variants() -> int:
-    """负责“maxvariants”。
-
-    该函数是 `agent.query_planner` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_max_variants` 负责处理 max variants，服务于本文件职责：查询计划。
+    传参：
+        无。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     configured = max(2, int(getattr(settings, "QUERY_MAX_TOTAL_QUERIES", 5)))
     return max(1, min(4, configured - 1))
@@ -31,6 +32,10 @@ def _max_variants() -> int:
 
 @dataclass(frozen=True)
 class QueryPlan:
+    """类功能：`QueryPlan` 封装与“查询计划”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     complexity: str
     rewritten_query: str
     retrieval_queries: tuple[str, ...]
@@ -43,9 +48,11 @@ class QueryPlan:
 
 
 def _rewrite(question: str) -> str:
-    """负责“rewrite”。
-
-    该函数是 `agent.query_planner` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_rewrite` 负责重写，服务于本文件职责：查询计划。
+    传参：
+        question: 用户问题文本，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     value = " ".join(str(question or "").split()).strip()
     for filler in _FILLERS:
@@ -55,7 +62,13 @@ def _rewrite(question: str) -> str:
 
 
 def _decompose(question: str, *, features: Any | None = None) -> list[str]:
-    """Return bounded, independently searchable query fragments."""
+    """函数功能：`_decompose` 负责处理 decompose，服务于本文件职责：查询计划。
+    传参：
+        question: 用户问题文本，类型为 `str`。
+        features: features 参数，由调用方传入，类型为 `Any | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
+    """
     value = str(question or "").strip()
     features = features or extract_route_features(value)
     parts = [part.strip(_BOUNDARY_STRIP) for part in features.clauses if part.strip(_BOUNDARY_STRIP)]
@@ -82,9 +95,12 @@ def _decompose(question: str, *, features: Any | None = None) -> list[str]:
 
 
 def _step_back(question: str, *, features: Any | None = None) -> str | None:
-    """负责“步骤back”。
-
-    该函数是 `agent.query_planner` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_step_back` 负责处理 step back，服务于本文件职责：查询计划。
+    传参：
+        question: 用户问题文本，类型为 `str`。
+        features: features 参数，由调用方传入，类型为 `Any | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     features = features or extract_route_features(question)
     value = str(question or "").strip()
@@ -105,9 +121,12 @@ def _step_back(question: str, *, features: Any | None = None) -> str | None:
 
 
 def _merge_model_plan(base: QueryPlan, model_plan: Mapping[str, Any] | None) -> QueryPlan:
-    """负责“合并模型规划”。
-
-    该函数是 `agent.query_planner` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_merge_model_plan` 负责合并 model plan，服务于本文件职责：查询计划。
+    传参：
+        base: base 参数，由调用方传入，类型为 `QueryPlan`。
+        model_plan: model plan 参数，由调用方传入，类型为 `Mapping[str, Any] | None`。
+    返回结果说明：
+        返回 `QueryPlan` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if not model_plan:
         return base
@@ -126,9 +145,7 @@ def _merge_model_plan(base: QueryPlan, model_plan: Mapping[str, Any] | None) -> 
             subqueries.append(str(value).strip())
     step_back = str(model_plan.get("step_back_query") or "").strip() or None
 
-    # A model may clarify an uncertain route, but it may not downgrade a
-    # deterministic explicit-complex decision. The local guard remains the
-    # authority when the model output is incomplete.
+    # 模型可以澄清不确定路由，但不能降级确定性的显式复杂判断；模型输出不完整时，本地 guard 仍是权威。
     if base.routing_state == "complex":
         complexity = "complex"
     elif model_complexity in {"simple", "complex"}:
@@ -152,8 +169,7 @@ def _merge_model_plan(base: QueryPlan, model_plan: Mapping[str, Any] | None) -> 
     use_decomposition = base.use_decomposition or ("decomposition" in strategies and len(subqueries) >= 2)
     use_step_back = base.use_step_back or ("step_back" in strategies and step_back is not None)
     variants: list[str] = []
-    # For multi-clause questions, preserve one retrieval slot per clause
-    # before spending a bounded slot on a global rewrite.
+    # 多子句问题先为每个子句保留一个检索槽位，再把有限槽位用于全局改写。
     if use_decomposition:
         variants.extend(subqueries)
     if use_query_rewrite:
@@ -176,18 +192,19 @@ def _merge_model_plan(base: QueryPlan, model_plan: Mapping[str, Any] | None) -> 
 
 
 def build_query_plan(question: str, *, model_plan: Mapping[str, Any] | None = None) -> QueryPlan:
-    """负责“构建查询规划”。
-
-    该函数是 `agent.query_planner` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`build_query_plan` 负责构建 query plan，服务于本文件职责：查询计划。
+    传参：
+        question: 用户问题文本，类型为 `str`。
+        model_plan: model plan 参数，由调用方传入，类型为 `Mapping[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `QueryPlan` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     original = " ".join(str(question or "").split()).strip()
     rewritten = _rewrite(original)
     features = extract_route_features(original)
     decision = classify_structural_route(features)
 
-    # Uncertain results are routed through the reasoning path until a model
-    # second opinion is available. This avoids silently treating a long or
-    # referential query as a one-hop lookup.
+    # 不确定结果先进入推理路径，直到模型二次判断可用；避免把长问题或指代问题静默当成单跳查询。
     is_complex_route = decision.complexity != "simple"
     parts = _decompose(rewritten, features=features) if is_complex_route else []
     step_back = _step_back(rewritten, features=features) if is_complex_route else None
@@ -199,9 +216,7 @@ def build_query_plan(question: str, *, model_plan: Mapping[str, Any] | None = No
     use_step_back = is_complex_route and "step_back" in decision.suggested_strategies and step_back is not None
 
     variants: list[str] = []
-    # Clause coverage takes precedence over a global rewrite. The configured
-    # total-query bound is small, so putting the rewrite first can otherwise
-    # silently drop the final question in a four-clause request.
+    # 子句覆盖优先于全局改写；总查询预算较小，如果改写排在前面，四子句请求的最后一问可能被静默丢弃。
     if use_decomposition:
         variants.extend(part for part in parts if part not in variants and part != rewritten)
     if use_query_rewrite and rewritten and rewritten != original:

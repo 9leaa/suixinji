@@ -1,4 +1,9 @@
-"""Transactional Inbox, ordered root tasks, and Outbox command persistence."""
+"""文件作用：接收、投递和水位线事务。
+
+项目关系：本文件依赖 `infrastructure.database`、`infrastructure.schema`、`memory.models`、`repositories.postgres.common` 等 5 个模块；被 `agent.hooks.task_dispatch`、`apps.handlers`、`apps.receiver`、`apps.scheduler` 等 13 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -18,6 +23,10 @@ from runtime.consistency import task_consistency
 
 @dataclass(frozen=True)
 class DispatchResult:
+    """类功能：`DispatchResult` 封装与“接收、投递和水位线事务”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     inbox_id: str
     task_id: str | None
     created: bool
@@ -26,9 +35,14 @@ class DispatchResult:
 
 
 def _publish_task_request(session: Any, task: Task | str, task_type: str | None = None, *, attempt: int = 1) -> str:
-    """负责“发布任务请求”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_publish_task_request` 负责发布 task request，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        task: task 参数，由调用方传入，类型为 `Task | str`。
+        task_type: task type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        attempt: attempt 参数，由调用方传入，类型为 `int`，默认值为 `1`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     task_id = str(task.id if isinstance(task, Task) else task)
     resolved_type = str(task.task_type if isinstance(task, Task) else task_type or "")
@@ -59,9 +73,21 @@ def _enqueue_task_in_session(
     initial_status: str = "queued",
     publish: bool = True,
 ) -> tuple[str, bool]:
-    """负责“enqueue任务会话”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_enqueue_task_in_session` 负责处理 enqueue task in session，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        task_type: task type 参数，由调用方传入，类型为 `str`。
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        source_message_id: source message id 参数，由调用方传入，类型为 `str | None`。
+        idempotency_key: idempotency key 参数，由调用方传入，类型为 `str`。
+        payload: 结构化载荷，通常来自事件、任务或 API 请求，类型为 `dict[str, Any]`。
+        priority: priority 参数，由调用方传入，类型为 `int`，默认值为 `0`。
+        max_attempts: max attempts 参数，由调用方传入，类型为 `int`，默认值为 `5`。
+        initial_status: initial status 参数，由调用方传入，类型为 `str`，默认值为 `'queued'`。
+        publish: publish 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+    返回结果说明：
+        返回 `tuple[str, bool]`，表示由多个相关值组成的结果。
     """
     if publish and initial_status != "queued":
         raise ValueError("only queued tasks may be published")
@@ -107,9 +133,20 @@ def enqueue_task(
     initial_status: str = "queued",
     publish: bool = True,
 ) -> tuple[str, bool]:
-    """负责“enqueue任务”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`enqueue_task` 负责处理 enqueue task，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        task_type: task type 参数，由调用方传入，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        idempotency_key: idempotency key 参数，由调用方传入，类型为 `str`。
+        payload: 结构化载荷，通常来自事件、任务或 API 请求，类型为 `dict[str, Any]`。
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `DEFAULT_TENANT_ID`。
+        source_message_id: source message id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        priority: priority 参数，由调用方传入，类型为 `int`，默认值为 `0`。
+        max_attempts: max attempts 参数，由调用方传入，类型为 `int`，默认值为 `5`。
+        initial_status: initial status 参数，由调用方传入，类型为 `str`，默认值为 `'queued'`。
+        publish: publish 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+    返回结果说明：
+        返回 `tuple[str, bool]`，表示由多个相关值组成的结果。
     """
     with session_scope() as session:
         space_id = ensure_tenant_space(session, space_id, tenant_id=tenant_id)
@@ -145,9 +182,24 @@ def receive_command(
     sensitivity: str = "normal",
     max_attempts: int = 5,
 ) -> DispatchResult:
-    """负责“receive命令”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`receive_command` 负责接收 command，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        source: source 参数，由调用方传入，类型为 `str`。
+        source_message_id: source message id 参数，由调用方传入，类型为 `str`。
+        source_event_id: source event id 参数，由调用方传入，类型为 `str | None`。
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        chat_id: chat id 参数，由调用方传入，类型为 `str | None`。
+        chat_type: chat type 参数，由调用方传入，类型为 `str | None`。
+        sender: sender 参数，由调用方传入，类型为 `dict[str, Any]`。
+        text_value: text value 参数，由调用方传入，类型为 `str`。
+        received_at: received at 参数，由调用方传入，类型为 `str | datetime`。
+        task_type: task type 参数，由调用方传入，类型为 `str`。
+        task_payload: task payload 参数，由调用方传入，类型为 `dict[str, Any]`。
+        sensitivity: sensitivity 参数，由调用方传入，类型为 `str`，默认值为 `'normal'`。
+        max_attempts: max attempts 参数，由调用方传入，类型为 `int`，默认值为 `5`。
+    返回结果说明：
+        返回 `DispatchResult` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     tenant_id = tenant_id or DEFAULT_TENANT_ID
     with session_scope() as session:
@@ -230,9 +282,11 @@ def receive_command(
 
 
 def load_inbox_record(inbox_id: str) -> dict[str, Any] | None:
-    """负责“加载inbox记录”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`load_inbox_record` 负责加载 inbox record，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        inbox_id: inbox id 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     with session_scope() as session:
         row = session.get(InboxMessage, inbox_id)
@@ -257,9 +311,11 @@ def load_inbox_record(inbox_id: str) -> dict[str, Any] | None:
 
 
 def is_next_inbox_message(inbox_id: str) -> bool:
-    """负责“是否为下一步inbox消息”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`is_next_inbox_message` 负责判断是否为 next inbox message，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        inbox_id: inbox id 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     with session_scope() as session:
         row = session.get(InboxMessage, inbox_id)
@@ -278,9 +334,12 @@ def is_next_inbox_message(inbox_id: str) -> bool:
 
 
 def activate_task_in_session(session: Any, task_id: str) -> str | None:
-    """负责“activate任务会话”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`activate_task_in_session` 负责处理 activate task in session，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     row = session.execute(select(Task).where(Task.id == task_id).with_for_update()).scalar_one_or_none()
     if row is None:
@@ -297,9 +356,12 @@ def activate_task_in_session(session: Any, task_id: str) -> str | None:
 
 
 def _activate_ready_tasks_in_session(session: Any, space: Space) -> int:
-    """负责“activatereadytasks会话”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_activate_ready_tasks_in_session` 负责处理 activate ready tasks in session，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        space: space 参数，由调用方传入，类型为 `Space`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     rows = list(
         session.execute(
@@ -336,9 +398,12 @@ def _activate_ready_tasks_in_session(session: Any, space: Space) -> int:
 
 
 def _advance_watermarks_in_session(session: Any, space: Space) -> None:
-    """负责“推进watermarks会话”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_advance_watermarks_in_session` 负责处理 advance watermarks in session，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        space: space 参数，由调用方传入，类型为 `Space`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     note_current = int(space.note_watermark or 0)
     memory_current = int(space.memory_watermark or 0)
@@ -372,13 +437,13 @@ def skip_inbox_record(
     final_status: str,
     cancel_root_task: bool = False,
 ) -> bool:
-    """Finalize a redacted or invalid ingress record without running workers.
-
-    Ordered ingestion assigns every inbound message a sequence number.  A
-    message that is deliberately skipped must still finish both watermarks;
-    otherwise every later task waits forever for an event that will never be
-    dispatched.  This function performs that completion atomically and is
-    idempotent for recovery jobs.
+    """函数功能：`skip_inbox_record` 负责记录 skip inbox，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        inbox_id: inbox id 参数，由调用方传入，类型为 `str`。
+        final_status: final status 参数，由调用方传入，类型为 `str`。
+        cancel_root_task: cancel root task 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     with session_scope() as session:
         inbox = session.execute(select(InboxMessage).where(InboxMessage.id == inbox_id).with_for_update()).scalar_one_or_none()
@@ -405,12 +470,22 @@ def skip_inbox_record(
 
 
 def complete_blocked_sensitive_inbox(inbox_id: str) -> bool:
-    """Advance ordering after a sensitive message was safely redacted."""
+    """函数功能：`complete_blocked_sensitive_inbox` 负责完成 blocked sensitive inbox，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        inbox_id: inbox id 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     return skip_inbox_record(inbox_id, final_status="blocked_sensitive")
 
 
 def recover_skipped_ingress(*, limit: int = 500) -> dict[str, int]:
-    """Recover legacy redacted messages and old unknown slash-command ingests."""
+    """函数功能：`recover_skipped_ingress` 负责处理 recover skipped ingress，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `500`。
+    返回结果说明：
+        返回 `dict[str, int]`，表示结构化结果、载荷或状态映射。
+    """
     with session_scope() as session:
         sensitive_ids = list(
             session.execute(
@@ -454,9 +529,17 @@ def complete_inbox_stage_in_session(
     success: bool = True,
     error: str | None = None,
 ) -> None:
-    """负责“完成inboxstage会话”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`complete_inbox_stage_in_session` 负责完成 inbox stage in session，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        inbox_id: inbox id 参数，由调用方传入，类型为 `str`。
+        note: note 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        memory: memory 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        finalize: finalize 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        success: success 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     inbox = session.execute(
         select(InboxMessage).where(InboxMessage.id == inbox_id).with_for_update()
@@ -522,9 +605,14 @@ def mark_inbox_note_completed_in_session(
     success: bool = True,
     error: str | None = None,
 ) -> None:
-    """负责“标记inbox笔记completed会话”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_inbox_note_completed_in_session` 负责标记 inbox note completed in session，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        inbox_id: inbox id 参数，由调用方传入，类型为 `str`。
+        success: success 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     complete_inbox_stage_in_session(session, inbox_id, note=True, success=success, error=error)
 
@@ -536,17 +624,24 @@ def mark_inbox_memory_completed_in_session(
     success: bool = True,
     error: str | None = None,
 ) -> None:
-    """负责“标记inbox记忆completed会话”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_inbox_memory_completed_in_session` 负责标记 inbox memory completed in session，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        inbox_id: inbox id 参数，由调用方传入，类型为 `str`。
+        success: success 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     complete_inbox_stage_in_session(session, inbox_id, memory=True, success=success, error=error)
 
 
 def task_watermark_ready(task: dict[str, Any]) -> bool:
-    """负责“任务watermarkready”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`task_watermark_ready` 负责处理 task watermark ready，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     payload = dict(task.get("payload_json") or {})
     consistency = str(payload.get("consistency") or "weak")
@@ -562,9 +657,12 @@ def task_watermark_ready(task: dict[str, Any]) -> bool:
 
 
 def _root_task_for_inbox(session: Any, inbox: InboxMessage) -> Task | None:
-    """负责“root任务forinbox”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_root_task_for_inbox` 负责处理 root task for inbox，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        inbox: inbox 参数，由调用方传入，类型为 `InboxMessage`。
+    返回结果说明：
+        返回 `Task | None`；未命中或无需处理时可返回 `None`。
     """
     return session.execute(
         select(Task)
@@ -585,36 +683,48 @@ def finalize_inbox_in_session(
     success: bool,
     error: str | None = None,
 ) -> str | None:
-    """负责“finalizeinbox会话”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`finalize_inbox_in_session` 负责处理 finalize inbox in session，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        inbox_id: inbox id 参数，由调用方传入，类型为 `str`。
+        success: success 参数，由调用方传入，类型为 `bool`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     complete_inbox_stage_in_session(session, inbox_id, finalize=True, success=success, error=error)
     return None
 
 
 def mark_inbox_processed(inbox_id: str) -> str | None:
-    """负责“标记inboxprocessed”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_inbox_processed` 负责标记 inbox processed，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        inbox_id: inbox id 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     with session_scope() as session:
         return finalize_inbox_in_session(session, inbox_id, success=True)
 
 
 def mark_inbox_failed(inbox_id: str, error: str) -> str | None:
-    """负责“标记inboxfailed”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_inbox_failed` 负责标记 inbox failed，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        inbox_id: inbox id 参数，由调用方传入，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     with session_scope() as session:
         return finalize_inbox_in_session(session, inbox_id, success=False, error=error)
 
 
 def get_space_progress(space_id: str) -> dict[str, int | None] | None:
-    """负责“获取空间progress”。
-
-    该函数是 `repositories.postgres.dispatch` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_space_progress` 负责获取 space progress，服务于本文件职责：接收、投递和水位线事务。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, int | None] | None`，表示结构化结果、载荷或状态映射。
     """
     with session_scope() as session:
         row = session.get(Space, space_id)

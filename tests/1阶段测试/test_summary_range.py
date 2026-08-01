@@ -1,3 +1,9 @@
+"""文件作用：总结时间范围解析。
+
+项目关系：本文件依赖 `summary`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from datetime import datetime, timezone, timedelta
 
 import pytest
@@ -8,7 +14,12 @@ TZ = timezone(timedelta(hours=8))
 
 
 def test_parse_summary_range_aliases():
-    """验证“解析总结rangealiases”场景的预期行为与回归边界。"""
+    """函数功能：`test_parse_summary_range_aliases` 负责验证 parse summary range aliases 场景，服务于本文件职责：总结时间范围解析。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     assert daily_summary.parse_summary_range("今天") == "today"
     assert daily_summary.parse_summary_range(" 昨天 ") == "yesterday"
     assert daily_summary.parse_summary_range("7天") == "week"
@@ -30,7 +41,14 @@ def test_parse_summary_range_aliases():
     ],
 )
 def test_build_time_range(range_key, start, end):
-    """验证“构建timerange”场景的预期行为与回归边界。"""
+    """函数功能：`test_build_time_range` 负责验证 build time range 场景，服务于本文件职责：总结时间范围解析。
+    传参：
+        range_key: range key 参数，由调用方传入。
+        start: start 参数，由调用方传入。
+        end: end 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     now = datetime(2026, 6, 7, 15, 30, tzinfo=TZ)
 
     got_start, got_end = daily_summary.build_time_range(range_key, now)
@@ -40,13 +58,23 @@ def test_build_time_range(range_key, start, end):
 
 
 def test_build_time_range_rejects_unknown_range():
-    """验证“构建timerangerejectsunknownrange”场景的预期行为与回归边界。"""
+    """函数功能：`test_build_time_range_rejects_unknown_range` 负责验证 build time range rejects unknown range 场景，服务于本文件职责：总结时间范围解析。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     with pytest.raises(ValueError):
         daily_summary.build_time_range("bad")
 
 
 def test_load_notes_in_range_filters_and_sorts(monkeypatch):
-    """验证“加载笔记列表rangefiltersandsorts”场景的预期行为与回归边界。"""
+    """函数功能：`test_load_notes_in_range_filters_and_sorts` 负责验证 load notes in range filters and sorts 场景，服务于本文件职责：总结时间范围解析。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     notes = [
         {"id": "outside", "ts": "2026-06-05T23:59:59+08:00"},
         {"id": "later", "ts": "2026-06-06T10:00:00+08:00"},

@@ -1,4 +1,9 @@
-"""Platform-neutral Receiver that persists Inbox + Task + Outbox atomically."""
+"""文件作用：平台无关的接收适配层。
+
+项目关系：本文件依赖 `core.settings`、`infrastructure.redis_idempotency`、`infrastructure.redis_keys`、`repositories.postgres.dispatch` 等 5 个模块；被 `apps.api`、`bot.feishu_bot`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -15,6 +20,10 @@ from runtime.consistency import task_consistency
 
 @dataclass(frozen=True)
 class InboxCommand:
+    """类功能：`InboxCommand` 封装与“平台无关的接收适配层”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     source: str
     message_id: str
     space_id: str
@@ -30,9 +39,11 @@ class InboxCommand:
 
 
 def receive(command: InboxCommand) -> DispatchResult:
-    """负责“receive”。
-
-    该函数是 `apps.receiver` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`receive` 负责接收，服务于本文件职责：平台无关的接收适配层。
+    传参：
+        command: command 参数，由调用方传入，类型为 `InboxCommand`。
+    返回结果说明：
+        返回 `DispatchResult` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     store = None
     idem_key = KEYS.idempotency(command.tenant_id, command.source, command.message_id)

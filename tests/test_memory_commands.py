@@ -1,9 +1,20 @@
+"""文件作用：飞书 memory 管理命令文本与操作。
+
+项目关系：本文件依赖 `bot.feishu_bot`、`memory.service`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from bot.feishu_bot import _handle_memory_command, _handle_trace_command
 from memory.service import format_trace, process_note_memory
 
 
 def test_memory_command_list_and_stats():
-    """验证“记忆命令列出and统计”场景的预期行为与回归边界。"""
+    """函数功能：`test_memory_command_list_and_stats` 负责验证 memory command list and stats 场景，服务于本文件职责：飞书 memory 管理命令文本与操作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "记得完善 README"})
 
     assert "长期记忆" in _handle_memory_command("space-1", "/memory list")
@@ -13,20 +24,35 @@ def test_memory_command_list_and_stats():
 
 
 def test_memory_command_search_usage():
-    """验证“记忆命令检索usage”场景的预期行为与回归边界。"""
+    """函数功能：`test_memory_command_search_usage` 负责验证 memory command search usage 场景，服务于本文件职责：飞书 memory 管理命令文本与操作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     assert "用法" in _handle_memory_command("space-1", "/memory")
     assert "没有找到" in _handle_memory_command("space-1", "/memory search 不存在")
 
 
 def test_trace_command_latest():
-    """验证“追踪命令最新”场景的预期行为与回归边界。"""
+    """函数功能：`test_trace_command_latest` 负责验证 trace command latest 场景，服务于本文件职责：飞书 memory 管理命令文本与操作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我正在学习 Agent"})
 
     assert "Trace" in _handle_trace_command("/trace latest")
 
 
 def test_trace_formatter_shows_all_steps_and_candidate_summary():
-    """验证“追踪formattershowsallstepsand候选总结”场景的预期行为与回归边界。"""
+    """函数功能：`test_trace_formatter_shows_all_steps_and_candidate_summary` 负责验证 trace formatter shows all steps and candidate summary 场景，服务于本文件职责：飞书 memory 管理命令文本与操作。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     steps = [
         {
             "step": f"step-{index}",

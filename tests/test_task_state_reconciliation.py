@@ -1,3 +1,9 @@
+"""文件作用：Inbox/Task 状态对账。
+
+项目关系：本文件依赖 `core`、`memory`、`memory.models`、`memory.service`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from __future__ import annotations
 
 from memory import extractor
@@ -7,7 +13,12 @@ from memory.service import process_note_memory
 
 
 def _enable_task_identity(monkeypatch) -> None:
-    """验证“启用任务identity”场景的预期行为与回归边界。"""
+    """函数功能：`_enable_task_identity` 负责处理 enable task identity，服务于本文件职责：Inbox/Task 状态对账。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     from core import settings
 
     monkeypatch.setattr(settings, "MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED", True)
@@ -17,7 +28,12 @@ def _enable_task_identity(monkeypatch) -> None:
 
 
 def test_task_lifecycle_merges_action_wording(monkeypatch) -> None:
-    """验证“任务生命周期mergesactionwording”场景的预期行为与回归边界。"""
+    """函数功能：`test_task_lifecycle_merges_action_wording` 负责验证 task lifecycle merges action wording 场景，服务于本文件职责：Inbox/Task 状态对账。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     _enable_task_identity(monkeypatch)
     texts = (
         "记得制作随心记首页的消息路径图",
@@ -34,7 +50,12 @@ def test_task_lifecycle_merges_action_wording(monkeypatch) -> None:
 
 
 def test_legacy_generic_task_identity_is_updated(monkeypatch) -> None:
-    """验证“legacygeneric任务identity是否为updated”场景的预期行为与回归边界。"""
+    """函数功能：`test_legacy_generic_task_identity_is_updated` 负责验证 legacy generic task identity is updated 场景，服务于本文件职责：Inbox/Task 状态对账。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     _enable_task_identity(monkeypatch)
     legacy = repository.insert_memory(
         "task-legacy",
@@ -60,7 +81,12 @@ def test_legacy_generic_task_identity_is_updated(monkeypatch) -> None:
 
 
 def test_terminal_update_archives_duplicate_active_tasks(monkeypatch) -> None:
-    """验证“terminal更新archives重复activetasks”场景的预期行为与回归边界。"""
+    """函数功能：`test_terminal_update_archives_duplicate_active_tasks` 负责验证 terminal update archives duplicate active tasks 场景，服务于本文件职责：Inbox/Task 状态对账。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     _enable_task_identity(monkeypatch)
     for index, text in enumerate(("制作随心记首页的消息路径图", "正在制作随心记首页消息路径图")):
         repository.insert_memory(
@@ -84,7 +110,12 @@ def test_terminal_update_archives_duplicate_active_tasks(monkeypatch) -> None:
 
 
 def test_manual_task_correction_updates_structured_status() -> None:
-    """验证“manual任务correctionupdatesstructured状态”场景的预期行为与回归边界。"""
+    """函数功能：`test_manual_task_correction_updates_structured_status` 负责验证 manual task correction updates structured status 场景，服务于本文件职责：Inbox/Task 状态对账。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     task = repository.insert_memory(
         "task-correct",
         MemoryCandidate("task", "正在制作报告", 0.8, 0.9, task_status="in_progress", subject="用户", predicate="报告", object_value="报告"),
@@ -98,7 +129,12 @@ def test_manual_task_correction_updates_structured_status() -> None:
 
 
 def test_edit_pending_task_revalidates_and_applies_status(monkeypatch) -> None:
-    """验证“edit待处理任务revalidatesandapplies状态”场景的预期行为与回归边界。"""
+    """函数功能：`test_edit_pending_task_revalidates_and_applies_status` 负责验证 edit pending task revalidates and applies status 场景，服务于本文件职责：Inbox/Task 状态对账。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     _enable_task_identity(monkeypatch)
     target = repository.insert_memory(
         "task-pending-edit",

@@ -1,3 +1,9 @@
+"""文件作用：Stage 5 dispatch 吞吐/延迟。
+
+项目关系：本文件依赖 `apps`、`core.settings`、`infrastructure.database`、`infrastructure.schema` 等 10 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from __future__ import annotations
 
 import os
@@ -20,7 +26,12 @@ from runtime.streams.worker import AdaptiveStreamWorker
 
 
 def test_stage5_adaptive_process_matrix_stays_within_connection_budget() -> None:
-    """验证“stage5adaptive处理matrixstayswithinconnectionbudget”场景的预期行为与回归边界。"""
+    """函数功能：`test_stage5_adaptive_process_matrix_stays_within_connection_budget` 负责验证 stage5 adaptive process matrix stays within connection budget 场景，服务于本文件职责：Stage 5 dispatch 吞吐/延迟。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     roles = {
         "receiver": 2,
         "outbox-relay": 4,
@@ -34,13 +45,23 @@ def test_stage5_adaptive_process_matrix_stays_within_connection_budget() -> None
 
 @pytest.mark.skipif(not os.getenv("DATABASE_URL"), reason="PostgreSQL integration URL is not configured")
 def test_task_cannot_complete_another_tenants_inbox() -> None:
-    """验证“任务cannot完成anothertenantsinbox”场景的预期行为与回归边界。"""
+    """函数功能：`test_task_cannot_complete_another_tenants_inbox` 负责验证 task cannot complete another tenants inbox 场景，服务于本文件职责：Stage 5 dispatch 吞吐/延迟。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     suffix = uuid.uuid4().hex
     tenant_a = f"stage5-tenant-a-{suffix}"
     tenant_b = f"stage5-tenant-b-{suffix}"
 
     def receive(tenant_id: str):
-        """验证“receive”场景的预期行为与回归边界。"""
+        """函数功能：`receive` 负责接收，服务于本文件职责：Stage 5 dispatch 吞吐/延迟。
+        传参：
+            tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         return receive_command(
             source="stage5",
             source_message_id=f"message-{tenant_id}",
@@ -90,7 +111,12 @@ def test_task_cannot_complete_another_tenants_inbox() -> None:
 
 
 def test_rules_empty_memory_uses_inline_causal_fast_path(monkeypatch) -> None:
-    """验证“rulesempty记忆usesinlinecausalfastpath”场景的预期行为与回归边界。"""
+    """函数功能：`test_rules_empty_memory_uses_inline_causal_fast_path` 负责验证 rules empty memory uses inline causal fast path 场景，服务于本文件职责：Stage 5 dispatch 吞吐/延迟。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     enqueued: list[str] = []
     processed: list[str] = []
     note = {
@@ -115,7 +141,13 @@ def test_rules_empty_memory_uses_inline_causal_fast_path(monkeypatch) -> None:
     )
 
     def enqueue(*, task_type: str, **_kwargs):
-        """验证“enqueue”场景的预期行为与回归边界。"""
+        """函数功能：`enqueue` 负责处理 enqueue，服务于本文件职责：Stage 5 dispatch 吞吐/延迟。
+        传参：
+            task_type: task type 参数，由调用方传入，类型为 `str`。
+            **_kwargs:  kwargs 参数，由调用方传入。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         enqueued.append(task_type)
         return f"task-{task_type}", True
 
@@ -137,7 +169,12 @@ def test_rules_empty_memory_uses_inline_causal_fast_path(monkeypatch) -> None:
 
 
 def test_memory_handler_preserves_note_classification_for_model_extraction(monkeypatch) -> None:
-    """验证“记忆handlerpreserves笔记classificationfor模型extraction”场景的预期行为与回归边界。"""
+    """函数功能：`test_memory_handler_preserves_note_classification_for_model_extraction` 负责验证 memory handler preserves note classification for model extraction 场景，服务于本文件职责：Stage 5 dispatch 吞吐/延迟。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     note = {
         "id": "note-model-context",
         "space_id": "space-model-context",
@@ -182,19 +219,40 @@ def test_memory_handler_preserves_note_classification_for_model_extraction(monke
 
 
 def test_adaptive_worker_polls_and_handles_multiple_stream_groups() -> None:
-    """验证“adaptive工作器pollsandhandlesmultiple流groups”场景的预期行为与回归边界。"""
+    """函数功能：`test_adaptive_worker_polls_and_handles_multiple_stream_groups` 负责验证 adaptive worker polls and handles multiple stream groups 场景，服务于本文件职责：Stage 5 dispatch 吞吐/延迟。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     messages = [
         StreamMessage("ingest-stream", "1-0", {"task_id": "ingest-1", "task_type": "ingest"}),
         StreamMessage("memory-stream", "2-0", {"task_id": "memory-1", "task_type": "memory"}),
     ]
 
     class FakeClient:
+        """类功能：`FakeClient` 封装与“Stage 5 dispatch 吞吐/延迟”相关的数据结构、状态或行为。
+        传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+        返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+        """
         def __init__(self) -> None:
-            """初始化`FakeClient` 实例并建立后续调用所需的状态。"""
+            """函数功能：`FakeClient.__init__` 在类 `FakeClient` 中负责初始化实例状态，服务于本文件职责：Stage 5 dispatch 吞吐/延迟。
+            传参：
+                无。
+            返回结果说明：
+                无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+            """
             self.orders: list[list[str]] = []
 
         def read_many(self, task_types, _consumer, *, count=1):
-            """验证“读取many”场景的预期行为与回归边界。"""
+            """函数功能：`FakeClient.read_many` 在类 `FakeClient` 中负责读取 many，服务于本文件职责：Stage 5 dispatch 吞吐/延迟。
+            传参：
+                task_types: task types 参数，由调用方传入。
+                _consumer:  consumer 参数，由调用方传入。
+                count: count 参数，由调用方传入，默认值为 `1`。
+            返回结果说明：
+                返回计算后的结果对象；具体类型取决于实际执行分支。
+            """
             self.orders.append(list(task_types))
             return messages if len(self.orders) == 1 else []
 
@@ -217,7 +275,12 @@ def test_adaptive_worker_polls_and_handles_multiple_stream_groups() -> None:
 
 @pytest.mark.skipif(not os.getenv("DATABASE_URL"), reason="PostgreSQL integration URL is not configured")
 def test_memory_extraction_and_trace_keep_the_internal_tenant_space() -> None:
-    """验证“记忆extractionand追踪keeptheinternal租户空间”场景的预期行为与回归边界。"""
+    """函数功能：`test_memory_extraction_and_trace_keep_the_internal_tenant_space` 负责验证 memory extraction and trace keep the internal tenant space 场景，服务于本文件职责：Stage 5 dispatch 吞吐/延迟。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     suffix = uuid.uuid4().hex
     tenant_id = f"stage5-tenant-{suffix}"
     source_space_id = f"stage5-source-space-{suffix}"

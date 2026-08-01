@@ -1,4 +1,9 @@
-"""Versioned Redis cache for read-only Agent tools."""
+"""文件作用：Redis TTL 缓存。
+
+项目关系：本文件依赖 `core.settings`、`infrastructure.redis_client`、`infrastructure.redis_keys`；被 `agent.hooks.tool_cache`、`core.llm_client`、`core.worker`、`repositories.postgres.memory` 等 5 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -13,16 +18,30 @@ from infrastructure.redis_keys import KEYS, RedisKeys
 
 
 class RedisCache:
+    """类功能：`RedisCache` 封装与“Redis TTL 缓存”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def __init__(self, client: Redis | None = None, *, enabled: bool = CACHE_ENABLED, keys: RedisKeys = KEYS) -> None:
-        """初始化`RedisCache` 实例并建立后续调用所需的状态。"""
+        """函数功能：`RedisCache.__init__` 在类 `RedisCache` 中负责初始化实例状态，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            client: 外部服务或基础设施客户端，类型为 `Redis | None`，默认值为 `None`。
+            enabled: enabled 参数，由调用方传入，类型为 `bool`，默认值为 `CACHE_ENABLED`。
+            keys: keys 参数，由调用方传入，类型为 `RedisKeys`，默认值为 `KEYS`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.client = client or get_redis()
         self.enabled = enabled
         self.keys = keys
 
     def version(self, space_id: str, *, tenant_id: str = "default") -> int:
-        """负责“版本”。
-
-        该函数是 `infrastructure.redis_cache` 中的`RedisCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`RedisCache.version` 在类 `RedisCache` 中负责处理 version，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+            tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `'default'`。
+        返回结果说明：
+            返回 `int`，表示计算得到的数值结果。
         """
         if not self.enabled:
             return 0
@@ -30,18 +49,26 @@ class RedisCache:
         return int(value or 0)
 
     def bump_version(self, space_id: str, *, tenant_id: str = "default") -> int:
-        """负责“bump版本”。
-
-        该函数是 `infrastructure.redis_cache` 中的`RedisCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`RedisCache.bump_version` 在类 `RedisCache` 中负责处理 bump version，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+            tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `'default'`。
+        返回结果说明：
+            返回 `int`，表示计算得到的数值结果。
         """
         if not self.enabled:
             return 0
         return int(self.client.incr(self.keys.cache_version(tenant_id, space_id)))
 
     def get(self, kind: str, space_id: str, query_payload: str, *, tenant_id: str = "default") -> Any | None:
-        """负责“获取”。
-
-        该函数是 `infrastructure.redis_cache` 中的`RedisCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`RedisCache.get` 在类 `RedisCache` 中负责获取，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            kind: kind 参数，由调用方传入，类型为 `str`。
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+            query_payload: query payload 参数，由调用方传入，类型为 `str`。
+            tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `'default'`。
+        返回结果说明：
+            返回 `Any | None`；未命中或无需处理时可返回 `None`。
         """
         if not self.enabled:
             return None
@@ -59,9 +86,16 @@ class RedisCache:
         *,
         tenant_id: str = "default",
     ) -> None:
-        """负责“设置”。
-
-        该函数是 `infrastructure.redis_cache` 中的`RedisCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`RedisCache.set` 在类 `RedisCache` 中负责设置，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            kind: kind 参数，由调用方传入，类型为 `str`。
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+            query_payload: query payload 参数，由调用方传入，类型为 `str`。
+            value: 待转换、校验或计算的值，类型为 `Any`。
+            ttl_seconds: ttl seconds 参数，由调用方传入，类型为 `int`，默认值为 `CACHE_SEARCH_TTL_SECONDS`。
+            tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `'default'`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         if not self.enabled:
             return
@@ -70,16 +104,30 @@ class RedisCache:
 
 
 class EmbeddingCache:
+    """类功能：`EmbeddingCache` 封装与“Redis TTL 缓存”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def __init__(self, client: Redis | None = None, *, enabled: bool = CACHE_ENABLED, keys: RedisKeys = KEYS) -> None:
-        """初始化`EmbeddingCache` 实例并建立后续调用所需的状态。"""
+        """函数功能：`EmbeddingCache.__init__` 在类 `EmbeddingCache` 中负责初始化实例状态，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            client: 外部服务或基础设施客户端，类型为 `Redis | None`，默认值为 `None`。
+            enabled: enabled 参数，由调用方传入，类型为 `bool`，默认值为 `CACHE_ENABLED`。
+            keys: keys 参数，由调用方传入，类型为 `RedisKeys`，默认值为 `KEYS`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.client = client or get_redis()
         self.enabled = enabled
         self.keys = keys
 
     def get(self, model: str, text: str) -> list[float] | None:
-        """负责“获取”。
-
-        该函数是 `infrastructure.redis_cache` 中的`EmbeddingCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`EmbeddingCache.get` 在类 `EmbeddingCache` 中负责获取，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            model: model 参数，由调用方传入，类型为 `str`。
+            text: 输入文本内容，类型为 `str`。
+        返回结果说明：
+            返回 `list[float] | None`，表示按条件筛选、构造或查询得到的列表。
         """
         if not self.enabled:
             return None
@@ -93,9 +141,14 @@ class EmbeddingCache:
             return None
 
     def set(self, model: str, text: str, embedding: list[float], *, ttl_seconds: int = EMBEDDING_CACHE_TTL_SECONDS) -> None:
-        """负责“设置”。
-
-        该函数是 `infrastructure.redis_cache` 中的`EmbeddingCache` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`EmbeddingCache.set` 在类 `EmbeddingCache` 中负责设置，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            model: model 参数，由调用方传入，类型为 `str`。
+            text: 输入文本内容，类型为 `str`。
+            embedding: embedding 参数，由调用方传入，类型为 `list[float]`。
+            ttl_seconds: ttl seconds 参数，由调用方传入，类型为 `int`，默认值为 `EMBEDDING_CACHE_TTL_SECONDS`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         if not self.enabled:
             return
@@ -107,7 +160,10 @@ class EmbeddingCache:
 
 
 class MemoryAccessBuffer:
-    """Approximate access counters; Memory correctness never depends on them."""
+    """类功能：`MemoryAccessBuffer` 封装与“Redis TTL 缓存”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
 
     _DRAIN_SCRIPT = """
 local scan = redis.call('HSCAN', KEYS[1], '0', 'COUNT', ARGV[1])
@@ -127,14 +183,24 @@ return result
 """
 
     def __init__(self, client: Redis | None = None, *, keys: RedisKeys = KEYS) -> None:
-        """初始化`MemoryAccessBuffer` 实例并建立后续调用所需的状态。"""
+        """函数功能：`MemoryAccessBuffer.__init__` 在类 `MemoryAccessBuffer` 中负责初始化实例状态，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            client: 外部服务或基础设施客户端，类型为 `Redis | None`，默认值为 `None`。
+            keys: keys 参数，由调用方传入，类型为 `RedisKeys`，默认值为 `KEYS`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.client = client or get_redis()
         self.keys = keys
 
     def increment(self, memory_ids: list[str], *, seen_at: str, tenant_id: str = "default") -> None:
-        """负责“increment”。
-
-        该函数是 `infrastructure.redis_cache` 中的`MemoryAccessBuffer` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`MemoryAccessBuffer.increment` 在类 `MemoryAccessBuffer` 中负责处理 increment，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            memory_ids: memory ids 参数，由调用方传入，类型为 `list[str]`。
+            seen_at: seen at 参数，由调用方传入，类型为 `str`。
+            tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `'default'`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         unique_ids = list(dict.fromkeys(str(memory_id) for memory_id in memory_ids if memory_id))
         if not unique_ids:
@@ -146,9 +212,12 @@ return result
         pipeline.execute()
 
     def drain(self, *, limit: int, tenant_id: str = "default") -> dict[str, tuple[int, str]]:
-        """负责“清空”。
-
-        该函数是 `infrastructure.redis_cache` 中的`MemoryAccessBuffer` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`MemoryAccessBuffer.drain` 在类 `MemoryAccessBuffer` 中负责清空待处理队列，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`。
+            tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `'default'`。
+        返回结果说明：
+            返回 `dict[str, tuple[int, str]]`，表示结构化结果、载荷或状态映射。
         """
         raw = self.client.eval(
             self._DRAIN_SCRIPT,
@@ -163,9 +232,12 @@ return result
         return result
 
     def restore(self, entries: dict[str, tuple[int, str]], *, tenant_id: str = "default") -> None:
-        """负责“restore”。
-
-        该函数是 `infrastructure.redis_cache` 中的`MemoryAccessBuffer` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`MemoryAccessBuffer.restore` 在类 `MemoryAccessBuffer` 中负责恢复，服务于本文件职责：Redis TTL 缓存。
+        传参：
+            entries: entries 参数，由调用方传入，类型为 `dict[str, tuple[int, str]]`。
+            tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `'default'`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         if not entries:
             return
@@ -178,9 +250,12 @@ return result
 
 
 def invalidate_space_cache(space_id: str, *, tenant_id: str = "default") -> None:
-    """负责“invalidate空间缓存”。
-
-    该函数是 `infrastructure.redis_cache` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`invalidate_space_cache` 负责缓存 invalidate space，服务于本文件职责：Redis TTL 缓存。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `'default'`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if COORDINATION_BACKEND != "redis" or not CACHE_ENABLED:
         return

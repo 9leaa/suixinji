@@ -1,4 +1,9 @@
-"""Run deterministic Memory V2 evaluation."""
+"""文件作用：Memory 基础评测。
+
+项目关系：本文件依赖 `eval.common`、`memory`、`memory.adjudicator`、`memory.extractor` 等 8 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -41,18 +46,22 @@ DATA_DIR = Path("eval/memory")
 
 
 def _set_eval_store(root: Path) -> None:
-    """负责“设置评测存储”。
-
-    该函数是 `eval.eval_memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_set_eval_store` 负责设置 eval store，服务于本文件职责：Memory 基础评测。
+    传参：
+        root: 项目或数据根目录路径，类型为 `Path`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     memory_repository.DB_PATH = root / "memory.db"
     memory_trace.TRACE_PATH = root / "traces.jsonl"
 
 
 def _score_extraction(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“评分extraction”。
-
-    该函数是 `eval.eval_memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_score_extraction` 负责评分 extraction，服务于本文件职责：Memory 基础评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     results = []
     for case in cases:
@@ -70,9 +79,11 @@ def _score_extraction(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _score_filtering(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“评分filtering”。
-
-    该函数是 `eval.eval_memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_score_filtering` 负责评分 filtering，服务于本文件职责：Memory 基础评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     results = []
     for case in cases:
@@ -83,9 +94,11 @@ def _score_filtering(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _score_relation(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“评分关系”。
-
-    该函数是 `eval.eval_memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_score_relation` 负责评分 relation，服务于本文件职责：Memory 基础评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     results = []
     for idx, case in enumerate(cases):
@@ -129,17 +142,23 @@ def _score_relation(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _note(space_id: str, note_id: str, text: str) -> dict[str, str]:
-    """负责“笔记”。
-
-    该函数是 `eval.eval_memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_note` 负责处理 note，服务于本文件职责：Memory 基础评测。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, str]`，表示结构化结果、载荷或状态映射。
     """
     return {"id": note_id, "space_id": space_id, "text": text}
 
 
 def _score_conflict(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“评分conflict”。
-
-    该函数是 `eval.eval_memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_score_conflict` 负责评分 conflict，服务于本文件职责：Memory 基础评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     results = []
     for idx, case in enumerate(cases):
@@ -160,9 +179,11 @@ def _score_conflict(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _score_lifecycle(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“评分生命周期”。
-
-    该函数是 `eval.eval_memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_score_lifecycle` 负责评分 lifecycle，服务于本文件职责：Memory 基础评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     results = []
     for idx, case in enumerate(cases):
@@ -195,9 +216,11 @@ def _score_lifecycle(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _score_retrieval(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“评分retrieval”。
-
-    该函数是 `eval.eval_memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_score_retrieval` 负责评分 retrieval，服务于本文件职责：Memory 基础评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     results = []
     for idx, case in enumerate(cases):
@@ -217,9 +240,11 @@ def _score_retrieval(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _score_e2e(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“评分e2e”。
-
-    该函数是 `eval.eval_memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_score_e2e` 负责评分 e2e，服务于本文件职责：Memory 基础评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     results = []
     for idx, case in enumerate(cases):
@@ -236,9 +261,11 @@ def _score_e2e(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _score_hardening() -> dict[str, Any]:
-    """负责“评分hardening”。
-
-    该函数是 `eval.eval_memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_score_hardening` 负责评分 hardening，服务于本文件职责：Memory 基础评测。
+    传参：
+        无。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     space_id = "eval-hardening"
     mark_extraction_failed("note-failed", space_id, error="simulated")
@@ -282,9 +309,12 @@ def _score_hardening() -> dict[str, Any]:
 
 
 def run(*, dry_run: bool = False, output_dir: Path = Path("eval/results")) -> dict[str, Any]:
-    """负责“运行”。
-
-    该函数是 `eval.eval_memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run` 负责运行，服务于本文件职责：Memory 基础评测。
+    传参：
+        dry_run: dry run 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        output_dir: output dir 参数，由调用方传入，类型为 `Path`，默认值为 `Path('eval/results')`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     files = {
         "extraction": DATA_DIR / "extraction_cases.jsonl",
@@ -347,7 +377,12 @@ def run(*, dry_run: bool = False, output_dir: Path = Path("eval/results")) -> di
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：Memory 基础评测。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     parser = argparse.ArgumentParser(description="Evaluate Memory V2 lifecycle.")
     parser.add_argument("--dry-run", action="store_true", help="Validate memory eval cases without running APIs")
     parser.add_argument("--output-dir", default="eval/results")

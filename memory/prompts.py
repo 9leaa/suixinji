@@ -1,4 +1,9 @@
-"""Prompts for model-assisted candidate extraction and relation suggestions."""
+"""文件作用：Memory LLM prompt。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 `agent.query_intent`、`memory.extractor`。
+"""
+
+
 
 MEMORY_EXTRACTOR_PROMPT = """
 你是长期记忆候选抽取器。你只能提出候选，不能决定覆盖旧记忆，也不能执行数据库操作。

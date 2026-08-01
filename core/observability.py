@@ -1,4 +1,9 @@
-"""Lightweight structured logging helpers for runtime observability."""
+"""文件作用：本地结构化可观测性。
+
+项目关系：本文件依赖 `core.sensitive`、`core.settings`、`infrastructure.redis_keys`；被 `agent.hooks.observability`、`agent.query_agent`、`apps.api`、`apps.outbox_relay` 等 17 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -23,9 +28,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _safe_log_value(value: Any) -> Any:
-    """负责“安全log字段值”。
-
-    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_safe_log_value` 负责记录日志 value，服务于本文件职责：本地结构化可观测性。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if isinstance(value, str):
         if assess_sensitive_text(value).blocks_storage:
@@ -39,25 +46,31 @@ def _safe_log_value(value: Any) -> Any:
 
 
 def now_iso() -> str:
-    """负责“nowiso”。
-
-    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`now_iso` 负责获取当前时间 iso，服务于本文件职责：本地结构化可观测性。
+    传参：
+        无。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
 def _duration_ms(start: float) -> int:
-    """负责“durationms”。
-
-    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_duration_ms` 负责处理 duration ms，服务于本文件职责：本地结构化可观测性。
+    传参：
+        start: start 参数，由调用方传入，类型为 `float`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     return int((time.perf_counter() - start) * 1000)
 
 
 def _log_path() -> Path:
-    """负责“logpath”。
-
-    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_log_path` 负责记录日志 path，服务于本文件职责：本地结构化可观测性。
+    传参：
+        无。
+    返回结果说明：
+        返回 `Path` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return LOG_DIR / f"app-{datetime.now().strftime('%Y-%m-%d')}.jsonl"
 
@@ -74,7 +87,20 @@ def log_event(
     error: str | None = None,
     extra: dict[str, Any] | None = None,
 ) -> None:
-    """Append one JSONL event without breaking the business flow."""
+    """函数功能：`log_event` 负责记录日志 event，服务于本文件职责：本地结构化可观测性。
+    传参：
+        action: action 参数，由调用方传入，类型为 `str`。
+        level: level 参数，由调用方传入，类型为 `str`，默认值为 `'info'`。
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'success'`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str | None`，默认值为 `None`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str | None`，默认值为 `None`。
+        record_id: record id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        duration_ms: duration ms 参数，由调用方传入，类型为 `int | None`，默认值为 `None`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+        extra: extra 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     if os.getenv("SUIXINJI_OBSERVABILITY_DISABLED") == "1":
         return
 
@@ -101,9 +127,11 @@ def log_event(
 
 
 def _code_revision() -> str | None:
-    """负责“coderevision”。
-
-    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_code_revision` 负责处理 code revision，服务于本文件职责：本地结构化可观测性。
+    传参：
+        无。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     try:
         result = subprocess.run(
@@ -120,9 +148,12 @@ def _code_revision() -> str | None:
 
 
 def log_process_started(role: str | None = None, *, action: str = "runtime.process_started") -> None:
-    """负责“log处理started”。
-
-    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`log_process_started` 负责记录日志 process started，服务于本文件职责：本地结构化可观测性。
+    传参：
+        role: role 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        action: action 参数，由调用方传入，类型为 `str`，默认值为 `'runtime.process_started'`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     from core.settings import (
         PROCESS_ROLE,
@@ -157,7 +188,13 @@ def log_process_started(role: str | None = None, *, action: str = "runtime.proce
 
 @contextmanager
 def observe(action: str, **ctx: Any) -> Iterator[None]:
-    """Log start/success/failed events around a block."""
+    """函数功能：`observe` 负责处理 observe，服务于本文件职责：本地结构化可观测性。
+    传参：
+        action: action 参数，由调用方传入，类型为 `str`。
+        **ctx: ctx 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `Iterator[None]` 类型结果；具体字段和语义由调用方按该对象约定使用。
+    """
     start = time.perf_counter()
     ctx_extra = ctx.pop("extra", None) or {}
     log_event(action, status="start", extra=ctx_extra, **ctx)
@@ -181,7 +218,12 @@ def observe(action: str, **ctx: Any) -> Iterator[None]:
 
 
 def read_recent_events(limit: int = 100) -> list[dict[str, Any]]:
-    """Read recent structured log events from newest log files."""
+    """函数功能：`read_recent_events` 负责读取 recent events，服务于本文件职责：本地结构化可观测性。
+    传参：
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `100`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
+    """
     if not LOG_DIR.exists():
         return []
 
@@ -206,9 +248,11 @@ def read_recent_events(limit: int = 100) -> list[dict[str, Any]]:
 
 
 def recent_errors(limit: int = 5) -> list[dict[str, Any]]:
-    """负责“recenterrors”。
-
-    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`recent_errors` 负责处理 recent errors，服务于本文件职责：本地结构化可观测性。
+    传参：
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `5`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     return [
         event
@@ -218,9 +262,11 @@ def recent_errors(limit: int = 5) -> list[dict[str, Any]]:
 
 
 def latest_success(actions: set[str] | None = None) -> dict[str, Any] | None:
-    """负责“最新success”。
-
-    该函数是 `core.observability` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`latest_success` 负责处理 latest success，服务于本文件职责：本地结构化可观测性。
+    传参：
+        actions: actions 参数，由调用方传入，类型为 `set[str] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     for event in read_recent_events(limit=200):
         if event.get("status") != "success":

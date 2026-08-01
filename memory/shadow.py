@@ -1,4 +1,9 @@
-"""Read-only Memory V3 shadow signals used during staged rollout."""
+"""文件作用：V3 shadow 对比。
+
+项目关系：本文件依赖 `core`、`memory.canonicalizer`、`memory.models`、`memory.relation_guard`；被 `memory.consolidator`、`memory.service`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -11,10 +16,11 @@ from memory.relation_guard import evaluate_relation
 
 
 def build_shadow_report(candidates: list[MemoryCandidate]) -> dict[str, Any] | None:
-    """Compare legacy candidates with their V3 identities without changing writes.
-
-    The report intentionally includes only type/key-level metadata.  It is
-    suitable for durable traces and never stores note text or model output.
+    """函数功能：`build_shadow_report` 负责构建 shadow report，服务于本文件职责：V3 shadow 对比。
+    传参：
+        candidates: candidates 参数，由调用方传入，类型为 `list[MemoryCandidate]`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     if not settings.MEMORY_V3_SHADOW_MODE:
         return None
@@ -46,7 +52,14 @@ def build_relation_shadow_report(
     memories: list[MemoryRecord],
     actual: MemoryDecision,
 ) -> dict[str, Any] | None:
-    """Project a V3 relation decision without changing retrieval or writes."""
+    """函数功能：`build_relation_shadow_report` 负责构建 relation shadow report，服务于本文件职责：V3 shadow 对比。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memories: memories 参数，由调用方传入，类型为 `list[MemoryRecord]`。
+        actual: actual 参数，由调用方传入，类型为 `MemoryDecision`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
+    """
     if not settings.MEMORY_V3_SHADOW_MODE:
         return None
     projected = canonicalize_candidate(candidate)

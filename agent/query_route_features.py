@@ -1,10 +1,9 @@
-"""Deterministic structural features for query routing.
+"""文件作用：查询路由特征。
 
-The feature extractor deliberately does not try to understand the answer.  It
-only identifies query shape (clauses, entities, operations and ambiguity) so a
-simple query can stay on the fast path and an uncertain query can be escalated
-to the structured QueryIntent/Planner model.
+项目关系：本文件依赖 无直接本地模块依赖；被 `agent.query_agent`、`agent.query_planner`、`tests.test_query_route_features`。
 """
+
+
 
 from __future__ import annotations
 
@@ -30,6 +29,10 @@ _MULTI_STEP_RE = re.compile(r"(?:先|首先).*(?:再|然后|接着).*(?:最后|�
 
 @dataclass(frozen=True)
 class QueryRouteFeatures:
+    """类功能：`QueryRouteFeatures` 封装与“查询路由特征”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     normalized_query: str
     language: str
     clauses: tuple[str, ...]
@@ -50,6 +53,10 @@ class QueryRouteFeatures:
 
 @dataclass(frozen=True)
 class StructuralRouteDecision:
+    """类功能：`StructuralRouteDecision` 封装与“查询路由特征”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     complexity: str
     confidence: float
     suggested_strategies: tuple[str, ...]
@@ -57,25 +64,32 @@ class StructuralRouteDecision:
 
     @property
     def is_confident_simple(self) -> bool:
-        """负责“是否为confidentsimple”。
-
-        该函数是 `agent.query_route_features` 中的`StructuralRouteDecision` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StructuralRouteDecision.is_confident_simple` 在类 `StructuralRouteDecision` 中负责判断是否为 confident simple，服务于本文件职责：查询路由特征。
+        传参：
+            无。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         return self.complexity == "simple" and self.confidence >= 0.90
 
 
 def _clean(value: object) -> str:
-    """负责“清理”。
-
-    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_clean` 负责清理，服务于本文件职责：查询路由特征。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `object`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return " ".join(str(value or "").split()).strip()
 
 
 def _active_markers(text: str, markers: tuple[str, ...]) -> tuple[str, ...]:
-    """负责“activemarkers”。
-
-    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_active_markers` 负责处理 active markers，服务于本文件职责：查询路由特征。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+        markers: markers 参数，由调用方传入，类型为 `tuple[str, ...]`。
+    返回结果说明：
+        返回 `tuple[str, ...]`，表示由多个相关值组成的结果。
     """
     active: list[str] = []
     for marker in markers:
@@ -89,18 +103,22 @@ def _active_markers(text: str, markers: tuple[str, ...]) -> tuple[str, ...]:
 
 
 def _split_clauses(text: str) -> tuple[str, ...]:
-    """负责“切分clauses”。
-
-    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_split_clauses` 负责切分 clauses，服务于本文件职责：查询路由特征。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `tuple[str, ...]`，表示由多个相关值组成的结果。
     """
     parts = [_clean(part.strip(" ，,。！？?!")) for part in _CLAUSE_SPLIT_RE.split(text)]
     return tuple(dict.fromkeys(part for part in parts if len(part) >= 2))
 
 
 def _compare_entities(text: str) -> list[str]:
-    """负责“compareentities”。
-
-    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_compare_entities` 负责处理 compare entities，服务于本文件职责：查询路由特征。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     patterns = (
         r"(?:比较|对比)\s*([^，,。；;？?]{2,40}?)\s*(?:和|与|及|vs\.?|VS\.?|versus)\s*([^，,。；;？?的]{2,40})",
@@ -116,9 +134,11 @@ def _compare_entities(text: str) -> list[str]:
 
 
 def _contains_anaphora(text: str) -> bool:
-    """负责“containsanaphora”。
-
-    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_contains_anaphora` 负责处理 contains anaphora，服务于本文件职责：查询路由特征。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     lowered = text.casefold()
     for marker in _ANAPHORA_MARKERS:
@@ -135,9 +155,11 @@ def _contains_anaphora(text: str) -> bool:
 
 
 def extract_route_features(question: str) -> QueryRouteFeatures:
-    """负责“抽取路由features”。
-
-    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`extract_route_features` 负责抽取 route features，服务于本文件职责：查询路由特征。
+    传参：
+        question: 用户问题文本，类型为 `str`。
+    返回结果说明：
+        返回 `QueryRouteFeatures` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     text = _clean(question)
     has_cjk = bool(re.search(r"[\u3400-\u9fff]", text))
@@ -206,9 +228,11 @@ def extract_route_features(question: str) -> QueryRouteFeatures:
 
 
 def classify_structural_route(features: QueryRouteFeatures) -> StructuralRouteDecision:
-    """负责“分类structural路由”。
-
-    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`classify_structural_route` 负责分类 structural route，服务于本文件职责：查询路由特征。
+    传参：
+        features: features 参数，由调用方传入，类型为 `QueryRouteFeatures`。
+    返回结果说明：
+        返回 `StructuralRouteDecision` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if not features.normalized_query:
         return StructuralRouteDecision("simple", 1.0, ("none",), ("empty_query",))
@@ -256,8 +280,7 @@ def classify_structural_route(features: QueryRouteFeatures) -> StructuralRouteDe
     if features.negated_operations and not features.has_anaphora:
         return StructuralRouteDecision("simple", 0.93, ("none",), ("negated_complex_operations",))
 
-    # Length is a reason to ask for a second opinion, never a reason by itself
-    # to launch expensive decomposition.
+    # 长度只作为请求二次判断的理由，不能单独触发成本较高的拆解流程。
     if any(marker.casefold() in features.normalized_query.casefold() for marker in _SINGLE_SCOPE_MARKERS):
         return StructuralRouteDecision("simple", 0.93, ("none",), ("explicit_single_scope",))
     if len(features.normalized_query) > 50:
@@ -272,15 +295,22 @@ def classify_structural_route(features: QueryRouteFeatures) -> StructuralRouteDe
 
 
 def structural_route(question: str) -> tuple[QueryRouteFeatures, StructuralRouteDecision]:
-    """负责“structural路由”。
-
-    该函数是 `agent.query_route_features` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`structural_route` 负责路由 structural，服务于本文件职责：查询路由特征。
+    传参：
+        question: 用户问题文本，类型为 `str`。
+    返回结果说明：
+        返回 `tuple[QueryRouteFeatures, StructuralRouteDecision]`，表示由多个相关值组成的结果。
     """
     features = extract_route_features(question)
     return features, classify_structural_route(features)
 
 
 def should_call_query_intent_llm(question: str) -> bool:
-    """Return whether intent/planning needs a model second opinion."""
+    """函数功能：`should_call_query_intent_llm` 负责调用 query intent llm，服务于本文件职责：查询路由特征。
+    传参：
+        question: 用户问题文本，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     _, decision = structural_route(question)
     return decision.complexity != "simple" or decision.confidence < 0.90

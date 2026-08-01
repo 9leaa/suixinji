@@ -1,9 +1,9 @@
-"""Deterministic preference topic, polarity, and scope policy.
+"""文件作用：偏好策略。
 
-Whole-sentence similarity is intentionally not used as permission to mutate an
-existing preference.  A candidate must first share a concrete preference topic
-with the target; generic templates such as "用户喜欢" carry no topic evidence.
+项目关系：本文件依赖 `memory.models`；被 `eval.eval_memory_quality`、`memory.canonicalizer`、`memory.extractor`、`memory.retriever` 等 5 个模块。
 """
+
+
 
 from __future__ import annotations
 
@@ -54,9 +54,7 @@ _LEADING_OWNER_RE = re.compile(r"^(?:用户|本人|我)+")
 _LEADING_CHANGE_RE = re.compile(r"^(?:现在|以后|目前|最近|从现在起|已经|改为|改成)+")
 _TRAILING_PARTICLE_RE = re.compile(r"(?:了|啦|呢|吧|呀|啊)+$")
 _CLAUSE_SPLIT_RE = re.compile(r"[，,；;。\n]|(?:但是|不过|同时|而且)")
-# Keep model codes and standalone version numbers as anchors.  They are more
-# specific than generic Chinese context around them (for example, X1 vs X10 or
-# iPhone 15 vs iPhone 16) and must not be blurred by fuzzy substring matching.
+# 保留型号编码和独立版本号作为锚点；它们比周围中文语境更具体（如 X1/X10、iPhone 15/iPhone 16），不能被模糊子串匹配抹平。
 _NAMED_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9+#._-]*|\d+(?:[._-]\d+)*")
 _GENERIC_SCOPE_RE = re.compile(r"(?:在|当)([^，,。；;]{1,16}?)(?:时|的时候)")
 _FIXED_SCOPES = (
@@ -79,6 +77,10 @@ _FIXED_SCOPES = (
 
 @dataclass(frozen=True)
 class PreferenceSignature:
+    """类功能：`PreferenceSignature` 封装与“偏好策略”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     topic: str
     normalized_topic: str
     polarity: str
@@ -88,9 +90,11 @@ class PreferenceSignature:
 
 
 def preference_polarity(text: str) -> str:
-    """负责“偏好polarity”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`preference_polarity` 负责处理 preference polarity，服务于本文件职责：偏好策略。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     value = str(text or "")
     negative_positions = [value.find(marker) for marker in NEGATIVE_MARKERS if marker in value]
@@ -104,12 +108,11 @@ def preference_polarity(text: str) -> str:
 
 
 def preference_query_polarity(text: str) -> str:
-    """Return polarity only when a retrieval query makes an assertion.
-
-    Interrogative wording such as ``我喜欢咖啡吗`` contains a positive marker,
-    but it is asking which polarity is true. Treating that marker as evidence
-    used to suppress the actually relevant negative preference before ranking.
-    The write-side ``preference_polarity`` intentionally remains unchanged.
+    """函数功能：`preference_query_polarity` 负责查询 polarity，服务于本文件职责：偏好策略。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     value = " ".join(str(text or "").split()).strip()
     normalized = value.casefold()
@@ -129,9 +132,11 @@ def preference_query_polarity(text: str) -> str:
 
 
 def _extract_scopes(text: str) -> tuple[str, ...]:
-    """负责“抽取scopes”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_extract_scopes` 负责抽取 scopes，服务于本文件职责：偏好策略。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `tuple[str, ...]`，表示由多个相关值组成的结果。
     """
     found: list[str] = []
     for scope in _FIXED_SCOPES:
@@ -145,9 +150,11 @@ def _extract_scopes(text: str) -> tuple[str, ...]:
 
 
 def _strip_scope_prefix(text: str) -> str:
-    """负责“stripscopeprefix”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_strip_scope_prefix` 负责处理 strip scope prefix，服务于本文件职责：偏好策略。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     value = text.strip()
     for scope in sorted(_FIXED_SCOPES, key=len, reverse=True):
@@ -158,9 +165,11 @@ def _strip_scope_prefix(text: str) -> str:
 
 
 def _marker_and_remainder(text: str) -> tuple[str | None, str]:
-    """负责“markerandremainder”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_marker_and_remainder` 负责处理 marker and remainder，服务于本文件职责：偏好策略。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `tuple[str | None, str]`，表示由多个相关值组成的结果。
     """
     markers = sorted(NEGATIVE_MARKERS + POSITIVE_MARKERS, key=len, reverse=True)
     matches = [(text.find(marker), marker) for marker in markers if marker in text]
@@ -176,9 +185,11 @@ def _marker_and_remainder(text: str) -> tuple[str | None, str]:
 
 
 def _extract_topic(text: str) -> tuple[str, tuple[str, ...]]:
-    """负责“抽取topic”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_extract_topic` 负责抽取 topic，服务于本文件职责：偏好策略。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `tuple[str, tuple[str, ...]]`，表示由多个相关值组成的结果。
     """
     value = " ".join(str(text or "").split()).strip()
     value = _LEADING_OWNER_RE.sub("", value).strip()
@@ -200,15 +211,16 @@ def _extract_topic(text: str) -> tuple[str, tuple[str, ...]]:
 
 
 def preference_signature(text: str, topic_hint: str | None = None) -> PreferenceSignature:
-    """负责“偏好signature”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`preference_signature` 负责处理 preference signature，服务于本文件职责：偏好策略。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+        topic_hint: topic hint 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `PreferenceSignature` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     topic, qualifiers = _extract_topic(text)
     hint = str(topic_hint or "").strip()
-    # Model-provided hints are useful only when deterministic extraction found no
-    # concrete object.  This prevents legacy, sentence-sized object fields from
-    # reintroducing generic template similarity.
+    # 只有确定性抽取没有找到具体对象时，模型提示才有用；这可以避免旧版句子级 object 字段重新引入泛化模板相似。
     if not topic and hint:
         topic, _ = _extract_topic(hint)
     normalized = normalize_content(topic)
@@ -224,9 +236,11 @@ def preference_signature(text: str, topic_hint: str | None = None) -> Preference
 
 
 def _bigrams(value: str) -> set[str]:
-    """负责“bigrams”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_bigrams` 负责处理 bigrams，服务于本文件职责：偏好策略。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `set[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if len(value) < 2:
         return {value} if value else set()
@@ -234,7 +248,13 @@ def _bigrams(value: str) -> set[str]:
 
 
 def topic_compatibility(left: Any, right: Any) -> float:
-    """Return a strict topic score independent from whole-sentence similarity."""
+    """函数功能：`topic_compatibility` 负责处理 topic compatibility，服务于本文件职责：偏好策略。
+    传参：
+        left: left 参数，由调用方传入，类型为 `Any`。
+        right: right 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
+    """
     left_sig = preference_signature(str(getattr(left, "content", "") or ""), getattr(left, "object_value", None))
     right_sig = preference_signature(str(getattr(right, "content", "") or ""), getattr(right, "object_value", None))
     left_topic = left_sig.normalized_topic
@@ -246,10 +266,7 @@ def topic_compatibility(left: Any, right: Any) -> float:
     left_named = set(left_sig.named_anchors)
     right_named = set(right_sig.named_anchors)
     if left_named or right_named:
-        # Explicit codes, product names, and versions are concrete topic
-        # evidence.  Require the same complete set before considering two
-        # topics compatible; otherwise a shorter value such as X1 can be a
-        # substring of the unrelated X10 and wrongly trigger a mutation.
+        # 显式编码、产品名和版本号是具体主题证据；必须完整集合相同才认为两个主题兼容，否则 X1 这类短值可能因成为无关 X10 的子串而误触发变更。
         if left_named == right_named:
             return 0.94
         return 0.0
@@ -267,9 +284,12 @@ def topic_compatibility(left: Any, right: Any) -> float:
 
 
 def scopes_compatible(left: Any, right: Any) -> bool:
-    """负责“scopescompatible”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`scopes_compatible` 负责处理 scopes compatible，服务于本文件职责：偏好策略。
+    传参：
+        left: left 参数，由调用方传入，类型为 `Any`。
+        right: right 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     left_scopes = set(preference_signature(str(getattr(left, "content", "") or "")).scopes)
     right_scopes = set(preference_signature(str(getattr(right, "content", "") or "")).scopes)
@@ -279,25 +299,33 @@ def scopes_compatible(left: Any, right: Any) -> bool:
 
 
 def has_negation(text: str) -> bool:
-    """负责“是否包含negation”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`has_negation` 负责判断是否包含 negation，服务于本文件职责：偏好策略。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     return preference_polarity(text) == "negative"
 
 
 def is_ambiguous_conflict(new_content: str, old_content: str) -> bool:
-    """负责“是否为ambiguousconflict”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`is_ambiguous_conflict` 负责判断是否为 ambiguous conflict，服务于本文件职责：偏好策略。
+    传参：
+        new_content: new content 参数，由调用方传入，类型为 `str`。
+        old_content: old content 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     return is_comparative_alternative(new_content, old_content)
 
 
 def _common_suffix_length(left: str, right: str) -> int:
-    """负责“commonsuffixlength”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_common_suffix_length` 负责处理 common suffix length，服务于本文件职责：偏好策略。
+    传参：
+        left: left 参数，由调用方传入，类型为 `str`。
+        right: right 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     count = 0
     for left_char, right_char in zip(reversed(left), reversed(right)):
@@ -308,7 +336,13 @@ def _common_suffix_length(left: str, right: str) -> int:
 
 
 def is_comparative_alternative(new_content: str, old_content: str) -> bool:
-    """Detect a general comparative choice within a shared noun context."""
+    """函数功能：`is_comparative_alternative` 负责判断是否为 comparative alternative，服务于本文件职责：偏好策略。
+    传参：
+        new_content: new content 参数，由调用方传入，类型为 `str`。
+        old_content: old content 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     if not any(marker in new_content for marker in COMPARATIVE_MARKERS):
         return False
     if preference_polarity(new_content) != "positive" or preference_polarity(old_content) != "positive":
@@ -322,9 +356,12 @@ def is_comparative_alternative(new_content: str, old_content: str) -> bool:
 
 
 def explicitly_replaces(new_content: str, old_content: str) -> bool:
-    """负责“explicitlyreplaces”。
-
-    该函数是 `memory.policies.preference` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`explicitly_replaces` 负责处理 explicitly replaces，服务于本文件职责：偏好策略。
+    传参：
+        new_content: new content 参数，由调用方传入，类型为 `str`。
+        old_content: old content 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     new_polarity = preference_polarity(new_content)
     old_polarity = preference_polarity(old_content)

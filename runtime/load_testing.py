@@ -1,4 +1,9 @@
-"""Deterministic multi-user workload generation and HTTP submission helpers."""
+"""文件作用：负载测试运行器。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 `scripts.load_test_multi_users`、`tests.test_stage4_load_testing`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -17,6 +22,10 @@ from urllib.request import Request, urlopen
 
 @dataclass(frozen=True)
 class LoadProfile:
+    """类功能：`LoadProfile` 封装与“负载测试运行器”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     users: int
     messages_per_user: int
     concurrency: int
@@ -32,6 +41,10 @@ PROFILES = {
 
 @dataclass(frozen=True)
 class LoadRequest:
+    """类功能：`LoadRequest` 封装与“负载测试运行器”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     run_id: str
     user_profile: str
     user_id: str
@@ -45,9 +58,11 @@ class LoadRequest:
     tenant_id: str
 
     def api_payload(self) -> dict[str, Any]:
-        """负责“APIpayload”。
-
-        该函数是 `runtime.load_testing` 中的`LoadRequest` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`LoadRequest.api_payload` 在类 `LoadRequest` 中负责处理 api payload，服务于本文件职责：负载测试运行器。
+        传参：
+            无。
+        返回结果说明：
+            返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
         """
         return {
             "message_id": self.message_id,
@@ -62,6 +77,10 @@ class LoadRequest:
 
 @dataclass(frozen=True)
 class SubmissionResult:
+    """类功能：`SubmissionResult` 封装与“负载测试运行器”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     status: str
     latency_ms: int
     http_status: int | None = None
@@ -69,9 +88,12 @@ class SubmissionResult:
 
 
 def percentile(values: list[int], ratio: float) -> int | None:
-    """负责“percentile”。
-
-    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`percentile` 负责处理 percentile，服务于本文件职责：负载测试运行器。
+    传参：
+        values: values 参数，由调用方传入，类型为 `list[int]`。
+        ratio: ratio 参数，由调用方传入，类型为 `float`。
+    返回结果说明：
+        返回 `int | None`；未命中或无需处理时可返回 `None`。
     """
     if not values:
         return None
@@ -81,9 +103,11 @@ def percentile(values: list[int], ratio: float) -> int | None:
 
 
 def _user_profile(index: int) -> str:
-    """负责“用户画像”。
-
-    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_user_profile` 负责处理 user profile，服务于本文件职责：负载测试运行器。
+    传参：
+        index: index 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     marker = index % 100
     if marker < 70:
@@ -96,9 +120,12 @@ def _user_profile(index: int) -> str:
 
 
 def _operation(rng: random.Random, user_profile: str) -> str:
-    """负责“operation”。
-
-    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_operation` 负责处理 operation，服务于本文件职责：负载测试运行器。
+    传参：
+        rng: rng 参数，由调用方传入，类型为 `random.Random`。
+        user_profile: user profile 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     if user_profile == "malicious" and rng.random() < 0.8:
         return "query"
@@ -113,9 +140,15 @@ def _operation(rng: random.Random, user_profile: str) -> str:
 
 
 def _request_content(operation: str, *, user_id: str, space_id: str, chat_id: str, sequence: int) -> tuple[str, str, dict[str, Any]]:
-    """负责“请求content”。
-
-    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_request_content` 负责处理 request content，服务于本文件职责：负载测试运行器。
+    传参：
+        operation: operation 参数，由调用方传入，类型为 `str`。
+        user_id: 用户标识，用于鉴权、限流、会话和数据归属，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        chat_id: chat id 参数，由调用方传入，类型为 `str`。
+        sequence: sequence 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `tuple[str, str, dict[str, Any]]`，表示由多个相关值组成的结果。
     """
     delivery_key = f"stage4:{space_id}:{sequence}:{operation}"
     common = {"chat_id": chat_id, "user_id": user_id, "delivery_key": delivery_key}
@@ -139,9 +172,14 @@ def generate_requests(
     run_id: str | None = None,
     seed: int = 20260718,
 ) -> list[LoadRequest]:
-    """负责“生成requests”。
-
-    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`generate_requests` 负责生成 requests，服务于本文件职责：负载测试运行器。
+    传参：
+        users: users 参数，由调用方传入，类型为 `int`。
+        messages_per_user: messages per user 参数，由调用方传入，类型为 `int`。
+        run_id: run id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        seed: seed 参数，由调用方传入，类型为 `int`，默认值为 `20260718`。
+    返回结果说明：
+        返回 `list[LoadRequest]`，表示按条件筛选、构造或查询得到的列表。
     """
     run_id = run_id or uuid.uuid4().hex[:12]
     tenant_id = f"load-{run_id}"
@@ -185,9 +223,11 @@ def generate_requests(
 
 
 def summarize_plan(requests: list[LoadRequest]) -> dict[str, Any]:
-    """负责“summarize规划”。
-
-    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`summarize_plan` 负责总结 plan，服务于本文件职责：负载测试运行器。
+    传参：
+        requests: requests 参数，由调用方传入，类型为 `list[LoadRequest]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     operations: dict[str, int] = {}
     profiles: dict[str, int] = {}
@@ -206,9 +246,13 @@ def summarize_plan(requests: list[LoadRequest]) -> dict[str, Any]:
 
 
 def submit_request(endpoint: str, item: LoadRequest, *, timeout_seconds: float = 10.0) -> SubmissionResult:
-    """负责“submit请求”。
-
-    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`submit_request` 负责处理 submit request，服务于本文件职责：负载测试运行器。
+    传参：
+        endpoint: endpoint 参数，由调用方传入，类型为 `str`。
+        item: item 参数，由调用方传入，类型为 `LoadRequest`。
+        timeout_seconds: timeout seconds 参数，由调用方传入，类型为 `float`，默认值为 `10.0`。
+    返回结果说明：
+        返回 `SubmissionResult` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     started = time.perf_counter()
     headers = {
@@ -244,9 +288,14 @@ def execute_load(
     concurrency: int,
     timeout_seconds: float = 10.0,
 ) -> dict[str, Any]:
-    """负责“execute加载”。
-
-    该函数是 `runtime.load_testing` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`execute_load` 负责执行 load，服务于本文件职责：负载测试运行器。
+    传参：
+        requests: requests 参数，由调用方传入，类型为 `list[LoadRequest]`。
+        endpoint: endpoint 参数，由调用方传入，类型为 `str | list[str]`。
+        concurrency: concurrency 参数，由调用方传入，类型为 `int`。
+        timeout_seconds: timeout seconds 参数，由调用方传入，类型为 `float`，默认值为 `10.0`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     endpoints = [endpoint] if isinstance(endpoint, str) else list(endpoint)
     if not endpoints:

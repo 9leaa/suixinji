@@ -1,4 +1,9 @@
-"""Lease-fenced PostgreSQL Outbox relay repository."""
+"""文件作用：Outbox 数据访问。
+
+项目关系：本文件依赖 `core.observability`、`core.settings`、`infrastructure.database`、`infrastructure.schema`；被 `apps.outbox_relay`、`tests.test_streams_outbox`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -16,10 +21,18 @@ from infrastructure.schema import OutboxEvent
 
 
 class EventPublisher(Protocol):
+    """类功能：`EventPublisher` 封装与“Outbox 数据访问”相关的数据结构、状态或行为。
+    继承关系：继承 `Protocol`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def publish_task(self, event_id: str, payload: dict[str, Any]) -> str:
-        """负责“发布任务”。
-
-        该函数是 `repositories.postgres.outbox` 中的`EventPublisher` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`EventPublisher.publish_task` 在类 `EventPublisher` 中负责发布 task，服务于本文件职责：Outbox 数据访问。
+        传参：
+            event_id: 事件标识，用于外部事件幂等和审计，类型为 `str`。
+            payload: 结构化载荷，通常来自事件、任务或 API 请求，类型为 `dict[str, Any]`。
+        返回结果说明：
+            返回 `str`，通常是格式化后的文本、标识或路径。
         """
         ...
 
@@ -31,9 +44,14 @@ def claim_outbox_batch(
     event_ids: list[str] | None = None,
     lease_seconds: int = OUTBOX_LEASE_SECONDS,
 ) -> list[dict[str, Any]]:
-    """负责“认领发件箱batch”。
-
-    该函数是 `repositories.postgres.outbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`claim_outbox_batch` 负责认领 outbox batch，服务于本文件职责：Outbox 数据访问。
+    传参：
+        worker_id: worker id 参数，由调用方传入，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `50`。
+        event_ids: event ids 参数，由调用方传入，类型为 `list[str] | None`，默认值为 `None`。
+        lease_seconds: lease seconds 参数，由调用方传入，类型为 `int`，默认值为 `OUTBOX_LEASE_SECONDS`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     now = datetime.now().astimezone()
     with session_scope() as session:
@@ -80,9 +98,12 @@ def claim_outbox_batch(
 
 
 def mark_outbox_published(event_id: str, lease_token: str) -> bool:
-    """负责“标记发件箱published”。
-
-    该函数是 `repositories.postgres.outbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_outbox_published` 负责标记 outbox published，服务于本文件职责：Outbox 数据访问。
+    传参：
+        event_id: 事件标识，用于外部事件幂等和审计，类型为 `str`。
+        lease_token: lease token 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     now = datetime.now().astimezone()
     with session_scope() as session:
@@ -108,9 +129,13 @@ def mark_outbox_published(event_id: str, lease_token: str) -> bool:
 
 
 def mark_outbox_failed(event_id: str, lease_token: str, error: str) -> str:
-    """负责“标记发件箱failed”。
-
-    该函数是 `repositories.postgres.outbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_outbox_failed` 负责标记 outbox failed，服务于本文件职责：Outbox 数据访问。
+    传参：
+        event_id: 事件标识，用于外部事件幂等和审计，类型为 `str`。
+        lease_token: lease token 参数，由调用方传入，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     now = datetime.now().astimezone()
     with session_scope() as session:
@@ -143,9 +168,14 @@ def relay_outbox_batch(
     event_ids: list[str] | None = None,
     worker_id: str | None = None,
 ) -> dict[str, int]:
-    """负责“relay发件箱batch”。
-
-    该函数是 `repositories.postgres.outbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`relay_outbox_batch` 负责处理 relay outbox batch，服务于本文件职责：Outbox 数据访问。
+    传参：
+        publisher: publisher 参数，由调用方传入，类型为 `EventPublisher`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `50`。
+        event_ids: event ids 参数，由调用方传入，类型为 `list[str] | None`，默认值为 `None`。
+        worker_id: worker id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, int]`，表示结构化结果、载荷或状态映射。
     """
     relay_id = worker_id or f"{socket.gethostname()}-outbox-{uuid.uuid4().hex[:8]}"
     events = claim_outbox_batch(worker_id=relay_id, limit=limit, event_ids=event_ids)

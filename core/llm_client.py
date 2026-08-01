@@ -1,4 +1,9 @@
-"""LLM client adapter for OpenAI and OpenAI-compatible providers."""
+"""文件作用：OpenAI-compatible LLM/embedding 客户端。
+
+项目关系：本文件依赖 `core`、`core.config`、`core.model_router`、`core.observability` 等 7 个模块；被 `agent.query_agent`、`agent.query_intent`、`apps.handlers`、`core.classifier` 等 13 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -26,9 +31,11 @@ _SENSITIVE_URL_KEYS = {"api_key", "apikey", "key", "token", "secret", "access_to
 
 
 def _safe_base_url(value: str | None) -> str | None:
-    """负责“安全baseurl”。
-
-    该函数是 `core.llm_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_safe_base_url` 负责处理 safe base url，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str | None`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     if not value:
         return value
@@ -49,24 +56,27 @@ def _safe_base_url(value: str | None) -> str | None:
 
 
 def _is_memory_extraction_task(route: Any) -> bool:
-    """负责“是否为记忆extraction任务”。
-
-    该函数是 `core.llm_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_is_memory_extraction_task` 负责判断是否为 memory extraction task，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
+    传参：
+        route: route 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     task = getattr(route, "task", None)
     return str(getattr(task, "value", task) or "") == "memory_extraction"
 
 
 def _config_for_route(route: Any) -> ChatConfig:
-    """负责“配置for路由”。
-
-    该函数是 `core.llm_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_config_for_route` 负责路由 config for，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
+    传参：
+        route: route 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `ChatConfig` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     config = get_chat_config(route.role.value)
     if not _is_memory_extraction_task(route):
         return config
-    # The retry below is intentionally owned by this adapter.  Disable SDK
-    # retries for memory extraction so only APITimeoutError gets one retry.
+    # 下方重试由该适配器显式负责；Memory 抽取关闭 SDK 重试，确保只有 APITimeoutError 会重试一次。
     return replace(
         config,
         timeout_seconds=settings.MEMORY_EXTRACTION_LLM_TIMEOUT_SECONDS,
@@ -75,9 +85,11 @@ def _config_for_route(route: Any) -> ChatConfig:
 
 
 def _timeout_retries_for_route(route: Any) -> int:
-    """负责“超时retriesfor路由”。
-
-    该函数是 `core.llm_client` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_timeout_retries_for_route` 负责路由 timeout retries for，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
+    传参：
+        route: route 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     if not _is_memory_extraction_task(route):
         return 0
@@ -85,21 +97,11 @@ def _timeout_retries_for_route(route: Any) -> int:
 
 
 def build_openai_client(config: ChatConfig | EmbeddingConfig | None = None) -> OpenAI:
-    """创建 OpenAI SDK client。
-
-    功能说明:
-        根据 ChatConfig 或 EmbeddingConfig 创建 OpenAI client。
-
-        - ChatConfig 通常用于聊天 / 分类模型，例如 cc-switch。
-        - EmbeddingConfig 通常用于 embedding 模型，例如阿里云百炼 OpenAI-compatible 接口。
-
-        如果 config 为空，默认读取 chat 配置。
-
-    传参说明:
-        config: 可选配置对象。可以是 ChatConfig 或 EmbeddingConfig。
-
-    返回类型说明:
-        OpenAI: 已配置好的 OpenAI SDK client。
+    """函数功能：`build_openai_client` 负责构建 openai client，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
+    传参：
+        config: 配置对象或配置映射，类型为 `ChatConfig | EmbeddingConfig | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `OpenAI` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     config = config or get_chat_config()
 
@@ -121,19 +123,11 @@ def build_openai_client(config: ChatConfig | EmbeddingConfig | None = None) -> O
 
 
 def extract_json_object(content: str) -> dict[str, Any]:
-    """从模型输出文本中提取 JSON object。
-
-    功能说明:
-        兼容模型直接输出 JSON、输出 ```json fenced block```、
-        或在解释文本中夹带 JSON 的情况。
-
-        该函数只接受 JSON object，不接受 JSON array 或普通字符串。
-
-    传参说明:
-        content: 模型返回的原始文本。
-
-    返回类型说明:
-        dict[str, Any]: 解析后的 JSON object。
+    """函数功能：`extract_json_object` 负责抽取 json object，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
+    传参：
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     content = content.strip()
 
@@ -174,21 +168,15 @@ def complete_json(
     llm_task: str | None = None,
     route_context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """调用 Chat Completions 并返回 JSON object。
-
-    功能说明:
-        使用 Chat Completions 进行普通文本调用，要求模型返回 JSON，
-        再在本地解析为 dict。
-
-        这种方式比 Responses API structured parse 更兼容本地代理和
-        OpenAI-compatible 服务。
-
-    传参说明:
-        system_prompt: 系统提示词。
-        user_prompt: 用户输入提示词。
-
-    返回类型说明:
-        dict[str, Any]: 从模型输出中解析出的 JSON object。
+    """函数功能：`complete_json` 负责完成 json，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
+    传参：
+        system_prompt: system prompt 参数，由调用方传入，类型为 `str`。
+        user_prompt: user prompt 参数，由调用方传入，类型为 `str`。
+        model_role: model role 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        llm_task: llm task 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        route_context: route context 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     route = route_model(task=llm_task, model_role=model_role, range_key=(route_context or {}).get("range_key"))
     config = _config_for_route(route)
@@ -329,22 +317,11 @@ def complete_json(
 
 
 def embed_text(text: str) -> list[float]:
-    """生成单段文本的 embedding 向量。
-
-    功能说明:
-        调用 OpenAI-compatible embeddings API，
-        将文本转换成向量，供 P2 语义检索和相关笔记推荐使用。
-
-        当前建议用于：
-        - 阿里云百炼 text-embedding-v4
-        - OpenAI text-embedding-3-small / large
-        - 其他兼容 /v1/embeddings 的服务
-
-    传参说明:
-        text: 需要生成 embedding 的原始文本。
-
-    返回类型说明:
-        list[float]: 文本对应的 embedding 向量。
+    """函数功能：`embed_text` 负责生成向量 text，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `list[float]`，表示按条件筛选、构造或查询得到的列表。
     """
     if not text or not text.strip():
         raise ValueError("embed_text received empty text")

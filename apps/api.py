@@ -1,4 +1,9 @@
-"""FastAPI test receiver for multi-user and load-test clients."""
+"""文件作用：FastAPI 接入/测试 API。
+
+项目关系：本文件依赖 `apps.receiver`、`core.observability`、`core.settings`、`infrastructure.overload` 等 6 个模块；被 `tests.test_stage4_resilience`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -30,20 +35,31 @@ app = FastAPI(title="Suixinji Receiver", version="3")
 
 @app.on_event("startup")
 def _log_api_startup() -> None:
-    """负责“logAPIstartup”。
-
-    该函数是 `apps.api` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_log_api_startup` 负责记录日志 api startup，服务于本文件职责：FastAPI 接入/测试 API。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     log_process_started("api")
 
 
 @dataclass(frozen=True)
 class TestApiContext:
+    """类功能：`TestApiContext` 封装与“FastAPI 接入/测试 API”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     tenant_id: str
     user_id: str | None = None
 
 
 class ReceiveRequest(BaseModel):
+    """类功能：`ReceiveRequest` 封装与“FastAPI 接入/测试 API”相关的数据结构、状态或行为。
+    继承关系：继承 `BaseModel`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     message_id: str
     space_id: str
     text: str
@@ -55,9 +71,11 @@ class ReceiveRequest(BaseModel):
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    """负责“health”。
-
-    该函数是 `apps.api` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`health` 负责处理 health，服务于本文件职责：FastAPI 接入/测试 API。
+    传参：
+        无。
+    返回结果说明：
+        返回 `dict[str, str]`，表示结构化结果、载荷或状态映射。
     """
     return {"status": "ok"}
 
@@ -67,9 +85,13 @@ def _authorize_test_api(
     tenant_id: str | None,
     user_id: str | None,
 ) -> TestApiContext:
-    """负责“authorizeAPI”。
-
-    该函数是 `apps.api` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_authorize_test_api` 负责验证 api，服务于本文件职责：FastAPI 接入/测试 API。
+    传参：
+        authorization: authorization 参数，由调用方传入，类型为 `str | None`。
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str | None`。
+        user_id: 用户标识，用于鉴权、限流、会话和数据归属，类型为 `str | None`。
+    返回结果说明：
+        返回 `TestApiContext` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     authorization = authorization if isinstance(authorization, str) else None
     tenant_id = tenant_id if isinstance(tenant_id, str) else None
@@ -91,9 +113,12 @@ def _authorize_test_api(
 
 
 def _check_rate_limit(request: ReceiveRequest, context: TestApiContext | None = None) -> None:
-    """负责“检查rate限制”。
-
-    该函数是 `apps.api` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_check_rate_limit` 负责检查 rate limit，服务于本文件职责：FastAPI 接入/测试 API。
+    传参：
+        request: 请求对象或请求载荷，类型为 `ReceiveRequest`。
+        context: 当前 Agent 或运行时上下文，携带租户、空间、请求和统计信息，类型为 `TestApiContext | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if COORDINATION_BACKEND != "redis":
         return
@@ -144,9 +169,14 @@ def commands(
     x_suixinji_tenant_id: str | None = Header(default=None),
     x_suixinji_user_id: str | None = Header(default=None),
 ) -> dict[str, object]:
-    """负责“commands”。
-
-    该函数是 `apps.api` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`commands` 负责处理 commands，服务于本文件职责：FastAPI 接入/测试 API。
+    传参：
+        request: 请求对象或请求载荷，类型为 `ReceiveRequest`。
+        authorization: authorization 参数，由调用方传入，类型为 `str | None`，默认值为 `Header(default=None)`。
+        x_suixinji_tenant_id: x suixinji tenant id 参数，由调用方传入，类型为 `str | None`，默认值为 `Header(default=None)`。
+        x_suixinji_user_id: x suixinji user id 参数，由调用方传入，类型为 `str | None`，默认值为 `Header(default=None)`。
+    返回结果说明：
+        返回 `dict[str, object]`，表示结构化结果、载荷或状态映射。
     """
     context = _authorize_test_api(authorization, x_suixinji_tenant_id, x_suixinji_user_id)
     _check_rate_limit(request, context)

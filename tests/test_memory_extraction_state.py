@@ -1,3 +1,9 @@
+"""文件作用：extraction state、partial/failed/empty。
+
+项目关系：本文件依赖 `memory`、`memory.consolidator`、`memory.models`、`memory.repository`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from datetime import datetime, timedelta
 
 import pytest
@@ -16,7 +22,12 @@ from memory.repository import (
 
 
 def test_process_note_memory_marks_completed_and_empty(monkeypatch):
-    """验证“处理笔记记忆markscompletedandempty”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_note_memory_marks_completed_and_empty` 负责验证 process note memory marks completed and empty 场景，服务于本文件职责：extraction state、partial/failed/empty。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(service, "extract_candidates", lambda note_id, text, classification=None: [])
 
     empty = service.process_note_memory({"id": "note-empty", "space_id": "space-1", "text": "你好"})
@@ -39,7 +50,12 @@ def test_process_note_memory_marks_completed_and_empty(monkeypatch):
 
 
 def test_process_note_memory_marks_partial_and_failed(monkeypatch):
-    """验证“处理笔记记忆markspartialandfailed”场景的预期行为与回归边界。"""
+    """函数功能：`test_process_note_memory_marks_partial_and_failed` 负责验证 process note memory marks partial and failed 场景，服务于本文件职责：extraction state、partial/failed/empty。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     candidates = [
         MemoryCandidate("semantic", "用户学习 Agent", 0.8, 0.9),
         MemoryCandidate("preference", "用户喜欢咖啡", 0.7, 0.8),
@@ -48,7 +64,15 @@ def test_process_note_memory_marks_partial_and_failed(monkeypatch):
     monkeypatch.setattr(service, "extract_candidates", lambda note_id, text, classification=None: candidates)
 
     def partial_consolidate(space_id, note_id, candidate, trace=None):
-        """验证“partial整合”场景的预期行为与回归边界。"""
+        """函数功能：`partial_consolidate` 负责合并长期记忆 partial，服务于本文件职责：extraction state、partial/failed/empty。
+        传参：
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据。
+            note_id: Note 标识，用于定位原始记录。
+            candidate: candidate 参数，由调用方传入。
+            trace: trace 参数，由调用方传入，默认值为 `None`。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         if candidate.memory_type == "preference":
             raise RuntimeError("boom")
         return {"action": "insert", "memory_id": "mem-1"}
@@ -71,7 +95,12 @@ def test_process_note_memory_marks_partial_and_failed(monkeypatch):
 
 
 def test_attempt_count_increments_on_processing():
-    """验证“尝试统计incrementsprocessing”场景的预期行为与回归边界。"""
+    """函数功能：`test_attempt_count_increments_on_processing` 负责验证 attempt count increments on processing 场景，服务于本文件职责：extraction state、partial/failed/empty。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     first = mark_extraction_processing("note-1", "space-1")
     second = mark_extraction_processing("note-1", "space-1")
 
@@ -80,7 +109,12 @@ def test_attempt_count_increments_on_processing():
 
 
 def test_daily_consolidation_uses_extraction_state(monkeypatch):
-    """验证“dailyconsolidationusesextraction状态”场景的预期行为与回归边界。"""
+    """函数功能：`test_daily_consolidation_uses_extraction_state` 负责验证 daily consolidation uses extraction state 场景，服务于本文件职责：extraction state、partial/failed/empty。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     notes = [
         {"id": "note-completed", "space_id": "space-1", "text": "done"},
         {"id": "note-empty", "space_id": "space-1", "text": "empty"},
@@ -106,7 +140,12 @@ def test_daily_consolidation_uses_extraction_state(monkeypatch):
 
 
 def test_stale_processing_is_retried(monkeypatch):
-    """验证“staleprocessing是否为retried”场景的预期行为与回归边界。"""
+    """函数功能：`test_stale_processing_is_retried` 负责验证 stale processing is retried 场景，服务于本文件职责：extraction state、partial/failed/empty。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     mark_extraction_processing("note-stale", "space-1")
     old = (datetime.now().astimezone() - timedelta(minutes=30)).isoformat(timespec="seconds")
     with _connect() as conn:

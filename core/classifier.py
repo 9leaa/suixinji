@@ -1,4 +1,9 @@
-"""LLM-backed note classifier with structured output."""
+"""文件作用：Note 分类。
+
+项目关系：本文件依赖 `core.llm_client`、`core.taxonomy`；被 `core.worker`、`eval.eval_classification`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -18,19 +23,10 @@ from core.taxonomy import (
 
 
 class NoteClassification(BaseModel):
-    """表示 LLM 对一条笔记文本的结构化分类结果。
-
-    功能说明:
-        约束大模型输出，使分类器稳定返回标题、标签、主类型和摘要。
-
-    传参说明:
-        title: 一句话标题，控制在 20 个汉字以内。
-        tags: 2 到 5 个中文标签。
-        type: 主类型，例如灵感、学习、任务、生活、情绪、资料、日记。
-        summary: 一句话摘要，说明这条笔记的核心内容。
-
-    返回类型说明:
-        NoteClassification: 一条笔记文本的结构化分类结果实例。
+    """类功能：`NoteClassification` 封装与“Note 分类”相关的数据结构、状态或行为。
+    继承关系：继承 `BaseModel`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
     """
 
     title: str = Field(description="一句话标题，控制在 20 个汉字以内")
@@ -73,17 +69,11 @@ tags 规则：
 
 
 def classify_text(text: str) -> NoteClassification:
-    """调用 LLM 对原始笔记文本进行结构化分类。
-
-    功能说明:
-        调用统一 LLM 适配层获取 JSON object，再使用 NoteClassification 进行本地校验，
-        将用户原始文本转换为标题、标签、主类型和摘要。
-
-    传参说明:
-        text: 用户输入的原始笔记文本。
-
-    返回类型说明:
-        NoteClassification: 包含标题、标签、主类型和摘要的分类结果。
+    """函数功能：`classify_text` 负责分类 text，服务于本文件职责：Note 分类。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `NoteClassification` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     data = complete_json(system_prompt=SYSTEM_PROMPT, user_prompt=text, llm_task="note_classification")
     data = normalize_classification_data(data)
@@ -91,7 +81,12 @@ def classify_text(text: str) -> NoteClassification:
 
 
 def classify_text_local(text: str) -> NoteClassification:
-    """Create a deterministic provisional classification without network I/O."""
+    """函数功能：`classify_text_local` 负责分类 text local，服务于本文件职责：Note 分类。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `NoteClassification` 类型结果；具体字段和语义由调用方按该对象约定使用。
+    """
     value = " ".join(str(text or "").split()).strip()
     lowered = value.casefold()
 

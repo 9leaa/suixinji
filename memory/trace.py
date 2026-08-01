@@ -1,4 +1,9 @@
-"""Privacy-aware JSONL traces for memory writes and reads."""
+"""文件作用：Memory Trace 存储与隐私裁剪。
+
+项目关系：本文件依赖 `core.sensitive`、`core.settings`、`memory.models`、`memory.repository` 等 5 个模块；被 `agent.query_agent`、`memory.consolidator`、`memory.evolution`、`memory.service` 等 6 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -19,9 +24,11 @@ _TRACE_LOCK = threading.RLock()
 
 
 def _safe_error(error: str | None) -> str | None:
-    """负责“安全错误”。
-
-    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_safe_error` 负责处理 safe error，服务于本文件职责：Memory Trace 存储与隐私裁剪。
+    传参：
+        error: 当前捕获的异常对象，类型为 `str | None`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     if not error:
         return None
@@ -35,9 +42,11 @@ def _safe_error(error: str | None) -> str | None:
 
 
 def _read_traces(path: str | Path | None = None) -> list[dict[str, Any]]:
-    """负责“读取traces”。
-
-    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_read_traces` 负责读取 traces，服务于本文件职责：Memory Trace 存储与隐私裁剪。
+    传参：
+        path: 文件系统路径，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     if path is None and STORAGE_BACKEND == "postgres":
         from repositories.postgres.memory import list_memory_traces
@@ -57,9 +66,14 @@ def _read_traces(path: str | Path | None = None) -> list[dict[str, Any]]:
 
 
 def start_trace(trace_type: str, space_id: str, *, note_id: str | None = None, query_len: int | None = None) -> dict[str, Any]:
-    """负责“启动追踪”。
-
-    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`start_trace` 负责启动 trace，服务于本文件职责：Memory Trace 存储与隐私裁剪。
+    传参：
+        trace_type: trace type 参数，由调用方传入，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str | None`，默认值为 `None`。
+        query_len: query len 参数，由调用方传入，类型为 `int | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     trace: dict[str, Any] = {
         "trace_id": new_id("trace"),
@@ -85,9 +99,18 @@ def add_step(
     reason: str | None = None,
     error: str | None = None,
 ) -> None:
-    """负责“添加步骤”。
-
-    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`add_step` 负责处理 add step，服务于本文件职责：Memory Trace 存储与隐私裁剪。
+    传参：
+        trace: trace 参数，由调用方传入，类型为 `dict[str, Any] | None`。
+        step: step 参数，由调用方传入，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'success'`。
+        duration_ms: duration ms 参数，由调用方传入，类型为 `int`，默认值为 `0`。
+        input_summary: input summary 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+        output_summary: output summary 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+        reason: reason 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if trace is None:
         return
@@ -106,9 +129,13 @@ def add_step(
 
 
 def finish_trace(trace: dict[str, Any] | None, *, status: str = "success", path: str | Path | None = None) -> dict[str, Any] | None:
-    """负责“finish追踪”。
-
-    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`finish_trace` 负责追踪 finish，服务于本文件职责：Memory Trace 存储与隐私裁剪。
+    传参：
+        trace: trace 参数，由调用方传入，类型为 `dict[str, Any] | None`。
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'success'`。
+        path: 文件系统路径，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     if trace is None:
         return None
@@ -131,18 +158,23 @@ def finish_trace(trace: dict[str, Any] | None, *, status: str = "success", path:
 
 
 def latest_trace(path: str | Path | None = None) -> dict[str, Any] | None:
-    """负责“最新追踪”。
-
-    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`latest_trace` 负责追踪 latest，服务于本文件职责：Memory Trace 存储与隐私裁剪。
+    传参：
+        path: 文件系统路径，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     traces = _read_traces(path)
     return traces[-1] if traces else None
 
 
 def get_trace(trace_id: str, path: str | Path | None = None) -> dict[str, Any] | None:
-    """负责“获取追踪”。
-
-    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_trace` 负责获取 trace，服务于本文件职责：Memory Trace 存储与隐私裁剪。
+    传参：
+        trace_id: Trace 标识，用于读取或写入审计链路，类型为 `str`。
+        path: 文件系统路径，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     for item in reversed(_read_traces(path)):
         if item.get("trace_id") == trace_id:
@@ -151,9 +183,12 @@ def get_trace(trace_id: str, path: str | Path | None = None) -> dict[str, Any] |
 
 
 def find_traces_by_memory(memory_id: str, path: str | Path | None = None) -> list[dict[str, Any]]:
-    """负责“查找tracesby记忆”。
-
-    该函数是 `memory.trace` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`find_traces_by_memory` 负责查找 traces by memory，服务于本文件职责：Memory Trace 存储与隐私裁剪。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        path: 文件系统路径，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     matched = []
     for item in _read_traces(path):

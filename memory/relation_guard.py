@@ -1,4 +1,9 @@
-"""Local, deterministic approval guard for Memory V3 mutations."""
+"""文件作用：关系安全门。
+
+项目关系：本文件依赖 `memory.canonicalizer`、`memory.models`、`memory.policies`；被 `memory.adjudicator`、`memory.candidate_retriever`、`memory.shadow`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -12,6 +17,10 @@ from memory.policies import task as task_policy
 
 @dataclass(frozen=True)
 class RelationGuardResult:
+    """类功能：`RelationGuardResult` 封装与“关系安全门”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     relation: str
     action: str
     reason: str
@@ -19,41 +28,48 @@ class RelationGuardResult:
 
 
 def _same(left: str | None, right: str | None) -> bool:
-    """负责“same”。
-
-    该函数是 `memory.relation_guard` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_same` 负责处理 same，服务于本文件职责：关系安全门。
+    传参：
+        left: left 参数，由调用方传入，类型为 `str | None`。
+        right: right 参数，由调用方传入，类型为 `str | None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     return bool(left and right and normalize_content(left) == normalize_content(right))
 
 
 def _scope(memory: MemoryRecord, key: str, default: str = "") -> str:
-    """负责“scope”。
-
-    该函数是 `memory.relation_guard` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_scope` 负责处理 scope，服务于本文件职责：关系安全门。
+    传参：
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+        key: key 参数，由调用方传入，类型为 `str`。
+        default: default 参数，由调用方传入，类型为 `str`，默认值为 `''`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return str(memory.scope.get(key) or default)
 
 
 def is_v3_candidate(candidate: MemoryCandidate) -> bool:
-    """负责“是否为v3候选”。
-
-    该函数是 `memory.relation_guard` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`is_v3_candidate` 负责判断是否为 v3 candidate，服务于本文件职责：关系安全门。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     return candidate.memory_key_version == MEMORY_KEY_V3_VERSION or candidate.scope.get("memory_key_version") == MEMORY_KEY_V3_VERSION
 
 
 def _task_values_changed(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
-    """Whether a same-key task carries a concrete replacement-value update.
-
-    Lifecycle wording alone must not create a new task or overwrite a useful
-    task description.  Explicit values (for example a new supplier) are
-    different: keeping the canonical task but refreshing its current value is
-    the intended V3 behavior.
+    """函数功能：`_task_values_changed` 负责处理 task values changed，服务于本文件职责：关系安全门。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
-    # ``object_value`` is a display/extraction fallback for a task's material;
-    # it changes with wording such as “需要完成 X” -> “已经完成 X”.  It is not
-    # evidence of a supplier/value replacement.  Only explicit slots may
-    # bypass the lifecycle state machine.
+    # `object_value` 只是任务材料的展示/抽取 fallback，会随“需要完成 X”到“已经完成 X”这类表述变化。
+    # 它不是供应方或取值替换证据；只有显式槽位才允许绕过生命周期状态机。
     candidate_values = {
         "old_value": str(candidate.scope.get("old_value") or "").strip(),
         "new_value": str(candidate.scope.get("new_value") or "").strip(),
@@ -73,11 +89,12 @@ _EXPLICIT_REOPEN_MARKERS = ("重新", "再次", "重做", "返工", "恢复", "�
 
 
 def _implicit_terminal_reactivation(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
-    """Require explicit wording before reopening a completed/cancelled task.
-
-    “已经完成 X” followed by “正在做 X” is contradictory unless the user
-    explicitly says the task was reopened.  Treating every such pair as a
-    valid transition hides the conflict from ``/memory pending``.
+    """函数功能：`_implicit_terminal_reactivation` 负责处理 implicit terminal reactivation，服务于本文件职责：关系安全门。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if memory.task_status not in {"done", "cancelled"}:
         return False
@@ -88,12 +105,12 @@ def _implicit_terminal_reactivation(candidate: MemoryCandidate, memory: MemoryRe
 
 
 def _task_refines_existing_identity(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
-    """Allow a later, more specific name for the same active task.
-
-    A user often starts with a short task name ("做简历") and only later
-    supplies the qualifier ("做 Agent 开发简历").  Exact keys remain the normal
-    path.  This narrow suffix refinement prevents a false split without
-    treating merely similar task text as permission to merge.
+    """函数功能：`_task_refines_existing_identity` 负责处理 task refines existing identity，服务于本文件职责：关系安全门。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if not _same(candidate.subject, memory.subject):
         return False
@@ -109,7 +126,13 @@ def _task_refines_existing_identity(candidate: MemoryCandidate, memory: MemoryRe
 
 
 def evaluate_relation(candidate: MemoryCandidate, memory: MemoryRecord) -> RelationGuardResult:
-    """Classify one candidate without treating retrieval similarity as authority."""
+    """函数功能：`evaluate_relation` 负责处理 evaluate relation，服务于本文件职责：关系安全门。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+    返回结果说明：
+        返回 `RelationGuardResult` 类型结果；具体字段和语义由调用方按该对象约定使用。
+    """
     if candidate.memory_type != memory.memory_type:
         return RelationGuardResult("new", "insert", "memory_type_mismatch", False)
 
@@ -140,8 +163,7 @@ def evaluate_relation(candidate: MemoryCandidate, memory: MemoryRecord) -> Relat
         return RelationGuardResult("conflict", "pending_review", "exact_task_key_invalid_state_transition", False)
 
     if candidate.memory_type == "semantic":
-        # The old generic (用户, fact) representation is retrieval context only;
-        # it must never be interpreted as an identity match.
+        # 旧版泛化 `(用户, fact)` 表示只能作为检索语境，绝不能被解释为身份匹配。
         generic_fact = normalize_content(candidate.predicate or "") in {"fact", "事实"} or normalize_content(memory.predicate or "") in {"fact", "事实"}
         if generic_fact and not exact_key:
             return RelationGuardResult("new", "insert", "generic_semantic_fact_cannot_auto_merge", False)

@@ -1,4 +1,9 @@
-"""Memory retrieval scoring."""
+"""文件作用：长期记忆检索。
+
+项目关系：本文件依赖 `core.settings`、`memory.models`、`memory.policies.preference`、`memory.repository`；被 `memory.consolidator`、`memory.repository`、`repositories.postgres.memory`、`tests.test_retrieval_design`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -11,9 +16,11 @@ from memory.policies.preference import preference_polarity, preference_query_pol
 
 
 def _parse_ts(value: str | None) -> datetime | None:
-    """负责“解析ts”。
-
-    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_parse_ts` 负责解析 ts，服务于本文件职责：长期记忆检索。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str | None`。
+    返回结果说明：
+        返回 `datetime | None`；未命中或无需处理时可返回 `None`。
     """
     if not value:
         return None
@@ -39,9 +46,11 @@ _QUERY_FILLERS = (
 
 
 def retrieval_topic_text(value: str) -> str:
-    """负责“retrievaltopic文本”。
-
-    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`retrieval_topic_text` 负责处理 retrieval topic text，服务于本文件职责：长期记忆检索。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     text = str(value or "").casefold()
     for filler in sorted(_QUERY_FILLERS, key=len, reverse=True):
@@ -53,21 +62,24 @@ def retrieval_topic_text(value: str) -> str:
 
 
 def _named_tokens(value: str) -> set[str]:
-    # CJK family identifiers (生活-02) are as meaningful as ASCII issue keys
-    # (PROJ-123). Match the complete identifier so a shared numeric suffix
-    # cannot make two unrelated records look equivalent.
-    """负责“namedtokens”。
-
-    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    # CJK 家族标识（如 生活-02）和 ASCII issue key（如 PROJ-123）同样有意义。
+    # 必须匹配完整标识，不能让共享数字后缀把两条无关记录看起来等价。
+    """函数功能：`_named_tokens` 负责处理 named tokens，服务于本文件职责：长期记忆检索。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `set[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     pattern = r"[\u4e00-\u9fffA-Za-z]+-\d+|[A-Za-z][A-Za-z0-9+#._-]*|\d+(?:[._-]\d+)*"
     return {token.casefold() for token in re.findall(pattern, value)}
 
 
 def _cjk_ngrams(value: str) -> set[str]:
-    """负责“cjkngrams”。
-
-    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_cjk_ngrams` 负责处理 cjk ngrams，服务于本文件职责：长期记忆检索。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `set[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     grams: set[str] = set()
     for run in re.findall(r"[\u4e00-\u9fff]+", value):
@@ -81,7 +93,13 @@ def _cjk_ngrams(value: str) -> set[str]:
 
 
 def _overlap_score(query: str, content: str) -> float:
-    """Topic relevance based on phrases/tokens, never isolated CJK chars."""
+    """函数功能：`_overlap_score` 负责评分 overlap，服务于本文件职责：长期记忆检索。
+    传参：
+        query: 检索或查询文本，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
+    """
     q_topic = retrieval_topic_text(query)
     c_topic = retrieval_topic_text(content)
     q = normalize_content(q_topic)
@@ -101,16 +119,17 @@ def _overlap_score(query: str, content: str) -> float:
     c_grams = _cjk_ngrams(c_topic)
     cjk_score = len(q_grams & c_grams) / len(q_grams) if q_grams else 0.0
     if q_named and q_grams:
-        # A shared generic token such as Agent or SQL is not enough when the
-        # Chinese topic qualifier disagrees (Agent简历 vs Agent评测).
+        # 共享 Agent 或 SQL 这类泛化 token 时，若中文主题限定词不同，仍不足以判定同一主题。
         return round(0.35 * named_score + 0.65 * cjk_score, 4)
     return round(named_score if q_named else cjk_score, 4)
 
 
 def _query_memory_type(query: str) -> str | None:
-    """负责“查询记忆类型”。
-
-    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_query_memory_type` 负责查询 memory type，服务于本文件职责：长期记忆检索。
+    传参：
+        query: 检索或查询文本，类型为 `str`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     value = str(query or "")
     preference = any(marker in value for marker in ("喜欢", "不喜欢", "偏好", "讨厌", "避开", "过敏"))
@@ -125,18 +144,23 @@ def _query_memory_type(query: str) -> str | None:
 
 
 def _intent_score(query: str, memory: MemoryRecord) -> float:
-    """负责“意图评分”。
-
-    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_intent_score` 负责评分 intent，服务于本文件职责：长期记忆检索。
+    传参：
+        query: 检索或查询文本，类型为 `str`。
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
     """
     expected = _query_memory_type(query)
     return 1.0 if expected is not None and memory.memory_type == expected else 0.0
 
 
 def _recency_score(memory: MemoryRecord) -> float:
-    """负责“recency评分”。
-
-    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_recency_score` 负责评分 recency，服务于本文件职责：长期记忆检索。
+    传参：
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
     """
     updated = _parse_ts(memory.updated_at)
     if updated is None:
@@ -150,9 +174,12 @@ def _recency_score(memory: MemoryRecord) -> float:
 
 
 def score_memory(query: str, memory: MemoryRecord) -> float:
-    """负责“评分记忆”。
-
-    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`score_memory` 负责评分 memory，服务于本文件职责：长期记忆检索。
+    传参：
+        query: 检索或查询文本，类型为 `str`。
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
     """
     query_polarity = "unknown"
     memory_polarity = "unknown"
@@ -179,9 +206,7 @@ def score_memory(query: str, memory: MemoryRecord) -> float:
         and query_polarity == memory_polarity
         and intent_similarity > 0
     ):
-        # "我不喜欢喝什么" intentionally omits the concrete object. Preserve
-        # polarity and type matching so a relevant negative preference clears
-        # the retrieval threshold without making an opposite preference match.
+        # “我不喜欢喝什么”会刻意省略具体对象；保留 polarity 和 type 匹配，让相关负偏好越过检索阈值，同时避免相反偏好被误命中。
         topic_similarity = max(topic_similarity, 0.45)
     if topic_similarity <= 0 and intent_similarity <= 0:
         return 0.0
@@ -189,9 +214,7 @@ def score_memory(query: str, memory: MemoryRecord) -> float:
     status_factor = 1.0
     expected_type = _query_memory_type(query)
     if expected_type is not None and memory.memory_type != expected_type:
-        # A clear structured intent is a deterministic constraint, not a soft
-        # semantic preference. Keep a small fallback score for imperfect user
-        # phrasing, but do not let a same-label fact outrank the requested task.
+        # 明确结构化意图是确定性约束，不是软语义偏好；为不完美表达保留小 fallback 分，但不能让同标签事实排在目标任务前。
         status_factor *= 0.35
     if memory.status == "conflicted":
         status_factor = 0.5
@@ -225,9 +248,15 @@ def search(
     min_score: float = MEMORY_QUERY_MIN_SCORE,
     limit: int = 10,
 ) -> list[dict[str, object]]:
-    """负责“检索”。
-
-    该函数是 `memory.retriever` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`search` 负责搜索，服务于本文件职责：长期记忆检索。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        min_score: min score 参数，由调用方传入，类型为 `float`，默认值为 `MEMORY_QUERY_MIN_SCORE`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `10`。
+    返回结果说明：
+        返回 `list[dict[str, object]]`，表示按条件筛选、构造或查询得到的列表。
     """
     from memory.repository import search_memories
 

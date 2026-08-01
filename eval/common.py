@@ -1,4 +1,9 @@
-"""Shared helpers for offline evaluation scripts."""
+"""文件作用：评测公共工具。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 `eval.eval_classification`、`eval.eval_memory`、`eval.eval_memory_quality`、`eval.eval_query_react` 等 9 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -8,9 +13,11 @@ from typing import Any
 
 
 def load_jsonl(path: str | Path) -> list[dict[str, Any]]:
-    """负责“加载jsonl”。
-
-    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`load_jsonl` 负责加载 jsonl，服务于本文件职责：评测公共工具。
+    传参：
+        path: 文件系统路径，类型为 `str | Path`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     items: list[dict[str, Any]] = []
     with Path(path).open("r", encoding="utf-8") as f:
@@ -29,9 +36,12 @@ def load_jsonl(path: str | Path) -> list[dict[str, Any]]:
 
 
 def write_json(path: str | Path, data: Any) -> None:
-    """负责“写入JSON”。
-
-    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`write_json` 负责写入 json，服务于本文件职责：评测公共工具。
+    传参：
+        path: 文件系统路径，类型为 `str | Path`。
+        data: 待处理的数据对象或结构化映射，类型为 `Any`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     Path(path).write_text(
@@ -41,9 +51,13 @@ def write_json(path: str | Path, data: Any) -> None:
 
 
 def _get_value(data: Any, key: str, default: Any = None) -> Any:
-    """负责“获取字段值”。
-
-    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_get_value` 负责获取 value，服务于本文件职责：评测公共工具。
+    传参：
+        data: 待处理的数据对象或结构化映射，类型为 `Any`。
+        key: key 参数，由调用方传入，类型为 `str`。
+        default: default 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if isinstance(data, dict):
         return data.get(key, default)
@@ -51,9 +65,11 @@ def _get_value(data: Any, key: str, default: Any = None) -> Any:
 
 
 def _expected_types(case: dict[str, Any]) -> list[str]:
-    """负责“expectedtypes”。
-
-    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_expected_types` 负责处理 expected types，服务于本文件职责：评测公共工具。
+    传参：
+        case: case 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     values = case.get("acceptable_types")
     if values is None:
@@ -67,9 +83,12 @@ def _expected_types(case: dict[str, Any]) -> list[str]:
 
 
 def score_classification(prediction: Any, case: dict[str, Any]) -> dict[str, Any]:
-    """负责“评分classification”。
-
-    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`score_classification` 负责评分 classification，服务于本文件职责：评测公共工具。
+    传参：
+        prediction: prediction 参数，由调用方传入，类型为 `Any`。
+        case: case 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     pred_type = str(_get_value(prediction, "type", ""))
     pred_tags = set(str(tag) for tag in (_get_value(prediction, "tags", []) or []))
@@ -105,9 +124,13 @@ def score_classification(prediction: Any, case: dict[str, Any]) -> dict[str, Any
 
 
 def hit_at_k(ranked_ids: list[str], expected_ids: list[str], k: int) -> bool:
-    """负责“hitatk”。
-
-    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`hit_at_k` 负责处理 hit at k，服务于本文件职责：评测公共工具。
+    传参：
+        ranked_ids: ranked ids 参数，由调用方传入，类型为 `list[str]`。
+        expected_ids: expected ids 参数，由调用方传入，类型为 `list[str]`。
+        k: k 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if k <= 0:
         return False
@@ -115,9 +138,13 @@ def hit_at_k(ranked_ids: list[str], expected_ids: list[str], k: int) -> bool:
 
 
 def recall_at_k(ranked_ids: list[str], expected_ids: list[str], k: int) -> float:
-    """负责“recallatk”。
-
-    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`recall_at_k` 负责处理 recall at k，服务于本文件职责：评测公共工具。
+    传参：
+        ranked_ids: ranked ids 参数，由调用方传入，类型为 `list[str]`。
+        expected_ids: expected ids 参数，由调用方传入，类型为 `list[str]`。
+        k: k 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
     """
     expected = set(expected_ids)
     if not expected or k <= 0:
@@ -132,9 +159,14 @@ def score_retrieval(
     ks: tuple[int, ...] = (1, 3, 5, 10),
     scores_by_id: dict[str, float] | None = None,
 ) -> dict[str, Any]:
-    """负责“评分retrieval”。
-
-    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`score_retrieval` 负责评分 retrieval，服务于本文件职责：评测公共工具。
+    传参：
+        ranked_ids: ranked ids 参数，由调用方传入，类型为 `list[str]`。
+        case: case 参数，由调用方传入，类型为 `dict[str, Any]`。
+        ks: ks 参数，由调用方传入，类型为 `tuple[int, ...]`，默认值为 `(1, 3, 5, 10)`。
+        scores_by_id: scores by id 参数，由调用方传入，类型为 `dict[str, float] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     expected_ids = [str(item) for item in case.get("expected_note_ids", [])]
     scores_by_id = scores_by_id or {}
@@ -171,9 +203,13 @@ def score_query_react(
     answer: str,
     case: dict[str, Any],
 ) -> dict[str, Any]:
-    """负责“评分查询react”。
-
-    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`score_query_react` 负责评分 query react，服务于本文件职责：评测公共工具。
+    传参：
+        tool_calls: tool calls 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+        answer: answer 参数，由调用方传入，类型为 `str`。
+        case: case 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     tools_used = [str(call.get("tool")) for call in tool_calls]
     expected_tools_all = [str(item) for item in case.get("expected_tools_all", [])]
@@ -216,9 +252,12 @@ def score_query_react(
 
 
 def score_summary(summary: str, case: dict[str, Any]) -> dict[str, Any]:
-    """负责“评分总结”。
-
-    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`score_summary` 负责评分 summary，服务于本文件职责：评测公共工具。
+    传参：
+        summary: summary 参数，由调用方传入，类型为 `str`。
+        case: case 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     must_include = [str(item) for item in case.get("must_include", [])]
     must_not_include = [str(item) for item in case.get("must_not_include", [])]
@@ -239,9 +278,12 @@ def score_summary(summary: str, case: dict[str, Any]) -> dict[str, Any]:
 
 
 def aggregate_boolean_scores(results: list[dict[str, Any]], field: str = "passed") -> dict[str, Any]:
-    """负责“aggregatebooleanscores”。
-
-    该函数是 `eval.common` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`aggregate_boolean_scores` 负责处理 aggregate boolean scores，服务于本文件职责：评测公共工具。
+    传参：
+        results: results 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+        field: field 参数，由调用方传入，类型为 `str`，默认值为 `'passed'`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     total = len(results)
     passed = sum(1 for item in results if item.get(field))

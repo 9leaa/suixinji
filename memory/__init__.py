@@ -1,1 +1,6 @@
-"""Long-term memory extraction, adjudication, evolution, and consumption."""
+"""文件作用：Memory 包标记。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+

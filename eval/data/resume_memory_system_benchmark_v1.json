@@ -1,0 +1,1881 @@
+{
+  "dataset": "resume_memory_system_benchmark_v1",
+  "created_at": "2026-07-27T00:00:00+00:00",
+  "scope": "offline synthetic benchmark; local SQLite temp DB; deterministic rules/planner; no LLM or Feishu calls",
+  "case_counts": {
+    "extraction": 12,
+    "service_notes": 9,
+    "lifecycle_scenarios": 5,
+    "retrieval_queries": 11,
+    "routing_queries": 216,
+    "routing_simple": 108,
+    "routing_complex": 108
+  },
+  "extraction_cases": [
+    {
+      "case_id": "extract_multi_preference_task",
+      "text": "我不喜欢喝牛奶，我也不喜欢工作，现在正在投递Agent简历",
+      "should_store": true,
+      "min_candidates": 2,
+      "expected_types": [
+        "preference"
+      ],
+      "expected_content_terms": [
+        "牛奶",
+        "工作"
+      ],
+      "notes": "The deterministic fallback currently extracts Agent resume as semantic, not task, without LLM schema help."
+    },
+    {
+      "case_id": "extract_two_preferences",
+      "text": "我喜欢燕麦拿铁，但是不喜欢牛奶",
+      "should_store": true,
+      "min_candidates": 2,
+      "expected_types": [
+        "preference"
+      ],
+      "expected_content_terms": [
+        "燕麦拿铁",
+        "牛奶"
+      ]
+    },
+    {
+      "case_id": "extract_task_todo",
+      "text": "记得完成Memory V3验收报告",
+      "should_store": true,
+      "min_candidates": 1,
+      "expected_types": [
+        "task"
+      ],
+      "expected_task_status": "todo",
+      "expected_content_terms": [
+        "Memory",
+        "验收报告"
+      ]
+    },
+    {
+      "case_id": "extract_task_in_progress",
+      "text": "我正在完成Memory V3验收报告",
+      "should_store": true,
+      "min_candidates": 1,
+      "expected_types": [
+        "task"
+      ],
+      "expected_task_status": "in_progress",
+      "expected_content_terms": [
+        "Memory",
+        "验收报告"
+      ]
+    },
+    {
+      "case_id": "extract_task_done",
+      "text": "我已经完成Memory V3验收报告",
+      "should_store": true,
+      "min_candidates": 1,
+      "expected_types": [
+        "task"
+      ],
+      "expected_task_status": "done",
+      "expected_content_terms": [
+        "Memory",
+        "验收报告"
+      ]
+    },
+    {
+      "case_id": "extract_semantic_location",
+      "text": "我住在上海",
+      "should_store": true,
+      "min_candidates": 1,
+      "expected_types": [
+        "semantic"
+      ],
+      "expected_content_terms": [
+        "上海"
+      ]
+    },
+    {
+      "case_id": "extract_episodic_release",
+      "text": "今天发布了随心记首页",
+      "should_store": true,
+      "min_candidates": 1,
+      "expected_types": [
+        "episodic"
+      ],
+      "expected_content_terms": [
+        "随心记首页"
+      ]
+    },
+    {
+      "case_id": "filter_ack",
+      "text": "好的收到",
+      "should_store": false,
+      "min_candidates": 0
+    },
+    {
+      "case_id": "filter_filler",
+      "text": "哈哈这个先这样吧",
+      "should_store": false,
+      "min_candidates": 0
+    },
+    {
+      "case_id": "filter_low_confidence",
+      "text": "我可能喜欢某个还没想清楚的方向",
+      "should_store": false,
+      "min_candidates": 0
+    },
+    {
+      "case_id": "filter_sensitive_password",
+      "text": "密码是abc12345",
+      "should_store": false,
+      "min_candidates": 0,
+      "sensitive": true
+    },
+    {
+      "case_id": "filter_sensitive_identifier",
+      "text": "身份证号是11010119900307543X",
+      "should_store": false,
+      "min_candidates": 0,
+      "sensitive": true
+    }
+  ],
+  "service_notes": [
+    {
+      "id": "main-001",
+      "space_id": "resume-bench-main",
+      "text": "我不喜欢喝牛奶"
+    },
+    {
+      "id": "main-002",
+      "space_id": "resume-bench-main",
+      "text": "我喜欢Python异步"
+    },
+    {
+      "id": "main-003",
+      "space_id": "resume-bench-main",
+      "text": "我正在投递Agent简历"
+    },
+    {
+      "id": "main-004",
+      "space_id": "resume-bench-main",
+      "text": "我已经完成Memory V3验收报告"
+    },
+    {
+      "id": "main-005",
+      "space_id": "resume-bench-main",
+      "text": "我住在上海"
+    },
+    {
+      "id": "main-006",
+      "space_id": "resume-bench-main",
+      "text": "今天发布了随心记首页"
+    },
+    {
+      "id": "main-007",
+      "space_id": "resume-bench-main",
+      "text": "记得整理Zeta验收截图"
+    },
+    {
+      "id": "main-008",
+      "space_id": "resume-bench-main",
+      "text": "我不喜欢开会"
+    },
+    {
+      "id": "main-009",
+      "space_id": "resume-bench-main",
+      "text": "我喜欢抹茶"
+    }
+  ],
+  "lifecycle_scenarios": [
+    {
+      "case_id": "task_lifecycle_agent_resume_refinement",
+      "space_id": "resume-bench-life-agent-resume",
+      "messages": [
+        "我需要做简历",
+        "我正在做简历",
+        "我已经做完Agent开发的简历了"
+      ],
+      "expected_active_task_count": 1,
+      "expected_final_task_status": "done",
+      "expected_current_version": 3,
+      "expected_source_count": 3,
+      "must_include": [
+        "Agent",
+        "简历"
+      ]
+    },
+    {
+      "case_id": "task_lifecycle_supplier_change",
+      "space_id": "resume-bench-life-supplier",
+      "messages": [
+        "记得给随心记的大模型换一个供应商",
+        "正在给随心记的大模型换 DeepSeek 供应商",
+        "随心记的大模型供应商已经从 OpenAI 换成 DeepSeek 了"
+      ],
+      "expected_active_task_count": 1,
+      "expected_final_task_status": "done",
+      "expected_current_version": 3,
+      "expected_source_count": 3,
+      "must_include": [
+        "DeepSeek"
+      ]
+    },
+    {
+      "case_id": "task_implicit_reopen_guard",
+      "space_id": "resume-bench-life-reopen",
+      "messages": [
+        "我需要完成记忆验收冲突",
+        "我已经完成记忆验收冲突",
+        "我正在完成记忆验收冲突"
+      ],
+      "expected_active_task_count": 1,
+      "expected_final_task_status": "done",
+      "expected_pending_review_count": 1,
+      "expected_current_version": 2,
+      "expected_source_count": 2,
+      "must_include": [
+        "记忆验收冲突"
+      ]
+    },
+    {
+      "case_id": "preference_supersede",
+      "space_id": "resume-bench-life-preference",
+      "messages": [
+        "我喜欢燕麦拿铁",
+        "我现在不喜欢燕麦拿铁"
+      ],
+      "expected_active_preference_count": 1,
+      "expected_superseded_preference_count": 1,
+      "expected_active_polarity": "negative",
+      "must_include": [
+        "不喜欢",
+        "燕麦拿铁"
+      ]
+    },
+    {
+      "case_id": "semantic_location_pending_review",
+      "space_id": "resume-bench-life-location",
+      "messages": [
+        "我住在北京",
+        "我搬到上海了"
+      ],
+      "expected_active_semantic_count": 1,
+      "expected_pending_review_count": 1,
+      "expected_pending_contains": [
+        "上海"
+      ],
+      "must_include": [
+        "北京"
+      ]
+    }
+  ],
+  "retrieval_queries": [
+    {
+      "case_id": "ret_neg_milk",
+      "query": "不喜欢牛奶",
+      "expected_terms": [
+        "牛奶"
+      ],
+      "expected_type": "preference",
+      "expected_polarity": "negative"
+    },
+    {
+      "case_id": "ret_python_pref",
+      "query": "喜欢Python异步",
+      "expected_terms": [
+        "Python",
+        "异步"
+      ],
+      "expected_type": "preference",
+      "expected_polarity": "positive"
+    },
+    {
+      "case_id": "ret_agent_resume",
+      "query": "投递Agent简历",
+      "expected_terms": [
+        "Agent",
+        "简历"
+      ],
+      "expected_type": "semantic"
+    },
+    {
+      "case_id": "ret_memory_report",
+      "query": "完成Memory V3验收报告",
+      "expected_terms": [
+        "Memory",
+        "验收报告"
+      ],
+      "expected_type": "task",
+      "expected_task_status": "done"
+    },
+    {
+      "case_id": "ret_location",
+      "query": "住在上海",
+      "expected_terms": [
+        "上海"
+      ],
+      "expected_type": "semantic"
+    },
+    {
+      "case_id": "ret_release",
+      "query": "随心记首页发布",
+      "expected_terms": [
+        "随心记首页"
+      ],
+      "expected_type": "episodic"
+    },
+    {
+      "case_id": "ret_zeta_task",
+      "query": "整理Zeta验收截图待办",
+      "expected_terms": [
+        "Zeta",
+        "截图"
+      ],
+      "expected_type": "task",
+      "expected_task_status": "todo"
+    },
+    {
+      "case_id": "ret_meeting_pref",
+      "query": "不喜欢开会",
+      "expected_terms": [
+        "开会"
+      ],
+      "expected_type": "preference",
+      "expected_polarity": "negative"
+    },
+    {
+      "case_id": "ret_no_result",
+      "query": "火星基地偏好",
+      "expect_no_result": true
+    },
+    {
+      "case_id": "ret_type_filter_task",
+      "query": "完成Memory V3验收报告",
+      "expected_terms": [
+        "Memory",
+        "验收报告"
+      ],
+      "expected_type": "task",
+      "memory_type": "task"
+    },
+    {
+      "case_id": "ret_type_filter_preference",
+      "query": "完成Memory V3验收报告",
+      "expect_no_result": true,
+      "memory_type": "preference"
+    }
+  ],
+  "routing_cases": [
+    {
+      "case_id": "route_0000",
+      "style": "simple_fact",
+      "query": "RAG混合检索的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0001",
+      "style": "simple_task_status",
+      "query": "RAG混合检索这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0002",
+      "style": "simple_preference",
+      "query": "我对RAG混合检索的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0003",
+      "style": "simple_filler",
+      "query": "请帮我查一下RAG混合检索",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0004",
+      "style": "simple_single_scope",
+      "query": "只查询RAG混合检索，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0005",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找RAG混合检索这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0006",
+      "style": "complex_compare",
+      "query": "比较RAG混合检索和SQL索引的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0007",
+      "style": "complex_causal",
+      "query": "为什么RAG混合检索的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0008",
+      "style": "complex_multi_evidence",
+      "query": "结合RAG混合检索、SQL索引以及Agent简历的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0009",
+      "style": "complex_multi_part",
+      "query": "RAG混合检索现在什么状态，并且SQL索引是否完成，另外说明Agent简历的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0010",
+      "style": "complex_trend",
+      "query": "分析RAG混合检索前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0011",
+      "style": "complex_relation",
+      "query": "分别找出RAG混合检索与SQL索引的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0012",
+      "style": "simple_fact",
+      "query": "SQL索引的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0013",
+      "style": "simple_task_status",
+      "query": "SQL索引这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0014",
+      "style": "simple_preference",
+      "query": "我对SQL索引的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0015",
+      "style": "simple_filler",
+      "query": "请帮我查一下SQL索引",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0016",
+      "style": "simple_single_scope",
+      "query": "只查询SQL索引，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0017",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找SQL索引这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0018",
+      "style": "complex_compare",
+      "query": "比较SQL索引和Agent简历的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0019",
+      "style": "complex_causal",
+      "query": "为什么SQL索引的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0020",
+      "style": "complex_multi_evidence",
+      "query": "结合SQL索引、Agent简历以及Canonical Key的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0021",
+      "style": "complex_multi_part",
+      "query": "SQL索引现在什么状态，并且Agent简历是否完成，另外说明Canonical Key的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0022",
+      "style": "complex_trend",
+      "query": "分析SQL索引前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0023",
+      "style": "complex_relation",
+      "query": "分别找出SQL索引与Agent简历的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0024",
+      "style": "simple_fact",
+      "query": "Agent简历的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0025",
+      "style": "simple_task_status",
+      "query": "Agent简历这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0026",
+      "style": "simple_preference",
+      "query": "我对Agent简历的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0027",
+      "style": "simple_filler",
+      "query": "请帮我查一下Agent简历",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0028",
+      "style": "simple_single_scope",
+      "query": "只查询Agent简历，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0029",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找Agent简历这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0030",
+      "style": "complex_compare",
+      "query": "比较Agent简历和Canonical Key的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0031",
+      "style": "complex_causal",
+      "query": "为什么Agent简历的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0032",
+      "style": "complex_multi_evidence",
+      "query": "结合Agent简历、Canonical Key以及Relation Guard的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0033",
+      "style": "complex_multi_part",
+      "query": "Agent简历现在什么状态，并且Canonical Key是否完成，另外说明Relation Guard的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0034",
+      "style": "complex_trend",
+      "query": "分析Agent简历前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0035",
+      "style": "complex_relation",
+      "query": "分别找出Agent简历与Canonical Key的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0036",
+      "style": "simple_fact",
+      "query": "Canonical Key的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0037",
+      "style": "simple_task_status",
+      "query": "Canonical Key这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0038",
+      "style": "simple_preference",
+      "query": "我对Canonical Key的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0039",
+      "style": "simple_filler",
+      "query": "请帮我查一下Canonical Key",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0040",
+      "style": "simple_single_scope",
+      "query": "只查询Canonical Key，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0041",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找Canonical Key这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0042",
+      "style": "complex_compare",
+      "query": "比较Canonical Key和Relation Guard的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0043",
+      "style": "complex_causal",
+      "query": "为什么Canonical Key的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0044",
+      "style": "complex_multi_evidence",
+      "query": "结合Canonical Key、Relation Guard以及飞书Pending的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0045",
+      "style": "complex_multi_part",
+      "query": "Canonical Key现在什么状态，并且Relation Guard是否完成，另外说明飞书Pending的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0046",
+      "style": "complex_trend",
+      "query": "分析Canonical Key前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0047",
+      "style": "complex_relation",
+      "query": "分别找出Canonical Key与Relation Guard的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0048",
+      "style": "simple_fact",
+      "query": "Relation Guard的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0049",
+      "style": "simple_task_status",
+      "query": "Relation Guard这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0050",
+      "style": "simple_preference",
+      "query": "我对Relation Guard的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0051",
+      "style": "simple_filler",
+      "query": "请帮我查一下Relation Guard",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0052",
+      "style": "simple_single_scope",
+      "query": "只查询Relation Guard，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0053",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找Relation Guard这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0054",
+      "style": "complex_compare",
+      "query": "比较Relation Guard和飞书Pending的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0055",
+      "style": "complex_causal",
+      "query": "为什么Relation Guard的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0056",
+      "style": "complex_multi_evidence",
+      "query": "结合Relation Guard、飞书Pending以及燕麦拿铁的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0057",
+      "style": "complex_multi_part",
+      "query": "Relation Guard现在什么状态，并且飞书Pending是否完成，另外说明燕麦拿铁的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0058",
+      "style": "complex_trend",
+      "query": "分析Relation Guard前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0059",
+      "style": "complex_relation",
+      "query": "分别找出Relation Guard与飞书Pending的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0060",
+      "style": "simple_fact",
+      "query": "飞书Pending的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0061",
+      "style": "simple_task_status",
+      "query": "飞书Pending这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0062",
+      "style": "simple_preference",
+      "query": "我对飞书Pending的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0063",
+      "style": "simple_filler",
+      "query": "请帮我查一下飞书Pending",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0064",
+      "style": "simple_single_scope",
+      "query": "只查询飞书Pending，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0065",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找飞书Pending这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0066",
+      "style": "complex_compare",
+      "query": "比较飞书Pending和燕麦拿铁的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0067",
+      "style": "complex_causal",
+      "query": "为什么飞书Pending的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0068",
+      "style": "complex_multi_evidence",
+      "query": "结合飞书Pending、燕麦拿铁以及Python异步的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0069",
+      "style": "complex_multi_part",
+      "query": "飞书Pending现在什么状态，并且燕麦拿铁是否完成，另外说明Python异步的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0070",
+      "style": "complex_trend",
+      "query": "分析飞书Pending前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0071",
+      "style": "complex_relation",
+      "query": "分别找出飞书Pending与燕麦拿铁的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0072",
+      "style": "simple_fact",
+      "query": "燕麦拿铁的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0073",
+      "style": "simple_task_status",
+      "query": "燕麦拿铁这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0074",
+      "style": "simple_preference",
+      "query": "我对燕麦拿铁的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0075",
+      "style": "simple_filler",
+      "query": "请帮我查一下燕麦拿铁",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0076",
+      "style": "simple_single_scope",
+      "query": "只查询燕麦拿铁，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0077",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找燕麦拿铁这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0078",
+      "style": "complex_compare",
+      "query": "比较燕麦拿铁和Python异步的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0079",
+      "style": "complex_causal",
+      "query": "为什么燕麦拿铁的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0080",
+      "style": "complex_multi_evidence",
+      "query": "结合燕麦拿铁、Python异步以及订阅预算的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0081",
+      "style": "complex_multi_part",
+      "query": "燕麦拿铁现在什么状态，并且Python异步是否完成，另外说明订阅预算的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0082",
+      "style": "complex_trend",
+      "query": "分析燕麦拿铁前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0083",
+      "style": "complex_relation",
+      "query": "分别找出燕麦拿铁与Python异步的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0084",
+      "style": "simple_fact",
+      "query": "Python异步的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0085",
+      "style": "simple_task_status",
+      "query": "Python异步这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0086",
+      "style": "simple_preference",
+      "query": "我对Python异步的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0087",
+      "style": "simple_filler",
+      "query": "请帮我查一下Python异步",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0088",
+      "style": "simple_single_scope",
+      "query": "只查询Python异步，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0089",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找Python异步这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0090",
+      "style": "complex_compare",
+      "query": "比较Python异步和订阅预算的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0091",
+      "style": "complex_causal",
+      "query": "为什么Python异步的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0092",
+      "style": "complex_multi_evidence",
+      "query": "结合Python异步、订阅预算以及上海博物馆的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0093",
+      "style": "complex_multi_part",
+      "query": "Python异步现在什么状态，并且订阅预算是否完成，另外说明上海博物馆的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0094",
+      "style": "complex_trend",
+      "query": "分析Python异步前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0095",
+      "style": "complex_relation",
+      "query": "分别找出Python异步与订阅预算的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0096",
+      "style": "simple_fact",
+      "query": "订阅预算的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0097",
+      "style": "simple_task_status",
+      "query": "订阅预算这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0098",
+      "style": "simple_preference",
+      "query": "我对订阅预算的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0099",
+      "style": "simple_filler",
+      "query": "请帮我查一下订阅预算",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0100",
+      "style": "simple_single_scope",
+      "query": "只查询订阅预算，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0101",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找订阅预算这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0102",
+      "style": "complex_compare",
+      "query": "比较订阅预算和上海博物馆的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0103",
+      "style": "complex_causal",
+      "query": "为什么订阅预算的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0104",
+      "style": "complex_multi_evidence",
+      "query": "结合订阅预算、上海博物馆以及向量检索的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0105",
+      "style": "complex_multi_part",
+      "query": "订阅预算现在什么状态，并且上海博物馆是否完成，另外说明向量检索的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0106",
+      "style": "complex_trend",
+      "query": "分析订阅预算前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0107",
+      "style": "complex_relation",
+      "query": "分别找出订阅预算与上海博物馆的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0108",
+      "style": "simple_fact",
+      "query": "上海博物馆的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0109",
+      "style": "simple_task_status",
+      "query": "上海博物馆这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0110",
+      "style": "simple_preference",
+      "query": "我对上海博物馆的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0111",
+      "style": "simple_filler",
+      "query": "请帮我查一下上海博物馆",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0112",
+      "style": "simple_single_scope",
+      "query": "只查询上海博物馆，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0113",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找上海博物馆这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0114",
+      "style": "complex_compare",
+      "query": "比较上海博物馆和向量检索的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0115",
+      "style": "complex_causal",
+      "query": "为什么上海博物馆的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0116",
+      "style": "complex_multi_evidence",
+      "query": "结合上海博物馆、向量检索以及敏感笔记的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0117",
+      "style": "complex_multi_part",
+      "query": "上海博物馆现在什么状态，并且向量检索是否完成，另外说明敏感笔记的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0118",
+      "style": "complex_trend",
+      "query": "分析上海博物馆前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0119",
+      "style": "complex_relation",
+      "query": "分别找出上海博物馆与向量检索的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0120",
+      "style": "simple_fact",
+      "query": "向量检索的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0121",
+      "style": "simple_task_status",
+      "query": "向量检索这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0122",
+      "style": "simple_preference",
+      "query": "我对向量检索的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0123",
+      "style": "simple_filler",
+      "query": "请帮我查一下向量检索",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0124",
+      "style": "simple_single_scope",
+      "query": "只查询向量检索，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0125",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找向量检索这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0126",
+      "style": "complex_compare",
+      "query": "比较向量检索和敏感笔记的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0127",
+      "style": "complex_causal",
+      "query": "为什么向量检索的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0128",
+      "style": "complex_multi_evidence",
+      "query": "结合向量检索、敏感笔记以及查询改写的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0129",
+      "style": "complex_multi_part",
+      "query": "向量检索现在什么状态，并且敏感笔记是否完成，另外说明查询改写的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0130",
+      "style": "complex_trend",
+      "query": "分析向量检索前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0131",
+      "style": "complex_relation",
+      "query": "分别找出向量检索与敏感笔记的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0132",
+      "style": "simple_fact",
+      "query": "敏感笔记的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0133",
+      "style": "simple_task_status",
+      "query": "敏感笔记这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0134",
+      "style": "simple_preference",
+      "query": "我对敏感笔记的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0135",
+      "style": "simple_filler",
+      "query": "请帮我查一下敏感笔记",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0136",
+      "style": "simple_single_scope",
+      "query": "只查询敏感笔记，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0137",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找敏感笔记这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0138",
+      "style": "complex_compare",
+      "query": "比较敏感笔记和查询改写的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0139",
+      "style": "complex_causal",
+      "query": "为什么敏感笔记的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0140",
+      "style": "complex_multi_evidence",
+      "query": "结合敏感笔记、查询改写以及分布式系统的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0141",
+      "style": "complex_multi_part",
+      "query": "敏感笔记现在什么状态，并且查询改写是否完成，另外说明分布式系统的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0142",
+      "style": "complex_trend",
+      "query": "分析敏感笔记前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0143",
+      "style": "complex_relation",
+      "query": "分别找出敏感笔记与查询改写的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0144",
+      "style": "simple_fact",
+      "query": "查询改写的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0145",
+      "style": "simple_task_status",
+      "query": "查询改写这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0146",
+      "style": "simple_preference",
+      "query": "我对查询改写的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0147",
+      "style": "simple_filler",
+      "query": "请帮我查一下查询改写",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0148",
+      "style": "simple_single_scope",
+      "query": "只查询查询改写，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0149",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找查询改写这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0150",
+      "style": "complex_compare",
+      "query": "比较查询改写和分布式系统的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0151",
+      "style": "complex_causal",
+      "query": "为什么查询改写的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0152",
+      "style": "complex_multi_evidence",
+      "query": "结合查询改写、分布式系统以及周报整理的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0153",
+      "style": "complex_multi_part",
+      "query": "查询改写现在什么状态，并且分布式系统是否完成，另外说明周报整理的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0154",
+      "style": "complex_trend",
+      "query": "分析查询改写前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0155",
+      "style": "complex_relation",
+      "query": "分别找出查询改写与分布式系统的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0156",
+      "style": "simple_fact",
+      "query": "分布式系统的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0157",
+      "style": "simple_task_status",
+      "query": "分布式系统这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0158",
+      "style": "simple_preference",
+      "query": "我对分布式系统的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0159",
+      "style": "simple_filler",
+      "query": "请帮我查一下分布式系统",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0160",
+      "style": "simple_single_scope",
+      "query": "只查询分布式系统，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0161",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找分布式系统这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0162",
+      "style": "complex_compare",
+      "query": "比较分布式系统和周报整理的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0163",
+      "style": "complex_causal",
+      "query": "为什么分布式系统的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0164",
+      "style": "complex_multi_evidence",
+      "query": "结合分布式系统、周报整理以及Memory V3验收的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0165",
+      "style": "complex_multi_part",
+      "query": "分布式系统现在什么状态，并且周报整理是否完成，另外说明Memory V3验收的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0166",
+      "style": "complex_trend",
+      "query": "分析分布式系统前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0167",
+      "style": "complex_relation",
+      "query": "分别找出分布式系统与周报整理的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0168",
+      "style": "simple_fact",
+      "query": "周报整理的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0169",
+      "style": "simple_task_status",
+      "query": "周报整理这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0170",
+      "style": "simple_preference",
+      "query": "我对周报整理的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0171",
+      "style": "simple_filler",
+      "query": "请帮我查一下周报整理",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0172",
+      "style": "simple_single_scope",
+      "query": "只查询周报整理，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0173",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找周报整理这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0174",
+      "style": "complex_compare",
+      "query": "比较周报整理和Memory V3验收的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0175",
+      "style": "complex_causal",
+      "query": "为什么周报整理的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0176",
+      "style": "complex_multi_evidence",
+      "query": "结合周报整理、Memory V3验收以及Zeta截图的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0177",
+      "style": "complex_multi_part",
+      "query": "周报整理现在什么状态，并且Memory V3验收是否完成，另外说明Zeta截图的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0178",
+      "style": "complex_trend",
+      "query": "分析周报整理前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0179",
+      "style": "complex_relation",
+      "query": "分别找出周报整理与Memory V3验收的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0180",
+      "style": "simple_fact",
+      "query": "Memory V3验收的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0181",
+      "style": "simple_task_status",
+      "query": "Memory V3验收这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0182",
+      "style": "simple_preference",
+      "query": "我对Memory V3验收的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0183",
+      "style": "simple_filler",
+      "query": "请帮我查一下Memory V3验收",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0184",
+      "style": "simple_single_scope",
+      "query": "只查询Memory V3验收，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0185",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找Memory V3验收这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0186",
+      "style": "complex_compare",
+      "query": "比较Memory V3验收和Zeta截图的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0187",
+      "style": "complex_causal",
+      "query": "为什么Memory V3验收的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0188",
+      "style": "complex_multi_evidence",
+      "query": "结合Memory V3验收、Zeta截图以及首页路径图的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0189",
+      "style": "complex_multi_part",
+      "query": "Memory V3验收现在什么状态，并且Zeta截图是否完成，另外说明首页路径图的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0190",
+      "style": "complex_trend",
+      "query": "分析Memory V3验收前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0191",
+      "style": "complex_relation",
+      "query": "分别找出Memory V3验收与Zeta截图的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0192",
+      "style": "simple_fact",
+      "query": "Zeta截图的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0193",
+      "style": "simple_task_status",
+      "query": "Zeta截图这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0194",
+      "style": "simple_preference",
+      "query": "我对Zeta截图的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0195",
+      "style": "simple_filler",
+      "query": "请帮我查一下Zeta截图",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0196",
+      "style": "simple_single_scope",
+      "query": "只查询Zeta截图，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0197",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找Zeta截图这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0198",
+      "style": "complex_compare",
+      "query": "比较Zeta截图和首页路径图的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0199",
+      "style": "complex_causal",
+      "query": "为什么Zeta截图的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0200",
+      "style": "complex_multi_evidence",
+      "query": "结合Zeta截图、首页路径图以及RAG混合检索的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0201",
+      "style": "complex_multi_part",
+      "query": "Zeta截图现在什么状态，并且首页路径图是否完成，另外说明RAG混合检索的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0202",
+      "style": "complex_trend",
+      "query": "分析Zeta截图前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0203",
+      "style": "complex_relation",
+      "query": "分别找出Zeta截图与首页路径图的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0204",
+      "style": "simple_fact",
+      "query": "首页路径图的当前记录是什么",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0205",
+      "style": "simple_task_status",
+      "query": "首页路径图这项任务状态",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0206",
+      "style": "simple_preference",
+      "query": "我对首页路径图的偏好",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0207",
+      "style": "simple_filler",
+      "query": "请帮我查一下首页路径图",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0208",
+      "style": "simple_single_scope",
+      "query": "只查询首页路径图，不要比较其它主题，也不要分析原因",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0209",
+      "style": "simple_long_single_topic",
+      "query": "请从长期记忆中只查找首页路径图这一项主题的唯一当前结论并返回对应的一条记录，不需要拆分问题",
+      "expected_complexity": "simple",
+      "expected_strategy": null
+    },
+    {
+      "case_id": "route_0210",
+      "style": "complex_compare",
+      "query": "比较首页路径图和RAG混合检索的当前结论，并说明适用场景",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0211",
+      "style": "complex_causal",
+      "query": "为什么首页路径图的状态发生变化，结合之前记录解释原因",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0212",
+      "style": "complex_multi_evidence",
+      "query": "结合首页路径图、RAG混合检索以及SQL索引的记录，归纳当前结论",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0213",
+      "style": "complex_multi_part",
+      "query": "首页路径图现在什么状态，并且RAG混合检索是否完成，另外说明SQL索引的偏好",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    },
+    {
+      "case_id": "route_0214",
+      "style": "complex_trend",
+      "query": "分析首页路径图前后变化和趋势，并指出证据",
+      "expected_complexity": "complex",
+      "expected_strategy": "step_back"
+    },
+    {
+      "case_id": "route_0215",
+      "style": "complex_relation",
+      "query": "分别找出首页路径图与RAG混合检索的记录，分析它们之间的关联、差异和对当前决策的影响",
+      "expected_complexity": "complex",
+      "expected_strategy": "decomposition"
+    }
+  ]
+}

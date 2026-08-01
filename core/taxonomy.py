@@ -1,4 +1,9 @@
-"""Shared note taxonomy for fixed note types and tags."""
+"""文件作用：分类词表和规则。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 `agent.query_agent`、`core.classifier`、`tests.1阶段测试.test_taxonomy`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -102,17 +107,32 @@ for tags in TYPE_TAGS.values():
 
 
 def is_valid_type(value: Any) -> bool:
-    """Return whether value is one of the fixed note types."""
+    """函数功能：`is_valid_type` 负责判断是否为 valid type，服务于本文件职责：分类词表和规则。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     return str(value or "").strip() in NOTE_TYPES
 
 
 def is_valid_tag(value: Any) -> bool:
-    """Return whether value is one of the fixed allowed tags."""
+    """函数功能：`is_valid_tag` 负责判断是否为 valid tag，服务于本文件职责：分类词表和规则。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     return str(value or "").strip().lstrip("#") in ALL_TAGS
 
 
 def normalize_type(value: Any) -> str:
-    """Normalize a model-produced type to one fixed note type."""
+    """函数功能：`normalize_type` 负责归一化 type，服务于本文件职责：分类词表和规则。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
+    """
     note_type = str(value or "").strip()
     if note_type in NOTE_TYPES:
         return note_type
@@ -121,23 +141,32 @@ def normalize_type(value: Any) -> str:
 
 
 def normalize_tag(value: Any) -> str:
-    """Normalize a tag string without accepting aliases or free tags."""
+    """函数功能：`normalize_tag` 负责归一化 tag，服务于本文件职责：分类词表和规则。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
+    """
     return str(value or "").strip().lstrip("#")
 
 
 def allowed_tags_for_type(note_type: str) -> list[str]:
-    """Return tags available for a given note type."""
+    """函数功能：`allowed_tags_for_type` 负责处理 allowed tags for type，服务于本文件职责：分类词表和规则。
+    传参：
+        note_type: note type 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
+    """
     return TYPE_TAGS.get(note_type, []) + GLOBAL_TAGS
 
 
 def normalize_tags(raw_tags: Any, note_type: str) -> list[str]:
-    """Keep only fixed-pool tags and fill missing tags from the type pool.
-
-    Rules:
-    - tags must come from TYPE_TAGS[note_type] or GLOBAL_TAGS.
-    - tags cannot duplicate.
-    - tags cannot equal note_type.
-    - output length is 2 to 5 when possible.
+    """函数功能：`normalize_tags` 负责归一化 tags，服务于本文件职责：分类词表和规则。
+    传参：
+        raw_tags: raw tags 参数，由调用方传入，类型为 `Any`。
+        note_type: note type 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     if not isinstance(raw_tags, list):
         raw_tags = []
@@ -176,7 +205,12 @@ def normalize_tags(raw_tags: Any, note_type: str) -> list[str]:
 
 
 def normalize_classification_data(data: dict[str, Any]) -> dict[str, Any]:
-    """Normalize raw LLM classification output before Pydantic validation."""
+    """函数功能：`normalize_classification_data` 负责归一化 classification data，服务于本文件职责：分类词表和规则。
+    传参：
+        data: 待处理的数据对象或结构化映射，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
+    """
     note_type = normalize_type(data.get("type"))
 
     return {

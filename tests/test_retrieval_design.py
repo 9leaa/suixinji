@@ -1,10 +1,21 @@
+"""文件作用：Note 与 Memory 混合检索、引用和覆盖。
+
+项目关系：本文件依赖 `agent.query_planner`、`memory.models`、`memory.policies.preference`、`memory.retriever`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from __future__ import annotations
 
 from agent.query_planner import build_query_plan
 
 
 def test_simple_query_keeps_fast_path():
-    """验证“simple查询keepsfastpath”场景的预期行为与回归边界。"""
+    """函数功能：`test_simple_query_keeps_fast_path` 负责验证 simple query keeps fast path 场景，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     plan = build_query_plan("我现在住在哪里")
     assert plan.complexity == "simple"
     assert plan.retrieval_queries == ()
@@ -14,7 +25,12 @@ def test_simple_query_keeps_fast_path():
 
 
 def test_complex_query_enables_bounded_step_back():
-    """验证“complex查询enablesbounded步骤back”场景的预期行为与回归边界。"""
+    """函数功能：`test_complex_query_enables_bounded_step_back` 负责验证 complex query enables bounded step back 场景，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     plan = build_query_plan("为什么我最近的RAG学习进度变化了，结合之前的记录总结原因")
     assert plan.complexity == "complex"
     assert plan.use_step_back
@@ -24,7 +40,12 @@ def test_complex_query_enables_bounded_step_back():
 
 
 def test_english_step_back_is_complex():
-    """验证“english步骤back是否为complex”场景的预期行为与回归边界。"""
+    """函数功能：`test_english_step_back_is_complex` 负责验证 english step back is complex 场景，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     plan = build_query_plan("对这个主题做step-back分析后给出结论")
     assert plan.complexity == "complex"
     assert plan.use_step_back
@@ -32,7 +53,12 @@ def test_english_step_back_is_complex():
 
 
 def test_comparison_is_decomposed_into_topics():
-    """验证“comparison是否为decomposedintotopics”场景的预期行为与回归边界。"""
+    """函数功能：`test_comparison_is_decomposed_into_topics` 负责验证 comparison is decomposed into topics 场景，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     plan = build_query_plan("比较Canonical Key和SQL索引的当前结论")
     assert plan.use_decomposition
     assert "Canonical Key" in plan.retrieval_queries
@@ -40,7 +66,12 @@ def test_comparison_is_decomposed_into_topics():
 
 
 def test_preference_question_has_neutral_query_polarity():
-    """验证“偏好question是否包含neutral查询polarity”场景的预期行为与回归边界。"""
+    """函数功能：`test_preference_question_has_neutral_query_polarity` 负责验证 preference question has neutral query polarity 场景，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     from memory.policies.preference import preference_query_polarity
 
     assert preference_query_polarity("工作日早上我喜欢喝咖啡吗？") == "unknown"
@@ -51,7 +82,15 @@ def test_preference_question_has_neutral_query_polarity():
 
 
 def _record(content: str, *, memory_type: str = "semantic", object_value: str | None = None, polarity: str | None = None):
-    """验证“记录”场景的预期行为与回归边界。"""
+    """函数功能：`_record` 负责记录，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str`，默认值为 `'semantic'`。
+        object_value: object value 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        polarity: polarity 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     from memory.models import MemoryRecord, normalize_content
 
     return MemoryRecord(
@@ -76,7 +115,12 @@ def _record(content: str, *, memory_type: str = "semantic", object_value: str | 
 
 
 def test_topic_score_beats_same_type_prior():
-    """验证“topic评分beatssame类型prior”场景的预期行为与回归边界。"""
+    """函数功能：`test_topic_score_beats_same_type_prior` 负责验证 topic score beats same type prior 场景，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     from memory.retriever import score_memory
 
     query = "SQL索引这项事实目前怎么描述"
@@ -86,7 +130,12 @@ def test_topic_score_beats_same_type_prior():
 
 
 def test_preference_question_does_not_suppress_negative_memory():
-    """验证“偏好questiondoesnotsuppressnegative记忆”场景的预期行为与回归边界。"""
+    """函数功能：`test_preference_question_does_not_suppress_negative_memory` 负责验证 preference question does not suppress negative memory 场景，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     from memory.retriever import score_memory
 
     query = "工作日早上我喜欢喝咖啡吗？"
@@ -106,7 +155,12 @@ def test_preference_question_does_not_suppress_negative_memory():
 
 
 def test_cjk_identifiers_require_complete_family_match():
-    """验证“cjkidentifiersrequire完成family匹配”场景的预期行为与回归边界。"""
+    """函数功能：`test_cjk_identifiers_require_complete_family_match` 负责验证 cjk identifiers require complete family match 场景，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     from memory.retriever import _overlap_score
 
     query = "学习-05 测试策略任务状态"
@@ -116,7 +170,12 @@ def test_cjk_identifiers_require_complete_family_match():
 
 
 def test_explicit_task_intent_penalizes_same_label_semantic_memory():
-    """验证“explicit任务意图penalizessamelabelsemantic记忆”场景的预期行为与回归边界。"""
+    """函数功能：`test_explicit_task_intent_penalizes_same_label_semantic_memory` 负责验证 explicit task intent penalizes same label semantic memory 场景，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     from memory.retriever import score_memory
 
     query = "当前Agent简历是什么状态"
@@ -126,14 +185,24 @@ def test_explicit_task_intent_penalizes_same_label_semantic_memory():
 
 
 def test_informational_preference_wording_is_neutral():
-    """验证“informational偏好wording是否为neutral”场景的预期行为与回归边界。"""
+    """函数功能：`test_informational_preference_wording_is_neutral` 负责验证 informational preference wording is neutral 场景，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     from memory.policies.preference import preference_query_polarity
 
     assert preference_query_polarity("生活-02 工作日咖啡对应的偏好") == "unknown"
 
 
 def test_state_layer_wording_is_not_misrouted_as_task_status():
-    """验证“状态layerwording是否为notmisroutedas任务状态”场景的预期行为与回归边界。"""
+    """函数功能：`test_state_layer_wording_is_not_misrouted_as_task_status` 负责验证 state layer wording is not misrouted as task status 场景，服务于本文件职责：Note 与 Memory 混合检索、引用和覆盖。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     from memory.retriever import score_memory
 
     query = "请从状态记忆里找Agent的记忆Agent"

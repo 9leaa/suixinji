@@ -1,4 +1,9 @@
-"""PostgreSQL implementation of the versioned Memory V2 repository."""
+"""文件作用：Memory 数据访问。
+
+项目关系：本文件依赖 `core.llm_client`、`core.settings`、`infrastructure.database`、`infrastructure.redis_cache` 等 15 个模块；被 `apps.handlers`、`eval.large_live_retrieval_eval`、`eval.live_retrieval_eval`、`memory.trace` 等 6 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -75,7 +80,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _schedule_memory_embedding(session: Any, row: Memory, *, force: bool = False) -> str | None:
-    """Mark a vector pending and enqueue one durable embedding task in-session."""
+    """函数功能：`_schedule_memory_embedding` 负责处理 schedule memory embedding，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        row: row 参数，由调用方传入，类型为 `Memory`。
+        force: force 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
+    """
     if not MEMORY_VECTOR_LIFECYCLE_ENABLED:
         return None
     model, dimension, version = current_embedding_contract()
@@ -154,9 +166,13 @@ def _schedule_memory_embedding(session: Any, row: Memory, *, force: bool = False
 
 
 def _schedule_memory_embedding_if_enabled(session: Any, row: Memory, *, force: bool = False) -> None:
-    """负责“schedule记忆向量ifenabled”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_schedule_memory_embedding_if_enabled` 负责处理 schedule memory embedding if enabled，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        row: row 参数，由调用方传入，类型为 `Memory`。
+        force: force 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     try:
         _schedule_memory_embedding(session, row, force=force)
@@ -166,9 +182,11 @@ def _schedule_memory_embedding_if_enabled(session: Any, row: Memory, *, force: b
 
 
 def _iso(value: Any) -> str | None:
-    """负责“iso”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_iso` 负责处理 iso，服务于本文件职责：Memory 数据访问。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     if value is None:
         return None
@@ -178,9 +196,11 @@ def _iso(value: Any) -> str | None:
 
 
 def _dt(value: Any) -> datetime | None:
-    """负责“dt”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_dt` 负责处理 dt，服务于本文件职责：Memory 数据访问。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+    返回结果说明：
+        返回 `datetime | None`；未命中或无需处理时可返回 `None`。
     """
     if value is None:
         return None
@@ -188,17 +208,22 @@ def _dt(value: Any) -> datetime | None:
 
 
 def init_db(db_path: Any = None) -> None:
-    """负责“初始化db”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`init_db` 负责处理 init db，服务于本文件职责：Memory 数据访问。
+    传参：
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     del db_path
 
 
 def _sources(session: Any, memory_id: str) -> list[MemorySource]:
-    """负责“sources”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_sources` 负责处理 sources，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+    返回结果说明：
+        返回 `list[MemorySource]`，表示按条件筛选、构造或查询得到的列表。
     """
     rows = session.execute(
         select(MemorySourceRow).where(MemorySourceRow.memory_id == memory_id).order_by(MemorySourceRow.created_at)
@@ -207,9 +232,12 @@ def _sources(session: Any, memory_id: str) -> list[MemorySource]:
 
 
 def _versions(session: Any, memory_id: str) -> list[MemoryVersion]:
-    """负责“versions”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_versions` 负责处理 versions，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+    返回结果说明：
+        返回 `list[MemoryVersion]`，表示按条件筛选、构造或查询得到的列表。
     """
     rows = session.execute(
         select(MemoryVersionRow).where(MemoryVersionRow.memory_id == memory_id).order_by(MemoryVersionRow.version)
@@ -235,9 +263,12 @@ def _versions(session: Any, memory_id: str) -> list[MemoryVersion]:
 
 
 def _source_map(session: Any, memory_ids: list[str]) -> dict[str, list[MemorySource]]:
-    """负责“来源map”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_source_map` 负责处理 source map，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        memory_ids: memory ids 参数，由调用方传入，类型为 `list[str]`。
+    返回结果说明：
+        返回 `dict[str, list[MemorySource]]`，表示结构化结果、载荷或状态映射。
     """
     result: dict[str, list[MemorySource]] = {memory_id: [] for memory_id in memory_ids}
     if not memory_ids:
@@ -260,9 +291,15 @@ def _record(
     sources: list[MemorySource] | None = None,
     versions: list[MemoryVersion] | None = None,
 ) -> MemoryRecord:
-    """负责“记录”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_record` 负责记录，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        row: row 参数，由调用方传入，类型为 `Memory`。
+        include_versions: include versions 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+        sources: sources 参数，由调用方传入，类型为 `list[MemorySource] | None`，默认值为 `None`。
+        versions: versions 参数，由调用方传入，类型为 `list[MemoryVersion] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return MemoryRecord(
         id=row.id,
@@ -295,9 +332,13 @@ def _record(
 
 
 def _records(session: Any, rows: list[Memory], *, include_sources: bool = True) -> list[MemoryRecord]:
-    """负责“records”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_records` 负责处理 records，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        rows: rows 参数，由调用方传入，类型为 `list[Memory]`。
+        include_sources: include sources 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+    返回结果说明：
+        返回 `list[MemoryRecord]`，表示按条件筛选、构造或查询得到的列表。
     """
     source_map = _source_map(session, [row.id for row in rows]) if include_sources else {}
     return [
@@ -312,9 +353,11 @@ def _records(session: Any, rows: list[Memory], *, include_sources: bool = True) 
 
 
 def _state(row: MemoryExtractionStateRow) -> MemoryExtractionState:
-    """负责“状态”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_state` 负责处理 state，服务于本文件职责：Memory 数据访问。
+    传参：
+        row: row 参数，由调用方传入，类型为 `MemoryExtractionStateRow`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return MemoryExtractionState(
         row.note_id, row.space_id, row.status, row.candidate_count, row.processed_count,
@@ -323,9 +366,11 @@ def _state(row: MemoryExtractionStateRow) -> MemoryExtractionState:
 
 
 def _run(row: MemoryConsolidationRun) -> ConsolidationRun:
-    """负责“运行”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_run` 负责运行，服务于本文件职责：Memory 数据访问。
+    传参：
+        row: row 参数，由调用方传入，类型为 `MemoryConsolidationRun`。
+    返回结果说明：
+        返回 `ConsolidationRun` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return ConsolidationRun(
         row.id,
@@ -341,9 +386,15 @@ def _run(row: MemoryConsolidationRun) -> ConsolidationRun:
 
 
 def _add_source(session: Any, memory_id: str, note_id: str, relation: str, *, now: str | None = None) -> bool:
-    """负责“添加来源”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_add_source` 负责处理 add source，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        relation: relation 参数，由调用方传入，类型为 `str`。
+        now: now 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if relation not in SOURCE_RELATIONS:
         raise ValueError(f"invalid source relation: {relation}")
@@ -357,9 +408,14 @@ def _add_source(session: Any, memory_id: str, note_id: str, relation: str, *, no
 
 
 def _add_version(session: Any, row: Memory, *, reason: str | None, source_note_id: str | None) -> None:
-    """负责“添加版本”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_add_version` 负责处理 add version，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        row: row 参数，由调用方传入，类型为 `Memory`。
+        reason: reason 参数，由调用方传入，类型为 `str | None`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str | None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     session.add(
         MemoryVersionRow(
@@ -391,9 +447,18 @@ def _insert_memory(
     memory_id: str | None = None,
     now: str | None = None,
 ) -> Memory:
-    """负责“插入记忆”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_insert_memory` 负责处理 insert memory，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str`。
+        source_relation: source relation 参数，由调用方传入，类型为 `str`，默认值为 `'created_from'`。
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'active'`。
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str | None`，默认值为 `None`。
+        now: now 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `Memory` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if status not in MEMORY_STATUSES:
         raise ValueError(f"invalid memory status: {status}")
@@ -452,9 +517,25 @@ def _versioned_update(
     reason: str | None,
     source_note_id: str | None,
 ) -> None:
-    """负责“versioned更新”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_versioned_update` 负责更新 versioned，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        row: row 参数，由调用方传入，类型为 `Memory`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str | None`，默认值为 `None`。
+        status: status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        task_status: task status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        valid_until: valid until 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        confidence: confidence 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+        importance: importance 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+        last_confirmed_at: last confirmed at 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        object_value: object value 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        scope: scope 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+        memory_key: memory key 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        memory_key_version: memory key version 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        reason: reason 参数，由调用方传入，类型为 `str | None`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str | None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if status is not None and status not in MEMORY_STATUSES:
         raise ValueError(f"invalid memory status: {status}")
@@ -507,7 +588,17 @@ def _archive_terminal_task_duplicates(
     source_note_id: str,
     now: str,
 ) -> list[str]:
-    """Archive older active copies after an unambiguous terminal update."""
+    """函数功能：`_archive_terminal_task_duplicates` 负责归档 terminal task duplicates，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        target: target 参数，由调用方传入，类型为 `Memory`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        decision_id: decision id 参数，由调用方传入，类型为 `str`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str`。
+        now: now 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
+    """
     if target.memory_type != "task" or target.task_status not in {"done", "cancelled"}:
         return []
     from memory.canonicalizer import task_identity_compatible
@@ -537,9 +628,17 @@ def _archive_terminal_task_duplicates(
 
 
 def _add_relation(session: Any, space_id: str, source_id: str, target_id: str, relation: str, decision_id: str | None, now: str) -> None:
-    """负责“添加关系”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_add_relation` 负责处理 add relation，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        source_id: source id 参数，由调用方传入，类型为 `str`。
+        target_id: target id 参数，由调用方传入，类型为 `str`。
+        relation: relation 参数，由调用方传入，类型为 `str`。
+        decision_id: decision id 参数，由调用方传入，类型为 `str | None`。
+        now: now 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if relation not in MEMORY_RELATION_TYPES:
         raise ValueError(f"invalid memory relation: {relation}")
@@ -563,9 +662,17 @@ def _save_decision(
     result_ids: list[str] | None = None,
     error: str | None = None,
 ) -> None:
-    """负责“保存决策”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_save_decision` 负责保存 decision，服务于本文件职责：Memory 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        decision: decision 参数，由调用方传入，类型为 `MemoryDecision`。
+        status: status 参数，由调用方传入，类型为 `str`。
+        result_ids: result ids 参数，由调用方传入，类型为 `list[str] | None`，默认值为 `None`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     now = utc_now_iso()
     session.execute(
@@ -602,9 +709,14 @@ def _save_decision(
 
 
 def add_source(memory_id: str, note_id: str, relation: str, db_path: Any = None) -> bool:
-    """负责“添加来源”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`add_source` 负责处理 add source，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        relation: relation 参数，由调用方传入，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     del db_path
     with session_scope() as session:
@@ -613,9 +725,16 @@ def add_source(memory_id: str, note_id: str, relation: str, db_path: Any = None)
 
 
 def insert_memory(space_id: str, candidate: MemoryCandidate, *, source_note_id: str, source_relation: str = "created_from", status: str = "active", db_path: Any = None) -> MemoryRecord:
-    """负责“插入记忆”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`insert_memory` 负责处理 insert memory，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str`。
+        source_relation: source relation 参数，由调用方传入，类型为 `str`，默认值为 `'created_from'`。
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'active'`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     del db_path
     with session_scope() as session:
@@ -626,9 +745,12 @@ def insert_memory(space_id: str, candidate: MemoryCandidate, *, source_note_id: 
 
 
 def get_memory(memory_id: str, db_path: Any = None) -> MemoryRecord | None:
-    """负责“获取记忆”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_memory` 负责获取 memory，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     with session_scope() as session:
@@ -646,9 +768,17 @@ def list_memories(
     limit: int = 20,
     db_path: Any = None,
 ) -> list[MemoryRecord]:
-    """负责“列出memories”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_memories` 负责列出 memories，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str | None`，默认值为 `'active'`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        memory_key: memory key 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        include_expired: include expired 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `20`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryRecord]`，表示按条件筛选、构造或查询得到的列表。
     """
     del db_path
     statement = select(Memory).where(Memory.space_id == space_id)
@@ -674,7 +804,16 @@ def list_adjudication_candidates(
     limit: int = 200,
     db_path: Any = None,
 ) -> list[MemoryRecord]:
-    """Load lightweight candidate rows without sources or versions."""
+    """函数功能：`list_adjudication_candidates` 负责列出 adjudication candidates，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str`。
+        memory_key: memory key 参数，由调用方传入，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `200`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryRecord]`，表示按条件筛选、构造或查询得到的列表。
+    """
     del db_path
     statement = (
         select(Memory)
@@ -702,9 +841,13 @@ def _base_memory_statement(
     memory_type: str | None,
     include_inactive: bool = False,
 ) -> Any:
-    """负责“base记忆statement”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_base_memory_statement` 负责处理 base memory statement，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str | None`。
+        include_inactive: include inactive 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     statement = select(Memory).where(Memory.space_id == space_id)
     if memory_type:
@@ -720,9 +863,11 @@ def _base_memory_statement(
 
 
 def _text_document() -> Any:
-    """负责“文本document”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_text_document` 负责处理 text document，服务于本文件职责：Memory 数据访问。
+    传参：
+        无。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if hasattr(Memory, "search_document"):
         return Memory.search_document
@@ -739,12 +884,13 @@ def _text_document() -> Any:
 
 
 def _query_terms(text: str, *, entities: list[str] | None = None) -> list[str]:
-    # Put the intent-stripped topic first so bounded term expansion cannot be
-    # exhausted by n-grams of generic question wording before reaching the
-    # actual entity (for example, 发票 in “发票这项任务进展如何”).
-    """负责“查询terms”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    # 先放入去除意图词后的主题，避免有限 term expansion 在抵达真实实体前被通用问句 n-gram 消耗完。
+    """函数功能：`_query_terms` 负责查询 terms，服务于本文件职责：Memory 数据访问。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+        entities: entities 参数，由调用方传入，类型为 `list[str] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     from memory.retriever import retrieval_topic_text
 
@@ -754,9 +900,11 @@ def _query_terms(text: str, *, entities: list[str] | None = None) -> list[str]:
     terms: list[str] = []
 
     def add(value: str) -> None:
-        """负责“添加”。
-
-        该函数是 `repositories.postgres.memory` 中的`_query_terms` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`add` 负责处理 add，服务于本文件职责：Memory 数据访问。
+        传参：
+            value: 待转换、校验或计算的值，类型为 `str`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         token = str(value or "").strip()
         if len(token) >= 2 and token not in terms:
@@ -766,12 +914,8 @@ def _query_terms(text: str, *, entities: list[str] | None = None) -> list[str]:
         for token in value.replace("：", " ").replace(":", " ").split():
             add(token)
 
-        # PostgreSQL's simple full-text parser does not segment Chinese, and
-        # users naturally omit connective characters (for example “的”) or
-        # change whitespace around an ASCII name.  Add bounded, general CJK
-        # and ASCII runs so the structured lexical channel can still surface
-        # the memory for the scorer.  These are retrieval hints only; they do
-        # not change memory identity or permit any write-side merge.
+        # PostgreSQL simple full-text parser 不切中文，用户也常省略连接词或调整 ASCII 名称周围空白。
+        # 这里补充有界的中英文片段，让结构化词法通道仍能召回给 scorer；这些只是检索提示，不改变 memory identity，也不允许写侧合并。
         runs = re.findall(r"[A-Za-z0-9][A-Za-z0-9+#._-]*|[\u4e00-\u9fff]+", value)
         for run in runs:
             add(run)
@@ -797,19 +941,22 @@ def _rrf_hits(
     predicate: str | None = None,
     limit: int = 20,
 ) -> list[MemoryRetrievalHit]:
-    """负责“rrfhits”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_rrf_hits` 负责处理 rrf hits，服务于本文件职责：Memory 数据访问。
+    传参：
+        channels: channels 参数，由调用方传入，类型为 `list[tuple[str, list[Memory]]]`。
+        exact_key: exact key 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        subject: subject 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        predicate: predicate 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `20`。
+    返回结果说明：
+        返回 `list[MemoryRetrievalHit]`，表示按条件筛选、构造或查询得到的列表。
     """
     scores: dict[str, float] = {}
     rows: dict[str, Memory] = {}
     ranks: dict[str, dict[str, int]] = {}
     rrf_k = max(1, int(MEMORY_HYBRID_RRF_K))
     channel_weights = {
-        # Structured/canonical matches carry the strongest signal for a
-        # state-layer lookup. Sparse and vector channels complement it, while
-        # trigram is deliberately weaker because it is mainly a typo/segmentation
-        # recovery path.
+        # 结构化/canonical 命中对状态层查询信号最强；稀疏和向量通道用于补充，trigram 主要用于错字/分词恢复，因此权重更弱。
         "exact": 1.60,
         "structured": 1.35,
         "fts": 1.00,
@@ -863,18 +1010,28 @@ def _rrf_hits(
 
 
 class _NoSourceSession:
+    """类功能：`_NoSourceSession` 封装与“Memory 数据访问”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def execute(self, *_args: Any, **_kwargs: Any) -> Any:
-        """负责“execute”。
-
-        该函数是 `repositories.postgres.memory` 中的`_NoSourceSession` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_NoSourceSession.execute` 在类 `_NoSourceSession` 中负责执行，服务于本文件职责：Memory 数据访问。
+        传参：
+            *_args:  args 参数，由调用方传入，类型为 `Any`。
+            **_kwargs:  kwargs 参数，由调用方传入，类型为 `Any`。
+        返回结果说明：
+            返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         raise RuntimeError("sources unavailable in lightweight retrieval hit")
 
 
 def _rrf_fuse(*args: Any, **kwargs: Any) -> list[Memory]:
-    """负责“rrffuse”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_rrf_fuse` 负责处理 rrf fuse，服务于本文件职责：Memory 数据访问。
+    传参：
+        *args: args 参数，由调用方传入，类型为 `Any`。
+        **kwargs: kwargs 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `list[Memory]`，表示按条件筛选、构造或查询得到的列表。
     """
     if args and args[0] and isinstance(args[0][0], list):
         channels = [(f"channel_{index}", ranked) for index, ranked in enumerate(args[0])]
@@ -883,9 +1040,12 @@ def _rrf_fuse(*args: Any, **kwargs: Any) -> list[Memory]:
 
 
 def _ready_vector_count(space_id: str, memory_type: str | None = None) -> int:
-    """负责“ready向量统计”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_ready_vector_count` 负责计数 ready vector，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     with session_scope() as session:
         statement = (
@@ -905,9 +1065,13 @@ def _ready_vector_count(space_id: str, memory_type: str | None = None) -> int:
 
 
 def _safe_embedding(space_id: str, text: str, *, memory_type: str | None = None) -> list[float] | None:
-    """负责“安全向量”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_safe_embedding` 负责处理 safe embedding，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[float] | None`，表示按条件筛选、构造或查询得到的列表。
     """
     if not MEMORY_HYBRID_VECTOR_ENABLED or FAKE_EXTERNALS or not text.strip():
         return None
@@ -925,7 +1089,13 @@ def _safe_embedding(space_id: str, text: str, *, memory_type: str | None = None)
 
 
 def claim_memory_vector(memory_id: str, expected_hash: str | None = None) -> dict[str, Any] | None:
-    """Claim a pending vector only when it still matches the current Memory."""
+    """函数功能：`claim_memory_vector` 负责认领 memory vector，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        expected_hash: expected hash 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
+    """
     if not MEMORY_VECTOR_LIFECYCLE_ENABLED:
         return None
     model, dimension, version = current_embedding_contract()
@@ -1014,9 +1184,16 @@ def complete_memory_vector(
     dimension: int,
     embedding_version: str,
 ) -> bool:
-    """负责“完成记忆向量”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`complete_memory_vector` 负责完成 memory vector，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        content_hash: content hash 参数，由调用方传入，类型为 `str`。
+        embedding: embedding 参数，由调用方传入，类型为 `list[float]`。
+        model: model 参数，由调用方传入，类型为 `str`。
+        dimension: dimension 参数，由调用方传入，类型为 `int`。
+        embedding_version: embedding version 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if len(embedding) != int(dimension):
         raise ValueError(f"memory embedding dimension mismatch: expected {dimension}, got {len(embedding)}")
@@ -1044,9 +1221,13 @@ def complete_memory_vector(
 
 
 def fail_memory_vector(memory_id: str, *, content_hash: str, error: str) -> bool:
-    """负责“失败记忆向量”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`fail_memory_vector` 负责处理 fail memory vector，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        content_hash: content hash 参数，由调用方传入，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     with session_scope() as session:
         row = session.execute(
@@ -1065,9 +1246,12 @@ def fail_memory_vector(memory_id: str, *, content_hash: str, error: str) -> bool
 
 
 def list_memory_vector_backfill_candidates(*, status: str = "active", limit: int = 10000) -> list[dict[str, Any]]:
-    """负责“列出记忆向量backfillcandidates”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_memory_vector_backfill_candidates` 负责列出 memory vector backfill candidates，服务于本文件职责：Memory 数据访问。
+    传参：
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'active'`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `10000`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     model, dimension, version = current_embedding_contract()
     with session_scope() as session:
@@ -1107,11 +1291,12 @@ def list_memory_vector_backfill_candidates(*, status: str = "active", limit: int
 
 
 def schedule_memory_vector_backfill(*, status: str = "active", limit: int = 10000) -> int:
-    """Create durable embedding tasks for memories missing current vectors.
-
-    This is an idempotent operational helper: ready vectors with the current
-    content hash/model contract are left untouched, while missing, failed, or
-    stale rows are moved through the normal pending/outbox path.
+    """函数功能：`schedule_memory_vector_backfill` 负责回填 schedule memory vector，服务于本文件职责：Memory 数据访问。
+    传参：
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'active'`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `10000`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     if not MEMORY_VECTOR_LIFECYCLE_ENABLED:
         return 0
@@ -1168,7 +1353,16 @@ def hybrid_adjudication_candidates(
     limit: int = 20,
     db_path: Any = None,
 ) -> list[MemoryRecord]:
-    """Retrieve adjudication targets through key, structured, lexical, and vector paths."""
+    """函数功能：`hybrid_adjudication_candidates` 负责处理 hybrid adjudication candidates，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        query_embedding: query embedding 参数，由调用方传入，类型为 `list[float] | None`，默认值为 `None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `20`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryRecord]`，表示按条件筛选、构造或查询得到的列表。
+    """
     del db_path
     memory_type = candidate.memory_type
     top = max(1, min(int(limit), 50))
@@ -1219,8 +1413,7 @@ def hybrid_adjudication_candidates(
                 )
             ))
         if candidate.memory_type == "task":
-            # Legacy V2 tasks can have generic subject/predicate slots; keep
-            # a bounded task slice available to the identity bridge.
+            # 旧版 V2 任务可能使用泛化 subject/predicate 槽位，因此为 identity bridge 保留一个有界任务切片。
             channels.append((
                 "structured",
                 list(
@@ -1307,9 +1500,13 @@ def hybrid_adjudication_candidates(
 
 
 def expire_due_memories(space_id: str | None = None, *, limit: int = 500, db_path: Any = None) -> int:
-    """负责“expireduememories”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`expire_due_memories` 负责处理过期状态 due memories，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str | None`，默认值为 `None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `500`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     del db_path
     with session_scope() as session:
@@ -1335,9 +1532,11 @@ def expire_due_memories(space_id: str | None = None, *, limit: int = 500, db_pat
 
 
 def _candidate_record(row: MemoryCandidateRow) -> MemoryCandidate:
-    """负责“候选记录”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_candidate_record` 负责记录 candidate，服务于本文件职责：Memory 数据访问。
+    传参：
+        row: row 参数，由调用方传入，类型为 `MemoryCandidateRow`。
+    返回结果说明：
+        返回 `MemoryCandidate` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return MemoryCandidate(
         memory_type=row.memory_type,
@@ -1377,9 +1576,16 @@ def save_memory_candidate(
     decision_id: str | None = None,
     db_path: Any = None,
 ) -> MemoryCandidate:
-    """负责“保存记忆候选”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`save_memory_candidate` 负责保存 memory candidate，服务于本文件职责：Memory 数据访问。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'extracted'`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+        decision_id: decision id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryCandidate` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     del db_path
     with session_scope() as session:
@@ -1427,9 +1633,12 @@ def save_memory_candidate(
 
 
 def get_memory_candidate(candidate_id: str, db_path: Any = None) -> MemoryCandidate | None:
-    """负责“获取记忆候选”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_memory_candidate` 负责获取 memory candidate，服务于本文件职责：Memory 数据访问。
+    传参：
+        candidate_id: candidate id 参数，由调用方传入，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryCandidate | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     with session_scope() as session:
@@ -1438,9 +1647,12 @@ def get_memory_candidate(candidate_id: str, db_path: Any = None) -> MemoryCandid
 
 
 def get_memory_candidate_status(candidate_id: str, db_path: Any = None) -> str | None:
-    """负责“获取记忆候选状态”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_memory_candidate_status` 负责获取 memory candidate status，服务于本文件职责：Memory 数据访问。
+    传参：
+        candidate_id: candidate id 参数，由调用方传入，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     with session_scope() as session:
@@ -1456,9 +1668,15 @@ def mark_memory_candidate(
     decision_id: str | None = None,
     db_path: Any = None,
 ) -> bool:
-    """负责“标记记忆候选”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_memory_candidate` 负责标记 memory candidate，服务于本文件职责：Memory 数据访问。
+    传参：
+        candidate_id: candidate id 参数，由调用方传入，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+        decision_id: decision id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     del db_path
     with session_scope() as session:
@@ -1476,9 +1694,13 @@ def mark_memory_candidate(
 
 
 def list_retryable_memory_candidates(space_id: str, *, limit: int = 100, db_path: Any = None) -> list[MemoryCandidate]:
-    """负责“列出retryable记忆candidates”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_retryable_memory_candidates` 负责列出 retryable memory candidates，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `100`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryCandidate]`，表示按条件筛选、构造或查询得到的列表。
     """
     del db_path
     with session_scope() as session:
@@ -1505,9 +1727,21 @@ def update_memory(
     source_note_id: str | None = None,
     db_path: Any = None,
 ) -> MemoryRecord | None:
-    """负责“更新记忆”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`update_memory` 负责更新 memory，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str | None`，默认值为 `None`。
+        status: status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        task_status: task status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        valid_until: valid until 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        confidence: confidence 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+        importance: importance 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+        last_confirmed_at: last confirmed at 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        reason: reason 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     with session_scope() as session:
@@ -1531,9 +1765,16 @@ def apply_memory_decision(
     merged_content: str | None = None,
     db_path: Any = None,
 ) -> dict[str, Any]:
-    """负责“apply记忆决策”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`apply_memory_decision` 负责处理 apply memory decision，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        decision: decision 参数，由调用方传入，类型为 `MemoryDecision`。
+        merged_content: merged content 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     del db_path
     try:
@@ -1637,9 +1878,12 @@ def apply_memory_decision(
 
 
 def mark_accessed(memory_ids: list[str], db_path: Any = None) -> None:
-    """负责“标记accessed”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_accessed` 负责标记 accessed，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_ids: memory ids 参数，由调用方传入，类型为 `list[str]`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     del db_path
     if not memory_ids:
@@ -1673,9 +1917,13 @@ def flush_access_counts(
     tenant_id: str = DEFAULT_TENANT_ID,
     db_path: Any = None,
 ) -> int:
-    """负责“刷新accesscounts”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`flush_access_counts` 负责处理 flush access counts，服务于本文件职责：Memory 数据访问。
+    传参：
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `MEMORY_ACCESS_FLUSH_BATCH_SIZE`。
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `DEFAULT_TENANT_ID`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     del db_path
     if COORDINATION_BACKEND != "redis" or not MEMORY_ACCESS_BUFFER_ENABLED:
@@ -1709,9 +1957,13 @@ def flush_access_counts(
 
 
 def soft_delete_memory(memory_id: str, *, reason: str = "user_forget", db_path: Any = None) -> MemoryRecord | None:
-    """负责“soft删除记忆”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`soft_delete_memory` 负责软删除 delete memory，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        reason: reason 参数，由调用方传入，类型为 `str`，默认值为 `'user_forget'`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     return update_memory(memory_id, status="deleted", reason=reason, db_path=db_path)
 
@@ -1724,9 +1976,15 @@ def correct_memory(
     reason: str = "user_correct",
     db_path: Any = None,
 ) -> MemoryRecord | None:
-    """负责“correct记忆”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`correct_memory` 负责处理 correct memory，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+        task_status: task status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        reason: reason 参数，由调用方传入，类型为 `str`，默认值为 `'user_correct'`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     from memory.task_state import infer_task_status, validate_task_status
@@ -1758,9 +2016,12 @@ def correct_memory(
 
 
 def purge_memory(memory_id: str, db_path: Any = None) -> bool:
-    """负责“清除记忆”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`purge_memory` 负责彻底清除 memory，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     del db_path
     with session_scope() as session:
@@ -1773,9 +2034,12 @@ def purge_memory(memory_id: str, db_path: Any = None) -> bool:
 
 
 def approve_pending_memory(memory_id: str, db_path: Any = None) -> MemoryRecord | None:
-    """负责“审批待处理记忆”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`approve_pending_memory` 负责批准 pending memory，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     with session_scope() as session:
@@ -1850,9 +2114,13 @@ def approve_pending_memory(memory_id: str, db_path: Any = None) -> MemoryRecord 
 
 
 def reject_pending_memory(memory_id: str, *, reason: str = "user_rejected_pending_memory", db_path: Any = None) -> MemoryRecord | None:
-    """负责“reject待处理记忆”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`reject_pending_memory` 负责拒绝 pending memory，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        reason: reason 参数，由调用方传入，类型为 `str`，默认值为 `'user_rejected_pending_memory'`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     with session_scope() as session:
@@ -1879,9 +2147,13 @@ def reject_pending_memory(memory_id: str, *, reason: str = "user_rejected_pendin
 
 
 def edit_pending_memory(memory_id: str, content: str, db_path: Any = None) -> MemoryRecord | None:
-    """负责“edit待处理记忆”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`edit_pending_memory` 负责处理 edit pending memory，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     if not content.strip():
@@ -1936,9 +2208,14 @@ def resolve_memory_conflict(
     content: str | None = None,
     db_path: Any = None,
 ) -> MemoryRecord | None:
-    """负责“处理记忆conflict”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`resolve_memory_conflict` 负责解析 memory conflict，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        resolution: resolution 参数，由调用方传入，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     if resolution not in {"keep", "merge", "archive"}:
@@ -1962,9 +2239,15 @@ def resolve_memory_conflict(
 
 
 def list_memory_decisions(space_id: str, *, note_id: str | None = None, status: str | None = None, limit: int = 50, db_path: Any = None) -> list[dict[str, Any]]:
-    """负责“列出记忆decisions”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_memory_decisions` 负责列出 memory decisions，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str | None`，默认值为 `None`。
+        status: status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `50`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     del db_path
     statement = select(MemoryDecisionRow).where(MemoryDecisionRow.space_id == space_id)
@@ -1988,9 +2271,12 @@ def list_memory_decisions(space_id: str, *, note_id: str | None = None, status: 
 
 
 def list_memory_relations(memory_id: str, *, db_path: Any = None) -> list[MemoryRelation]:
-    """负责“列出记忆relations”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_memory_relations` 负责列出 memory relations，服务于本文件职责：Memory 数据访问。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryRelation]`，表示按条件筛选、构造或查询得到的列表。
     """
     del db_path
     with session_scope() as session:
@@ -2006,9 +2292,16 @@ def list_memory_relations(memory_id: str, *, db_path: Any = None) -> list[Memory
 
 
 def add_memory_relation(space_id: str, source_memory_id: str, target_memory_id: str, relation: str, *, decision_id: str | None = None, db_path: Any = None) -> None:
-    """负责“添加记忆关系”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`add_memory_relation` 负责处理 add memory relation，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        source_memory_id: source memory id 参数，由调用方传入，类型为 `str`。
+        target_memory_id: target memory id 参数，由调用方传入，类型为 `str`。
+        relation: relation 参数，由调用方传入，类型为 `str`。
+        decision_id: decision id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     del db_path
     with session_scope() as session:
@@ -2016,9 +2309,12 @@ def add_memory_relation(space_id: str, source_memory_id: str, target_memory_id: 
 
 
 def save_memory_trace(trace: dict[str, Any], db_path: Any = None) -> None:
-    """负责“保存记忆追踪”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`save_memory_trace` 负责保存 memory trace，服务于本文件职责：Memory 数据访问。
+    传参：
+        trace: trace 参数，由调用方传入，类型为 `dict[str, Any]`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     del db_path
     space_id = str(trace.get("space_id") or "unknown")
@@ -2040,9 +2336,11 @@ def save_memory_trace(trace: dict[str, Any], db_path: Any = None) -> None:
 
 
 def list_memory_traces(*, limit: int = 1000) -> list[dict[str, Any]]:
-    """负责“列出记忆traces”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_memory_traces` 负责列出 memory traces，服务于本文件职责：Memory 数据访问。
+    传参：
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `1000`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     with session_scope() as session:
         rows = list(session.execute(
@@ -2055,9 +2353,12 @@ def list_memory_traces(*, limit: int = 1000) -> list[dict[str, Any]]:
 
 
 def note_has_memory(note_id: str, db_path: Any = None) -> bool:
-    """负责“笔记是否包含记忆”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`note_has_memory` 负责判断是否包含 memory，服务于本文件职责：Memory 数据访问。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     del db_path
     with session_scope() as session:
@@ -2065,9 +2366,12 @@ def note_has_memory(note_id: str, db_path: Any = None) -> bool:
 
 
 def get_extraction_state(note_id: str, db_path: Any = None) -> MemoryExtractionState | None:
-    """负责“获取extraction状态”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_extraction_state` 负责获取 extraction state，服务于本文件职责：Memory 数据访问。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     with session_scope() as session:
@@ -2086,9 +2390,18 @@ def _mark_extraction_state(
     increment_attempt: bool = False,
     db_path: Any = None,
 ) -> MemoryExtractionState:
-    """负责“标记extraction状态”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_mark_extraction_state` 负责标记 extraction state，服务于本文件职责：Memory 数据访问。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`。
+        candidate_count: candidate count 参数，由调用方传入，类型为 `int`，默认值为 `0`。
+        processed_count: processed count 参数，由调用方传入，类型为 `int`，默认值为 `0`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+        increment_attempt: increment attempt 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     del db_path
     if status not in MEMORY_EXTRACTION_STATUSES:
@@ -2127,57 +2440,91 @@ def _mark_extraction_state(
 
 
 def mark_extraction_processing(note_id: str, space_id: str, db_path: Any = None) -> MemoryExtractionState:
-    """负责“标记extractionprocessing”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_processing` 负责标记 extraction processing，服务于本文件职责：Memory 数据访问。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(note_id, space_id, "processing", increment_attempt=True, db_path=db_path)
 
 
 def mark_extraction_completed(note_id: str, space_id: str, *, candidate_count: int, processed_count: int, db_path: Any = None) -> MemoryExtractionState:
-    """负责“标记extractioncompleted”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_completed` 负责标记 extraction completed，服务于本文件职责：Memory 数据访问。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        candidate_count: candidate count 参数，由调用方传入，类型为 `int`。
+        processed_count: processed count 参数，由调用方传入，类型为 `int`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(note_id, space_id, "completed", candidate_count=candidate_count, processed_count=processed_count, db_path=db_path)
 
 
 def mark_extraction_empty(note_id: str, space_id: str, db_path: Any = None) -> MemoryExtractionState:
-    """负责“标记extractionempty”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_empty` 负责标记 extraction empty，服务于本文件职责：Memory 数据访问。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(note_id, space_id, "empty", db_path=db_path)
 
 
 def mark_extraction_empty_attempt(note_id: str, space_id: str, db_path: Any = None) -> MemoryExtractionState:
-    """负责“标记extractionempty尝试”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_empty_attempt` 负责标记 extraction empty attempt，服务于本文件职责：Memory 数据访问。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(note_id, space_id, "empty", increment_attempt=True, db_path=db_path)
 
 
 def mark_extraction_partial(note_id: str, space_id: str, *, candidate_count: int, processed_count: int, error: str, db_path: Any = None) -> MemoryExtractionState:
-    """负责“标记extractionpartial”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_partial` 负责标记 extraction partial，服务于本文件职责：Memory 数据访问。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        candidate_count: candidate count 参数，由调用方传入，类型为 `int`。
+        processed_count: processed count 参数，由调用方传入，类型为 `int`。
+        error: 当前捕获的异常对象，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(note_id, space_id, "partial", candidate_count=candidate_count, processed_count=processed_count, error=error, db_path=db_path)
 
 
 def mark_extraction_failed(note_id: str, space_id: str, *, error: str, db_path: Any = None) -> MemoryExtractionState:
-    """负责“标记extractionfailed”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_failed` 负责标记 extraction failed，服务于本文件职责：Memory 数据访问。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(note_id, space_id, "failed", error=error, db_path=db_path)
 
 
 def list_retryable_extraction_states(space_id: str, *, limit: int = 100, db_path: Any = None) -> list[MemoryExtractionState]:
-    """负责“列出retryableextractionstates”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_retryable_extraction_states` 负责列出 retryable extraction states，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `100`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryExtractionState]`，表示按条件筛选、构造或查询得到的列表。
     """
     del db_path
     with session_scope() as session:
@@ -2191,9 +2538,12 @@ def list_retryable_extraction_states(space_id: str, *, limit: int = 100, db_path
 
 
 def consolidation_period_key(cadence: str, day: date) -> str:
-    """负责“consolidationperiod键”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`consolidation_period_key` 负责处理 consolidation period key，服务于本文件职责：Memory 数据访问。
+    传参：
+        cadence: cadence 参数，由调用方传入，类型为 `str`。
+        day: day 参数，由调用方传入，类型为 `date`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     cadence = cadence.strip().lower()
     if cadence == "daily":
@@ -2207,9 +2557,11 @@ def consolidation_period_key(cadence: str, day: date) -> str:
 
 
 def _stale(value: str | datetime | None) -> bool:
-    """负责“stale”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_stale` 负责处理 stale，服务于本文件职责：Memory 数据访问。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str | datetime | None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if not value:
         return True
@@ -2220,9 +2572,14 @@ def _stale(value: str | datetime | None) -> bool:
 
 
 def reserve_consolidation_run(space_id: str, cadence: str, period_key: str, db_path: Any = None) -> ConsolidationRun | None:
-    """负责“预约consolidation运行”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`reserve_consolidation_run` 负责预约 consolidation run，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        cadence: cadence 参数，由调用方传入，类型为 `str`。
+        period_key: period key 参数，由调用方传入，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `ConsolidationRun | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     cadence = cadence.strip().lower()
@@ -2247,9 +2604,12 @@ def reserve_consolidation_run(space_id: str, cadence: str, period_key: str, db_p
 
 
 def get_consolidation_run(run_id: str, db_path: Any = None) -> ConsolidationRun | None:
-    """负责“获取consolidation运行”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_consolidation_run` 负责获取 consolidation run，服务于本文件职责：Memory 数据访问。
+    传参：
+        run_id: run id 参数，由调用方传入，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `ConsolidationRun | None`；未命中或无需处理时可返回 `None`。
     """
     del db_path
     with session_scope() as session:
@@ -2258,9 +2618,13 @@ def get_consolidation_run(run_id: str, db_path: Any = None) -> ConsolidationRun 
 
 
 def mark_consolidation_completed(run_id: str, result: dict[str, Any], db_path: Any = None) -> None:
-    """负责“标记consolidationcompleted”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_consolidation_completed` 负责标记 consolidation completed，服务于本文件职责：Memory 数据访问。
+    传参：
+        run_id: run id 参数，由调用方传入，类型为 `str`。
+        result: 上游步骤返回的结果对象，类型为 `dict[str, Any]`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     del db_path
     with session_scope() as session:
@@ -2270,9 +2634,13 @@ def mark_consolidation_completed(run_id: str, result: dict[str, Any], db_path: A
 
 
 def mark_consolidation_failed(run_id: str, error: str, db_path: Any = None) -> None:
-    """负责“标记consolidationfailed”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_consolidation_failed` 负责标记 consolidation failed，服务于本文件职责：Memory 数据访问。
+    传参：
+        run_id: run id 参数，由调用方传入，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     del db_path
     with session_scope() as session:
@@ -2291,7 +2659,18 @@ def hybrid_search_memory_hits(
     limit: int = 40,
     db_path: Any = None,
 ) -> list[MemoryRetrievalHit]:
-    """Return explainable hybrid hits without losing channel/RRF scores."""
+    """函数功能：`hybrid_search_memory_hits` 负责搜索 memory hits，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        include_inactive: include inactive 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        query_embedding: query embedding 参数，由调用方传入，类型为 `list[float] | None`，默认值为 `None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `40`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryRetrievalHit]`，表示按条件筛选、构造或查询得到的列表。
+    """
     del db_path
     top = max(1, min(int(limit), 100))
     retrieval_limit = max(30, min(120, top * 3))
@@ -2301,17 +2680,20 @@ def hybrid_search_memory_hits(
     _, embedding_dimension, _ = current_embedding_contract()
     with session_scope() as session:
         base = _base_memory_statement(space_id, memory_type=memory_type, include_inactive=include_inactive)
-        # State-layer lookups are exact-first: a canonical key or verbatim
-        # normalized statement must outrank approximate semantic matches.
+        # 状态层查询以精确命中优先：canonical key 或规范化原句必须排在近似语义匹配前。
         normalized_query = normalize_content(query)
+        #memory 标准化内容是否和问题完全相同
         exact_filters = [Memory.normalized_content == normalized_query]
         if query.strip():
+            #memory key是否完全相同
+            #memory 内容是否完整包含查询
             exact_filters.extend(
                 [
                     Memory.memory_key == query.strip(),
                     Memory.content.ilike(f"%{query.strip()[:160]}%"),
                 ]
             )
+        #查询中含有TASK-123、README-01 等编号时，在结构化字段中精确找编编号
         identifiers = re.findall(r"[\u4e00-\u9fffA-Za-z]+-\d+|[A-Za-z][A-Za-z0-9+#._-]*-\d+", query)
         for identifier in identifiers[:4]:
             escaped = re.escape(identifier[:120])
@@ -2455,7 +2837,18 @@ def hybrid_search_memories(
     limit: int = 40,
     db_path: Any = None,
 ) -> list[MemoryRecord]:
-    """Compatibility wrapper returning records in fused retrieval order."""
+    """函数功能：`hybrid_search_memories` 负责搜索 memories，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        include_inactive: include inactive 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        query_embedding: query embedding 参数，由调用方传入，类型为 `list[float] | None`，默认值为 `None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `40`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryRecord]`，表示按条件筛选、构造或查询得到的列表。
+    """
     return [
         hit.memory
         for hit in hybrid_search_memory_hits(
@@ -2481,11 +2874,18 @@ def search_memories(
     mark_access: bool = True,
     db_path: Any = None,
 ) -> list[tuple[MemoryRecord, float]]:
-    """Search Memory with exact-first fused retrieval and deterministic policy.
-
-    Hybrid/RRF finds evidence candidates. The final rank preserves that signal
-    and combines it with topic, state and polarity rules; approximate model
-    scores never change stored state or override an exact identity match.
+    """函数功能：`search_memories` 负责搜索 memories，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        include_inactive: include inactive 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        min_score: min score 参数，由调用方传入，类型为 `float`，默认值为 `MEMORY_QUERY_MIN_SCORE`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `10`。
+        mark_access: mark access 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[tuple[MemoryRecord, float]]`，表示按条件筛选、构造或查询得到的列表。
     """
     from memory.retriever import score_memory
 
@@ -2552,9 +2952,12 @@ def search_memories(
 
 
 def stats(space_id: str, db_path: Any = None) -> dict[str, Any]:
-    """负责“统计”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`stats` 负责处理 stats，服务于本文件职责：Memory 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     del db_path
     with session_scope() as session:
@@ -2600,9 +3003,11 @@ def stats(space_id: str, db_path: Any = None) -> dict[str, Any]:
 
 
 def schema_tables(db_path: Any = None) -> set[str]:
-    """负责“模式tables”。
-
-    该函数是 `repositories.postgres.memory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`schema_tables` 负责处理 schema tables，服务于本文件职责：Memory 数据访问。
+    传参：
+        db_path: db path 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `set[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     del db_path
     from sqlalchemy import inspect

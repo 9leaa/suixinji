@@ -1,4 +1,9 @@
-"""Measure Stage 2 PostgreSQL query paths with bounded, disposable data."""
+"""文件作用：Stage 2 查询基准。
+
+项目关系：本文件依赖 `agent`、`infrastructure.database`、`infrastructure.schema`、`repositories.postgres` 等 6 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -31,9 +36,12 @@ NOTE_SIZES = (1_000, 10_000)
 
 
 def _percentile(values: list[float], ratio: float) -> float:
-    """负责“percentile”。
-
-    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_percentile` 负责处理 percentile，服务于本文件职责：Stage 2 查询基准。
+    传参：
+        values: values 参数，由调用方传入，类型为 `list[float]`。
+        ratio: ratio 参数，由调用方传入，类型为 `float`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
     """
     ordered = sorted(values)
     index = min(len(ordered) - 1, max(0, round((len(ordered) - 1) * ratio)))
@@ -41,26 +49,37 @@ def _percentile(values: list[float], ratio: float) -> float:
 
 
 def _chunks(items: list[dict[str, Any]], size: int = 1_000) -> list[list[dict[str, Any]]]:
-    """负责“chunks”。
-
-    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_chunks` 负责处理 chunks，服务于本文件职责：Stage 2 查询基准。
+    传参：
+        items: 待遍历或处理的元素集合，类型为 `list[dict[str, Any]]`。
+        size: size 参数，由调用方传入，类型为 `int`，默认值为 `1000`。
+    返回结果说明：
+        返回 `list[list[dict[str, Any]]]`，表示按条件筛选、构造或查询得到的列表。
     """
     return [items[index : index + size] for index in range(0, len(items), size)]
 
 
 def _bulk_insert(session: Any, model: Any, rows: list[dict[str, Any]]) -> None:
-    """负责“bulk插入”。
-
-    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_bulk_insert` 负责处理 bulk insert，服务于本文件职责：Stage 2 查询基准。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        model: model 参数，由调用方传入，类型为 `Any`。
+        rows: rows 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     for chunk in _chunks(rows):
         session.execute(model.__table__.insert(), chunk)
 
 
 def _seed_notes(tenant_id: str, space_id: str, count: int) -> None:
-    """负责“seed笔记列表”。
-
-    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_seed_notes` 负责写入测试种子数据 notes，服务于本文件职责：Stage 2 查询基准。
+    传参：
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        count: count 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     now = datetime.now().astimezone()
     types = ("学习", "生活", "任务", "资料")
@@ -107,9 +126,13 @@ def _seed_notes(tenant_id: str, space_id: str, count: int) -> None:
 
 
 def _seed_memories(tenant_id: str, space_id: str, count: int = 100) -> None:
-    """负责“seedmemories”。
-
-    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_seed_memories` 负责写入测试种子数据 memories，服务于本文件职责：Stage 2 查询基准。
+    传参：
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        count: count 参数，由调用方传入，类型为 `int`，默认值为 `100`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     now = datetime.now().astimezone().isoformat()
     memories: list[dict[str, Any]] = []
@@ -173,9 +196,13 @@ def _seed_memories(tenant_id: str, space_id: str, count: int = 100) -> None:
 
 
 def _measure(name: str, operation: Callable[[], Any], repetitions: int) -> dict[str, Any]:
-    """负责“measure”。
-
-    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_measure` 负责处理 measure，服务于本文件职责：Stage 2 查询基准。
+    传参：
+        name: name 参数，由调用方传入，类型为 `str`。
+        operation: operation 参数，由调用方传入，类型为 `Callable[[], Any]`。
+        repetitions: repetitions 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     engine = get_engine()
     durations: list[float] = []
@@ -202,9 +229,12 @@ def _measure(name: str, operation: Callable[[], Any], repetitions: int) -> dict[
 
 
 def _explain(statement: str, **parameters: Any) -> dict[str, Any]:
-    """负责“explain”。
-
-    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_explain` 负责处理 explain，服务于本文件职责：Stage 2 查询基准。
+    传参：
+        statement: statement 参数，由调用方传入，类型为 `str`。
+        **parameters: parameters 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     with get_engine().connect() as connection:
         payload = connection.execute(
@@ -215,18 +245,23 @@ def _explain(statement: str, **parameters: Any) -> dict[str, Any]:
 
 
 def _cleanup(tenant_id: str) -> None:
-    """负责“cleanup”。
-
-    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_cleanup` 负责清理，服务于本文件职责：Stage 2 查询基准。
+    传参：
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with session_scope() as session:
         session.execute(delete(Tenant).where(Tenant.id == tenant_id))
 
 
 def run(output: Path, *, repetitions: int) -> dict[str, Any]:
-    """负责“运行”。
-
-    该函数是 `eval.benchmark_stage2_queries` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run` 负责运行，服务于本文件职责：Stage 2 查询基准。
+    传参：
+        output: output 参数，由调用方传入，类型为 `Path`。
+        repetitions: repetitions 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     tenant_id = f"stage2-benchmark-{uuid.uuid4().hex}"
     note_spaces = {size: f"{tenant_id}-notes-{size}" for size in NOTE_SIZES}
@@ -323,7 +358,12 @@ def run(output: Path, *, repetitions: int) -> dict[str, Any]:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：Stage 2 查询基准。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--repetitions", type=int, default=3)

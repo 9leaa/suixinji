@@ -1,3 +1,9 @@
+"""文件作用：Alembic 运行环境。
+
+项目关系：本文件依赖 `alembic`、`infrastructure.database`、`infrastructure.schema`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from __future__ import annotations
 
 from logging.config import fileConfig
@@ -15,17 +21,21 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    """负责“运行migrationsoffline”。
-
-    该函数是 `alembic.env` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run_migrations_offline` 负责运行 migrations offline，服务于本文件职责：Alembic 运行环境。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     raise RuntimeError("Offline migrations are disabled; set DATABASE_URL and run Alembic online")
 
 
 def run_migrations_online() -> None:
-    """负责“运行migrationsonline”。
-
-    该函数是 `alembic.env` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run_migrations_online` 负责运行 migrations online，服务于本文件职责：Alembic 运行环境。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with get_engine().connect() as connection:
         context.configure(

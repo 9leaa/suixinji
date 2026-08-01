@@ -1,4 +1,9 @@
-"""PostgreSQL note repository."""
+"""文件作用：Note 数据访问。
+
+项目关系：本文件依赖 `core.sensitive`、`core.settings`、`infrastructure.database`、`infrastructure.schema` 等 5 个模块；被 `agent.query_agent`、`apps.handlers`、`eval.large_live_retrieval_eval`、`eval.live_retrieval_eval`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -23,17 +28,23 @@ from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space,
 
 
 def _iso(value: datetime | None) -> str | None:
-    """负责“iso”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_iso` 负责处理 iso，服务于本文件职责：Note 数据访问。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `datetime | None`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     return value.isoformat() if value is not None else None
 
 
 def _as_note(row: Note, tags: list[str], related: list[str]) -> dict[str, Any]:
-    """负责“as笔记”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_as_note` 负责处理 as note，服务于本文件职责：Note 数据访问。
+    传参：
+        row: row 参数，由调用方传入，类型为 `Note`。
+        tags: tags 参数，由调用方传入，类型为 `list[str]`。
+        related: related 参数，由调用方传入，类型为 `list[str]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     metadata = dict(row.metadata_json or {})
     return {
@@ -59,9 +70,12 @@ def _as_note(row: Note, tags: list[str], related: list[str]) -> dict[str, Any]:
 
 
 def _load_parts(session: Any, note_ids: list[str]) -> tuple[dict[str, list[str]], dict[str, list[str]]]:
-    """负责“加载parts”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_load_parts` 负责加载 parts，服务于本文件职责：Note 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        note_ids: note ids 参数，由调用方传入，类型为 `list[str]`。
+    返回结果说明：
+        返回 `tuple[dict[str, list[str]], dict[str, list[str]]]`，表示由多个相关值组成的结果。
     """
     tags: dict[str, list[str]] = {note_id: [] for note_id in note_ids}
     related: dict[str, list[str]] = {note_id: [] for note_id in note_ids}
@@ -77,9 +91,11 @@ def _load_parts(session: Any, note_ids: list[str]) -> tuple[dict[str, list[str]]
 
 
 def save_note(meta: Any) -> bool:
-    """负责“保存笔记”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`save_note` 负责保存 note，服务于本文件职责：Note 数据访问。
+    传参：
+        meta: meta 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     values = asdict(meta) if not isinstance(meta, dict) else dict(meta)
     space_id = str(values["space_id"])
@@ -129,9 +145,11 @@ def save_note(meta: Any) -> bool:
 
 
 def load_index(space_id: str) -> list[dict[str, Any]]:
-    """负责“加载索引”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`load_index` 负责加载 index，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     with session_scope() as session:
         rows = list(session.execute(select(Note).where(Note.space_id == space_id).order_by(Note.created_at, Note.id)).scalars())
@@ -149,9 +167,17 @@ def _query_notes(
     enrichment_statuses: tuple[str, ...] | None = None,
     limit: int = 30,
 ) -> list[dict[str, Any]]:
-    """负责“查询笔记列表”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_query_notes` 负责查询 notes，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_type: note type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        tags: tags 参数，由调用方传入，类型为 `list[str] | None`，默认值为 `None`。
+        match_all_tags: match all tags 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+        created_after: created after 参数，由调用方传入，类型为 `datetime | None`，默认值为 `None`。
+        enrichment_statuses: enrichment statuses 参数，由调用方传入，类型为 `tuple[str, ...] | None`，默认值为 `None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `30`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     requested_tags = sorted(set(tags or []))
     statement = select(Note).where(Note.space_id == space_id, Note.sensitivity == "normal")
@@ -176,9 +202,13 @@ def _query_notes(
 
 
 def query_notes_by_type(space_id: str, note_type: str, *, limit: int = 30) -> list[dict[str, Any]]:
-    """负责“查询笔记列表by类型”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`query_notes_by_type` 负责查询 notes by type，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_type: note type 参数，由调用方传入，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `30`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     return _query_notes(space_id, note_type=note_type, limit=limit)
 
@@ -191,9 +221,15 @@ def query_notes_by_tags(
     match_all_tags: bool = True,
     limit: int = 30,
 ) -> list[dict[str, Any]]:
-    """负责“查询笔记列表bytags”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`query_notes_by_tags` 负责查询 notes by tags，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        tags: tags 参数，由调用方传入，类型为 `list[str]`。
+        note_type: note type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        match_all_tags: match all tags 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `30`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     return _query_notes(
         space_id,
@@ -205,17 +241,24 @@ def query_notes_by_tags(
 
 
 def list_recent_notes(space_id: str, *, created_after: datetime, limit: int = 30) -> list[dict[str, Any]]:
-    """负责“列出recent笔记列表”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_recent_notes` 负责列出 recent notes，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        created_after: created after 参数，由调用方传入，类型为 `datetime`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `30`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     return _query_notes(space_id, created_after=created_after, limit=limit)
 
 
 def list_provisional_notes(space_id: str, *, limit: int = 200) -> list[dict[str, Any]]:
-    """负责“列出provisional笔记列表”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_provisional_notes` 负责列出 provisional notes，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `200`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     return _query_notes(
         space_id,
@@ -231,16 +274,23 @@ _NOTE_QUERY_FILLERS = (
 
 
 def _note_query_terms(text: str) -> list[str]:
-    """Create bounded sparse hints that work for both Latin and CJK text."""
+    """函数功能：`_note_query_terms` 负责查询 terms，服务于本文件职责：Note 数据访问。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
+    """
     value = " ".join(str(text or "").split()).strip().casefold()
     for filler in _NOTE_QUERY_FILLERS:
         value = value.replace(filler, " ")
     terms: list[str] = []
 
     def add(token: str) -> None:
-        """负责“添加”。
-
-        该函数是 `repositories.postgres.notes` 中的`_note_query_terms` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`add` 负责处理 add，服务于本文件职责：Note 数据访问。
+        传参：
+            token: token 参数，由调用方传入，类型为 `str`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         token = str(token or "").strip()
         if len(token) >= 2 and token not in terms:
@@ -264,9 +314,12 @@ def _weighted_note_rrf(
     *,
     limit: int,
 ) -> list[tuple[Note, float, list[str]]]:
-    """负责“weighted笔记rrf”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_weighted_note_rrf` 负责处理 weighted note rrf，服务于本文件职责：Note 数据访问。
+    传参：
+        channels: channels 参数，由调用方传入，类型为 `list[tuple[str, list[Note]]]`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`。
+    返回结果说明：
+        返回 `list[tuple[Note, float, list[str]]]`，表示按条件筛选、构造或查询得到的列表。
     """
     weights = {
         "exact": 1.55,
@@ -303,11 +356,14 @@ def hybrid_search_notes(
     query_embedding: list[float] | None = None,
     limit: int = 8,
 ) -> list[dict[str, Any]]:
-    """Hybrid evidence-layer retrieval: exact/sparse/dense -> weighted RRF.
-
-    The function is intentionally read-only and excludes sensitive notes at
-    the SQL boundary and again before returning.  A missing vector channel is
-    normal during embedding backfill; sparse channels remain sufficient.
+    """函数功能：`hybrid_search_notes` 负责搜索 notes，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        query_embedding: query embedding 参数，由调用方传入，类型为 `list[float] | None`，默认值为 `None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `8`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     cleaned = " ".join(str(query or "").split()).strip()
     if not cleaned:
@@ -330,9 +386,7 @@ def hybrid_search_notes(
         if exact:
             channels.append(("exact", exact))
 
-        # FTS is useful for whitespace/tokenized text (especially English).
-        # For CJK it may be empty, so the bounded lexical channel below is
-        # always allowed to complement it.
+        # FTS 适合空格分词文本，尤其是英文；中文场景可能为空，因此下方有界词法通道始终可作为补充。
         fts_query = " ".join(terms) or cleaned
         tsquery = func.websearch_to_tsquery("simple", fts_query[:500])
         fts = list(
@@ -400,11 +454,13 @@ def hybrid_search_notes(
 
 
 def search_notes_memory_fallback(space_id: str, query: str, *, limit: int = 8) -> list[dict[str, Any]]:
-    """Bounded normal-note fallback for a fresh memory-oriented query.
-
-    PostgreSQL full-text search is attempted first for whitespace-tokenized
-    text, followed by a CJK-friendly lexical match.  This function is read
-    only and deliberately excludes sensitive notes.
+    """函数功能：`search_notes_memory_fallback` 负责搜索 notes memory fallback，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `8`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     cleaned = " ".join(str(query or "").split()).strip()
     if not cleaned:
@@ -423,9 +479,7 @@ def search_notes_memory_fallback(space_id: str, query: str, *, limit: int = 8) -
             ).scalars()
         )
         if not rows:
-            # The simple dictionary does not segment Chinese.  Keep a small,
-            # deterministic lexical fallback rather than relying on an
-            # optional extension or emitting an empty result immediately.
+            # simple dictionary 不切中文；这里保留小而确定性的词法 fallback，而不是依赖可选扩展或直接返回空结果。
             fragments = [cleaned]
             fragments.extend(part for part in cleaned.split() if len(part) >= 2)
             conditions = [document.ilike(f"%{fragment[:80]}%") for fragment in dict.fromkeys(fragments) if fragment]
@@ -447,9 +501,13 @@ def search_notes_memory_fallback(space_id: str, query: str, *, limit: int = 8) -
 
 
 def get_note_relations(space_id: str, note_id: str, *, limit: int = 5) -> dict[str, Any] | None:
-    """负责“获取笔记relations”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_note_relations` 负责获取 note relations，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `5`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     bounded_limit = max(1, min(int(limit), 20))
     with session_scope() as session:
@@ -492,18 +550,23 @@ def get_note_relations(space_id: str, note_id: str, *, limit: int = 5) -> dict[s
 
 
 def list_space_ids() -> list[str]:
-    """负责“列出空间标识列表”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_space_ids` 负责列出 space ids，服务于本文件职责：Note 数据访问。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     with session_scope() as session:
         return list(session.execute(select(Note.space_id).distinct().order_by(Note.space_id)).scalars())
 
 
 def find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
-    """负责“查找笔记”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`find_note` 负责查找 note，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     with session_scope() as session:
         row = session.execute(select(Note).where(Note.space_id == space_id, Note.id == note_id)).scalar_one_or_none()
@@ -514,7 +577,13 @@ def find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
 
 
 def find_note_content(space_id: str, note_id: str) -> dict[str, Any] | None:
-    """Load only fields needed by memory extraction in one SQL query."""
+    """函数功能：`find_note_content` 负责查找 note content，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
+    """
     with session_scope() as session:
         tags = (
             select(func.array_agg(NoteTag.tag))
@@ -555,18 +624,25 @@ def find_note_content(space_id: str, note_id: str) -> dict[str, Any] | None:
 
 
 def note_exists(space_id: str, message_id: str) -> bool:
-    """负责“笔记exists”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`note_exists` 负责处理 note exists，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     with session_scope() as session:
         return session.execute(select(Note.id).where(Note.space_id == space_id, Note.message_id == message_id).limit(1)).scalar_one_or_none() is not None
 
 
 def update_note_metadata(space_id: str, note_id: str, **updates: Any) -> dict[str, Any] | None:
-    """负责“更新笔记metadata”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`update_note_metadata` 负责更新 note metadata，服务于本文件职责：Note 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        **updates: updates 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     column_map = {
         "title": "title", "type": "note_type", "summary": "summary", "text": "text",
@@ -592,9 +668,12 @@ def update_note_metadata(space_id: str, note_id: str, **updates: Any) -> dict[st
 
 
 def list_pending_enrichments(*, limit: int = 100, max_attempts: int = 3) -> list[dict[str, str]]:
-    """负责“列出待处理enrichments”。
-
-    该函数是 `repositories.postgres.notes` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_pending_enrichments` 负责列出 pending enrichments，服务于本文件职责：Note 数据访问。
+    传参：
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `100`。
+        max_attempts: max attempts 参数，由调用方传入，类型为 `int`，默认值为 `3`。
+    返回结果说明：
+        返回 `list[dict[str, str]]`，表示按条件筛选、构造或查询得到的列表。
     """
     with session_scope() as session:
         rows = session.execute(

@@ -1,4 +1,9 @@
-"""Small Redis Streams client with groups, ACK, reclaim, and dead letters."""
+"""文件作用：Redis Streams 客户端。
+
+项目关系：本文件依赖 `core.settings`、`infrastructure.redis_client`、`infrastructure.redis_keys`；被 `runtime.distributed_metrics`、`runtime.streams.__init__`、`runtime.streams.worker`、`scripts.check_distributed_cutover` 等 9 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -25,12 +30,20 @@ GROUPS = {
 
 @dataclass(frozen=True)
 class StreamMessage:
+    """类功能：`StreamMessage` 封装与“Redis Streams 客户端”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     stream: str
     message_id: str
     fields: dict[str, str]
 
 
 class StreamClient:
+    """类功能：`StreamClient` 封装与“Redis Streams 客户端”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def __init__(
         self,
         client: Redis | None = None,
@@ -38,7 +51,14 @@ class StreamClient:
         blocking_client: Redis | None = None,
         keys: RedisKeys = KEYS,
     ) -> None:
-        """初始化`StreamClient` 实例并建立后续调用所需的状态。"""
+        """函数功能：`StreamClient.__init__` 在类 `StreamClient` 中负责初始化实例状态，服务于本文件职责：Redis Streams 客户端。
+        传参：
+            client: 外部服务或基础设施客户端，类型为 `Redis | None`，默认值为 `None`。
+            blocking_client: blocking client 参数，由调用方传入，类型为 `Redis | None`，默认值为 `None`。
+            keys: keys 参数，由调用方传入，类型为 `RedisKeys`，默认值为 `KEYS`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.client = client or get_redis()
         self.blocking_client = blocking_client or (client if client is not None else get_blocking_redis())
         self.keys = keys
@@ -46,9 +66,11 @@ class StreamClient:
         self._ensured_groups: set[str] = set()
 
     def ensure_group(self, task_type: str) -> tuple[str, str]:
-        """负责“确保group”。
-
-        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamClient.ensure_group` 在类 `StreamClient` 中负责确保 group，服务于本文件职责：Redis Streams 客户端。
+        传参：
+            task_type: task type 参数，由调用方传入，类型为 `str`。
+        返回结果说明：
+            返回 `tuple[str, str]`，表示由多个相关值组成的结果。
         """
         stream = self.keys.stream(task_type)
         group = GROUPS[task_type]
@@ -63,9 +85,12 @@ class StreamClient:
         return stream, group
 
     def publish_task(self, event_id: str, payload: dict[str, Any]) -> str:
-        """负责“发布任务”。
-
-        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamClient.publish_task` 在类 `StreamClient` 中负责发布 task，服务于本文件职责：Redis Streams 客户端。
+        传参：
+            event_id: 事件标识，用于外部事件幂等和审计，类型为 `str`。
+            payload: 结构化载荷，通常来自事件、任务或 API 请求，类型为 `dict[str, Any]`。
+        返回结果说明：
+            返回 `str`，通常是格式化后的文本、标识或路径。
         """
         task_type = str(payload["task_type"])
         stream = self.keys.stream(task_type)
@@ -78,9 +103,14 @@ class StreamClient:
         return str(self.client.xadd(stream, fields, maxlen=max(1000, STREAM_MAXLEN), approximate=True))
 
     def read(self, task_type: str, consumer: str, *, count: int = STREAM_BATCH_SIZE, block_ms: int = STREAM_BLOCK_MS) -> list[StreamMessage]:
-        """负责“读取”。
-
-        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamClient.read` 在类 `StreamClient` 中负责读取，服务于本文件职责：Redis Streams 客户端。
+        传参：
+            task_type: task type 参数，由调用方传入，类型为 `str`。
+            consumer: consumer 参数，由调用方传入，类型为 `str`。
+            count: count 参数，由调用方传入，类型为 `int`，默认值为 `STREAM_BATCH_SIZE`。
+            block_ms: block ms 参数，由调用方传入，类型为 `int`，默认值为 `STREAM_BLOCK_MS`。
+        返回结果说明：
+            返回 `list[StreamMessage]`，表示按条件筛选、构造或查询得到的列表。
         """
         stream, group = self.ensure_group(task_type)
         try:
@@ -106,7 +136,14 @@ class StreamClient:
         return self._messages(response)
 
     def read_many(self, task_types: list[str], consumer: str, *, count: int = 1) -> list[StreamMessage]:
-        """Poll independent consumer groups in one Redis network round trip."""
+        """函数功能：`StreamClient.read_many` 在类 `StreamClient` 中负责读取 many，服务于本文件职责：Redis Streams 客户端。
+        传参：
+            task_types: task types 参数，由调用方传入，类型为 `list[str]`。
+            consumer: consumer 参数，由调用方传入，类型为 `str`。
+            count: count 参数，由调用方传入，类型为 `int`，默认值为 `1`。
+        返回结果说明：
+            返回 `list[StreamMessage]`，表示按条件筛选、构造或查询得到的列表。
+        """
         streams_and_groups = [self.ensure_group(task_type) for task_type in task_types]
         pipeline = self.client.pipeline(transaction=False)
         for stream, group in streams_and_groups:
@@ -131,9 +168,14 @@ class StreamClient:
         return messages
 
     def reclaim(self, task_type: str, consumer: str, *, min_idle_ms: int = STREAM_CLAIM_IDLE_MS, count: int = STREAM_BATCH_SIZE) -> list[StreamMessage]:
-        """负责“reclaim”。
-
-        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamClient.reclaim` 在类 `StreamClient` 中负责处理 reclaim，服务于本文件职责：Redis Streams 客户端。
+        传参：
+            task_type: task type 参数，由调用方传入，类型为 `str`。
+            consumer: consumer 参数，由调用方传入，类型为 `str`。
+            min_idle_ms: min idle ms 参数，由调用方传入，类型为 `int`，默认值为 `STREAM_CLAIM_IDLE_MS`。
+            count: count 参数，由调用方传入，类型为 `int`，默认值为 `STREAM_BATCH_SIZE`。
+        返回结果说明：
+            返回 `list[StreamMessage]`，表示按条件筛选、构造或查询得到的列表。
         """
         stream, group = self.ensure_group(task_type)
         cursor_key = (task_type, consumer)
@@ -150,33 +192,44 @@ class StreamClient:
         return [StreamMessage(stream, str(message_id), {str(key): str(value) for key, value in fields.items()}) for message_id, fields in entries]
 
     def reclaim_cursor(self, task_type: str, consumer: str) -> str:
-        """负责“reclaimcursor”。
-
-        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamClient.reclaim_cursor` 在类 `StreamClient` 中负责处理 reclaim cursor，服务于本文件职责：Redis Streams 客户端。
+        传参：
+            task_type: task type 参数，由调用方传入，类型为 `str`。
+            consumer: consumer 参数，由调用方传入，类型为 `str`。
+        返回结果说明：
+            返回 `str`，通常是格式化后的文本、标识或路径。
         """
         return self._reclaim_cursors.get((task_type, consumer), "0-0")
 
     def ack(self, task_type: str, message_id: str) -> int:
-        """负责“ack”。
-
-        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamClient.ack` 在类 `StreamClient` 中负责处理 ack，服务于本文件职责：Redis Streams 客户端。
+        传参：
+            task_type: task type 参数，由调用方传入，类型为 `str`。
+            message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str`。
+        返回结果说明：
+            返回 `int`，表示计算得到的数值结果。
         """
         stream, group = self.ensure_group(task_type)
         return int(self.client.xack(stream, group, message_id))
 
     def dead_letter(self, message: StreamMessage, *, error: str) -> str:
-        """负责“deadletter”。
-
-        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamClient.dead_letter` 在类 `StreamClient` 中负责处理 dead letter，服务于本文件职责：Redis Streams 客户端。
+        传参：
+            message: message 参数，由调用方传入，类型为 `StreamMessage`。
+            error: 当前捕获的异常对象，类型为 `str`。
+        返回结果说明：
+            返回 `str`，通常是格式化后的文本、标识或路径。
         """
         fields = {**message.fields, "source_stream": message.stream, "source_message_id": message.message_id, "error": error[:1000]}
         return str(self.client.xadd(self.keys.dead_letter_stream(), fields, maxlen=max(1000, STREAM_MAXLEN), approximate=True))
 
     @staticmethod
     def _messages(response: Any) -> list[StreamMessage]:
-        """负责“messages”。
-
-        该函数是 `runtime.streams.client` 中的`StreamClient` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`StreamClient._messages` 在类 `StreamClient` 中负责处理 messages，服务于本文件职责：Redis Streams 客户端。
+        传参：
+            response: 响应对象或响应载荷，类型为 `Any`。
+        返回结果说明：
+            返回 `list[StreamMessage]`，表示按条件筛选、构造或查询得到的列表。
         """
         messages: list[StreamMessage] = []
         for stream, entries in response or []:

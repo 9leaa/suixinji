@@ -1,4 +1,9 @@
-"""P4 automatic summary subscription storage."""
+"""文件作用：自动总结订阅。
+
+项目关系：本文件依赖 `core.settings`、`repositories.postgres`；被 `apps.handlers`、`bot.feishu_bot`、`repositories.postgres.summary`、`summary.reconciliation` 等 6 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -20,6 +25,10 @@ _LOCK = threading.RLock()
 
 @dataclass
 class SummarySubscription:
+    """类功能：`SummarySubscription` 封装与“自动总结订阅”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     space_id: str
     chat_id: str
     enabled: bool = True
@@ -29,9 +38,11 @@ class SummarySubscription:
 
 
 def parse_summary_time(value: str) -> str | None:
-    """负责“解析总结time”。
-
-    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`parse_summary_time` 负责解析 summary time，服务于本文件职责：自动总结订阅。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     value = value.strip()
     if not _TIME_RE.match(value):
@@ -40,9 +51,11 @@ def parse_summary_time(value: str) -> str | None:
 
 
 def _load_raw() -> dict[str, dict[str, Any]]:
-    """负责“加载raw”。
-
-    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_load_raw` 负责加载 raw，服务于本文件职责：自动总结订阅。
+    传参：
+        无。
+    返回结果说明：
+        返回 `dict[str, dict[str, Any]]`，表示结构化结果、载荷或状态映射。
     """
     with _LOCK:
         if not SUBSCRIPTIONS_PATH.exists():
@@ -51,9 +64,11 @@ def _load_raw() -> dict[str, dict[str, Any]]:
 
 
 def _save_raw(items: dict[str, dict[str, Any]]) -> None:
-    """负责“保存raw”。
-
-    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_save_raw` 负责保存 raw，服务于本文件职责：自动总结订阅。
+    传参：
+        items: 待遍历或处理的元素集合，类型为 `dict[str, dict[str, Any]]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with _LOCK:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -64,9 +79,11 @@ def _save_raw(items: dict[str, dict[str, Any]]) -> None:
 
 
 def get_summary_subscription(space_id: str) -> SummarySubscription | None:
-    """负责“获取总结subscription”。
-
-    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_summary_subscription` 负责获取 summary subscription，服务于本文件职责：自动总结订阅。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `SummarySubscription | None`；未命中或无需处理时可返回 `None`。
     """
     raw = _load_raw().get(space_id)
     if raw is None:
@@ -75,9 +92,11 @@ def get_summary_subscription(space_id: str) -> SummarySubscription | None:
 
 
 def list_enabled_summary_subscriptions() -> list[SummarySubscription]:
-    """负责“列出enabled总结subscriptions”。
-
-    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_enabled_summary_subscriptions` 负责列出 enabled summary subscriptions，服务于本文件职责：自动总结订阅。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list[SummarySubscription]`，表示按条件筛选、构造或查询得到的列表。
     """
     return [
         SummarySubscription(**item)
@@ -87,9 +106,12 @@ def list_enabled_summary_subscriptions() -> list[SummarySubscription]:
 
 
 def enable_summary_subscription(space_id: str, chat_id: str) -> SummarySubscription:
-    """负责“启用总结subscription”。
-
-    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`enable_summary_subscription` 负责处理 enable summary subscription，服务于本文件职责：自动总结订阅。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        chat_id: chat id 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `SummarySubscription` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     items = _load_raw()
     old = items.get(space_id, {})
@@ -107,9 +129,11 @@ def enable_summary_subscription(space_id: str, chat_id: str) -> SummarySubscript
 
 
 def disable_summary_subscription(space_id: str) -> SummarySubscription | None:
-    """负责“disable总结subscription”。
-
-    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`disable_summary_subscription` 负责处理 disable summary subscription，服务于本文件职责：自动总结订阅。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `SummarySubscription | None`；未命中或无需处理时可返回 `None`。
     """
     items = _load_raw()
     old = items.get(space_id)
@@ -122,9 +146,13 @@ def disable_summary_subscription(space_id: str) -> SummarySubscription | None:
 
 
 def update_summary_time(space_id: str, chat_id: str, time_value: str) -> SummarySubscription:
-    """负责“更新总结time”。
-
-    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`update_summary_time` 负责更新 summary time，服务于本文件职责：自动总结订阅。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        chat_id: chat id 参数，由调用方传入，类型为 `str`。
+        time_value: time value 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `SummarySubscription` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     parsed = parse_summary_time(time_value)
     if parsed is None:
@@ -146,9 +174,12 @@ def update_summary_time(space_id: str, chat_id: str, time_value: str) -> Summary
 
 
 def mark_summary_sent(space_id: str, sent_date: str) -> None:
-    """负责“标记总结sent”。
-
-    该函数是 `summary.subscription` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_summary_sent` 负责标记 summary sent，服务于本文件职责：自动总结订阅。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        sent_date: sent date 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     items = _load_raw()
     old = items.get(space_id)

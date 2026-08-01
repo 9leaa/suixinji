@@ -1,4 +1,9 @@
-"""PostgreSQL inbox repository replacing the local JSONL WAL."""
+"""文件作用：Inbox 数据访问。
+
+项目关系：本文件依赖 `infrastructure.database`、`infrastructure.schema`、`repositories.postgres.common`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -14,9 +19,11 @@ from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space,
 
 
 def _as_record(row: InboxMessage) -> dict[str, Any]:
-    """负责“as记录”。
-
-    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_as_record` 负责记录 as，服务于本文件职责：Inbox 数据访问。
+    传参：
+        row: row 参数，由调用方传入，类型为 `InboxMessage`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     return {
         "id": row.id,
@@ -35,9 +42,11 @@ def _as_record(row: InboxMessage) -> dict[str, Any]:
 
 
 def append_message_once(record: Any) -> bool:
-    """负责“追加消息once”。
-
-    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`append_message_once` 负责追加 message once，服务于本文件职责：Inbox 数据访问。
+    传参：
+        record: 待处理或持久化的记录对象，类型为 `Any`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     values = asdict(record) if not isinstance(record, dict) else dict(record)
     source = str(values.get("source") or "feishu")
@@ -77,26 +86,32 @@ def append_message_once(record: Any) -> bool:
 
 
 def append_record(record: Any) -> None:
-    """负责“追加记录”。
-
-    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`append_record` 负责追加 record，服务于本文件职责：Inbox 数据访问。
+    传参：
+        record: 待处理或持久化的记录对象，类型为 `Any`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     append_message_once(record)
 
 
 def list_wal_space_ids() -> list[str]:
-    """负责“列出预写日志空间标识列表”。
-
-    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_wal_space_ids` 负责列出 wal space ids，服务于本文件职责：Inbox 数据访问。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     with session_scope() as session:
         return list(session.execute(select(InboxMessage.space_id).distinct().order_by(InboxMessage.space_id)).scalars())
 
 
 def load_records(space_id: str) -> list[dict[str, Any]]:
-    """负责“加载records”。
-
-    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`load_records` 负责加载 records，服务于本文件职责：Inbox 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     with session_scope() as session:
         rows = session.execute(
@@ -106,9 +121,12 @@ def load_records(space_id: str) -> list[dict[str, Any]]:
 
 
 def message_exists(space_id: str, message_id: str) -> bool:
-    """负责“消息exists”。
-
-    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`message_exists` 负责处理 message exists，服务于本文件职责：Inbox 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     with session_scope() as session:
         resolved_space_id = ensure_tenant_space(session, space_id)
@@ -121,9 +139,11 @@ def message_exists(space_id: str, message_id: str) -> bool:
 
 
 def load_pending_records(space_id: str) -> list[dict[str, Any]]:
-    """负责“加载待处理records”。
-
-    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`load_pending_records` 负责加载 pending records，服务于本文件职责：Inbox 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     with session_scope() as session:
         rows = session.execute(
@@ -135,9 +155,12 @@ def load_pending_records(space_id: str) -> list[dict[str, Any]]:
 
 
 def mark_processed(space_id: str, record_id: str) -> None:
-    """负责“标记processed”。
-
-    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_processed` 负责标记 processed，服务于本文件职责：Inbox 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        record_id: record id 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with session_scope() as session:
         session.execute(
@@ -154,9 +177,14 @@ def mark_sensitive_blocked(
     *,
     preserve_pending: bool = False,
 ) -> None:
-    """负责“标记sensitiveblocked”。
-
-    该函数是 `repositories.postgres.inbox` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_sensitive_blocked` 负责标记 sensitive blocked，服务于本文件职责：Inbox 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        record_id: record id 参数，由调用方传入，类型为 `str`。
+        category: category 参数，由调用方传入，类型为 `str`，默认值为 `'sensitive'`。
+        preserve_pending: preserve pending 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with session_scope() as session:
         session.execute(

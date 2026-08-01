@@ -1,4 +1,9 @@
-"""P4 automatic summary scheduler."""
+"""文件作用：总结调度。
+
+项目关系：本文件依赖 `core.observability`、`runtime.delivery_store`、`runtime.executor`、`runtime.task` 等 6 个模块；被 `apps.scheduler`、`bot.feishu_bot`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -25,18 +30,23 @@ _started_lock = threading.Lock()
 
 
 def _minutes(value: str) -> int:
-    """负责“minutes”。
-
-    该函数是 `summary.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_minutes` 负责处理 minutes，服务于本文件职责：总结调度。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     hour, minute = value.split(":", 1)
     return int(hour) * 60 + int(minute)
 
 
 def _is_due(sub: SummarySubscription, now: datetime) -> bool:
-    """负责“是否为due”。
-
-    该函数是 `summary.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_is_due` 负责判断是否为 due，服务于本文件职责：总结调度。
+    传参：
+        sub: sub 参数，由调用方传入，类型为 `SummarySubscription`。
+        now: now 参数，由调用方传入，类型为 `datetime`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     today = now.date().isoformat()
     if sub.last_sent_date == today:
@@ -51,9 +61,13 @@ def run_summary_scheduler_once(
     *,
     now: datetime | None = None,
 ) -> int:
-    """负责“运行总结scheduleronce”。
-
-    该函数是 `summary.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run_summary_scheduler_once` 负责运行 summary scheduler once，服务于本文件职责：总结调度。
+    传参：
+        send_text: send text 参数，由调用方传入，类型为 `Callable[[str, str], bool]`。
+        executor: executor 参数，由调用方传入，类型为 `BoundedTaskExecutor | None`，默认值为 `None`。
+        now: now 参数，由调用方传入，类型为 `datetime | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     now = now or datetime.now().astimezone()
     today = now.date().isoformat()
@@ -96,9 +110,14 @@ def run_summary_scheduler_once(
                 success_ctx: dict[str, str] = dict(ctx),
                 success_range_key: str = range_key,
             ) -> None:
-                """负责“success”。
-
-                该函数是 `summary.scheduler` 中的`run_summary_scheduler_once` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+                """函数功能：`on_success` 负责处理 on success，服务于本文件职责：总结调度。
+                传参：
+                    space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`，默认值为 `sub.space_id`。
+                    sent_date: sent date 参数，由调用方传入，类型为 `str`，默认值为 `today`。
+                    success_ctx: success ctx 参数，由调用方传入，类型为 `dict[str, str]`，默认值为 `dict(ctx)`。
+                    success_range_key: success range key 参数，由调用方传入，类型为 `str`，默认值为 `range_key`。
+                返回结果说明：
+                    无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
                 """
                 mark_summary_sent(space_id, sent_date)
                 log_event(
@@ -162,9 +181,12 @@ def run_scheduler_tick_safely(
     send_text: Callable[[str, str], bool],
     executor: BoundedTaskExecutor | None = None,
 ) -> None:
-    """负责“运行schedulerticksafely”。
-
-    该函数是 `summary.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run_scheduler_tick_safely` 负责运行 scheduler tick safely，服务于本文件职责：总结调度。
+    传参：
+        send_text: send text 参数，由调用方传入，类型为 `Callable[[str, str], bool]`。
+        executor: executor 参数，由调用方传入，类型为 `BoundedTaskExecutor | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     tick_started = time.perf_counter()
     try:
@@ -189,9 +211,13 @@ def start_summary_scheduler(
     interval_seconds: int = 60,
     executor: BoundedTaskExecutor | None = None,
 ) -> None:
-    """负责“启动总结scheduler”。
-
-    该函数是 `summary.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`start_summary_scheduler` 负责启动 summary scheduler，服务于本文件职责：总结调度。
+    传参：
+        send_text: send text 参数，由调用方传入，类型为 `Callable[[str, str], bool]`。
+        interval_seconds: interval seconds 参数，由调用方传入，类型为 `int`，默认值为 `60`。
+        executor: executor 参数，由调用方传入，类型为 `BoundedTaskExecutor | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     global _started
     with _started_lock:
@@ -200,9 +226,11 @@ def start_summary_scheduler(
         _started = True
 
     def loop() -> None:
-        """负责“loop”。
-
-        该函数是 `summary.scheduler` 中的`start_summary_scheduler` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`loop` 负责处理 loop，服务于本文件职责：总结调度。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         LOGGER.info("P4 summary scheduler started")
         while True:

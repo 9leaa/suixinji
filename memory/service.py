@@ -1,4 +1,9 @@
-"""Public orchestration and command formatting for long-term memory."""
+"""文件作用：Memory 公共服务与飞书命令格式化。
+
+项目关系：本文件依赖 `agent.hooks`、`core.sensitive`、`core.settings`、`infrastructure.redis_keys` 等 14 个模块；被 `agent.query_agent`、`apps.handlers`、`bot.feishu_bot`、`core.worker` 等 16 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -52,9 +57,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _note_value(note: Any, key: str, default: Any = None) -> Any:
-    """负责“读取笔记对象中的字段值”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_note_value` 负责处理 note value，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        note: note 参数，由调用方传入，类型为 `Any`。
+        key: key 参数，由调用方传入，类型为 `str`。
+        default: default 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if is_dataclass(note):
         return asdict(note).get(key, default)
@@ -64,14 +73,18 @@ def _note_value(note: Any, key: str, default: Any = None) -> Any:
 
 
 def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None = None) -> dict[str, Any]:
-    """负责“处理笔记记忆实现”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_process_note_memory_impl` 负责处理 note memory impl，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        note: note 参数，由调用方传入，类型为 `Any`。
+        classification: classification 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     note_id = str(_note_value(note, "id", ""))
     space_id = str(_note_value(note, "space_id", ""))
     tenant_id = str(_note_value(note, "tenant_id", "default") or "default")
     text = str(_note_value(note, "text", "") or "")
+
     trace = start_trace("memory_write", space_id, note_id=note_id)
     add_step(trace, "note_saved", output_summary={"note_id": note_id, "text_len": len(text)})
     add_step(
@@ -172,6 +185,7 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
         ]
         for candidate in enriched_candidates:
             save_memory_candidate(candidate, space_id=space_id, status="extracted")
+        # 校验前先持久化原始候选，确保被拒绝的模型输出仍能按模型、prompt 和拒绝原因审计。
         for candidate in enriched_candidates:
             add_step(
                 trace,
@@ -332,9 +346,12 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
 
 
 def process_note_memory(note: Any, classification: dict[str, Any] | None = None) -> dict[str, Any]:
-    """负责“处理笔记记忆”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`process_note_memory` 负责处理 note memory，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        note: note 参数，由调用方传入，类型为 `Any`。
+        classification: classification 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     note_id = str(_note_value(note, "id", ""))
     space_id = str(_note_value(note, "space_id", ""))
@@ -366,9 +383,15 @@ def memory_search(
     min_score: float = MEMORY_QUERY_MIN_SCORE,
     limit: int = 8,
 ) -> list[dict[str, Any]]:
-    """负责“记忆检索”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`memory_search` 负责搜索 memory，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        min_score: min score 参数，由调用方传入，类型为 `float`，默认值为 `MEMORY_QUERY_MIN_SCORE`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `8`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     trace = start_trace("memory_query", space_id, query_len=len(query))
     add_step(trace, "query_received", input_summary={"query_len": len(query), "memory_type": memory_type, "min_score": min_score})
@@ -387,9 +410,11 @@ def memory_search(
 
 
 def _format_memory(memory: dict[str, Any]) -> str:
-    """负责“格式化记忆”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_format_memory` 负责格式化 memory，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        memory: memory 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     source_count = len(memory.get("sources") or [])
     score = memory.get("score")
@@ -402,9 +427,13 @@ def _format_memory(memory: dict[str, Any]) -> str:
 
 
 def format_memory_list(space_id: str, *, status: str = "active", limit: int = 20) -> str:
-    """负责“格式化记忆列出”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_list` 负责格式化 memory list，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'active'`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `20`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     memories = [
         memory.to_dict()
@@ -417,9 +446,11 @@ def format_memory_list(space_id: str, *, status: str = "active", limit: int = 20
 
 
 def format_memory_show(memory_id: str) -> str:
-    """负责“格式化记忆详情”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_show` 负责格式化 memory show，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     memory = get_memory(memory_id)
     if memory is None or contains_sensitive_data(memory.content):
@@ -445,9 +476,12 @@ def format_memory_show(memory_id: str) -> str:
 
 
 def format_memory_search(space_id: str, query: str) -> str:
-    """负责“格式化记忆检索”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_search` 负责格式化 memory search，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     results = memory_search(space_id, query)
     if not results:
@@ -456,9 +490,11 @@ def format_memory_search(space_id: str, query: str) -> str:
 
 
 def format_memory_forget(memory_id: str) -> str:
-    """负责“格式化记忆forget”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_forget` 负责格式化 memory forget，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     existing = get_memory(memory_id)
     if existing is None:
@@ -476,9 +512,11 @@ def format_memory_forget(memory_id: str) -> str:
 
 
 def format_memory_purge(memory_id: str) -> str:
-    """负责“格式化记忆清除”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_purge` 负责格式化 memory purge，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     existing = get_memory(memory_id)
     if existing is None:
@@ -495,9 +533,13 @@ def format_memory_purge(memory_id: str) -> str:
 
 
 def format_memory_correct(memory_id: str, content: str, task_status: str | None = None) -> str:
-    """负责“格式化记忆correct”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_correct` 负责格式化 memory correct，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+        task_status: task status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     existing = get_memory(memory_id)
     if existing is None:
@@ -535,9 +577,11 @@ def format_memory_correct(memory_id: str, content: str, task_status: str | None 
 
 
 def format_memory_conflicts(space_id: str) -> str:
-    """负责“格式化记忆conflicts”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_conflicts` 负责格式化 memory conflicts，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     memories = [memory.to_dict() for memory in list_memories(space_id, status="conflicted", limit=50)]
     if not memories:
@@ -546,9 +590,11 @@ def format_memory_conflicts(space_id: str) -> str:
 
 
 def format_memory_pending(space_id: str) -> str:
-    """负责“格式化记忆待处理”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_pending` 负责格式化 memory pending，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     memories = [memory.to_dict() for memory in list_memories(space_id, status="pending_review", limit=50)]
     if not memories:
@@ -557,9 +603,12 @@ def format_memory_pending(space_id: str) -> str:
 
 
 def format_memory_reject(memory_id: str, reason: str = "user_rejected_pending_memory") -> str:
-    """负责“格式化记忆reject”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_reject` 负责格式化 memory reject，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        reason: reason 参数，由调用方传入，类型为 `str`，默认值为 `'user_rejected_pending_memory'`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     memory = reject_pending_memory(memory_id, reason=reason)
     if memory is None:
@@ -568,9 +617,12 @@ def format_memory_reject(memory_id: str, reason: str = "user_rejected_pending_me
 
 
 def format_memory_edit(memory_id: str, content: str) -> str:
-    """负责“格式化记忆edit”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_edit` 负责格式化 memory edit，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     if contains_sensitive_data(content):
         return "修正内容包含敏感凭据，未写入长期记忆。"
@@ -581,9 +633,13 @@ def format_memory_edit(memory_id: str, content: str) -> str:
 
 
 def format_memory_resolve(memory_id: str, resolution: str, content: str | None = None) -> str:
-    """负责“格式化记忆处理”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_resolve` 负责格式化 memory resolve，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        resolution: resolution 参数，由调用方传入，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     memory = resolve_memory_conflict(memory_id, resolution=resolution, content=content)
     if memory is None:
@@ -592,9 +648,11 @@ def format_memory_resolve(memory_id: str, resolution: str, content: str | None =
 
 
 def format_memory_approve(memory_id: str) -> str:
-    """负责“格式化记忆审批”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_approve` 负责格式化 memory approve，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     existing = get_memory(memory_id)
     if existing is None or existing.status != "pending_review":
@@ -616,9 +674,12 @@ def format_memory_approve(memory_id: str) -> str:
 
 
 def format_memory_decisions(space_id: str, *, limit: int = 10) -> str:
-    """负责“格式化记忆decisions”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_decisions` 负责格式化 memory decisions，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `10`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     decisions = list_memory_decisions(space_id, limit=limit)
     if not decisions:
@@ -634,9 +695,11 @@ def format_memory_decisions(space_id: str, *, limit: int = 10) -> str:
 
 
 def format_memory_profile(space_id: str) -> str:
-    """负责“格式化记忆画像”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_profile` 负责格式化 memory profile，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     memories = list_memories(space_id, status="active", limit=100)
     if not memories:
@@ -672,9 +735,11 @@ def format_memory_profile(space_id: str) -> str:
 
 
 def format_memory_stats(space_id: str) -> str:
-    """负责“格式化记忆统计”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_stats` 负责格式化 memory stats，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     data = stats(space_id)
     return (
@@ -685,9 +750,12 @@ def format_memory_stats(space_id: str) -> str:
 
 
 def format_memory_consolidate(space_id: str, cadence: str) -> str:
-    """负责“格式化记忆整合”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_memory_consolidate` 负责格式化 memory consolidate，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        cadence: cadence 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     cadence = cadence.strip().lower()
     if cadence not in {"daily", "weekly", "monthly"}:
@@ -703,9 +771,11 @@ def format_memory_consolidate(space_id: str, cadence: str) -> str:
 
 
 def format_trace_latest() -> str:
-    """负责“格式化追踪最新”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_trace_latest` 负责格式化 trace latest，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        无。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     trace = latest_trace()
     if trace is None:
@@ -714,9 +784,11 @@ def format_trace_latest() -> str:
 
 
 def format_trace_id(trace_id: str) -> str:
-    """负责“格式化追踪标识”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_trace_id` 负责格式化 trace id，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        trace_id: Trace 标识，用于读取或写入审计链路，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     trace = get_trace(trace_id)
     if trace is None:
@@ -725,9 +797,11 @@ def format_trace_id(trace_id: str) -> str:
 
 
 def format_trace_memory(memory_id: str) -> str:
-    """负责“格式化追踪记忆”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_trace_memory` 负责格式化 trace memory，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     traces = find_traces_by_memory(memory_id)
     if not traces:
@@ -739,9 +813,11 @@ def format_trace_memory(memory_id: str) -> str:
 
 
 def _trace_candidate_lines(trace: dict[str, Any]) -> list[str]:
-    """负责“追踪候选lines”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_trace_candidate_lines` 负责追踪 candidate lines，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        trace: trace 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     extracted = [step for step in trace.get("steps", []) if step.get("step") == "candidate_extracted"]
     if not extracted:
@@ -787,9 +863,11 @@ def _trace_candidate_lines(trace: dict[str, Any]) -> list[str]:
 
 
 def format_trace(trace: dict[str, Any]) -> str:
-    """负责“格式化追踪”。
-
-    该函数是 `memory.service` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`format_trace` 负责格式化 trace，服务于本文件职责：Memory 公共服务与飞书命令格式化。
+    传参：
+        trace: trace 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     lines = [
         f"Trace {trace.get('trace_id')}：",

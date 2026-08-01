@@ -1,4 +1,9 @@
-"""Token-safe Redis locks with PostgreSQL/local fallbacks."""
+"""文件作用：Redis 分布式锁。
+
+项目关系：本文件依赖 `core.observability`、`core.settings`、`infrastructure.database`、`infrastructure.redis_client`；被 `agent.hooks.space_lock`、`apps.handlers`、`apps.scheduler`、`memory.service` 等 5 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -34,8 +39,19 @@ _LOCAL_GUARD = threading.Lock()
 
 
 class RedisDistributedLock:
+    """类功能：`RedisDistributedLock` 封装与“Redis 分布式锁”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def __init__(self, key: str, *, client: Redis | None = None, ttl_ms: int = SPACE_LOCK_TTL_MS) -> None:
-        """初始化`RedisDistributedLock` 实例并建立后续调用所需的状态。"""
+        """函数功能：`RedisDistributedLock.__init__` 在类 `RedisDistributedLock` 中负责初始化实例状态，服务于本文件职责：Redis 分布式锁。
+        传参：
+            key: key 参数，由调用方传入，类型为 `str`。
+            client: 外部服务或基础设施客户端，类型为 `Redis | None`，默认值为 `None`。
+            ttl_ms: ttl ms 参数，由调用方传入，类型为 `int`，默认值为 `SPACE_LOCK_TTL_MS`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self.client = client or get_redis()
         self.key = key
         self.ttl_ms = max(100, int(ttl_ms))
@@ -43,9 +59,11 @@ class RedisDistributedLock:
         self.acquired = False
 
     def acquire(self, wait_seconds: float = SPACE_LOCK_WAIT_SECONDS) -> bool:
-        """负责“acquire”。
-
-        该函数是 `infrastructure.redis_lock` 中的`RedisDistributedLock` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`RedisDistributedLock.acquire` 在类 `RedisDistributedLock` 中负责处理 acquire，服务于本文件职责：Redis 分布式锁。
+        传参：
+            wait_seconds: wait seconds 参数，由调用方传入，类型为 `float`，默认值为 `SPACE_LOCK_WAIT_SECONDS`。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         deadline = time.monotonic() + max(0.0, float(wait_seconds))
         while True:
@@ -57,16 +75,20 @@ class RedisDistributedLock:
             time.sleep(0.05)
 
     def renew(self) -> bool:
-        """负责“renew”。
-
-        该函数是 `infrastructure.redis_lock` 中的`RedisDistributedLock` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`RedisDistributedLock.renew` 在类 `RedisDistributedLock` 中负责处理 renew，服务于本文件职责：Redis 分布式锁。
+        传参：
+            无。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         return bool(self.client.eval(_RENEW_LUA, 1, self.key, self.token, self.ttl_ms))
 
     def release(self) -> bool:
-        """负责“释放”。
-
-        该函数是 `infrastructure.redis_lock` 中的`RedisDistributedLock` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`RedisDistributedLock.release` 在类 `RedisDistributedLock` 中负责释放，服务于本文件职责：Redis 分布式锁。
+        传参：
+            无。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         if not self.acquired:
             return False
@@ -77,9 +99,11 @@ class RedisDistributedLock:
 
 @contextmanager
 def postgres_advisory_lock(key: str) -> Iterator[None]:
-    """负责“postgresadvisory锁”。
-
-    该函数是 `infrastructure.redis_lock` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`postgres_advisory_lock` 负责加锁 postgres advisory，服务于本文件职责：Redis 分布式锁。
+    传参：
+        key: key 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `Iterator[None]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     connection = get_engine().connect()
     try:
@@ -94,16 +118,22 @@ def postgres_advisory_lock(key: str) -> Iterator[None]:
 
 @contextmanager
 def coordinated_lock(key: str, *, critical: bool = True, wait_seconds: float = SPACE_LOCK_WAIT_SECONDS) -> Iterator[str]:
-    """负责“coordinated锁”。
-
-    该函数是 `infrastructure.redis_lock` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`coordinated_lock` 负责加锁 coordinated，服务于本文件职责：Redis 分布式锁。
+    传参：
+        key: key 参数，由调用方传入，类型为 `str`。
+        critical: critical 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+        wait_seconds: wait seconds 参数，由调用方传入，类型为 `float`，默认值为 `SPACE_LOCK_WAIT_SECONDS`。
+    返回结果说明：
+        返回 `Iterator[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     started = time.monotonic()
 
     def record(backend: str) -> None:
-        """负责“记录”。
-
-        该函数是 `infrastructure.redis_lock` 中的`coordinated_lock` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`record` 负责记录，服务于本文件职责：Redis 分布式锁。
+        传参：
+            backend: backend 参数，由调用方传入，类型为 `str`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         wait_ms = int((time.monotonic() - started) * 1000)
         log_event(
@@ -128,9 +158,11 @@ def coordinated_lock(key: str, *, critical: bool = True, wait_seconds: float = S
             stop_renewal = threading.Event()
 
             def renew_loop() -> None:
-                """负责“renewloop”。
-
-                该函数是 `infrastructure.redis_lock` 中的`coordinated_lock` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+                """函数功能：`renew_loop` 负责处理 renew loop，服务于本文件职责：Redis 分布式锁。
+                传参：
+                    无。
+                返回结果说明：
+                    无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
                 """
                 interval = max(0.1, lock.ttl_ms / 3000)
                 while not stop_renewal.wait(interval):

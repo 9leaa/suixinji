@@ -1,11 +1,9 @@
-"""P4 query-routing/planning evaluation.
+"""文件作用：P4 查询路由评测。
 
-This evaluation is intentionally planner-only: it does not insert notes or
-memories, does not call the answer LLM, and does not touch the application
-database.  It measures whether simple questions stay on the fast path and
-whether complex questions activate bounded rewrite/decomposition/step-back
-planning.
+项目关系：本文件依赖 `agent.query_planner`；被 暂无静态导入方或仅作为入口脚本执行。
 """
+
+
 
 from __future__ import annotations
 
@@ -36,17 +34,24 @@ TOPICS = [
 
 
 def _cases() -> list[dict[str, Any]]:
-    """负责“cases”。
-
-    该函数是 `eval.p4_query_routing_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_cases` 负责处理 cases，服务于本文件职责：P4 查询路由评测。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     cases: list[dict[str, Any]] = []
     serial = 0
 
     def add(style: str, query: str, expected: str, strategy: str | None = None) -> None:
-        """负责“添加”。
-
-        该函数是 `eval.p4_query_routing_eval` 中的`_cases` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`add` 负责处理 add，服务于本文件职责：P4 查询路由评测。
+        传参：
+            style: style 参数，由调用方传入，类型为 `str`。
+            query: 检索或查询文本，类型为 `str`。
+            expected: expected 参数，由调用方传入，类型为 `str`。
+            strategy: strategy 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         nonlocal serial
         cases.append(
@@ -61,9 +66,7 @@ def _cases() -> list[dict[str, Any]]:
         )
         serial += 1
 
-    # Twelve simple families x ten examples.  Several families deliberately
-    # contain natural filler words or long/negated wording to expose false
-    # positives in marker-based routing.
+    # 12 组简单问题族，每组 10 个样例；部分样例刻意包含口语填充、长句或否定表达，用于暴露基于标记路由的误报。
     for i in range(10):
         t = TOPICS[i % len(TOPICS)]
         add("simple_fact", f"{t}的当前记录是什么", "simple")
@@ -87,9 +90,7 @@ def _cases() -> list[dict[str, Any]]:
             "simple",
         )
 
-    # Complex families x ten examples.  The English, punctuation-only and
-    # long-no-marker groups are adversarial: a robust planner should still
-    # recognize their multi-hop intent.
+    # 复杂问题族每组 10 个样例；英文、仅标点和长句无标记组属于对抗样例，稳健 planner 仍应识别其多跳意图。
     for i in range(10):
         a = TOPICS[(i * 2) % len(TOPICS)]
         b = TOPICS[(i * 2 + 1) % len(TOPICS)]
@@ -141,9 +142,11 @@ def _cases() -> list[dict[str, Any]]:
 
 
 def _p95(values: list[float]) -> float:
-    """负责“p95”。
-
-    该函数是 `eval.p4_query_routing_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_p95` 负责计算第 95 百分位，服务于本文件职责：P4 查询路由评测。
+    传参：
+        values: values 参数，由调用方传入，类型为 `list[float]`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
     """
     if not values:
         return 0.0
@@ -156,17 +159,21 @@ def _p95(values: list[float]) -> float:
 
 
 def _plan_dict(plan: Any) -> dict[str, Any]:
-    """负责“规划dict”。
-
-    该函数是 `eval.p4_query_routing_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_plan_dict` 负责生成计划 dict，服务于本文件职责：P4 查询路由评测。
+    传参：
+        plan: plan 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     return asdict(plan)
 
 
 def run() -> tuple[Path, Path, dict[str, Any]]:
-    """负责“运行”。
-
-    该函数是 `eval.p4_query_routing_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run` 负责运行，服务于本文件职责：P4 查询路由评测。
+    传参：
+        无。
+    返回结果说明：
+        返回 `tuple[Path, Path, dict[str, Any]]`，表示由多个相关值组成的结果。
     """
     cases = _cases()
     DATASET_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -218,7 +225,7 @@ def run() -> tuple[Path, Path, dict[str, Any]]:
                 }
             )
             latencies.append(elapsed_ms)
-        except Exception as exc:  # pragma: no cover - retained in the report
+        except Exception as exc:  # pragma: no cover - 保留在评测报告中
             errors.append({"case_id": case["case_id"], "error": repr(exc)})
 
     simple = [r for r in rows if r["expected_complexity"] == "simple"]

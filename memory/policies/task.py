@@ -1,4 +1,9 @@
-"""Task state-machine policy."""
+"""文件作用：任务策略。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 `memory.repository`、`repositories.postgres.memory`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -18,11 +23,11 @@ _IDENTIFIER_TOKEN_RE = re.compile(r"[A-Za-z][A-Za-z0-9+#._-]*|\d+(?:[._-]\d+)*")
 
 
 def task_identifiers(text: str) -> frozenset[str]:
-    """Return explicit, code-like task identifiers without using prose words.
-
-    Natural-language task titles often share verbs and templates, so similarity
-    alone is not evidence that they describe one task.  Codes, ticket labels,
-    versions, and all-caps abbreviations are concrete identity evidence.
+    """函数功能：`task_identifiers` 负责处理 task identifiers，服务于本文件职责：任务策略。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `frozenset[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     identifiers: set[str] = set()
     for token in _IDENTIFIER_TOKEN_RE.findall(str(text or "")):
@@ -33,16 +38,25 @@ def task_identifiers(text: str) -> frozenset[str]:
 
 
 def identifiers_compatible(left_content: str, right_content: str) -> bool:
-    """Avoid merging distinct coded tasks that merely share a prose template."""
+    """函数功能：`identifiers_compatible` 负责处理 identifiers compatible，服务于本文件职责：任务策略。
+    传参：
+        left_content: left content 参数，由调用方传入，类型为 `str`。
+        right_content: right content 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     left = task_identifiers(left_content)
     right = task_identifiers(right_content)
     return not left or not right or left == right
 
 
 def can_transition(old_status: str | None, new_status: str | None) -> bool:
-    """负责“cantransition”。
-
-    该函数是 `memory.policies.task` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`can_transition` 负责处理 can transition，服务于本文件职责：任务策略。
+    传参：
+        old_status: old status 参数，由调用方传入，类型为 `str | None`。
+        new_status: new status 参数，由调用方传入，类型为 `str | None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if new_status is None or old_status == new_status:
         return True
@@ -52,8 +66,10 @@ def can_transition(old_status: str | None, new_status: str | None) -> bool:
 
 
 def is_terminal(status: str | None) -> bool:
-    """负责“是否为terminal”。
-
-    该函数是 `memory.policies.task` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`is_terminal` 负责判断是否为 terminal，服务于本文件职责：任务策略。
+    传参：
+        status: status 参数，由调用方传入，类型为 `str | None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     return status in {"done", "cancelled"}

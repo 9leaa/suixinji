@@ -1,4 +1,9 @@
-"""Deterministic validation and privacy filtering for memory candidates."""
+"""文件作用：候选安全与质量验证。
+
+项目关系：本文件依赖 `core`、`core.sensitive`、`core.settings`、`memory.canonicalizer` 等 5 个模块；被 `eval.resume_memory_system_benchmark`、`eval.run_massive_memory_benchmark`、`memory.extractor`、`memory.service` 等 5 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -17,14 +22,20 @@ LOW_VALUE_TEXTS = {"你好", "您好", "hello", "hi", "收到", "好的", "好",
 
 @dataclass(frozen=True)
 class CandidateRejection:
+    """类功能：`CandidateRejection` 封装与“候选安全与质量验证”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     candidate_id: str
     reason: str
 
 
 def _safe_score(value: float) -> float:
-    """负责“安全评分”。
-
-    该函数是 `memory.candidate_validator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_safe_score` 负责评分 safe，服务于本文件职责：候选安全与质量验证。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `float`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
     """
     score = float(value)
     if not math.isfinite(score):
@@ -33,7 +44,13 @@ def _safe_score(value: float) -> float:
 
 
 def validate_candidate(candidate: MemoryCandidate, *, note_text: str = "") -> tuple[MemoryCandidate | None, CandidateRejection | None]:
-    """Validate one candidate without allowing a model to mutate storage."""
+    """函数功能：`validate_candidate` 负责校验 candidate，服务于本文件职责：候选安全与质量验证。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        note_text: note text 参数，由调用方传入，类型为 `str`，默认值为 `''`。
+    返回结果说明：
+        返回 `tuple[MemoryCandidate | None, CandidateRejection | None]`，表示由多个相关值组成的结果。
+    """
     content = " ".join(str(candidate.content or "").split()).strip()
     normalized = normalize_content(content)
     if not candidate.should_store:
@@ -90,9 +107,12 @@ def validate_candidates(
     *,
     note_text: str = "",
 ) -> tuple[list[MemoryCandidate], list[CandidateRejection]]:
-    """负责“校验candidates”。
-
-    该函数是 `memory.candidate_validator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`validate_candidates` 负责校验 candidates，服务于本文件职责：候选安全与质量验证。
+    传参：
+        candidates: candidates 参数，由调用方传入，类型为 `list[MemoryCandidate]`。
+        note_text: note text 参数，由调用方传入，类型为 `str`，默认值为 `''`。
+    返回结果说明：
+        返回 `tuple[list[MemoryCandidate], list[CandidateRejection]]`，表示由多个相关值组成的结果。
     """
     valid: list[MemoryCandidate] = []
     rejected: list[CandidateRejection] = []

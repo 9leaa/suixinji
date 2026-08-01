@@ -1,4 +1,9 @@
-"""Resolve LLM model roles from task names."""
+"""文件作用：模型路由。
+
+项目关系：本文件依赖 `core`、`core.model_policy`；被 `core.llm_client`、`memory.extractor`、`tests.test_stage7_model_routing_and_clause_extraction`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -15,10 +20,14 @@ def route_model(
     range_key: str | None = None,
     strong_hint: bool = False,
 ) -> ModelRoute:
-    """Return the model route for one LLM call.
-
-    Existing callers can keep passing ``model_role``. New callers should pass a
-    task name so routing policy stays centralized.
+    """函数功能：`route_model` 负责路由 model，服务于本文件职责：模型路由。
+    传参：
+        task: task 参数，由调用方传入，类型为 `LLMTask | str | None`，默认值为 `None`。
+        model_role: model role 参数，由调用方传入，类型为 `ModelRole | str | None`，默认值为 `None`。
+        range_key: range key 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        strong_hint: strong hint 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        返回 `ModelRoute` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     explicit_role = coerce_role(model_role)
     resolved_task = coerce_task(task)

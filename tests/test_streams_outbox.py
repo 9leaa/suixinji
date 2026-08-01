@@ -1,3 +1,9 @@
+"""文件作用：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+
+项目关系：本文件依赖 `apps`、`infrastructure.database`、`infrastructure.redis_client`、`infrastructure.redis_keys` 等 10 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from __future__ import annotations
 
 import os
@@ -35,7 +41,12 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 def distributed_scope():
-    """验证“distributedscope”场景的预期行为与回归边界。"""
+    """函数功能：`distributed_scope` 负责处理 distributed scope，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     suffix = uuid.uuid4().hex
     space_id = f"dist-{suffix}"
     source = f"test-{suffix}"
@@ -60,7 +71,17 @@ def _receive(
     payload: dict | None = None,
     max_attempts: int = 5,
 ):
-    """验证“receive”场景的预期行为与回归边界。"""
+    """函数功能：`_receive` 负责接收，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        source: source 参数，由调用方传入，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str`。
+        task_type: task type 参数，由调用方传入，类型为 `str`，默认值为 `'ingest'`。
+        payload: 结构化载荷，通常来自事件、任务或 API 请求，类型为 `dict | None`，默认值为 `None`。
+        max_attempts: max attempts 参数，由调用方传入，类型为 `int`，默认值为 `5`。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     return receive_command(
         source=source,
         source_message_id=message_id,
@@ -79,13 +100,23 @@ def _receive(
 
 
 def _event_ids(task_ids: list[str]) -> list[str]:
-    """验证“事件标识列表”场景的预期行为与回归边界。"""
+    """函数功能：`_event_ids` 负责处理 event ids，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        task_ids: task ids 参数，由调用方传入，类型为 `list[str]`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
+    """
     with session_scope() as session:
         return list(session.execute(select(OutboxEvent.id).where(OutboxEvent.aggregate_id.in_(task_ids))).scalars())
 
 
 def _outbox_count(task_id: str) -> int:
-    """验证“发件箱统计”场景的预期行为与回归边界。"""
+    """函数功能：`_outbox_count` 负责计数 outbox，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
+    """
     with session_scope() as session:
         return int(
             session.execute(
@@ -95,7 +126,12 @@ def _outbox_count(task_id: str) -> int:
 
 
 def _lease(claimed: dict) -> dict[str, object]:
-    """验证“lease”场景的预期行为与回归边界。"""
+    """函数功能：`_lease` 负责处理 lease，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        claimed: claimed 参数，由调用方传入，类型为 `dict`。
+    返回结果说明：
+        返回 `dict[str, object]`，表示结构化结果、载荷或状态映射。
+    """
     return {
         "lease_token": str(claimed["lease_token"]),
         "claim_version": int(claimed["claim_version"]),
@@ -103,7 +139,12 @@ def _lease(claimed: dict) -> dict[str, object]:
 
 
 def test_transactional_receiver_has_one_inbox_task_and_outbox(distributed_scope):
-    """验证“transactionalreceiver是否包含oneinbox任务and发件箱”场景的预期行为与回归边界。"""
+    """函数功能：`test_transactional_receiver_has_one_inbox_task_and_outbox` 负责验证 transactional receiver has one inbox task and outbox 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, _keys, _client = distributed_scope
     with ThreadPoolExecutor(max_workers=10) as pool:
         results = list(pool.map(lambda _index: _receive(space_id, source, "same-message"), range(10)))
@@ -117,7 +158,12 @@ def test_transactional_receiver_has_one_inbox_task_and_outbox(distributed_scope)
 
 
 def test_only_first_root_is_published_and_completion_releases_one_next(distributed_scope):
-    """验证“only首个root是否为publishedandcompletionreleasesone下一步”场景的预期行为与回归边界。"""
+    """函数功能：`test_only_first_root_is_published_and_completion_releases_one_next` 负责验证 only first root is published and completion releases one next 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, _keys, _client = distributed_scope
     first = _receive(space_id, source, "ordered-1")
     second = _receive(space_id, source, "ordered-2")
@@ -150,7 +196,12 @@ def test_only_first_root_is_published_and_completion_releases_one_next(distribut
 
 
 def test_skipped_ingress_advances_both_watermarks_and_releases_next(distributed_scope):
-    """A redacted/invalid message must not permanently block later ingress."""
+    """函数功能：`test_skipped_ingress_advances_both_watermarks_and_releases_next` 负责验证 skipped ingress advances both watermarks and releases next 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, _keys, _client = distributed_scope
     skipped = _receive(space_id, source, "skipped-sensitive")
     next_message = _receive(space_id, source, "after-skipped-sensitive")
@@ -158,8 +209,7 @@ def test_skipped_ingress_advances_both_watermarks_and_releases_next(distributed_
     with session_scope() as session:
         row = session.get(InboxMessage, skipped.inbox_id)
         assert row is not None
-        # This is the persistent state written by the sensitive ingress path
-        # before it calls the queue-finalization helper.
+        # 这是敏感入口路径在调用队列收尾 helper 前写下的持久状态。
         row.status = "blocked_sensitive"
         assert session.get(Task, next_message.task_id).status == "blocked"
 
@@ -186,7 +236,12 @@ def test_skipped_ingress_advances_both_watermarks_and_releases_next(distributed_
 
 
 def test_concurrent_completion_cannot_publish_the_next_root_twice(distributed_scope):
-    """验证“concurrentcompletioncannot发布the下一步roottwice”场景的预期行为与回归边界。"""
+    """函数功能：`test_concurrent_completion_cannot_publish_the_next_root_twice` 负责验证 concurrent completion cannot publish the next root twice 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, _keys, _client = distributed_scope
     first = _receive(space_id, source, "concurrent-1")
     second = _receive(space_id, source, "concurrent-2")
@@ -215,7 +270,12 @@ def test_concurrent_completion_cannot_publish_the_next_root_twice(distributed_sc
 
 
 def test_expired_worker_cannot_complete_after_task_is_reclaimed(distributed_scope):
-    """验证“expired工作器cannot完成后置任务是否为reclaimed”场景的预期行为与回归边界。"""
+    """函数功能：`test_expired_worker_cannot_complete_after_task_is_reclaimed` 负责验证 expired worker cannot complete after task is reclaimed 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, _keys, _client = distributed_scope
     result = _receive(space_id, source, "fencing-message")
     claimed_a = claim_task(str(result.task_id), "worker-a", stale_after_seconds=30)
@@ -244,7 +304,13 @@ def test_expired_worker_cannot_complete_after_task_is_reclaimed(distributed_scop
 
 
 def test_ingest_memory_barrier_blocks_query_but_not_enrichment(distributed_scope, monkeypatch):
-    """验证“接收写入记忆barrierblocks查询butnotenrichment”场景的预期行为与回归边界。"""
+    """函数功能：`test_ingest_memory_barrier_blocks_query_but_not_enrichment` 负责验证 ingest memory barrier blocks query but not enrichment 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, _keys, _client = distributed_scope
     first = _receive(space_id, source, "memory-1")
     second = _receive(
@@ -325,7 +391,12 @@ def test_ingest_memory_barrier_blocks_query_but_not_enrichment(distributed_scope
 
 
 def test_terminal_critical_memory_failure_records_gap_and_releases_next(distributed_scope):
-    """验证“terminalcritical记忆failurerecordsgapandreleases下一步”场景的预期行为与回归边界。"""
+    """函数功能：`test_terminal_critical_memory_failure_records_gap_and_releases_next` 负责验证 terminal critical memory failure records gap and releases next 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, _keys, _client = distributed_scope
     first = _receive(space_id, source, "gap-1")
     second = _receive(
@@ -379,7 +450,12 @@ def test_terminal_critical_memory_failure_records_gap_and_releases_next(distribu
 
 
 def test_terminal_root_failure_cancels_blocked_barrier_and_releases_next(distributed_scope):
-    """验证“terminalrootfailurecancelsblockedbarrierandreleases下一步”场景的预期行为与回归边界。"""
+    """函数功能：`test_terminal_root_failure_cancels_blocked_barrier_and_releases_next` 负责验证 terminal root failure cancels blocked barrier and releases next 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, _keys, _client = distributed_scope
     first = _receive(space_id, source, "root-gap-1", max_attempts=1)
     second = _receive(space_id, source, "root-gap-2")
@@ -415,7 +491,12 @@ def test_terminal_root_failure_cancels_blocked_barrier_and_releases_next(distrib
 
 
 def test_defer_does_not_consume_failure_budget(distributed_scope):
-    """验证“deferdoesnotconsumefailurebudget”场景的预期行为与回归边界。"""
+    """函数功能：`test_defer_does_not_consume_failure_budget` 负责验证 defer does not consume failure budget 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, _keys, _client = distributed_scope
     result = _receive(space_id, source, "defer-message", max_attempts=1)
     deferred_claim = claim_task(str(result.task_id), "defer-worker")
@@ -444,7 +525,12 @@ def test_defer_does_not_consume_failure_budget(distributed_scope):
 
 
 def test_stream_group_cache_recovers_after_stream_recreation(distributed_scope):
-    """验证“流group缓存recovers后置流recreation”场景的预期行为与回归边界。"""
+    """函数功能：`test_stream_group_cache_recovers_after_stream_recreation` 负责验证 stream group cache recovers after stream recreation 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     _space_id, _source, keys, redis = distributed_scope
     streams = StreamClient(redis, keys=keys)
     stream, _group = streams.ensure_group("ingest")
@@ -457,7 +543,12 @@ def test_stream_group_cache_recovers_after_stream_recreation(distributed_scope):
 
 
 def test_multi_stream_read_recovers_only_missing_groups(distributed_scope):
-    """验证“multi流读取recoversonlymissinggroups”场景的预期行为与回归边界。"""
+    """函数功能：`test_multi_stream_read_recovers_only_missing_groups` 负责验证 multi stream read recovers only missing groups 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     _space_id, _source, keys, redis = distributed_scope
     streams = StreamClient(redis, keys=keys)
     ingest_stream, _group = streams.ensure_group("ingest")
@@ -471,7 +562,12 @@ def test_multi_stream_read_recovers_only_missing_groups(distributed_scope):
     assert {message.fields["task_id"] for message in messages} == {"task-ingest", "task-query"}
 
 def test_outbox_relay_duplicate_publish_keeps_one_task(distributed_scope):
-    """验证“发件箱relay重复发布keepsone任务”场景的预期行为与回归边界。"""
+    """函数功能：`test_outbox_relay_duplicate_publish_keeps_one_task` 负责验证 outbox relay duplicate publish keeps one task 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, keys, redis = distributed_scope
     result = _receive(space_id, source, "relay-message")
     streams = StreamClient(redis, keys=keys)
@@ -499,14 +595,29 @@ def test_outbox_relay_duplicate_publish_keeps_one_task(distributed_scope):
 
 
 def test_outbox_publish_happens_without_holding_event_row_lock(distributed_scope):
-    """验证“发件箱发布happenswithoutholding事件row锁”场景的预期行为与回归边界。"""
+    """函数功能：`test_outbox_publish_happens_without_holding_event_row_lock` 负责验证 outbox publish happens without holding event row lock 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     space_id, source, keys, redis = distributed_scope
     result = _receive(space_id, source, "relay-unlocked")
     streams = StreamClient(redis, keys=keys)
 
     class InspectingPublisher:
+        """类功能：`InspectingPublisher` 封装与“Inbox/Task/Outbox/Stream roundtrip、lease/reclaim”相关的数据结构、状态或行为。
+        传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+        返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+        """
         def publish_task(self, event_id, payload):
-            """验证“发布任务”场景的预期行为与回归边界。"""
+            """函数功能：`InspectingPublisher.publish_task` 在类 `InspectingPublisher` 中负责发布 task，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+            传参：
+                event_id: 事件标识，用于外部事件幂等和审计。
+                payload: 结构化载荷，通常来自事件、任务或 API 请求。
+            返回结果说明：
+                返回计算后的结果对象；具体类型取决于实际执行分支。
+            """
             with session_scope() as session:
                 assert session.execute(
                     select(OutboxEvent).where(OutboxEvent.id == event_id).with_for_update(nowait=True)
@@ -519,7 +630,12 @@ def test_outbox_publish_happens_without_holding_event_row_lock(distributed_scope
 
 
 def test_poison_outbox_event_moves_to_dead_without_blocking_batch(distributed_scope):
-    """验证“poison发件箱事件moves转换为deadwithoutblockingbatch”场景的预期行为与回归边界。"""
+    """函数功能：`test_poison_outbox_event_moves_to_dead_without_blocking_batch` 负责验证 poison outbox event moves to dead without blocking batch 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, _keys, _redis = distributed_scope
     result = _receive(space_id, source, "poison-1")
     with session_scope() as session:
@@ -527,8 +643,18 @@ def test_poison_outbox_event_moves_to_dead_without_blocking_batch(distributed_sc
         event.max_attempts = 1
 
     class FailingPublisher:
+        """类功能：`FailingPublisher` 封装与“Inbox/Task/Outbox/Stream roundtrip、lease/reclaim”相关的数据结构、状态或行为。
+        传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+        返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+        """
         def publish_task(self, event_id, payload):
-            """验证“发布任务”场景的预期行为与回归边界。"""
+            """函数功能：`FailingPublisher.publish_task` 在类 `FailingPublisher` 中负责发布 task，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+            传参：
+                event_id: 事件标识，用于外部事件幂等和审计。
+                payload: 结构化载荷，通常来自事件、任务或 API 请求。
+            返回结果说明：
+                无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+            """
             raise TimeoutError("redis unavailable")
 
     report = relay_outbox_batch(FailingPublisher(), event_ids=_event_ids([str(result.task_id)]))
@@ -540,7 +666,12 @@ def test_poison_outbox_event_moves_to_dead_without_blocking_batch(distributed_sc
 
 
 def test_pending_message_can_be_reclaimed_after_worker_crash(distributed_scope):
-    """验证“待处理消息canbereclaimed后置工作器crash”场景的预期行为与回归边界。"""
+    """函数功能：`test_pending_message_can_be_reclaimed_after_worker_crash` 负责验证 pending message can be reclaimed after worker crash 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, keys, redis = distributed_scope
     result = _receive(space_id, source, "crash-message")
     streams = StreamClient(redis, keys=keys)
@@ -555,7 +686,12 @@ def test_pending_message_can_be_reclaimed_after_worker_crash(distributed_scope):
 
 
 def test_stream_worker_executes_business_once_after_duplicate_publish(distributed_scope):
-    """验证“流工作器executesbusinessonce后置重复发布”场景的预期行为与回归边界。"""
+    """函数功能：`test_stream_worker_executes_business_once_after_duplicate_publish` 负责验证 stream worker executes business once after duplicate publish 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, keys, redis = distributed_scope
     result = _receive(space_id, source, "worker-message")
     event_ids = _event_ids([str(result.task_id)])
@@ -578,7 +714,12 @@ def test_stream_worker_executes_business_once_after_duplicate_publish(distribute
 
 
 def test_failed_task_is_republished_and_then_completes(distributed_scope):
-    """验证“failed任务是否为republishedandthencompletes”场景的预期行为与回归边界。"""
+    """函数功能：`test_failed_task_is_republished_and_then_completes` 负责验证 failed task is republished and then completes 场景，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+    传参：
+        distributed_scope: distributed scope 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id, source, keys, redis = distributed_scope
     result = _receive(space_id, source, "retry-message")
     streams = StreamClient(redis, keys=keys)
@@ -586,7 +727,12 @@ def test_failed_task_is_republished_and_then_completes(distributed_scope):
     attempts = []
 
     def flaky(task):
-        """验证“flaky”场景的预期行为与回归边界。"""
+        """函数功能：`flaky` 负责处理 flaky，服务于本文件职责：Inbox/Task/Outbox/Stream roundtrip、lease/reclaim。
+        传参：
+            task: task 参数，由调用方传入。
+        返回结果说明：
+            无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         attempts.append(task["attempt_count"])
         if len(attempts) == 1:
             raise RuntimeError("first attempt fails")

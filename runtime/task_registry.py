@@ -1,4 +1,9 @@
-"""In-memory task registry and runtime counters."""
+"""文件作用：本地任务注册表。
+
+项目关系：本文件依赖 `core.settings`、`runtime.task`；被 `runtime.executor`、`tests.test_task_registry_retention`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -12,13 +17,23 @@ from runtime.task import TASK_FAILED, TASK_QUEUED, TASK_REJECTED, TASK_RUNNING, 
 
 
 class TaskRegistry:
+    """类功能：`TaskRegistry` 封装与“本地任务注册表”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def __init__(
         self,
         *,
         history_limit: int = TASK_HISTORY_LIMIT,
         history_ttl_hours: int = TASK_HISTORY_TTL_HOURS,
     ) -> None:
-        """初始化`TaskRegistry` 实例并建立后续调用所需的状态。"""
+        """函数功能：`TaskRegistry.__init__` 在类 `TaskRegistry` 中负责初始化实例状态，服务于本文件职责：本地任务注册表。
+        传参：
+            history_limit: history limit 参数，由调用方传入，类型为 `int`，默认值为 `TASK_HISTORY_LIMIT`。
+            history_ttl_hours: history ttl hours 参数，由调用方传入，类型为 `int`，默认值为 `TASK_HISTORY_TTL_HOURS`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self._lock = threading.RLock()
         self._tasks: dict[str, Task] = {}
         self._history_limit = history_limit
@@ -30,18 +45,23 @@ class TaskRegistry:
         self._last_llm_timeout_error: str | None = None
 
     def add(self, task: Task) -> Task:
-        """负责“添加”。
-
-        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`TaskRegistry.add` 在类 `TaskRegistry` 中负责处理 add，服务于本文件职责：本地任务注册表。
+        传参：
+            task: task 参数，由调用方传入，类型为 `Task`。
+        返回结果说明：
+            返回 `Task` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         with self._lock:
             self._tasks[task.id] = task
         return task
 
     def reject(self, task: Task, error: str) -> Task:
-        """负责“reject”。
-
-        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`TaskRegistry.reject` 在类 `TaskRegistry` 中负责拒绝，服务于本文件职责：本地任务注册表。
+        传参：
+            task: task 参数，由调用方传入，类型为 `Task`。
+            error: 当前捕获的异常对象，类型为 `str`。
+        返回结果说明：
+            返回 `Task` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         with self._lock:
             task.status = TASK_REJECTED
@@ -54,9 +74,11 @@ class TaskRegistry:
         return task
 
     def mark_running(self, task_id: str) -> None:
-        """负责“标记running”。
-
-        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`TaskRegistry.mark_running` 在类 `TaskRegistry` 中负责标记 running，服务于本文件职责：本地任务注册表。
+        传参：
+            task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with self._lock:
             task = self._tasks[task_id]
@@ -65,9 +87,11 @@ class TaskRegistry:
             task.queue_wait_ms = _duration_ms(task.created_at, task.started_at)
 
     def mark_success(self, task_id: str) -> None:
-        """负责“标记success”。
-
-        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`TaskRegistry.mark_success` 在类 `TaskRegistry` 中负责标记 success，服务于本文件职责：本地任务注册表。
+        传参：
+            task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with self._lock:
             task = self._tasks[task_id]
@@ -79,9 +103,12 @@ class TaskRegistry:
             self._prune_finished_tasks()
 
     def mark_failed(self, task_id: str, error: str) -> None:
-        """负责“标记failed”。
-
-        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`TaskRegistry.mark_failed` 在类 `TaskRegistry` 中负责标记 failed，服务于本文件职责：本地任务注册表。
+        传参：
+            task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+            error: 当前捕获的异常对象，类型为 `str`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with self._lock:
             task = self._tasks[task_id]
@@ -97,9 +124,11 @@ class TaskRegistry:
             self._prune_finished_tasks()
 
     def get_stats(self) -> dict[str, Any]:
-        """负责“获取统计”。
-
-        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`TaskRegistry.get_stats` 在类 `TaskRegistry` 中负责获取 stats，服务于本文件职责：本地任务注册表。
+        传参：
+            无。
+        返回结果说明：
+            返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
         """
         with self._lock:
             queued = [task for task in self._tasks.values() if task.status == TASK_QUEUED]
@@ -123,17 +152,21 @@ class TaskRegistry:
             }
 
     def retained_count(self) -> int:
-        """负责“retained统计”。
-
-        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`TaskRegistry.retained_count` 在类 `TaskRegistry` 中负责计数 retained，服务于本文件职责：本地任务注册表。
+        传参：
+            无。
+        返回结果说明：
+            返回 `int`，表示计算得到的数值结果。
         """
         with self._lock:
             return len(self._tasks)
 
     def _prune_finished_tasks(self) -> None:
-        """负责“prunefinishedtasks”。
-
-        该函数是 `runtime.task_registry` 中的`TaskRegistry` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`TaskRegistry._prune_finished_tasks` 在类 `TaskRegistry` 中负责处理 prune finished tasks，服务于本文件职责：本地任务注册表。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         protected = {
             task_id
@@ -170,9 +203,11 @@ class TaskRegistry:
 
 
 def _age_seconds(value: str) -> int:
-    """负责“ageseconds”。
-
-    该函数是 `runtime.task_registry` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_age_seconds` 负责处理 age seconds，服务于本文件职责：本地任务注册表。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     try:
         created = datetime.fromisoformat(value)
@@ -182,9 +217,12 @@ def _age_seconds(value: str) -> int:
 
 
 def _duration_ms(start: str | None, end: str | None) -> int | None:
-    """负责“durationms”。
-
-    该函数是 `runtime.task_registry` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_duration_ms` 负责处理 duration ms，服务于本文件职责：本地任务注册表。
+    传参：
+        start: start 参数，由调用方传入，类型为 `str | None`。
+        end: end 参数，由调用方传入，类型为 `str | None`。
+    返回结果说明：
+        返回 `int | None`；未命中或无需处理时可返回 `None`。
     """
     if not start or not end:
         return None
@@ -195,9 +233,11 @@ def _duration_ms(start: str | None, end: str | None) -> int | None:
 
 
 def _parse_iso(value: str | None) -> datetime:
-    """负责“解析iso”。
-
-    该函数是 `runtime.task_registry` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_parse_iso` 负责解析 iso，服务于本文件职责：本地任务注册表。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str | None`。
+    返回结果说明：
+        返回 `datetime` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if not value:
         return datetime.min.replace(tzinfo=datetime.now().astimezone().tzinfo)
@@ -208,9 +248,11 @@ def _parse_iso(value: str | None) -> datetime:
 
 
 def _looks_like_timeout(error: str) -> bool:
-    """负责“lookslike超时”。
-
-    该函数是 `runtime.task_registry` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_looks_like_timeout` 负责处理 looks like timeout，服务于本文件职责：本地任务注册表。
+    传参：
+        error: 当前捕获的异常对象，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     lowered = error.casefold()
     return "timeout" in lowered or "timed out" in lowered or "超时" in lowered

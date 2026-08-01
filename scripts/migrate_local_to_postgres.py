@@ -1,4 +1,9 @@
-"""Idempotently migrate local Suixinji stores into PostgreSQL."""
+"""文件作用：本地数据迁移。
+
+项目关系：本文件依赖 `infrastructure.database`、`infrastructure.schema`、`repositories.postgres.common`；被 `scripts.verify_migration`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -61,9 +66,12 @@ MIGRATED_MODELS = (
 
 
 def _json(value: Any, default: Any) -> Any:
-    """负责“JSON”。
-
-    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_json` 负责处理 JSON 数据，服务于本文件职责：本地数据迁移。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+        default: default 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if value is None or value == "":
         return default
@@ -76,9 +84,12 @@ def _json(value: Any, default: Any) -> Any:
 
 
 def _read_json(path: Path, default: Any) -> Any:
-    """负责“读取JSON”。
-
-    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_read_json` 负责读取 json，服务于本文件职责：本地数据迁移。
+    传参：
+        path: 文件系统路径，类型为 `Path`。
+        default: default 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if not path.exists():
         return default
@@ -86,9 +97,11 @@ def _read_json(path: Path, default: Any) -> Any:
 
 
 def _iter_jsonl(path: Path) -> Iterable[dict[str, Any]]:
-    """负责“iterjsonl”。
-
-    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_iter_jsonl` 负责处理 iter jsonl，服务于本文件职责：本地数据迁移。
+    传参：
+        path: 文件系统路径，类型为 `Path`。
+    返回结果说明：
+        返回 `Iterable[dict[str, Any]]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     with path.open("r", encoding="utf-8") as handle:
         for line_no, line in enumerate(handle, 1):
@@ -102,9 +115,11 @@ def _iter_jsonl(path: Path) -> Iterable[dict[str, Any]]:
 
 
 def _collect(data_dir: Path) -> tuple[dict[str, Any], list[dict[str, str]]]:
-    """负责“collect”。
-
-    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_collect` 负责采集，服务于本文件职责：本地数据迁移。
+    传参：
+        data_dir: data dir 参数，由调用方传入，类型为 `Path`。
+    返回结果说明：
+        返回 `tuple[dict[str, Any], list[dict[str, str]]]`，表示由多个相关值组成的结果。
     """
     failures: list[dict[str, str]] = []
     payload: dict[str, Any] = {
@@ -152,9 +167,11 @@ def _collect(data_dir: Path) -> tuple[dict[str, Any], list[dict[str, str]]]:
 
 
 def _local_counts(payload: dict[str, Any]) -> dict[str, int]:
-    """负责“localcounts”。
-
-    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_local_counts` 负责处理 local counts，服务于本文件职责：本地数据迁移。
+    传参：
+        payload: 结构化载荷，通常来自事件、任务或 API 请求，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `dict[str, int]`，表示结构化结果、载荷或状态映射。
     """
     unique_messages = {
         (str(item.get("source") or "feishu"), str(item.get("message_id") or ""))
@@ -174,9 +191,11 @@ def _local_counts(payload: dict[str, Any]) -> dict[str, int]:
 
 
 def _database_counts() -> dict[str, int]:
-    """负责“databasecounts”。
-
-    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_database_counts` 负责处理 database counts，服务于本文件职责：本地数据迁移。
+    传参：
+        无。
+    返回结果说明：
+        返回 `dict[str, int]`，表示结构化结果、载荷或状态映射。
     """
     existing = set(inspect(get_engine()).get_table_names())
     counts: dict[str, int] = {}
@@ -189,9 +208,11 @@ def _database_counts() -> dict[str, int]:
 
 
 def _space_ids(payload: dict[str, Any]) -> set[str]:
-    """负责“空间标识列表”。
-
-    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_space_ids` 负责处理 space ids，服务于本文件职责：本地数据迁移。
+    传参：
+        payload: 结构化载荷，通常来自事件、任务或 API 请求，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `set[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     ids = {str(item.get("space_id") or "") for item in payload["wal"] + payload["notes"] + payload["vectors"]}
     for table in ("memories", "memory_extraction_states", "memory_consolidation_runs", "memory_decisions", "memory_relations", "memory_traces"):
@@ -202,9 +223,13 @@ def _space_ids(payload: dict[str, Any]) -> set[str]:
 
 
 def _insert_once(session: Any, model: Any, values: dict[str, Any]) -> int:
-    """负责“插入once”。
-
-    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_insert_once` 负责处理 insert once，服务于本文件职责：本地数据迁移。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        model: model 参数，由调用方传入，类型为 `Any`。
+        values: values 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     with session.begin_nested():
         primary_key = list(model.__table__.primary_key.columns)
@@ -213,9 +238,12 @@ def _insert_once(session: Any, model: Any, values: dict[str, Any]) -> int:
 
 
 def _migrate(payload: dict[str, Any], failures: list[dict[str, str]]) -> dict[str, int]:
-    """负责“migrate”。
-
-    该函数是 `scripts.migrate_local_to_postgres` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_migrate` 负责迁移，服务于本文件职责：本地数据迁移。
+    传参：
+        payload: 结构化载荷，通常来自事件、任务或 API 请求，类型为 `dict[str, Any]`。
+        failures: failures 参数，由调用方传入，类型为 `list[dict[str, str]]`。
+    返回结果说明：
+        返回 `dict[str, int]`，表示结构化结果、载荷或状态映射。
     """
     inserted: Counter[str] = Counter()
     with session_scope() as session:
@@ -392,7 +420,12 @@ def _migrate(payload: dict[str, Any], failures: list[dict[str, str]]) -> dict[st
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：本地数据迁移。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=Path, default=Path("data"))
     parser.add_argument("--dry-run", action="store_true")

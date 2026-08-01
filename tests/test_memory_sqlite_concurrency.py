@@ -1,3 +1,9 @@
+"""文件作用：SQLite busy retry/多线程写入。
+
+项目关系：本文件依赖 `memory.models`、`memory.repository`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 
@@ -8,11 +14,21 @@ from memory.repository import _run_write, add_source, get_memory, insert_memory,
 
 
 def test_run_write_retries_locked_errors():
-    """验证“运行写入retrieslockederrors”场景的预期行为与回归边界。"""
+    """函数功能：`test_run_write_retries_locked_errors` 负责验证 run write retries locked errors 场景，服务于本文件职责：SQLite busy retry/多线程写入。
+    传参：
+        无。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     attempts = {"count": 0}
 
     def operation():
-        """验证“operation”场景的预期行为与回归边界。"""
+        """函数功能：`operation` 负责处理 operation，服务于本文件职责：SQLite busy retry/多线程写入。
+        传参：
+            无。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         attempts["count"] += 1
         if attempts["count"] < 3:
             raise sqlite3.OperationalError("database is locked")
@@ -23,11 +39,21 @@ def test_run_write_retries_locked_errors():
 
 
 def test_run_write_does_not_retry_non_locked_errors():
-    """验证“运行写入doesnot重试nonlockederrors”场景的预期行为与回归边界。"""
+    """函数功能：`test_run_write_does_not_retry_non_locked_errors` 负责验证 run write does not retry non locked errors 场景，服务于本文件职责：SQLite busy retry/多线程写入。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     attempts = {"count": 0}
 
     def operation():
-        """验证“operation”场景的预期行为与回归边界。"""
+        """函数功能：`operation` 负责处理 operation，服务于本文件职责：SQLite busy retry/多线程写入。
+        传参：
+            无。
+        返回结果说明：
+            无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         attempts["count"] += 1
         raise ValueError("bad input")
 
@@ -37,9 +63,19 @@ def test_run_write_does_not_retry_non_locked_errors():
 
 
 def test_concurrent_memory_writes_keep_sources_and_versions():
-    """验证“concurrent记忆writeskeepsourcesandversions”场景的预期行为与回归边界。"""
+    """函数功能：`test_concurrent_memory_writes_keep_sources_and_versions` 负责验证 concurrent memory writes keep sources and versions 场景，服务于本文件职责：SQLite busy retry/多线程写入。
+    传参：
+        无。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     def write(idx: int) -> str:
-        """验证“写入”场景的预期行为与回归边界。"""
+        """函数功能：`write` 负责写入，服务于本文件职责：SQLite busy retry/多线程写入。
+        传参：
+            idx: idx 参数，由调用方传入，类型为 `int`。
+        返回结果说明：
+            返回 `str`，通常是格式化后的文本、标识或路径。
+        """
         memory = insert_memory(
             f"space-{idx % 4}",
             MemoryCandidate("semantic", f"用户正在测试并发写入 {idx}", 0.8, 0.9),

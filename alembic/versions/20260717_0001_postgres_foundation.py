@@ -1,4 +1,9 @@
-"""Create the shared PostgreSQL foundation schema."""
+"""文件作用：初始 PostgreSQL 基础表。
+
+项目关系：本文件依赖 `alembic`、`infrastructure.schema`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 import hashlib
 
@@ -15,9 +20,11 @@ FROZEN_SCHEMA_FINGERPRINT = "346fac3151d262ba6ed3de7d10180dace448e8b5f5907d094f1
 
 
 def _metadata_fingerprint() -> str:
-    """负责“metadatafingerprint”。
-
-    该函数是 `alembic.versions.20260717_0001_postgres_foundation` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_metadata_fingerprint` 负责处理 metadata fingerprint，服务于本文件职责：初始 PostgreSQL 基础表。
+    传参：
+        无。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     parts: list[str] = []
     for table in sorted(Base.metadata.tables.values(), key=lambda item: item.name):
@@ -45,9 +52,11 @@ def _metadata_fingerprint() -> str:
 
 
 def upgrade() -> None:
-    """负责“upgrade”。
-
-    该函数是 `alembic.versions.20260717_0001_postgres_foundation` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`upgrade` 负责处理 upgrade，服务于本文件职责：初始 PostgreSQL 基础表。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     fingerprint = _metadata_fingerprint()
@@ -60,8 +69,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """负责“downgrade”。
-
-    该函数是 `alembic.versions.20260717_0001_postgres_foundation` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`downgrade` 负责处理 downgrade，服务于本文件职责：初始 PostgreSQL 基础表。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     Base.metadata.drop_all(bind=op.get_bind(), checkfirst=True)

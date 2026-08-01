@@ -1,3 +1,9 @@
+"""文件作用：consolidation scheduler run/lease。
+
+项目关系：本文件依赖 `memory`、`memory.repository`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from datetime import date, datetime, timedelta
 
 from memory import scheduler
@@ -12,7 +18,12 @@ from memory.repository import (
 
 
 def test_consolidation_period_key_formats():
-    """验证“consolidationperiod键formats”场景的预期行为与回归边界。"""
+    """函数功能：`test_consolidation_period_key_formats` 负责验证 consolidation period key formats 场景，服务于本文件职责：consolidation scheduler run/lease。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     day = date(2026, 7, 14)
 
     assert consolidation_period_key("daily", day) == "2026-07-14"
@@ -21,7 +32,12 @@ def test_consolidation_period_key_formats():
 
 
 def test_reserve_completed_running_failed_and_stale_runs():
-    """验证“预约completedrunningfailedandstaleruns”场景的预期行为与回归边界。"""
+    """函数功能：`test_reserve_completed_running_failed_and_stale_runs` 负责验证 reserve completed running failed and stale runs 场景，服务于本文件职责：consolidation scheduler run/lease。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     period = "2026-07-14"
     run = reserve_consolidation_run("space-1", "daily", period)
     assert run is not None
@@ -48,7 +64,12 @@ def test_reserve_completed_running_failed_and_stale_runs():
 
 
 def test_scheduler_run_once_is_db_idempotent(monkeypatch):
-    """验证“scheduler运行once是否为dbidempotent”场景的预期行为与回归边界。"""
+    """函数功能：`test_scheduler_run_once_is_db_idempotent` 负责验证 scheduler run once is db idempotent 场景，服务于本文件职责：consolidation scheduler run/lease。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     calls = []
     monkeypatch.setattr(scheduler, "list_memory_space_ids", lambda: ["space-1", "space-2"])
     monkeypatch.setattr(
@@ -73,11 +94,22 @@ def test_scheduler_run_once_is_db_idempotent(monkeypatch):
 
 
 def test_scheduler_failed_run_can_retry(monkeypatch):
-    """验证“schedulerfailed运行can重试”场景的预期行为与回归边界。"""
+    """函数功能：`test_scheduler_failed_run_can_retry` 负责验证 scheduler failed run can retry 场景，服务于本文件职责：consolidation scheduler run/lease。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     attempts = {"count": 0}
 
     def flaky(space_id, cadence):
-        """验证“flaky”场景的预期行为与回归边界。"""
+        """函数功能：`flaky` 负责处理 flaky，服务于本文件职责：consolidation scheduler run/lease。
+        传参：
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据。
+            cadence: cadence 参数，由调用方传入。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         attempts["count"] += 1
         if attempts["count"] == 1:
             raise RuntimeError("temporary")
@@ -95,7 +127,12 @@ def test_scheduler_failed_run_can_retry(monkeypatch):
 
 
 def test_scheduler_marks_partial_daily_result_as_failed(monkeypatch):
-    """验证“schedulermarkspartialdaily结果asfailed”场景的预期行为与回归边界。"""
+    """函数功能：`test_scheduler_marks_partial_daily_result_as_failed` 负责验证 scheduler marks partial daily result as failed 场景，服务于本文件职责：consolidation scheduler run/lease。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(
         scheduler,
         "run_memory_consolidation",

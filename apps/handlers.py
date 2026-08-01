@@ -1,4 +1,9 @@
-"""Business handlers used by independent Redis Stream workers."""
+"""文件作用：分布式 task handler 注册表。
+
+项目关系：本文件依赖 `agent.query_agent`、`bot.feishu_bot`、`core.llm_client`、`core.settings` 等 18 个模块；被 `apps.worker`、`tests.test_stage7_model_routing_and_clause_extraction`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -23,25 +28,33 @@ from summary.subscription import mark_summary_sent
 
 
 def _payload(task: dict[str, Any]) -> dict[str, Any]:
-    """负责“payload”。
-
-    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_payload` 负责处理 payload，服务于本文件职责：分布式 task handler 注册表。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     return dict(task.get("payload_json") or {})
 
 
 def _tenant_id(task: dict[str, Any]) -> str:
-    """负责“租户标识”。
-
-    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_tenant_id` 负责处理 tenant id，服务于本文件职责：分布式 task handler 注册表。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return str(task.get("tenant_id") or "default")
 
 
 def _enqueue_delivery(task: dict[str, Any], *, text: str, payload: dict[str, Any]) -> None:
-    """负责“enqueue投递”。
-
-    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_enqueue_delivery` 负责处理 enqueue delivery，服务于本文件职责：分布式 task handler 注册表。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+        text: 输入文本内容，类型为 `str`。
+        payload: 结构化载荷，通常来自事件、任务或 API 请求，类型为 `dict[str, Any]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     delivery_key = str(payload["delivery_key"])
     followup = {
@@ -63,9 +76,11 @@ def _enqueue_delivery(task: dict[str, Any], *, text: str, payload: dict[str, Any
 
 
 def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
-    """负责“处理接收写入”。
-
-    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`handle_ingest` 负责处理 ingest，服务于本文件职责：分布式 task handler 注册表。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `TaskOutcome` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     payload = _payload(task)
     inbox_id = str(payload.get("inbox_id") or "")
@@ -127,9 +142,11 @@ def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
 
 
 def handle_query(task: dict[str, Any]) -> TaskOutcome:
-    """负责“处理查询”。
-
-    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`handle_query` 负责处理 query，服务于本文件职责：分布式 task handler 注册表。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `TaskOutcome` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     payload = _payload(task)
     inbox_id = str(payload.get("inbox_id") or "")
@@ -149,9 +166,11 @@ def handle_query(task: dict[str, Any]) -> TaskOutcome:
 
 
 def handle_summary(task: dict[str, Any]) -> TaskOutcome:
-    """负责“处理总结”。
-
-    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`handle_summary` 负责处理 summary，服务于本文件职责：分布式 task handler 注册表。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `TaskOutcome` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     payload = _payload(task)
     inbox_id = str(payload.get("inbox_id") or "")
@@ -172,9 +191,11 @@ def handle_summary(task: dict[str, Any]) -> TaskOutcome:
 
 
 def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
-    """负责“处理记忆”。
-
-    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`handle_memory` 负责处理 memory，服务于本文件职责：分布式 task handler 注册表。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `TaskOutcome | None`；未命中或无需处理时可返回 `None`。
     """
     payload = _payload(task)
     operation = str(payload.get("operation") or "extract")
@@ -206,9 +227,11 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
 
 
 def handle_memory_embedding(task: dict[str, Any]) -> TaskOutcome | None:
-    """负责“处理记忆向量”。
-
-    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`handle_memory_embedding` 负责处理 memory embedding，服务于本文件职责：分布式 task handler 注册表。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `TaskOutcome | None`；未命中或无需处理时可返回 `None`。
     """
     from repositories.postgres.memory import claim_memory_vector, complete_memory_vector, fail_memory_vector
 
@@ -244,9 +267,11 @@ def handle_memory_embedding(task: dict[str, Any]) -> TaskOutcome | None:
 
 
 def handle_enrichment(task: dict[str, Any]) -> None:
-    """负责“处理enrichment”。
-
-    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`handle_enrichment` 负责处理 enrichment，服务于本文件职责：分布式 task handler 注册表。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if FAKE_EXTERNALS:
         return
@@ -260,9 +285,11 @@ def handle_enrichment(task: dict[str, Any]) -> None:
 
 
 def handle_delivery(task: dict[str, Any]) -> None:
-    """负责“处理投递”。
-
-    该函数是 `apps.handlers` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`handle_delivery` 负责处理 delivery，服务于本文件职责：分布式 task handler 注册表。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     payload = _payload(task)
     key = str(payload["delivery_key"])

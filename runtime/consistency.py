@@ -1,4 +1,9 @@
-"""Deterministic consistency requirements for distributed root tasks."""
+"""文件作用：运行时一致性工具。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 `apps.receiver`、`repositories.postgres.dispatch`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -48,9 +53,11 @@ NOTE_QUERY_MARKERS = (
 
 
 def query_consistency(question: str) -> str:
-    """负责“查询一致性”。
-
-    该函数是 `runtime.consistency` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`query_consistency` 负责查询 consistency，服务于本文件职责：运行时一致性工具。
+    传参：
+        question: 用户问题文本，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     normalized = " ".join(str(question or "").strip().casefold().split())
     if any(marker in normalized for marker in MEMORY_QUERY_MARKERS):
@@ -61,9 +68,12 @@ def query_consistency(question: str) -> str:
 
 
 def task_consistency(task_type: str, payload: dict[str, Any]) -> str:
-    """负责“任务一致性”。
-
-    该函数是 `runtime.consistency` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`task_consistency` 负责处理 task consistency，服务于本文件职责：运行时一致性工具。
+    传参：
+        task_type: task type 参数，由调用方传入，类型为 `str`。
+        payload: 结构化载荷，通常来自事件、任务或 API 请求，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     explicit = str(payload.get("consistency") or "").strip().lower()
     if explicit in {"note", "memory", "weak"}:

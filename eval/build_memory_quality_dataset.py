@@ -1,4 +1,9 @@
-"""Build the deterministic 360-case Memory V2 quality set used by baselines."""
+"""文件作用：质量集构建。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -11,9 +16,11 @@ OUTPUT = Path(__file__).resolve().parent / "memory" / "quality_cases.jsonl"
 
 
 def _extraction_cases() -> list[dict[str, object]]:
-    """负责“extractioncases”。
-
-    该函数是 `eval.build_memory_quality_dataset` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_extraction_cases` 负责处理 extraction cases，服务于本文件职责：质量集构建。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list[dict[str, object]]`，表示按条件筛选、构造或查询得到的列表。
     """
     positives = [
         ("preference", "我喜欢喝{item}。", ["{item}"], "explicit_preference"),
@@ -76,9 +83,11 @@ def _extraction_cases() -> list[dict[str, object]]:
 
 
 def _relation_cases() -> list[dict[str, object]]:
-    """负责“关系cases”。
-
-    该函数是 `eval.build_memory_quality_dataset` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_relation_cases` 负责处理 relation cases，服务于本文件职责：质量集构建。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list[dict[str, object]]`，表示按条件筛选、构造或查询得到的列表。
     """
     templates = {
         "same": [
@@ -139,9 +148,11 @@ def _relation_cases() -> list[dict[str, object]]:
 
 
 def _retrieval_cases() -> list[dict[str, object]]:
-    """负责“retrievalcases”。
-
-    该函数是 `eval.build_memory_quality_dataset` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_retrieval_cases` 负责处理 retrieval cases，服务于本文件职责：质量集构建。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list[dict[str, object]]`，表示按条件筛选、构造或查询得到的列表。
     """
     topics = [
         ("preference", "喜欢喝{item}", "我想知道饮品偏好", "{item}"),
@@ -186,9 +197,11 @@ def _retrieval_cases() -> list[dict[str, object]]:
 
 
 def _e2e_cases() -> list[dict[str, object]]:
-    """负责“e2ecases”。
-
-    该函数是 `eval.build_memory_quality_dataset` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_e2e_cases` 负责处理 e2e cases，服务于本文件职责：质量集构建。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list[dict[str, object]]`，表示按条件筛选、构造或查询得到的列表。
     """
     templates = [
         ("preference", ["我喜欢喝牛奶。"], "我喜欢喝什么", "牛奶"),
@@ -217,9 +230,11 @@ def _e2e_cases() -> list[dict[str, object]]:
 
 
 def build_cases() -> list[dict[str, object]]:
-    """负责“构建cases”。
-
-    该函数是 `eval.build_memory_quality_dataset` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`build_cases` 负责构建 cases，服务于本文件职责：质量集构建。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list[dict[str, object]]`，表示按条件筛选、构造或查询得到的列表。
     """
     cases = _extraction_cases() + _relation_cases() + _retrieval_cases() + _e2e_cases()
     assert len(cases) == 360, len(cases)
@@ -228,7 +243,12 @@ def build_cases() -> list[dict[str, object]]:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：质量集构建。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=OUTPUT)
     args = parser.parse_args()

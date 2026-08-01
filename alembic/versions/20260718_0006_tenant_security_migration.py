@@ -1,4 +1,9 @@
-"""Harden tenant isolation, API-era idempotency, and timestamp types."""
+"""文件作用：租户安全迁移。
+
+项目关系：本文件依赖 `alembic`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -36,9 +41,12 @@ TIME_COLUMNS = {
 
 
 def _constraints(inspector: sa.Inspector, table: str) -> set[str]:
-    """负责“constraints”。
-
-    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_constraints` 负责处理 constraints，服务于本文件职责：租户安全迁移。
+    传参：
+        inspector: inspector 参数，由调用方传入，类型为 `sa.Inspector`。
+        table: table 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `set[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if not inspector.has_table(table):
         return set()
@@ -46,9 +54,12 @@ def _constraints(inspector: sa.Inspector, table: str) -> set[str]:
 
 
 def _indexes(inspector: sa.Inspector, table: str) -> set[str]:
-    """负责“indexes”。
-
-    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_indexes` 负责处理 indexes，服务于本文件职责：租户安全迁移。
+    传参：
+        inspector: inspector 参数，由调用方传入，类型为 `sa.Inspector`。
+        table: table 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `set[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if not inspector.has_table(table):
         return set()
@@ -56,9 +67,12 @@ def _indexes(inspector: sa.Inspector, table: str) -> set[str]:
 
 
 def _columns(inspector: sa.Inspector, table: str) -> set[str]:
-    """负责“columns”。
-
-    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_columns` 负责处理 columns，服务于本文件职责：租户安全迁移。
+    传参：
+        inspector: inspector 参数，由调用方传入，类型为 `sa.Inspector`。
+        table: table 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `set[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if not inspector.has_table(table):
         return set()
@@ -66,9 +80,13 @@ def _columns(inspector: sa.Inspector, table: str) -> set[str]:
 
 
 def _alter_to_timestamptz(inspector: sa.Inspector, table: str, column: str) -> None:
-    """负责“alter转换为timestamptz”。
-
-    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_alter_to_timestamptz` 负责转换为目标结构 timestamptz，服务于本文件职责：租户安全迁移。
+    传参：
+        inspector: inspector 参数，由调用方传入，类型为 `sa.Inspector`。
+        table: table 参数，由调用方传入，类型为 `str`。
+        column: column 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if column not in _columns(inspector, table):
         return
@@ -83,9 +101,13 @@ def _alter_to_timestamptz(inspector: sa.Inspector, table: str, column: str) -> N
 
 
 def _alter_to_text(inspector: sa.Inspector, table: str, column: str) -> None:
-    """负责“alter转换为文本”。
-
-    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_alter_to_text` 负责转换为目标结构 text，服务于本文件职责：租户安全迁移。
+    传参：
+        inspector: inspector 参数，由调用方传入，类型为 `sa.Inspector`。
+        table: table 参数，由调用方传入，类型为 `str`。
+        column: column 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if column not in _columns(inspector, table):
         return
@@ -100,9 +122,11 @@ def _alter_to_text(inspector: sa.Inspector, table: str, column: str) -> None:
 
 
 def upgrade() -> None:
-    """负责“upgrade”。
-
-    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`upgrade` 负责处理 upgrade，服务于本文件职责：租户安全迁移。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     bind = op.get_bind()
     inspector = sa.inspect(bind)
@@ -144,9 +168,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """负责“downgrade”。
-
-    该函数是 `alembic.versions.20260718_0006_tenant_security_migration` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`downgrade` 负责处理 downgrade，服务于本文件职责：租户安全迁移。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     bind = op.get_bind()
     inspector = sa.inspect(bind)

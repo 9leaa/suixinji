@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Explicit, auditable repair of one reviewed task lifecycle.
+"""文件作用：任务生命周期对账。
 
-This tool never scans or changes unrelated memories.  It requires every
-source note, the canonical task identity, and an --execute opt-in.  Use it
-only after a human has reviewed a false split such as todo/in-progress/done
-being stored as separate tasks.
+项目关系：本文件依赖 `infrastructure.database`、`infrastructure.schema`、`memory.canonicalizer`、`memory.models` 等 6 个模块；被 暂无静态导入方或仅作为入口脚本执行。
 """
+
+
 
 from __future__ import annotations
 
@@ -32,15 +31,21 @@ from repositories.postgres.memory import _schedule_memory_embedding_if_enabled
 
 @dataclass(frozen=True)
 class LifecyclePoint:
+    """类功能：`LifecyclePoint` 封装与“任务生命周期对账”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     note_id: str
     task_status: str
     content: str
 
 
 def _parse_point(value: str) -> LifecyclePoint:
-    """负责“解析point”。
-
-    该函数是 `scripts.reconcile_task_lifecycle` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_parse_point` 负责解析 point，服务于本文件职责：任务生命周期对账。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `LifecyclePoint` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     try:
         note_id, status, content = value.split("|", 2)
@@ -54,9 +59,16 @@ def _parse_point(value: str) -> LifecyclePoint:
 
 
 def _report(space_id: str, task_key_value: str, points: list[LifecyclePoint], archived_ids: list[str], memory_id: str | None, *, executed: bool) -> dict[str, Any]:
-    """负责“报告”。
-
-    该函数是 `scripts.reconcile_task_lifecycle` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_report` 负责处理 report，服务于本文件职责：任务生命周期对账。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        task_key_value: task key value 参数，由调用方传入，类型为 `str`。
+        points: points 参数，由调用方传入，类型为 `list[LifecyclePoint]`。
+        archived_ids: archived ids 参数，由调用方传入，类型为 `list[str]`。
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str | None`。
+        executed: executed 参数，由调用方传入，类型为 `bool`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     return {
         "mode": "executed" if executed else "dry_run",
@@ -80,9 +92,17 @@ def reconcile_task_lifecycle(
     points: list[LifecyclePoint],
     execute: bool = False,
 ) -> dict[str, Any]:
-    """负责“reconcile任务生命周期”。
-
-    该函数是 `scripts.reconcile_task_lifecycle` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`reconcile_task_lifecycle` 负责对账 task lifecycle，服务于本文件职责：任务生命周期对账。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        entity: entity 参数，由调用方传入，类型为 `str`。
+        attribute: attribute 参数，由调用方传入，类型为 `str`。
+        operation: operation 参数，由调用方传入，类型为 `str`。
+        canonical_topic: canonical topic 参数，由调用方传入，类型为 `str`。
+        points: points 参数，由调用方传入，类型为 `list[LifecyclePoint]`。
+        execute: execute 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     if len(points) < 2:
         raise ValueError("at least two reviewed lifecycle points are required")
@@ -239,7 +259,12 @@ def reconcile_task_lifecycle(
 
 
 def main() -> int:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：任务生命周期对账。
+    传参：
+        无。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
+    """
     parser = argparse.ArgumentParser(description="Reconcile an explicitly reviewed split task lifecycle")
     parser.add_argument("--space-id", required=True)
     parser.add_argument("--entity", required=True)

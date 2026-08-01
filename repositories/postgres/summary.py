@@ -1,4 +1,9 @@
-"""PostgreSQL automatic summary subscription repository."""
+"""文件作用：Summary 数据访问。
+
+项目关系：本文件依赖 `core.settings`、`infrastructure.database`、`infrastructure.schema`、`repositories.postgres.common` 等 5 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -12,9 +17,11 @@ from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space
 
 
 def _subscription(row: SummarySubscriptionRow):
-    """负责“subscription”。
-
-    该函数是 `repositories.postgres.summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_subscription` 负责处理 subscription，服务于本文件职责：Summary 数据访问。
+    传参：
+        row: row 参数，由调用方传入，类型为 `SummarySubscriptionRow`。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
     """
     from summary.subscription import SummarySubscription
     return SummarySubscription(
@@ -28,9 +35,11 @@ def _subscription(row: SummarySubscriptionRow):
 
 
 def get_summary_subscription(space_id: str):
-    """负责“获取总结subscription”。
-
-    该函数是 `repositories.postgres.summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_summary_subscription` 负责获取 summary subscription，服务于本文件职责：Summary 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
     """
     with session_scope() as session:
         row = session.get(SummarySubscriptionRow, space_id)
@@ -38,9 +47,11 @@ def get_summary_subscription(space_id: str):
 
 
 def list_enabled_summary_subscriptions() -> list:
-    """负责“列出enabled总结subscriptions”。
-
-    该函数是 `repositories.postgres.summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_enabled_summary_subscriptions` 负责列出 enabled summary subscriptions，服务于本文件职责：Summary 数据访问。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list`，表示按条件筛选、构造或查询得到的列表。
     """
     with session_scope() as session:
         rows = session.execute(
@@ -50,9 +61,13 @@ def list_enabled_summary_subscriptions() -> list:
 
 
 def _upsert(space_id: str, chat_id: str, **updates):
-    """负责“新增或更新”。
-
-    该函数是 `repositories.postgres.summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_upsert` 负责插入或更新，服务于本文件职责：Summary 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        chat_id: chat id 参数，由调用方传入，类型为 `str`。
+        **updates: updates 参数，由调用方传入。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
     """
     tenant_id = DEFAULT_TENANT_ID
     with session_scope() as session:
@@ -75,17 +90,22 @@ def _upsert(space_id: str, chat_id: str, **updates):
 
 
 def enable_summary_subscription(space_id: str, chat_id: str):
-    """负责“启用总结subscription”。
-
-    该函数是 `repositories.postgres.summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`enable_summary_subscription` 负责处理 enable summary subscription，服务于本文件职责：Summary 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        chat_id: chat id 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
     """
     return _upsert(space_id, chat_id, enabled=True)
 
 
 def disable_summary_subscription(space_id: str):
-    """负责“disable总结subscription”。
-
-    该函数是 `repositories.postgres.summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`disable_summary_subscription` 负责处理 disable summary subscription，服务于本文件职责：Summary 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
     """
     old = get_summary_subscription(space_id)
     if old is None:
@@ -94,9 +114,13 @@ def disable_summary_subscription(space_id: str):
 
 
 def update_summary_time(space_id: str, chat_id: str, time_value: str):
-    """负责“更新总结time”。
-
-    该函数是 `repositories.postgres.summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`update_summary_time` 负责更新 summary time，服务于本文件职责：Summary 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        chat_id: chat id 参数，由调用方传入，类型为 `str`。
+        time_value: time value 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
     """
     from summary.subscription import parse_summary_time
     parsed = parse_summary_time(time_value)
@@ -106,9 +130,12 @@ def update_summary_time(space_id: str, chat_id: str, time_value: str):
 
 
 def mark_summary_sent(space_id: str, sent_date: str) -> None:
-    """负责“标记总结sent”。
-
-    该函数是 `repositories.postgres.summary` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_summary_sent` 负责标记 summary sent，服务于本文件职责：Summary 数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        sent_date: sent date 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     old = get_summary_subscription(space_id)
     if old is not None:

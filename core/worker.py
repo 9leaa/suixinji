@@ -1,4 +1,9 @@
-"""Background worker for classifying notes and writing them to storage."""
+"""文件作用：本地记录处理流程。
+
+项目关系：本文件依赖 `core.classifier`、`core.llm_client`、`core.observability`、`core.sensitive` 等 11 个模块；被 `P1_test`、`apps.handlers`、`bot.feishu_bot`、`main` 等 5 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -35,9 +40,12 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _find_note_by_message_id(space_id: str, message_id: str) -> dict[str, Any] | None:
-    """负责“查找笔记by消息标识”。
-
-    该函数是 `core.worker` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_find_note_by_message_id` 负责查找 note by message id，服务于本文件职责：本地记录处理流程。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     for note in load_index(space_id):
         if note.get("message_id") == message_id:
@@ -46,11 +54,12 @@ def _find_note_by_message_id(space_id: str, message_id: str) -> dict[str, Any] |
 
 
 def backfill_vector_if_missing(space_id: str, message_id: str) -> bool:
-    """补写已存在笔记缺失的向量记录。
-
-    如果 worker 在 save_note 成功后、add_vector_item 成功前崩溃，
-    重跑时 index.json 已经有笔记，但 vectors/index.json 可能缺记录。
-    这个函数用 index.json 中的笔记内容补写向量，恢复 semantic_search 能力。
+    """函数功能：`backfill_vector_if_missing` 负责回填 vector if missing，服务于本文件职责：本地记录处理流程。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     note = _find_note_by_message_id(space_id, message_id)
     if note is None or not is_note_queryable(note):
@@ -99,18 +108,13 @@ def process_record(
     defer_memory: bool = False,
     defer_wal_completion: bool = False,
 ) -> NoteMetadata | dict[str, Any] | None:
-    """处理单条 pending WAL 记录。
-
-    功能说明:
-        调用分类器生成结构化信息，将结果保存为 markdown 笔记和 index.json 索引，
-        最后把对应 WAL 记录标记为 processed。如果该 message_id 已经存在于
-        index.json，则跳过重复保存并直接把 WAL 标记为 processed。
-
-    传参说明:
-        record: 从 WAL 中读取出的单条消息记录字典。
-
-    返回类型说明:
-        None: 处理完成后通过文件系统产生副作用，不返回业务结果。
+    """函数功能：`process_record` 负责处理 record，服务于本文件职责：本地记录处理流程。
+    传参：
+        record: 待处理或持久化的记录对象，类型为 `dict[str, Any]`。
+        defer_memory: defer memory 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        defer_wal_completion: defer wal completion 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        返回 `NoteMetadata | dict[str, Any] | None`；未命中或无需处理时可返回 `None`。
     """
     space_id = record["space_id"]
     record_id = record["id"]
@@ -218,7 +222,13 @@ def process_record(
 
 
 def enrich_note(space_id: str, note_id: str) -> bool:
-    """Run slow LLM classification and embedding after the note is queryable."""
+    """函数功能：`enrich_note` 负责处理 enrich note，服务于本文件职责：本地记录处理流程。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     note = find_note(space_id, note_id)
     if note is None or not is_note_queryable(note):
         return False
@@ -300,18 +310,11 @@ def enrich_note(space_id: str, note_id: str) -> bool:
 
 
 def process_pending(space_id: str) -> int:
-    """处理指定 space_id 下所有 pending WAL 记录。
-
-    功能说明:
-        读取当前 space_id 下所有 pending 记录，并逐条调用 process_record 完成分类、
-        保存和状态更新。恢复过程中会按 message_id 跳过重复 pending 记录，
-        且单条记录失败不会中断整个 space_id 的恢复。
-
-    传参说明:
-        space_id: 会话/用户隔离 ID。
-
-    返回类型说明:
-        int: 本次成功处理或成功跳过的 pending 记录数量。
+    """函数功能：`process_pending` 负责处理 pending，服务于本文件职责：本地记录处理流程。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     records = load_pending_records(space_id)
     count = 0

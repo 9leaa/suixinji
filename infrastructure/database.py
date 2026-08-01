@@ -1,4 +1,9 @@
-"""PostgreSQL engine, transaction, and health-check helpers."""
+"""文件作用：SQLAlchemy engine/session 生命周期。
+
+项目关系：本文件依赖 `core.settings`；被 `alembic.env`、`eval.benchmark_stage2_queries`、`eval.large_live_retrieval_eval`、`eval.live_retrieval_eval` 等 28 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -25,9 +30,11 @@ _role_session_factories: dict[str, sessionmaker[Session]] = {}
 
 
 def _normalized_database_url(url: str) -> str:
-    """负责“normalizeddatabaseurl”。
-
-    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_normalized_database_url` 负责处理 normalized database url，服务于本文件职责：SQLAlchemy engine/session 生命周期。
+    传参：
+        url: url 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     if url.startswith("postgres://"):
         return "postgresql+psycopg://" + url.removeprefix("postgres://")
@@ -37,17 +44,21 @@ def _normalized_database_url(url: str) -> str:
 
 
 def _resolved_role(role: str | None = None) -> str:
-    """负责“resolvedrole”。
-
-    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_resolved_role` 负责处理 resolved role，服务于本文件职责：SQLAlchemy engine/session 生命周期。
+    传参：
+        role: role 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return (role or PROCESS_ROLE or "default").strip().lower() or "default"
 
 
 def get_engine(role: str | None = None) -> Engine:
-    """负责“获取engine”。
-
-    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_engine` 负责获取 engine，服务于本文件职责：SQLAlchemy engine/session 生命周期。
+    传参：
+        role: role 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `Engine` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     global _engine, _session_factory
     resolved = _resolved_role(role)
@@ -81,9 +92,11 @@ def get_engine(role: str | None = None) -> Engine:
 
 
 def get_session_factory(role: str | None = None) -> sessionmaker[Session]:
-    """负责“获取会话factory”。
-
-    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_session_factory` 负责获取 session factory，服务于本文件职责：SQLAlchemy engine/session 生命周期。
+    传参：
+        role: role 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `sessionmaker[Session]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     resolved = _resolved_role(role)
     default_role = _resolved_role(None)
@@ -99,9 +112,11 @@ def get_session_factory(role: str | None = None) -> sessionmaker[Session]:
 
 @contextmanager
 def session_scope(role: str | None = None) -> Iterator[Session]:
-    """负责“会话scope”。
-
-    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`session_scope` 负责处理 session scope，服务于本文件职责：SQLAlchemy engine/session 生命周期。
+    传参：
+        role: role 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `Iterator[Session]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     session = get_session_factory(role)()
     try:
@@ -112,9 +127,11 @@ def session_scope(role: str | None = None) -> Iterator[Session]:
 
 
 def check_database_health() -> dict[str, str]:
-    """负责“检查databasehealth”。
-
-    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_database_health` 负责检查 database health，服务于本文件职责：SQLAlchemy engine/session 生命周期。
+    传参：
+        无。
+    返回结果说明：
+        返回 `dict[str, str]`，表示结构化结果、载荷或状态映射。
     """
     with get_engine().connect() as conn:
         version = str(conn.execute(text("SELECT current_database() || ' / ' || version()" )).scalar_one())
@@ -122,9 +139,11 @@ def check_database_health() -> dict[str, str]:
 
 
 def dispose_engine(role: str | None = None) -> None:
-    """负责“disposeengine”。
-
-    该函数是 `infrastructure.database` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`dispose_engine` 负责处理 dispose engine，服务于本文件职责：SQLAlchemy engine/session 生命周期。
+    传参：
+        role: role 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     global _engine, _session_factory
     if role is None:

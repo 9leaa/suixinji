@@ -1,4 +1,9 @@
-"""Bounded read-after-write barrier for Memory V3 queries."""
+"""文件作用：Memory 读后写一致性屏障。
+
+项目关系：本文件依赖 `core`、`repositories.postgres.dispatch`；被 `agent.query_agent`、`tests.test_memory_consistency_v3`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -17,11 +22,16 @@ def wait_for_memory_barrier(
     sleep_fn: Callable[[float], None] = time.sleep,
     monotonic_fn: Callable[[], float] = time.monotonic,
 ) -> dict[str, Any]:
-    """Wait briefly until memory catches the durable note watermark.
-
-    This only runs for PostgreSQL deployments, has a hard default ceiling of
-    800 ms, and never creates or alters data.  The caller can use the returned
-    state to select the note fallback instead of reporting an empty answer.
+    """函数功能：`wait_for_memory_barrier` 负责等待 for memory barrier，服务于本文件职责：Memory 读后写一致性屏障。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        timeout_ms: timeout ms 参数，由调用方传入，类型为 `int | None`，默认值为 `None`。
+        poll_interval_seconds: poll interval seconds 参数，由调用方传入，类型为 `float`，默认值为 `0.05`。
+        progress_loader: progress loader 参数，由调用方传入，类型为 `Callable[[str], dict[str, int | None] | None] | None`，默认值为 `None`。
+        sleep_fn: sleep fn 参数，由调用方传入，类型为 `Callable[[float], None]`，默认值为 `time.sleep`。
+        monotonic_fn: monotonic fn 参数，由调用方传入，类型为 `Callable[[], float]`，默认值为 `time.monotonic`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     if not settings.QUERY_MEMORY_BARRIER_ENABLED:
         return {"status": "skipped", "reason": "feature_disabled", "waited_ms": 0}
@@ -39,9 +49,11 @@ def wait_for_memory_barrier(
         return {"status": "skipped", "reason": "space_not_found", "waited_ms": 0}
 
     def ready(progress: dict[str, int | None]) -> bool:
-        """负责“ready”。
-
-        该函数是 `memory.consistency` 中的`wait_for_memory_barrier` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`ready` 负责处理 ready，服务于本文件职责：Memory 读后写一致性屏障。
+        传参：
+            progress: progress 参数，由调用方传入，类型为 `dict[str, int | None]`。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         return int(progress.get("memory_watermark") or 0) >= int(progress.get("note_watermark") or 0)
 

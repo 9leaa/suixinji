@@ -1,4 +1,9 @@
-"""Memory candidate extraction with deterministic and model-assisted modes."""
+"""文件作用：Memory 候选抽取。
+
+项目关系：本文件依赖 `core`、`core.config`、`core.llm_client`、`core.model_router` 等 14 个模块；被 `apps.handlers`、`eval.eval_memory`、`eval.eval_memory_quality`、`eval.resume_memory_system_benchmark` 等 9 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -58,9 +63,11 @@ SHORT_FACT_PATTERNS = (
 
 
 def _entities(text: str) -> list[str]:
-    """负责“entities”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_entities` 负责处理 entities，服务于本文件职责：Memory 候选抽取。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     found = re.findall(r"[A-Za-z][A-Za-z0-9+#.-]*", text)
     for keyword in ("咖啡", "牛奶", "苹果", "北京", "上海", "Java", "Python", "Agent", "RAG", "README", "CI"):
@@ -70,17 +77,21 @@ def _entities(text: str) -> list[str]:
 
 
 def _task_status(text: str) -> str:
-    """负责“任务状态”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_task_status` 负责处理 task status，服务于本文件职责：Memory 候选抽取。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return infer_task_status(text) or "todo"
 
 
 def _clean_subject(text: str) -> str:
-    """负责“清理subject”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_clean_subject` 负责清理 subject，服务于本文件职责：Memory 候选抽取。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     value = text.strip()
     value = re.sub(r"^(记得|需要|待办|todo[:：]?|帮我记一下|提醒我)", "", value, flags=re.IGNORECASE).strip(" ：:")
@@ -89,9 +100,13 @@ def _clean_subject(text: str) -> str:
 
 
 def _structured_fields(memory_type: str, text: str, entities: list[str]) -> tuple[str | None, str | None, str | None]:
-    """负责“structuredfields”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_structured_fields` 负责处理 structured fields，服务于本文件职责：Memory 候选抽取。
+    传参：
+        memory_type: memory type 参数，由调用方传入，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+        entities: entities 参数，由调用方传入，类型为 `list[str]`。
+    返回结果说明：
+        返回 `tuple[str | None, str | None, str | None]`，表示由多个相关值组成的结果。
     """
     cleaned = _clean_subject(text)
     if memory_type == "preference":
@@ -115,9 +130,11 @@ def _structured_fields(memory_type: str, text: str, entities: list[str]) -> tupl
 
 
 def _should_skip_text(raw: str) -> bool:
-    """负责“shouldskip文本”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_should_skip_text` 负责处理 should skip text，服务于本文件职责：Memory 候选抽取。
+    传参：
+        raw: raw 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     compact = re.sub(r"\s+", "", raw).casefold()
     if not raw or compact in LOW_VALUE_PATTERNS or len(compact) <= 2:
@@ -128,7 +145,13 @@ def _should_skip_text(raw: str) -> bool:
 
 
 def may_contain_memory(text: str, classification: dict[str, Any] | None = None) -> bool:
-    """Cheap admission check used before scheduling the Memory Worker."""
+    """函数功能：`may_contain_memory` 负责处理 may contain memory，服务于本文件职责：Memory 候选抽取。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+        classification: classification 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     raw = str(text or "").strip()
     if _should_skip_text(raw):
         return False
@@ -182,6 +205,7 @@ def may_contain_memory(text: str, classification: dict[str, Any] | None = None) 
         return True
     if any(pattern.search(raw) for pattern in SHORT_FACT_PATTERNS):
         return True
+    #只要文本长度达到24，也判定true
     return len(raw) >= 24
 
 
@@ -208,13 +232,36 @@ def _candidate(
     clause_index: int | None = None,
     scope: dict[str, Any] | None = None,
 ) -> MemoryCandidate:
-    """负责“候选”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_candidate` 负责处理 candidate，服务于本文件职责：Memory 候选抽取。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+        importance: importance 参数，由调用方传入，类型为 `float`。
+        confidence: confidence 参数，由调用方传入，类型为 `float`。
+        entities: entities 参数，由调用方传入，类型为 `list[str]`。
+        reason: reason 参数，由调用方传入，类型为 `str`。
+        task_status: task status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        evidence_span: evidence span 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        subject: subject 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        predicate: predicate 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        object_value: object value 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        valid_from: valid from 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        valid_until: valid until 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        should_store: should store 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+        extractor_type: extractor type 参数，由调用方传入，类型为 `str`，默认值为 `'rules'`。
+        extractor_version: extractor version 参数，由调用方传入，类型为 `str`，默认值为 `EXTRACTOR_VERSION`。
+        model: model 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        clause_index: clause index 参数，由调用方传入，类型为 `int | None`，默认值为 `None`。
+        scope: scope 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryCandidate` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if subject is None and predicate is None and object_value is None:
         subject, predicate, object_value = _structured_fields(memory_type, evidence_span or content, entities)
+    #看一下 偏好的积极还是消极，还是未知
     polarity = preference_polarity(evidence_span or content) if memory_type == "preference" else None
+    #看一下这个candidate属于哪个稳定槽位或任务身份
     resolved_memory_key = memory_key_for(
         memory_type,
         subject=subject,
@@ -231,6 +278,7 @@ def _candidate(
         should_store=should_store,
         task_status=task_status,
         reason=reason,
+        #id包括有：字句的位置
         candidate_id=(
             candidate_id_for_evidence(
                 note_id,
@@ -266,7 +314,14 @@ def _candidate(
 
 
 def extract_rule_candidates(note_id: str, text: str, classification: dict[str, Any] | None = None) -> list[MemoryCandidate]:
-    """Extract candidates locally; this is also the model failure fallback."""
+    """函数功能：`extract_rule_candidates` 负责抽取 rule candidates，服务于本文件职责：Memory 候选抽取。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+        classification: classification 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryCandidate]`，表示按条件筛选、构造或查询得到的列表。
+    """
     del classification
     raw = str(text or "").strip()
     if _should_skip_text(raw):
@@ -282,9 +337,13 @@ def extract_rule_candidates(note_id: str, text: str, classification: dict[str, A
 
 
 def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: int | None) -> list[MemoryCandidate]:
-    """负责“抽取rulecandidatesforclause”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_extract_rule_candidates_for_clause` 负责抽取 rule candidates for clause，服务于本文件职责：Memory 候选抽取。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        raw: raw 参数，由调用方传入，类型为 `str`。
+        clause_index: clause index 参数，由调用方传入，类型为 `int | None`。
+    返回结果说明：
+        返回 `list[MemoryCandidate]`，表示按条件筛选、构造或查询得到的列表。
     """
     raw = str(raw or "").strip()
     if _should_skip_text(raw):
@@ -385,9 +444,12 @@ def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: in
 
 
 def _float_value(value: Any, default: float) -> float:
-    """负责“float字段值”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_float_value` 负责处理 float value，服务于本文件职责：Memory 候选抽取。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+        default: default 参数，由调用方传入，类型为 `float`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
     """
     try:
         return float(value)
@@ -396,9 +458,12 @@ def _float_value(value: Any, default: float) -> float:
 
 
 def _bool_value(value: Any, default: bool = True) -> bool:
-    """负责“bool字段值”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_bool_value` 负责处理 bool value，服务于本文件职责：Memory 候选抽取。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+        default: default 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if isinstance(value, bool):
         return value
@@ -410,17 +475,21 @@ def _bool_value(value: Any, default: bool = True) -> bool:
 
 
 def _strip_diagnostic_prefix(text: str) -> str:
-    """负责“stripdiagnosticprefix”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_strip_diagnostic_prefix` 负责处理 strip diagnostic prefix，服务于本文件职责：Memory 候选抽取。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return _DIAGNOSTIC_PREFIX_RE.sub("", str(text or "").strip(), count=1).strip()
 
 
 def _safe_exception_summary(exc: Exception) -> str:
-    """负责“安全exception总结”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_safe_exception_summary` 负责处理 safe exception summary，服务于本文件职责：Memory 候选抽取。
+    传参：
+        exc: 当前捕获的异常对象，类型为 `Exception`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     message = str(exc).strip() or type(exc).__name__
     message = _ERROR_PREVIEW_RE.sub(lambda match: f"{match.group(1)}=[redacted]", message)
@@ -428,9 +497,13 @@ def _safe_exception_summary(exc: Exception) -> str:
 
 
 def _log_llm_failure(note_id: str, exc: Exception, *, mode: str) -> None:
-    """负责“logLLMfailure”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_log_llm_failure` 负责记录日志 llm failure，服务于本文件职责：Memory 候选抽取。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        exc: 当前捕获的异常对象，类型为 `Exception`。
+        mode: mode 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     route = route_model(task="memory_extraction")
     config = get_chat_config(route.role.value)
@@ -467,9 +540,14 @@ def extract_llm_candidates(
     *,
     hints: list[dict[str, Any]] | None = None,
 ) -> list[MemoryCandidate]:
-    """负责“抽取LLMcandidates”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`extract_llm_candidates` 负责抽取 llm candidates，服务于本文件职责：Memory 候选抽取。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+        classification: classification 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+        hints: hints 参数，由调用方传入，类型为 `list[dict[str, Any]] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryCandidate]`，表示按条件筛选、构造或查询得到的列表。
     """
     raw = str(text or "").strip()
     model_text = _strip_diagnostic_prefix(raw)
@@ -565,7 +643,14 @@ def extract_llm_candidates(
 
 
 def _rule_hints(note_id: str, text: str, classification: dict[str, Any] | None = None) -> list[dict[str, Any]]:
-    """Give the fast model cheap signals without creating a second candidate set."""
+    """函数功能：`_rule_hints` 负责处理 rule hints，服务于本文件职责：Memory 候选抽取。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+        classification: classification 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
+    """
     return [
         {
             "memory_type": candidate.memory_type,
@@ -579,9 +664,11 @@ def _rule_hints(note_id: str, text: str, classification: dict[str, Any] | None =
 
 
 def _dedupe(candidates: list[MemoryCandidate]) -> list[MemoryCandidate]:
-    """负责“dedupe”。
-
-    该函数是 `memory.extractor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_dedupe` 负责处理 dedupe，服务于本文件职责：Memory 候选抽取。
+    传参：
+        candidates: candidates 参数，由调用方传入，类型为 `list[MemoryCandidate]`。
+    返回结果说明：
+        返回 `list[MemoryCandidate]`，表示按条件筛选、构造或查询得到的列表。
     """
     deduped: list[MemoryCandidate] = []
     seen: set[tuple[Any, ...]] = set()
@@ -600,7 +687,14 @@ def _dedupe(candidates: list[MemoryCandidate]) -> list[MemoryCandidate]:
 
 
 def extract_candidates(note_id: str, text: str, classification: dict[str, Any] | None = None) -> list[MemoryCandidate]:
-    """Return candidates only; adjudication and database mutation happen later."""
+    """函数功能：`extract_candidates` 负责抽取 candidates，服务于本文件职责：Memory 候选抽取。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+        classification: classification 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryCandidate]`，表示按条件筛选、构造或查询得到的列表。
+    """
     mode = MEMORY_EXTRACTOR_MODE if MEMORY_EXTRACTOR_MODE in {"rules", "llm", "hybrid"} else "rules"
     rule_text = _strip_diagnostic_prefix(text)
     if mode == "rules":
@@ -622,14 +716,10 @@ def extract_candidates(note_id: str, text: str, classification: dict[str, Any] |
 
     if mode == "llm":
         return model_candidates
-    # Hybrid means rule hints plus one authoritative structured model result.
-    # Returning a rules/LLM union lets one sentence create incompatible memory
-    # types and was the source of repeated false merges.
+    # Hybrid 表示规则提示加一次权威结构化模型结果；返回 rules/LLM 并集会让一句话产生不兼容 memory 类型，是重复误合并的来源。
     if model_candidates:
         return model_candidates
-    # An empty model response is not a semantic decision.  Preserve the
-    # deterministic admission fallback, but never union it with a non-empty
-    # model result.
+    # 空模型响应不是语义决策；保留确定性准入 fallback，但不要把它和非空模型结果做并集。
     return [
         replace(candidate, reason="llm_empty_rule_fallback", extraction_reason="llm_empty_rule_fallback")
         for candidate in extract_rule_candidates(note_id, rule_text, classification)

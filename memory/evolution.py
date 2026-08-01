@@ -1,4 +1,9 @@
-"""Deterministically evolve memory state from an adjudicated decision."""
+"""文件作用：决策落库后的确定性演化。
+
+项目关系：本文件依赖 `memory.models`、`memory.policies`、`memory.repository`、`memory.trace`；被 `memory.consolidator`、`tests.test_memory_adjudication_evolution`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -31,7 +36,16 @@ def evolve_memory(
     decision: MemoryDecision,
     trace: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Apply an action through the repository's atomic evolution transaction."""
+    """函数功能：`evolve_memory` 负责处理 evolve memory，服务于本文件职责：决策落库后的确定性演化。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        decision: decision 参数，由调用方传入，类型为 `MemoryDecision`。
+        trace: trace 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
+    """
     merged_content = None
     if decision.recommended_action == "merge" and decision.target_memory_ids:
         target = get_memory(decision.target_memory_ids[0])

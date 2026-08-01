@@ -1,9 +1,9 @@
-"""One-off, idempotent repair for the 2026-07-15 production validation data.
+"""文件作用：历史验证产物修复。
 
-The runtime policy is deliberately generic.  This migration only repairs the
-two already-corrupted preference decisions and removes the sensitive dummy note
-created during validation.  It never prints the sensitive note text.
+项目关系：本文件依赖 `memory.models`；被 暂无静态导入方或仅作为入口脚本执行。
 """
+
+
 
 from __future__ import annotations
 
@@ -43,9 +43,12 @@ NEGATIVE_AT = "2026-07-15T21:16:29+08:00"
 
 
 def _stable_id(prefix: str, value: str) -> str:
-    """负责“stable标识”。
-
-    该函数是 `scripts.repair_20260715_validation_artifacts` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_stable_id` 负责处理 stable id，服务于本文件职责：历史验证产物修复。
+    传参：
+        prefix: prefix 参数，由调用方传入，类型为 `str`。
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:12]
     return f"{prefix}_{digest}"
@@ -55,9 +58,12 @@ POSITIVE_APPLE_MEMORY_ID = _stable_id("mem", f"repair:{POSITIVE_APPLE_NOTE_ID}")
 
 
 def _write_json(path: Path, value: Any) -> None:
-    """负责“写入JSON”。
-
-    该函数是 `scripts.repair_20260715_validation_artifacts` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_write_json` 负责写入 json，服务于本文件职责：历史验证产物修复。
+    传参：
+        path: 文件系统路径，类型为 `Path`。
+        value: 待转换、校验或计算的值，类型为 `Any`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     temporary = path.with_name(f".{path.name}.repair.tmp")
     temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -65,9 +71,11 @@ def _write_json(path: Path, value: Any) -> None:
 
 
 def _repair_memories() -> dict[str, int]:
-    """负责“repairmemories”。
-
-    该函数是 `scripts.repair_20260715_validation_artifacts` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_repair_memories` 负责修复 memories，服务于本文件职责：历史验证产物修复。
+    传参：
+        无。
+    返回结果说明：
+        返回 `dict[str, int]`，表示结构化结果、载荷或状态映射。
     """
     now = datetime.now().astimezone().isoformat(timespec="seconds")
     counts = {"memory_rows": 0, "decision_rows": 0, "relation_rows": 0}
@@ -279,9 +287,11 @@ def _repair_memories() -> dict[str, int]:
 
 
 def _remove_sensitive_note() -> dict[str, int]:
-    """负责“移除sensitive笔记”。
-
-    该函数是 `scripts.repair_20260715_validation_artifacts` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_remove_sensitive_note` 负责移除 sensitive note，服务于本文件职责：历史验证产物修复。
+    传参：
+        无。
+    返回结果说明：
+        返回 `dict[str, int]`，表示结构化结果、载荷或状态映射。
     """
     counts = {"index_rows": 0, "markdown_blocks": 0, "vector_rows": 0, "wal_rows": 0, "trace_rows": 0}
     secret_text = ""
@@ -376,9 +386,11 @@ def _remove_sensitive_note() -> dict[str, int]:
 
 
 def _verify() -> None:
-    """负责“verify”。
-
-    该函数是 `scripts.repair_20260715_validation_artifacts` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_verify` 负责处理 verify，服务于本文件职责：历史验证产物修复。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
@@ -411,7 +423,12 @@ def _verify() -> None:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：历史验证产物修复。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     memory_counts = _repair_memories()
     privacy_counts = _remove_sensitive_note()
     _verify()

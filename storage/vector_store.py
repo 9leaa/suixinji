@@ -1,4 +1,9 @@
-"""Local JSON vector store for the P2 RAG stage."""
+"""文件作用：本地 Note 向量检索。
+
+项目关系：本文件依赖 `core.file_lock`、`core.sensitive`、`core.settings`、`repositories.postgres` 等 5 个模块；被 `agent.query_agent`、`core.worker`、`eval.eval_query_react`、`eval.eval_retrieval` 等 8 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -15,20 +20,9 @@ from storage.note_storage import note_dir
 
 @dataclass
 class VectorItem:
-    """表示一条已入库笔记的向量记录。
-
-    功能说明:
-        保存笔记 ID、平台消息 ID、原文、embedding 向量和轻量元数据，供后续语义检索使用。
-
-    传参说明:
-        note_id: 本系统中的笔记 ID，通常对应 NoteMetadata.id。
-        message_id: 平台消息 ID，用于幂等去重。
-        text: 参与语义检索的原始文本。
-        embedding: 文本对应的向量，当前项目中通常是 1024 维。
-        metadata: 额外元数据，例如 title、tags、type、summary。
-
-    返回类型说明:
-        VectorItem: 一条可写入本地向量索引的记录实例。
+    """类功能：`VectorItem` 封装与“本地 Note 向量检索”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
     """
 
     note_id: str
@@ -40,20 +34,9 @@ class VectorItem:
 
 @dataclass
 class SearchResult:
-    """表示一次语义检索返回的相关笔记结果。
-
-    功能说明:
-        保存命中的笔记信息和相似度分数，供 worker 写入 related 字段或后续查询 agent 使用。
-
-    传参说明:
-        note_id: 命中的笔记 ID。
-        message_id: 命中的平台消息 ID。
-        score: 与查询向量的余弦相似度分数。
-        text: 命中笔记的原始文本。
-        metadata: 命中笔记的轻量元数据。
-
-    返回类型说明:
-        SearchResult: 一条语义检索结果实例。
+    """类功能：`SearchResult` 封装与“本地 Note 向量检索”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
     """
 
     note_id: str
@@ -64,17 +47,11 @@ class SearchResult:
 
 
 def vector_index_path(space_id: str) -> Path:
-    """获取指定 space_id 的本地向量索引文件路径。
-
-    功能说明:
-        在 `data/notes/{space_id}/vectors/` 下维护一个 `index.json`，用于保存该空间的向量记录。
-        如果目录不存在，会自动创建。
-
-    传参说明:
-        space_id: 会话/用户隔离 ID。
-
-    返回类型说明:
-        Path: 当前 space_id 对应的向量索引 JSON 文件路径。
+    """函数功能：`vector_index_path` 负责处理 vector index path，服务于本文件职责：本地 Note 向量检索。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `Path` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     path = note_dir(space_id) / "vectors"
     path.mkdir(parents=True, exist_ok=True)
@@ -82,17 +59,11 @@ def vector_index_path(space_id: str) -> Path:
 
 
 def load_vector_items(space_id: str) -> list[VectorItem]:
-    """读取指定 space_id 的全部向量记录。
-
-    功能说明:
-        从本地 `vectors/index.json` 中读取向量记录，并转换为 VectorItem 实例列表。
-        如果索引文件不存在，则返回空列表。
-
-    传参说明:
-        space_id: 会话/用户隔离 ID。
-
-    返回类型说明:
-        list[VectorItem]: 当前空间下已保存的向量记录列表。
+    """函数功能：`load_vector_items` 负责加载 vector items，服务于本文件职责：本地 Note 向量检索。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `list[VectorItem]`，表示按条件筛选、构造或查询得到的列表。
     """
     path = vector_index_path(space_id)
     with locked_space(space_id):
@@ -106,17 +77,12 @@ def load_vector_items(space_id: str) -> list[VectorItem]:
 
 
 def save_vector_items(space_id: str, items: list[VectorItem]) -> None:
-    """保存指定 space_id 的全部向量记录。
-
-    功能说明:
-        将 VectorItem 列表序列化为 JSON，并覆盖写入本地向量索引文件。
-
-    传参说明:
-        space_id: 会话/用户隔离 ID。
-        items: 需要保存的向量记录列表。
-
-    返回类型说明:
-        None: 该函数只执行文件写入，不返回业务结果。
+    """函数功能：`save_vector_items` 负责保存 vector items，服务于本文件职责：本地 Note 向量检索。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        items: 待遍历或处理的元素集合，类型为 `list[VectorItem]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     path = vector_index_path(space_id)
     with locked_space(space_id):
@@ -125,18 +91,13 @@ def save_vector_items(space_id: str, items: list[VectorItem]) -> None:
 
 
 def vector_item_exists(space_id: str, note_id: str, message_id: str | None = None) -> bool:
-    """判断某条笔记是否已经写入向量索引。
-
-    功能说明:
-        根据 note_id 或 message_id 检查本地向量索引中是否已有同一笔记，避免重复写入向量。
-
-    传参说明:
-        space_id: 会话/用户隔离 ID。
-        note_id: 本系统中的笔记 ID。
-        message_id: 平台消息 ID，可为空；传入时也参与判断。
-
-    返回类型说明:
-        bool: 如果向量索引中已存在该笔记，返回 True；否则返回 False。
+    """函数功能：`vector_item_exists` 负责处理 vector item exists，服务于本文件职责：本地 Note 向量检索。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     for item in load_vector_items(space_id):
         if item.note_id == note_id:
@@ -147,17 +108,12 @@ def vector_item_exists(space_id: str, note_id: str, message_id: str | None = Non
 
 
 def add_vector_item(space_id: str, item: VectorItem) -> bool:
-    """向本地向量索引中追加一条记录。
-
-    功能说明:
-        以 note_id 和 message_id 做幂等判断。若记录已存在，则跳过写入；否则追加并保存。
-
-    传参说明:
-        space_id: 会话/用户隔离 ID。
-        item: 需要写入的向量记录。
-
-    返回类型说明:
-        bool: 成功新增时返回 True；检测到重复并跳过时返回 False。
+    """函数功能：`add_vector_item` 负责处理 add vector item，服务于本文件职责：本地 Note 向量检索。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        item: item 参数，由调用方传入，类型为 `VectorItem`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     with locked_space(space_id):
         items = load_vector_items(space_id)
@@ -171,7 +127,13 @@ def add_vector_item(space_id: str, item: VectorItem) -> bool:
 
 
 def remove_vector_item(space_id: str, note_id: str) -> bool:
-    """Remove one vector record, primarily for privacy cleanup."""
+    """函数功能：`remove_vector_item` 负责移除 vector item，服务于本文件职责：本地 Note 向量检索。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     with locked_space(space_id):
         items = load_vector_items(space_id)
         kept = [item for item in items if item.note_id != note_id]
@@ -182,18 +144,12 @@ def remove_vector_item(space_id: str, note_id: str) -> bool:
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
-    """计算两个向量之间的余弦相似度。
-
-    功能说明:
-        使用 dot(a, b) / (||a|| * ||b||) 衡量两个 embedding 的语义相似度。
-        分数越接近 1 越相似，越接近 0 越不相关。
-
-    传参说明:
-        a: 第一个向量。
-        b: 第二个向量。
-
-    返回类型说明:
-        float: 两个向量的余弦相似度分数。
+    """函数功能：`cosine_similarity` 负责处理 cosine similarity，服务于本文件职责：本地 Note 向量检索。
+    传参：
+        a: a 参数，由调用方传入，类型为 `list[float]`。
+        b: b 参数，由调用方传入，类型为 `list[float]`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
     """
     if len(a) != len(b):
         raise ValueError(f"Embedding dimensions differ: {len(a)} != {len(b)}")
@@ -216,21 +172,15 @@ def search_related(
     exclude_note_id: str | None = None,
     min_score: float | None = None,
 ) -> list[SearchResult]:
-    """在历史向量中检索与查询向量最相关的笔记。
-
-    功能说明:
-        遍历当前 space_id 下已有的全部向量记录，计算余弦相似度，按分数降序返回 top_k 条。
-        可选排除当前笔记 ID，避免新笔记和自身建立 related 关系。
-
-    传参说明:
-        space_id: 会话/用户隔离 ID。
-        query_embedding: 查询文本对应的 embedding 向量。
-        top_k: 返回的最大结果数，默认 3。
-        exclude_note_id: 需要排除的笔记 ID，可为空。
-        min_score: 最低相似度阈值，可为空；为空时不按阈值过滤。
-
-    返回类型说明:
-        list[SearchResult]: 按相似度从高到低排列的相关笔记列表。
+    """函数功能：`search_related` 负责搜索 related，服务于本文件职责：本地 Note 向量检索。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query_embedding: query embedding 参数，由调用方传入，类型为 `list[float]`。
+        top_k: top k 参数，由调用方传入，类型为 `int`，默认值为 `3`。
+        exclude_note_id: exclude note id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        min_score: min score 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[SearchResult]`，表示按条件筛选、构造或查询得到的列表。
     """
     if top_k <= 0:
         return []
@@ -269,20 +219,15 @@ def search_related_note_ids(
     exclude_note_id: str | None = None,
     min_score: float | None = None,
 ) -> list[str]:
-    """检索相关笔记并只返回 note_id 列表。
-
-    功能说明:
-        对 search_related 的轻量封装，适合直接填充 NoteMetadata.related 字段。
-
-    传参说明:
-        space_id: 会话/用户隔离 ID。
-        query_embedding: 查询文本对应的 embedding 向量。
-        top_k: 返回的最大结果数，默认 3。
-        exclude_note_id: 需要排除的笔记 ID，可为空。
-        min_score: 最低相似度阈值，可为空。
-
-    返回类型说明:
-        list[str]: 相关笔记 ID 列表。
+    """函数功能：`search_related_note_ids` 负责搜索 related note ids，服务于本文件职责：本地 Note 向量检索。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query_embedding: query embedding 参数，由调用方传入，类型为 `list[float]`。
+        top_k: top k 参数，由调用方传入，类型为 `int`，默认值为 `3`。
+        exclude_note_id: exclude note id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        min_score: min score 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     return [
         result.note_id

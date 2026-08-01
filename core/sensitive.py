@@ -1,8 +1,9 @@
-"""Local high-confidence sensitive-content detection and redaction.
+"""文件作用：敏感信息识别和日志脱敏。
 
-This module must stay deterministic and network-free because it runs before
-WAL persistence, classification, embeddings, or any other external request.
+项目关系：本文件依赖 无直接本地模块依赖；被 `agent.query_agent`、`bot.feishu_bot`、`core.llm_client`、`core.observability` 等 17 个模块。
 """
+
+
 
 from __future__ import annotations
 
@@ -56,6 +57,10 @@ _IDENTIFIER_RE = re.compile(
 
 @dataclass(frozen=True)
 class SensitiveAssessment:
+    """类功能：`SensitiveAssessment` 封装与“敏感信息识别和日志脱敏”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     sensitive: bool
     category: str | None = None
     reason: str | None = None
@@ -63,9 +68,11 @@ class SensitiveAssessment:
 
 
 def assess_sensitive_text(text: str) -> SensitiveAssessment:
-    """负责“评估sensitive文本”。
-
-    该函数是 `core.sensitive` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`assess_sensitive_text` 负责处理 assess sensitive text，服务于本文件职责：敏感信息识别和日志脱敏。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `SensitiveAssessment` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     value = str(text or "")
     if _PRIVATE_KEY_RE.search(value):
@@ -92,26 +99,32 @@ def assess_sensitive_text(text: str) -> SensitiveAssessment:
 
 
 def contains_sensitive_data(text: str) -> bool:
-    """负责“containssensitive数据”。
-
-    该函数是 `core.sensitive` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`contains_sensitive_data` 负责处理 contains sensitive data，服务于本文件职责：敏感信息识别和日志脱敏。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     return assess_sensitive_text(text).sensitive
 
 
 def mentions_sensitive_topic(text: str) -> bool:
-    """负责“mentionssensitivetopic”。
-
-    该函数是 `core.sensitive` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mentions_sensitive_topic` 负责处理 mentions sensitive topic，服务于本文件职责：敏感信息识别和日志脱敏。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     compact = str(text or "").casefold()
     return any(keyword in compact for keyword in SENSITIVE_TOPIC_KEYWORDS)
 
 
 def redact_sensitive_text(text: str) -> str:
-    """负责“redactsensitive文本”。
-
-    该函数是 `core.sensitive` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`redact_sensitive_text` 负责脱敏 sensitive text，服务于本文件职责：敏感信息识别和日志脱敏。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     value = str(text or "")
     value = _PRIVATE_KEY_RE.sub("[PRIVATE_KEY_REDACTED]", value)
@@ -128,9 +141,12 @@ def redact_sensitive_text(text: str) -> str:
 
 
 def safe_text_preview(text: str, limit: int = 80) -> str:
-    """负责“安全文本preview”。
-
-    该函数是 `core.sensitive` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`safe_text_preview` 负责处理 safe text preview，服务于本文件职责：敏感信息识别和日志脱敏。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `80`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     if assess_sensitive_text(text).blocks_storage:
         return "[sensitive content redacted]"

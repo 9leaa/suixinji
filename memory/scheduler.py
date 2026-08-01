@@ -1,4 +1,9 @@
-"""Scheduled Memory V2 consolidation entry points."""
+"""文件作用：Memory 定时作业。
+
+项目关系：本文件依赖 `core.file_lock`、`memory.consolidator`、`memory.expiry`、`memory.repository` 等 5 个模块；被 `apps.handlers`、`apps.scheduler`、`bot.feishu_bot`、`memory.service`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -26,9 +31,11 @@ DEFAULT_MEMORY_SCHEDULER_INTERVAL_SECONDS = 3600
 
 
 def list_memory_space_ids(notes_dir: Path | None = None) -> list[str]:
-    """负责“列出记忆空间标识列表”。
-
-    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_memory_space_ids` 负责列出 memory space ids，服务于本文件职责：Memory 定时作业。
+    传参：
+        notes_dir: notes dir 参数，由调用方传入，类型为 `Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     if notes_dir is None:
         return list_note_space_ids()
@@ -39,9 +46,12 @@ def list_memory_space_ids(notes_dir: Path | None = None) -> list[str]:
 
 
 def run_memory_consolidation(space_id: str, cadence: str) -> dict[str, Any]:
-    """负责“运行记忆consolidation”。
-
-    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run_memory_consolidation` 负责运行 memory consolidation，服务于本文件职责：Memory 定时作业。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        cadence: cadence 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     cadence = cadence.strip().lower()
     if cadence == "daily":
@@ -54,9 +64,13 @@ def run_memory_consolidation(space_id: str, cadence: str) -> dict[str, Any]:
 
 
 def run_memory_consolidation_once(cadence: str, *, space_ids: list[str] | None = None, today: date | None = None) -> dict[str, Any]:
-    """负责“运行记忆consolidationonce”。
-
-    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run_memory_consolidation_once` 负责运行 memory consolidation once，服务于本文件职责：Memory 定时作业。
+    传参：
+        cadence: cadence 参数，由调用方传入，类型为 `str`。
+        space_ids: space ids 参数，由调用方传入，类型为 `list[str] | None`，默认值为 `None`。
+        today: today 参数，由调用方传入，类型为 `date | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     current_day = today or date.today()
     period_key = consolidation_period_key(cadence, current_day)
@@ -143,17 +157,21 @@ def run_memory_consolidation_once(cadence: str, *, space_ids: list[str] | None =
 
 
 def _report_has_failures(report: dict[str, Any]) -> bool:
-    """负责“报告是否包含failures”。
-
-    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_report_has_failures` 负责判断是否包含 failures，服务于本文件职责：Memory 定时作业。
+    传参：
+        report: report 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     return any(item.get("status") == "failed" for item in report.get("results", []))
 
 
 def _report_is_complete(report: dict[str, Any]) -> bool:
-    """负责“报告是否为完成”。
-
-    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_report_is_complete` 负责判断是否为 complete，服务于本文件职责：Memory 定时作业。
+    传参：
+        report: report 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     results = report.get("results", [])
     if not results:
@@ -162,9 +180,12 @@ def _report_is_complete(report: dict[str, Any]) -> bool:
 
 
 def due_cadences(today: date, last_run_dates: dict[str, str]) -> list[str]:
-    """负责“duecadences”。
-
-    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`due_cadences` 负责处理 due cadences，服务于本文件职责：Memory 定时作业。
+    传参：
+        today: today 参数，由调用方传入，类型为 `date`。
+        last_run_dates: last run dates 参数，由调用方传入，类型为 `dict[str, str]`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     due = []
     today_key = today.isoformat()
@@ -178,9 +199,12 @@ def due_cadences(today: date, last_run_dates: dict[str, str]) -> list[str]:
 
 
 def run_memory_scheduler_tick(last_run_dates: dict[str, str] | None = None, *, today: date | None = None) -> dict[str, Any]:
-    """负责“运行记忆schedulertick”。
-
-    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run_memory_scheduler_tick` 负责运行 memory scheduler tick，服务于本文件职责：Memory 定时作业。
+    传参：
+        last_run_dates: last run dates 参数，由调用方传入，类型为 `dict[str, str] | None`，默认值为 `None`。
+        today: today 参数，由调用方传入，类型为 `date | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     state = last_run_dates if last_run_dates is not None else {}
     current_day = today or date.today()
@@ -210,16 +234,20 @@ def run_memory_scheduler_tick(last_run_dates: dict[str, str] | None = None, *, t
 
 
 def start_memory_scheduler(interval_seconds: int = DEFAULT_MEMORY_SCHEDULER_INTERVAL_SECONDS) -> threading.Thread:
-    """负责“启动记忆scheduler”。
-
-    该函数是 `memory.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`start_memory_scheduler` 负责启动 memory scheduler，服务于本文件职责：Memory 定时作业。
+    传参：
+        interval_seconds: interval seconds 参数，由调用方传入，类型为 `int`，默认值为 `DEFAULT_MEMORY_SCHEDULER_INTERVAL_SECONDS`。
+    返回结果说明：
+        返回 `threading.Thread` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     last_run_dates: dict[str, str] = {}
 
     def _loop() -> None:
-        """负责“loop”。
-
-        该函数是 `memory.scheduler` 中的`start_memory_scheduler` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_loop` 负责处理 loop，服务于本文件职责：Memory 定时作业。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         while True:
             try:

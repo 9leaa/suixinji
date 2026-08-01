@@ -1,4 +1,9 @@
-"""Run a no-network-LLM Hook lifecycle smoke test and clean up its data."""
+"""文件作用：分布式 Hook 冒烟。
+
+项目关系：本文件依赖 `agent.query_agent`、`infrastructure.database`、`infrastructure.redis_client`、`infrastructure.redis_keys` 等 5 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -20,7 +25,12 @@ from infrastructure.schema import AgentRun, AgentStep, LlmUsage, Space, User
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：分布式 Hook 冒烟。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id = "hook-smoke-" + uuid.uuid4().hex
     query_agent.memory_search = lambda *args, **kwargs: [
         {"id": "m-smoke", "content": "用户喜欢茶", "memory_type": "preference", "sources": []}

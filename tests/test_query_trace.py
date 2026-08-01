@@ -1,3 +1,9 @@
+"""文件作用：查询 Trace、来源及展示裁剪。
+
+项目关系：本文件依赖 `agent`、`agent.query_planner`、`memory.trace`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 import json
 
 from agent import query_agent
@@ -6,7 +12,12 @@ from memory.trace import latest_trace
 
 
 def test_sources_render_only_final_selected_evidence():
-    """验证“sources渲染onlyfinalselectedevidence”场景的预期行为与回归边界。"""
+    """函数功能：`test_sources_render_only_final_selected_evidence` 负责验证 sources render only final selected evidence 场景，服务于本文件职责：查询 Trace、来源及展示裁剪。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     selected = [
         {
             "id": "mem-garden",
@@ -30,7 +41,12 @@ def test_sources_render_only_final_selected_evidence():
 
 
 def test_sources_limit_memory_and_notes_independently():
-    """验证“sources限制记忆and笔记列表independently”场景的预期行为与回归边界。"""
+    """函数功能：`test_sources_limit_memory_and_notes_independently` 负责验证 sources limit memory and notes independently 场景，服务于本文件职责：查询 Trace、来源及展示裁剪。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     memories = [
         {"id": f"mem-{index}", "memory_type": "fact", "sources": []}
         for index in range(6)
@@ -50,7 +66,12 @@ def test_sources_limit_memory_and_notes_independently():
 
 
 def test_complex_query_sources_follow_fused_final_evidence(monkeypatch):
-    """验证“complex查询sourcesfollowfusedfinalevidence”场景的预期行为与回归边界。"""
+    """函数功能：`test_complex_query_sources_follow_fused_final_evidence` 负责验证 complex query sources follow fused final evidence 场景，服务于本文件职责：查询 Trace、来源及展示裁剪。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     question = "我喜欢喝什么，我找什么工作，什么时候去的植物园？"
     preferences = [
         {
@@ -106,7 +127,12 @@ def test_complex_query_sources_follow_fused_final_evidence(monkeypatch):
 
 
 def test_complex_query_augments_each_clause_with_note_evidence(monkeypatch):
-    """验证“complex查询augmentseachclausewith笔记evidence”场景的预期行为与回归边界。"""
+    """函数功能：`test_complex_query_augments_each_clause_with_note_evidence` 负责验证 complex query augments each clause with note evidence 场景，服务于本文件职责：查询 Trace、来源及展示裁剪。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     question = "我喜欢喝什么？我什么时候去的植物园？"
     plan = QueryPlan(
         complexity="complex",
@@ -128,7 +154,15 @@ def test_complex_query_augments_each_clause_with_note_evidence(monkeypatch):
     calls: list[tuple[str, str]] = []
 
     def fake_run_tool(space_id, action, args, **kwargs):
-        """验证“fake运行工具”场景的预期行为与回归边界。"""
+        """函数功能：`fake_run_tool` 负责运行 tool，服务于本文件职责：查询 Trace、来源及展示裁剪。
+        传参：
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据。
+            action: action 参数，由调用方传入。
+            args: args 参数，由调用方传入。
+            **kwargs: kwargs 参数，由调用方传入。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         calls.append((action, args["query"]))
         if action == "memory_note_fallback":
             return notes[args["query"]]
@@ -160,7 +194,12 @@ def test_complex_query_augments_each_clause_with_note_evidence(monkeypatch):
 
 
 def test_answer_question_writes_query_trace_with_safe_steps(monkeypatch):
-    """验证“answerquestionwrites查询追踪with安全steps”场景的预期行为与回归边界。"""
+    """函数功能：`test_answer_question_writes_query_trace_with_safe_steps` 负责验证 answer question writes query trace with safe steps 场景，服务于本文件职责：查询 Trace、来源及展示裁剪。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     decisions = iter(
         [
             {"thought": "查长期记忆", "action": "memory_search", "args": {"query": "我喜欢什么", "memory_type": "preference"}},
@@ -199,9 +238,20 @@ def test_answer_question_writes_query_trace_with_safe_steps(monkeypatch):
 
 
 def test_answer_question_falls_back_when_react_llm_fails_after_prefetch(monkeypatch):
-    """验证“answerquestionfallsbackwhenreactLLMfails后置prefetch”场景的预期行为与回归边界。"""
+    """函数功能：`test_answer_question_falls_back_when_react_llm_fails_after_prefetch` 负责验证 answer question falls back when react llm fails after prefetch 场景，服务于本文件职责：查询 Trace、来源及展示裁剪。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     def fail_complete_json(system_prompt, user_prompt):
-        """验证“失败完成JSON”场景的预期行为与回归边界。"""
+        """函数功能：`fail_complete_json` 负责完成 json，服务于本文件职责：查询 Trace、来源及展示裁剪。
+        传参：
+            system_prompt: system prompt 参数，由调用方传入。
+            user_prompt: user prompt 参数，由调用方传入。
+        返回结果说明：
+            无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         raise RuntimeError("LLM returned no message content")
 
     monkeypatch.setattr(query_agent, "complete_json", fail_complete_json)

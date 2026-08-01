@@ -1,4 +1,9 @@
-"""Add indexes for bounded note and memory query paths."""
+"""文件作用：查询性能迁移。
+
+项目关系：本文件依赖 `alembic`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -22,9 +27,11 @@ INDEXES = (
 
 
 def upgrade() -> None:
-    """负责“upgrade”。
-
-    该函数是 `alembic.versions.20260718_0004_query_performance` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`upgrade` 负责处理 upgrade，服务于本文件职责：查询性能迁移。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     bind = op.get_bind()
     inspector = sa.inspect(bind)
@@ -38,9 +45,11 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """负责“downgrade”。
-
-    该函数是 `alembic.versions.20260718_0004_query_performance` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`downgrade` 负责处理 downgrade，服务于本文件职责：查询性能迁移。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     bind = op.get_bind()
     inspector = sa.inspect(bind)

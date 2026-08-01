@@ -1,4 +1,9 @@
-"""Central runtime settings for Suixinji."""
+"""文件作用：全局配置和 feature flags。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 `agent.hooks.idempotency`、`agent.hooks.llm_usage`、`agent.hooks.manager`、`agent.hooks.rate_limit` 等 58 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -11,9 +16,12 @@ load_dotenv()
 
 
 def _int_env(name: str, default: int) -> int:
-    """负责“intenv”。
-
-    该函数是 `core.settings` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_int_env` 负责处理 int env，服务于本文件职责：全局配置和 feature flags。
+    传参：
+        name: name 参数，由调用方传入，类型为 `str`。
+        default: default 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     value = os.getenv(name)
     if value is None or not value.strip():
@@ -22,9 +30,12 @@ def _int_env(name: str, default: int) -> int:
 
 
 def _float_env(name: str, default: float) -> float:
-    """负责“floatenv”。
-
-    该函数是 `core.settings` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_float_env` 负责处理 float env，服务于本文件职责：全局配置和 feature flags。
+    传参：
+        name: name 参数，由调用方传入，类型为 `str`。
+        default: default 参数，由调用方传入，类型为 `float`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
     """
     value = os.getenv(name)
     if value is None or not value.strip():
@@ -33,9 +44,12 @@ def _float_env(name: str, default: float) -> float:
 
 
 def _bool_env(name: str, default: bool) -> bool:
-    """负责“boolenv”。
-
-    该函数是 `core.settings` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_bool_env` 负责处理 bool env，服务于本文件职责：全局配置和 feature flags。
+    传参：
+        name: name 参数，由调用方传入，类型为 `str`。
+        default: default 参数，由调用方传入，类型为 `bool`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     value = os.getenv(name)
     if value is None or not value.strip():
@@ -103,8 +117,7 @@ MEMORY_TRIGRAM_ENABLED = _bool_env("SUIXINJI_MEMORY_TRIGRAM_ENABLED", False)
 MEMORY_UNIFIED_RERANK_ENABLED = _bool_env("SUIXINJI_MEMORY_UNIFIED_RERANK_ENABLED", False)
 MEMORY_CLAUSE_EXTRACTION_ENABLED = _bool_env("SUIXINJI_MEMORY_CLAUSE_EXTRACTION_ENABLED", False)
 MONTHLY_SEMANTIC_CONSOLIDATION_ENABLED = _bool_env("SUIXINJI_MONTHLY_SEMANTIC_CONSOLIDATION_ENABLED", False)
-# Memory V3 ships behind independent switches so a deployment can observe the
-# new interpretation path before it is allowed to mutate durable memory.
+# Memory V3 放在独立开关后面，便于部署先观察新解释路径，再允许它修改持久化记忆。
 MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED = _bool_env("SUIXINJI_MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED", False)
 MEMORY_CANONICAL_KEY_V3_ENABLED = _bool_env("SUIXINJI_MEMORY_CANONICAL_KEY_V3_ENABLED", False)
 MEMORY_RELATION_GUARD_V3_ENABLED = _bool_env("SUIXINJI_MEMORY_RELATION_GUARD_V3_ENABLED", False)
@@ -131,9 +144,11 @@ API_PORT = _int_env("SUIXINJI_API_PORT", 8000)
 
 
 def database_pool_budget(role: str | None = None) -> tuple[int, int]:
-    """负责“databasepoolbudget”。
-
-    该函数是 `core.settings` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`database_pool_budget` 负责处理 database pool budget，服务于本文件职责：全局配置和 feature flags。
+    传参：
+        role: role 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `tuple[int, int]`，表示由多个相关值组成的结果。
     """
     resolved = (role or PROCESS_ROLE or "default").lower()
     if resolved == "worker-heartbeat":

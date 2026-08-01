@@ -1,10 +1,21 @@
+"""文件作用：Stage 6 混合检索和性能。
+
+项目关系：本文件依赖 `memory.extractor`、`memory.models`、`memory.repository`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from memory.extractor import extract_candidates, may_contain_memory
 from memory.models import memory_key_for
 from memory.repository import hybrid_adjudication_candidates, insert_memory
 
 
 def test_memory_key_v2_keeps_preference_polarity_in_one_slot():
-    """验证“记忆键v2keeps偏好polarityoneslot”场景的预期行为与回归边界。"""
+    """函数功能：`test_memory_key_v2_keeps_preference_polarity_in_one_slot` 负责验证 memory key v2 keeps preference polarity in one slot 场景，服务于本文件职责：Stage 6 混合检索和性能。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     positive = memory_key_for("preference", subject="用户", predicate="preference", object_value="牛奶", content="用户喜欢喝牛奶")
     negative = memory_key_for("preference", subject="用户", predicate="preference", object_value="牛奶", content="用户讨厌喝牛奶")
 
@@ -13,7 +24,12 @@ def test_memory_key_v2_keeps_preference_polarity_in_one_slot():
 
 
 def test_memory_key_v2_splits_open_semantic_facts_by_topic():
-    """验证“记忆键v2splits打开semanticfactsbytopic”场景的预期行为与回归边界。"""
+    """函数功能：`test_memory_key_v2_splits_open_semantic_facts_by_topic` 负责验证 memory key v2 splits open semantic facts by topic 场景，服务于本文件职责：Stage 6 混合检索和性能。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     cat = memory_key_for("semantic", subject="用户", predicate="fact", object_value="猫", content="用户养了一只猫")
     guitar = memory_key_for("semantic", subject="用户", predicate="fact", object_value="吉他", content="用户会弹吉他")
 
@@ -23,7 +39,12 @@ def test_memory_key_v2_splits_open_semantic_facts_by_topic():
 
 
 def test_rules_extractor_supports_multiple_candidates_for_one_note():
-    """验证“rulesextractorsupportsmultiplecandidatesforone笔记”场景的预期行为与回归边界。"""
+    """函数功能：`test_rules_extractor_supports_multiple_candidates_for_one_note` 负责验证 rules extractor supports multiple candidates for one note 场景，服务于本文件职责：Stage 6 混合检索和性能。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     candidates = extract_candidates("note-multi", "今天参加了日语交流会，发现我更喜欢小班练习，下周要继续报名。")
     types = {candidate.memory_type for candidate in candidates}
 
@@ -31,14 +52,24 @@ def test_rules_extractor_supports_multiple_candidates_for_one_note():
 
 
 def test_may_contain_memory_is_lightweight_gate():
-    """验证“maycontain记忆是否为lightweightgate”场景的预期行为与回归边界。"""
+    """函数功能：`test_may_contain_memory_is_lightweight_gate` 负责验证 may contain memory is lightweight gate 场景，服务于本文件职责：Stage 6 混合检索和性能。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     assert may_contain_memory("你好") is False
     assert may_contain_memory("我讨厌喝牛奶") is True
     assert may_contain_memory("今天参加了日语交流会") is True
 
 
 def test_hybrid_adjudication_exact_key_survives_large_similar_set():
-    """验证“混合adjudicationexact键surviveslargesimilar设置”场景的预期行为与回归边界。"""
+    """函数功能：`test_hybrid_adjudication_exact_key_survives_large_similar_set` 负责验证 hybrid adjudication exact key survives large similar set 场景，服务于本文件职责：Stage 6 混合检索和性能。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     target = None
     for index in range(130):
         created = insert_memory(

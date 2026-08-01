@@ -1,3 +1,9 @@
+"""文件作用：本地 delivery reservation、重复和过期恢复。
+
+项目关系：本文件依赖 `runtime`、`runtime.delivery_store`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 import json
 from datetime import datetime, timedelta
 
@@ -16,14 +22,26 @@ from runtime.delivery_store import (
 
 
 def isolate_delivery_store(monkeypatch, tmp_path):
-    """验证“isolate投递存储”场景的预期行为与回归边界。"""
+    """函数功能：`isolate_delivery_store` 负责处理 isolate delivery store，服务于本文件职责：本地 delivery reservation、重复和过期恢复。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+        tmp_path: tmp path 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(delivery_store, "DATA_DIR", tmp_path)
     monkeypatch.setattr(delivery_store, "DELIVERY_DIR", tmp_path / "deliveries")
     monkeypatch.setattr(delivery_store, "DELIVERY_PATH", tmp_path / "deliveries" / "index.json")
 
 
 def test_delivery_key_can_only_be_reserved_once_until_terminal_state(monkeypatch, tmp_path):
-    """验证“投递键canonlybereservedonceuntilterminal状态”场景的预期行为与回归边界。"""
+    """函数功能：`test_delivery_key_can_only_be_reserved_once_until_terminal_state` 负责验证 delivery key can only be reserved once until terminal state 场景，服务于本文件职责：本地 delivery reservation、重复和过期恢复。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+        tmp_path: tmp path 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     isolate_delivery_store(monkeypatch, tmp_path)
 
     first = reserve_delivery("query:s:m1", delivery_type="query", space_id="s", message_id="m1")
@@ -34,7 +52,13 @@ def test_delivery_key_can_only_be_reserved_once_until_terminal_state(monkeypatch
 
 
 def test_sent_and_unknown_are_not_reserved_again(monkeypatch, tmp_path):
-    """验证“sentandunknownarenotreservedagain”场景的预期行为与回归边界。"""
+    """函数功能：`test_sent_and_unknown_are_not_reserved_again` 负责验证 sent and unknown are not reserved again 场景，服务于本文件职责：本地 delivery reservation、重复和过期恢复。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+        tmp_path: tmp path 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     isolate_delivery_store(monkeypatch, tmp_path)
 
     assert reserve_delivery("k1", delivery_type="query", space_id="s") is not None
@@ -49,7 +73,13 @@ def test_sent_and_unknown_are_not_reserved_again(monkeypatch, tmp_path):
 
 
 def test_failed_delivery_can_be_reserved_again(monkeypatch, tmp_path):
-    """验证“failed投递canbereservedagain”场景的预期行为与回归边界。"""
+    """函数功能：`test_failed_delivery_can_be_reserved_again` 负责验证 failed delivery can be reserved again 场景，服务于本文件职责：本地 delivery reservation、重复和过期恢复。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+        tmp_path: tmp path 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     isolate_delivery_store(monkeypatch, tmp_path)
 
     assert reserve_delivery("k1", delivery_type="query", space_id="s") is not None
@@ -60,7 +90,13 @@ def test_failed_delivery_can_be_reserved_again(monkeypatch, tmp_path):
 
 
 def test_expired_reserved_delivery_can_be_reserved_again(monkeypatch, tmp_path):
-    """验证“expiredreserved投递canbereservedagain”场景的预期行为与回归边界。"""
+    """函数功能：`test_expired_reserved_delivery_can_be_reserved_again` 负责验证 expired reserved delivery can be reserved again 场景，服务于本文件职责：本地 delivery reservation、重复和过期恢复。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+        tmp_path: tmp path 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     isolate_delivery_store(monkeypatch, tmp_path)
 
     first = reserve_delivery("k1", delivery_type="query", space_id="s")
@@ -80,7 +116,13 @@ def test_expired_reserved_delivery_can_be_reserved_again(monkeypatch, tmp_path):
 
 
 def test_recover_stale_reserved_deliveries_marks_expired_reserved_as_failed(monkeypatch, tmp_path):
-    """验证“恢复stalereserveddeliveriesmarksexpiredreservedasfailed”场景的预期行为与回归边界。"""
+    """函数功能：`test_recover_stale_reserved_deliveries_marks_expired_reserved_as_failed` 负责验证 recover stale reserved deliveries marks expired reserved as failed 场景，服务于本文件职责：本地 delivery reservation、重复和过期恢复。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+        tmp_path: tmp path 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     isolate_delivery_store(monkeypatch, tmp_path)
 
     reserve_delivery("k1", delivery_type="query", space_id="s")
@@ -97,7 +139,13 @@ def test_recover_stale_reserved_deliveries_marks_expired_reserved_as_failed(monk
 
 
 def test_delivery_stops_after_max_attempts(monkeypatch, tmp_path):
-    """验证“投递stops后置maxattempts”场景的预期行为与回归边界。"""
+    """函数功能：`test_delivery_stops_after_max_attempts` 负责验证 delivery stops after max attempts 场景，服务于本文件职责：本地 delivery reservation、重复和过期恢复。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+        tmp_path: tmp path 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     isolate_delivery_store(monkeypatch, tmp_path)
     monkeypatch.setattr(delivery_store, "DELIVERY_MAX_ATTEMPTS", 3)
 
@@ -111,7 +159,14 @@ def test_delivery_stops_after_max_attempts(monkeypatch, tmp_path):
 
 
 def _patch_delivery(tmp_path, key, **updates):
-    """验证“patch投递”场景的预期行为与回归边界。"""
+    """函数功能：`_patch_delivery` 负责处理 patch delivery，服务于本文件职责：本地 delivery reservation、重复和过期恢复。
+    传参：
+        tmp_path: tmp path 参数，由调用方传入。
+        key: key 参数，由调用方传入。
+        **updates: updates 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     path = tmp_path / "deliveries" / "index.json"
     raw = json.loads(path.read_text(encoding="utf-8"))
     raw[key].update(updates)

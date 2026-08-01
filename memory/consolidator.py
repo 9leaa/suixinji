@@ -1,4 +1,9 @@
-"""Consolidate extracted candidates into versioned memories."""
+"""文件作用：单候选编排。
+
+项目关系：本文件依赖 `core`、`core.settings`、`memory.adjudicator`、`memory.advisory` 等 13 个模块；被 `memory.scheduler`、`memory.service`、`tests.test_memory_consolidation`、`tests.test_memory_consolidator_resilience` 等 6 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -24,9 +29,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _is_processing_stale(updated_at: str | None) -> bool:
-    """负责“是否为processingstale”。
-
-    该函数是 `memory.consolidator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_is_processing_stale` 负责判断是否为 processing stale，服务于本文件职责：单候选编排。
+    传参：
+        updated_at: updated at 参数，由调用方传入，类型为 `str | None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if not updated_at:
         return True
@@ -40,9 +47,14 @@ def _is_processing_stale(updated_at: str | None) -> bool:
 
 
 def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidate, *, trace: dict[str, Any] | None = None) -> dict[str, Any]:
-    """负责“整合候选”。
-
-    该函数是 `memory.consolidator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`consolidate_candidate` 负责合并长期记忆 candidate，服务于本文件职责：单候选编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        trace: trace 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     add_step(
         trace,
@@ -98,7 +110,13 @@ def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidat
 
 
 def process_unextracted_notes(space_id: str, *, limit: int = 100) -> dict[str, Any]:
-    """Daily consolidation pass: recover notes without completed extraction state."""
+    """函数功能：`process_unextracted_notes` 负责处理 unextracted notes，服务于本文件职责：单候选编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `100`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
+    """
     from memory.service import process_note_memory
 
     processed = []
@@ -151,7 +169,13 @@ def process_unextracted_notes(space_id: str, *, limit: int = 100) -> dict[str, A
 
 
 def merge_duplicate_episodic(space_id: str, *, min_score: float = 0.72) -> dict[str, Any]:
-    """Weekly consolidation pass: merge near-duplicate episodic memories by preserving sources."""
+    """函数功能：`merge_duplicate_episodic` 负责合并 duplicate episodic，服务于本文件职责：单候选编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        min_score: min score 参数，由调用方传入，类型为 `float`，默认值为 `0.72`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
+    """
     episodic = list_memories(space_id, status="active", memory_type="episodic", limit=100)
     merged: list[dict[str, Any]] = []
     consumed: set[str] = set()
@@ -173,13 +197,18 @@ def merge_duplicate_episodic(space_id: str, *, min_score: float = 0.72) -> dict[
 
 
 def generate_stable_semantic(space_id: str, *, min_sources: int = 3) -> dict[str, Any]:
-    """Synthesize a stable semantic candidate from a generic episodic cluster."""
+    """函数功能：`generate_stable_semantic` 负责生成 stable semantic，服务于本文件职责：单候选编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        min_sources: min sources 参数，由调用方传入，类型为 `int`，默认值为 `3`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
+    """
     episodic = list_memories(space_id, status="active", memory_type="episodic", limit=100)
     if len(episodic) < min_sources:
         return {"space_id": space_id, "created": False, "reason": "not_enough_sources", "source_count": len(episodic)}
 
-    # Keep consolidation domain-neutral: the cluster is formed from structured
-    # predicates when available, otherwise from the current episodic stream.
+    # consolidation 保持领域中立：有结构化 predicate 时按其成簇，否则从当前 episodic 流中成簇。
     grouped: dict[str, list[Any]] = {}
     for memory in episodic:
         group_key = memory.predicate or "episodic_stream"
@@ -222,11 +251,12 @@ def generate_stable_semantic(space_id: str, *, min_sources: int = 3) -> dict[str
 
 
 def run_monthly_semantic_consolidation(space_id: str, *, min_cluster_size: int = 3) -> dict[str, Any]:
-    """Monthly semantic consolidation with deterministic safety gates.
-
-    This pass is intentionally conservative: it groups active Memory by stable
-    semantic keys and only creates a summarized semantic Memory when sources are
-    sufficient and polarity/scope do not conflict.
+    """函数功能：`run_monthly_semantic_consolidation` 负责运行 monthly semantic consolidation，服务于本文件职责：单候选编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        min_cluster_size: min cluster size 参数，由调用方传入，类型为 `int`，默认值为 `3`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     memories = list_memories(space_id, status="active", limit=500)
     groups: dict[tuple[str, str], list[Any]] = {}

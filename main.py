@@ -1,4 +1,9 @@
-"""Application entry point for local Suixinji ingestion."""
+"""文件作用：本地命令行记录入口。
+
+项目关系：本文件依赖 `core.wal`、`core.worker`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 
 from __future__ import annotations
@@ -14,9 +19,12 @@ DEFAULT_SPACE_ID = "p_local_demo"
 
 
 def ingest_local_message(text: str, space_id: str = DEFAULT_SPACE_ID) -> None:
-    """负责“接收写入local消息”。
-
-    该函数是 `main` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`ingest_local_message` 负责处理 ingest local message，服务于本文件职责：本地命令行记录入口。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`，默认值为 `DEFAULT_SPACE_ID`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     message_id = f"local_{int(time.time() * 1000)}"
 
@@ -42,7 +50,12 @@ def ingest_local_message(text: str, space_id: str = DEFAULT_SPACE_ID) -> None:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：本地命令行记录入口。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     parser = argparse.ArgumentParser(description="随心记 Agent 本地模拟入口")
     parser.add_argument("text", help="要记录的一句话")
     parser.add_argument("--space-id", default=DEFAULT_SPACE_ID)

@@ -1,4 +1,9 @@
-"""Reconcile automatic summary delivery state with subscription state."""
+"""文件作用：总结发送对账。
+
+项目关系：本文件依赖 `core.observability`、`core.settings`、`runtime.delivery_store`、`summary.subscription`；被 `summary.scheduler`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -18,7 +23,14 @@ from summary.subscription import get_summary_subscription, mark_summary_sent
 
 
 def reconcile_auto_summary_delivery(space_id: str, range_key: str, sent_date: str) -> bool:
-    """Return True when scheduler should skip generating a new auto summary."""
+    """函数功能：`reconcile_auto_summary_delivery` 负责对账 auto summary delivery，服务于本文件职责：总结发送对账。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        range_key: range key 参数，由调用方传入，类型为 `str`。
+        sent_date: sent date 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     delivery_key = auto_summary_key(space_id, range_key, sent_date)
     delivery = get_delivery(delivery_key)
     if delivery is None:

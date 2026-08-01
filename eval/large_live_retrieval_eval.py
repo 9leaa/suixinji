@@ -1,11 +1,9 @@
-"""Generate and run a 1,000-case live retrieval evaluation.
+"""文件作用：大规模真实检索评测。
 
-The corpus is synthetic but intentionally multi-domain and mixed-language.
-Memory questions are type-aware and every expected answer is explicitly stored;
-a fresh PostgreSQL space is used for every run.  Retrieval cases use the real
-embedding endpoint; a 50-case complex subset also uses the real configured
-LLM.  The default run removes the temporary space after writing the report.
+项目关系：本文件依赖 `agent`、`agent.query_planner`、`core`、`core.config` 等 13 个模块；被 暂无静态导入方或仅作为入口脚本执行。
 """
+
+
 
 from __future__ import annotations
 
@@ -118,9 +116,11 @@ FAMILIES = [
 
 
 def _atoms() -> list[dict[str, Any]]:
-    """负责“atoms”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_atoms` 负责处理 atoms，服务于本文件职责：大规模真实检索评测。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     rows: list[dict[str, Any]] = []
     for family, items in FAMILIES:
@@ -148,9 +148,11 @@ def _atoms() -> list[dict[str, Any]]:
 
 
 def _generate_dataset() -> dict[str, Any]:
-    """负责“生成dataset”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_generate_dataset` 负责生成 dataset，服务于本文件职责：大规模真实检索评测。
+    传参：
+        无。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     atoms = _atoms()
     notes = []
@@ -241,7 +243,7 @@ def _generate_dataset() -> dict[str, Any]:
                 "expected_polarity": atom["polarity"] if atom["memory_type"] == "preference" else None,
             })
 
-    # Cross-topic evidence cases: 25 Note and 25 Memory multi-hop cases.
+    # 跨主题证据案例：25 个 Note 多跳案例和 25 个 Memory 多跳案例。
     for index in range(25):
         left, right = atoms[index], atoms[index + 25]
         cases.append({"case_id": f"note_pair_{index:02d}", "kind": "note", "query": f"比较{left['label']}和{right['label']}的记录，并总结它们的共同点", "expected_ids": [f"n_{left['key']}", f"n_{right['key']}"], "query_style": "multi_topic", "complex": True})
@@ -272,25 +274,33 @@ def _generate_dataset() -> dict[str, Any]:
 
 
 def _now(offset: int = 0) -> str:
-    """负责“now”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_now` 负责获取当前时间，服务于本文件职责：大规模真实检索评测。
+    传参：
+        offset: 偏移量，用于分页或定位，类型为 `int`，默认值为 `0`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return (datetime.now().astimezone() - timedelta(seconds=offset)).isoformat()
 
 
 def _note_text(note: dict[str, Any]) -> str:
-    """负责“笔记文本”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_note_text` 负责处理 note text，服务于本文件职责：大规模真实检索评测。
+    传参：
+        note: note 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return "\n".join(str(value) for value in (note["title"], note["type"], " ".join(note["tags"]), note["summary"], note["text"]) if value)
 
 
 def _insert_corpus(space_id: str, dataset: dict[str, Any], embed: Any) -> tuple[dict[str, str], dict[str, str]]:
-    """负责“插入corpus”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_insert_corpus` 负责处理 insert corpus，服务于本文件职责：大规模真实检索评测。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        dataset: dataset 参数，由调用方传入，类型为 `dict[str, Any]`。
+        embed: embed 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `tuple[dict[str, str], dict[str, str]]`，表示由多个相关值组成的结果。
     """
     note_ids: dict[str, str] = {}
     memory_ids: dict[str, str] = {}
@@ -307,8 +317,7 @@ def _insert_corpus(space_id: str, dataset: dict[str, Any], embed: Any) -> tuple[
         candidate = MemoryCandidate(memory_type=memory["memory_type"], content=memory["content"], importance=0.9, confidence=0.95, task_status=memory.get("task_status"), subject=memory.get("subject"), predicate=memory.get("predicate"), object_value=memory.get("object_value"), polarity=memory.get("polarity"), note_id=f"{space_id}_{memory['id']}_source", space_id=space_id, extractor_type="large_live_eval")
         record = insert_memory(space_id, candidate, source_note_id=f"{space_id}_{memory['id']}_source")
         memory_ids[memory["id"]] = record.id
-    # The evaluator is normally run with workers stopped. Complete the normal
-    # lifecycle tasks through the same claim/complete API.
+    # 评测通常在 worker 停止时运行；这里通过同一 claim/complete API 补完常规生命周期任务。
     from repositories.postgres.memory import claim_memory_vector
     for memory_id in memory_ids.values():
         deadline = time.monotonic() + 120
@@ -329,17 +338,21 @@ def _insert_corpus(space_id: str, dataset: dict[str, Any], embed: Any) -> tuple[
 
 
 def _metrics(rank_sets: list[list[int | None]]) -> dict[str, float]:
-    """负责“指标”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_metrics` 负责处理 metrics，服务于本文件职责：大规模真实检索评测。
+    传参：
+        rank_sets: rank sets 参数，由调用方传入，类型为 `list[list[int | None]]`。
+    返回结果说明：
+        返回 `dict[str, float]`，表示结构化结果、载荷或状态映射。
     """
     if not rank_sets:
         return {"cases": 0, "hit_rate": 0.0, "recall_at_1": 0.0, "recall_at_3": 0.0, "recall_at_5": 0.0, "mrr": 0.0}
 
     def recall_at(k: int) -> float:
-        """负责“recallat”。
-
-        该函数是 `eval.large_live_retrieval_eval` 中的`_metrics` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`recall_at` 负责处理 recall at，服务于本文件职责：大规模真实检索评测。
+        传参：
+            k: k 参数，由调用方传入，类型为 `int`。
+        返回结果说明：
+            返回 `float`，表示计算得到的数值结果。
         """
         return statistics.mean(sum(rank is not None and rank <= k for rank in ranks) / len(ranks) for ranks in rank_sets)
 
@@ -355,9 +368,11 @@ def _metrics(rank_sets: list[list[int | None]]) -> dict[str, float]:
 
 
 def _latency(results: list[dict[str, Any]]) -> dict[str, float]:
-    """负责“latency”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_latency` 负责处理 latency，服务于本文件职责：大规模真实检索评测。
+    传参：
+        results: results 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, float]`，表示结构化结果、载荷或状态映射。
     """
     values = sorted(float(item["latency_ms"]) for item in results)
     if not values:
@@ -366,9 +381,15 @@ def _latency(results: list[dict[str, Any]]) -> dict[str, float]:
 
 
 def _run_retrieval(space_id: str, cases: list[dict[str, Any]], note_ids: dict[str, str], memory_ids: dict[str, str], embed: Any) -> dict[str, Any]:
-    """负责“运行retrieval”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_run_retrieval` 负责运行 retrieval，服务于本文件职责：大规模真实检索评测。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+        note_ids: note ids 参数，由调用方传入，类型为 `dict[str, str]`。
+        memory_ids: memory ids 参数，由调用方传入，类型为 `dict[str, str]`。
+        embed: embed 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     note_results: list[dict[str, Any]] = []
     memory_results: list[dict[str, Any]] = []
@@ -428,9 +449,11 @@ def _run_retrieval(space_id: str, cases: list[dict[str, Any]], note_ids: dict[st
 
 
 def _run_policy(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“运行policy”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_run_policy` 负责运行 policy，服务于本文件职责：大规模真实检索评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     results = []
     for case in cases:
@@ -444,17 +467,23 @@ def _run_policy(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _run_llm(space_id: str, cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“运行LLM”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_run_llm` 负责运行 llm，服务于本文件职责：大规模真实检索评测。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     original = query_agent._complete_json_with_hooks
     calls = 0
 
     def counted(*args: Any, **kwargs: Any) -> Any:
-        """负责“counted”。
-
-        该函数是 `eval.large_live_retrieval_eval` 中的`_run_llm` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`counted` 负责处理 counted，服务于本文件职责：大规模真实检索评测。
+        传参：
+            *args: args 参数，由调用方传入，类型为 `Any`。
+            **kwargs: kwargs 参数，由调用方传入，类型为 `Any`。
+        返回结果说明：
+            返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         nonlocal calls
         calls += 1
@@ -480,18 +509,22 @@ def _run_llm(space_id: str, cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _cleanup(space_id: str) -> None:
-    """负责“cleanup”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_cleanup` 负责清理，服务于本文件职责：大规模真实检索评测。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with session_scope() as session:
         session.execute(delete(Space).where(Space.id == space_id))
 
 
 def run(*, keep: bool = False) -> dict[str, Any]:
-    """负责“运行”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run` 负责运行，服务于本文件职责：大规模真实检索评测。
+    传参：
+        keep: keep 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     dataset = _generate_dataset()
     write_json(DATASET_OUTPUT, dataset)
@@ -500,9 +533,11 @@ def run(*, keep: bool = False) -> dict[str, Any]:
     original_embed = llm_client.embed_text
 
     def cached_embed(text: str) -> list[float]:
-        """负责“cachedembed”。
-
-        该函数是 `eval.large_live_retrieval_eval` 中的`run` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`cached_embed` 负责生成向量 cached，服务于本文件职责：大规模真实检索评测。
+        传参：
+            text: 输入文本内容，类型为 `str`。
+        返回结果说明：
+            返回 `list[float]`，表示按条件筛选、构造或查询得到的列表。
         """
         key = str(text)
         if key not in cache:
@@ -526,9 +561,11 @@ def run(*, keep: bool = False) -> dict[str, Any]:
 
 
 def _print(report: dict[str, Any]) -> None:
-    """负责“print”。
-
-    该函数是 `eval.large_live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_print` 负责处理 print，服务于本文件职责：大规模真实检索评测。
+    传参：
+        report: report 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     print(json.dumps({key: report[key] for key in ("version", "space_id", "total_cases", "unique_embedding_calls", "real_embedding", "real_llm", "kept")}, ensure_ascii=False))
     print("section\tcases\thit/accuracy\tR@1\tR@3\tR@5\tMRR\tstate_acc\tpolarity_acc\tanswer_acc\tavg_ms\tp95_ms")
@@ -541,7 +578,12 @@ def _print(report: dict[str, Any]) -> None:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：大规模真实检索评测。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--keep", action="store_true")
     parser.add_argument("--output", default=None)

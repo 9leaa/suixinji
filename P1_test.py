@@ -1,3 +1,9 @@
+"""文件作用：早期 P1 手工/冒烟脚本。
+
+项目关系：本文件依赖 `core.wal`、`core.worker`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from core.wal import create_pending_record, append_message_once
 from core.worker import process_pending
 

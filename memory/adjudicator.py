@@ -1,4 +1,9 @@
-"""Adjudicate the relationship between a candidate and current memories."""
+"""文件作用：最终裁决。
+
+项目关系：本文件依赖 `core`、`core.settings`、`memory.candidate_retriever`、`memory.models` 等 6 个模块；被 `eval.eval_memory`、`eval.eval_memory_quality`、`memory.consolidator`、`memory.relation_classifier` 等 6 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -19,17 +24,23 @@ DESTRUCTIVE_ACTIONS = {"merge", "update_task", "supersede", "conflict"}
 
 
 def _combined_confidence(candidate: MemoryCandidate, relation_confidence: float) -> float:
-    """负责“combinedconfidence”。
-
-    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_combined_confidence` 负责处理 combined confidence，服务于本文件职责：最终裁决。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        relation_confidence: relation confidence 参数，由调用方传入，类型为 `float`。
+    返回结果说明：
+        返回 `float`，表示计算得到的数值结果。
     """
     return 0.6 * float(candidate.confidence) + 0.4 * relation_confidence
 
 
 def _safe_evidence(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> list[str]:
-    """负责“安全evidence”。
-
-    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_safe_evidence` 负责处理 safe evidence，服务于本文件职责：最终裁决。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memories: memories 参数，由调用方传入，类型为 `list[MemoryRecord]`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     evidence = [f"note:{candidate.note_id}"] if candidate.note_id else []
     evidence.extend(f"memory:{memory.id}" for memory in memories[:8])
@@ -44,9 +55,16 @@ def _decision(
     reason: str,
     targets: list[MemoryRecord] | None = None,
 ) -> MemoryDecision:
-    """负责“决策”。
-
-    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_decision` 负责处理 decision，服务于本文件职责：最终裁决。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        relation: relation 参数，由调用方传入，类型为 `str`。
+        action: action 参数，由调用方传入，类型为 `str`。
+        confidence: confidence 参数，由调用方传入，类型为 `float`。
+        reason: reason 参数，由调用方传入，类型为 `str`。
+        targets: targets 参数，由调用方传入，类型为 `list[MemoryRecord] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryDecision` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     target_memories = targets or []
     bounded_confidence = min(1.0, max(0.0, float(confidence)))
@@ -71,9 +89,13 @@ def _decision(
 
 
 def _shares_topic(candidate: MemoryCandidate, memory: MemoryRecord, similarity: float) -> bool:
-    """负责“sharestopic”。
-
-    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_shares_topic` 负责处理 shares topic，服务于本文件职责：最终裁决。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+        similarity: similarity 参数，由调用方传入，类型为 `float`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if candidate.effective_memory_key == memory.effective_memory_key:
         return True
@@ -107,9 +129,13 @@ def _shares_topic(candidate: MemoryCandidate, memory: MemoryRecord, similarity: 
 
 
 def _near_same(candidate: MemoryCandidate, memory: MemoryRecord, similarity: float) -> bool:
-    """负责“nearsame”。
-
-    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_near_same` 负责处理 near same，服务于本文件职责：最终裁决。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+        similarity: similarity 参数，由调用方传入，类型为 `float`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     left = candidate.normalized_content
     right = memory.normalized_content
@@ -121,12 +147,14 @@ def _near_same(candidate: MemoryCandidate, memory: MemoryRecord, similarity: flo
         if candidate.memory_type == "preference":
             candidate_signature = preference_policy.preference_signature(candidate.content)
             memory_signature = preference_policy.preference_signature(memory.content)
+            #Preference：极性、范围、限定词必须相同；
             return (
                 candidate_signature.polarity == memory_signature.polarity
                 and candidate_signature.qualifiers == memory_signature.qualifiers
                 and candidate_signature.scopes == memory_signature.scopes
             )
         if candidate.memory_type == "task":
+            #任务状态必须一致
             return candidate.task_status == memory.task_status
         if candidate.memory_type == "semantic" and _semantic_conflict(candidate, memory):
             return False
@@ -138,9 +166,12 @@ def _near_same(candidate: MemoryCandidate, memory: MemoryRecord, similarity: flo
 
 
 def _shares_named_token(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
-    """负责“sharesnamedtoken”。
-
-    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_shares_named_token` 负责处理 shares named token，服务于本文件职责：最终裁决。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     candidate_tokens = {token.casefold() for token in re.findall(r"[A-Za-z][A-Za-z0-9+#.-]*", candidate.content)}
     memory_tokens = {token.casefold() for token in re.findall(r"[A-Za-z][A-Za-z0-9+#.-]*", memory.content)}
@@ -148,9 +179,12 @@ def _shares_named_token(candidate: MemoryCandidate, memory: MemoryRecord) -> boo
 
 
 def _semantic_conflict(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
-    """负责“semanticconflict”。
-
-    该函数是 `memory.adjudicator` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_semantic_conflict` 负责处理 semantic conflict，服务于本文件职责：最终裁决。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if candidate.predicate == memory.predicate == "location":
         return not semantic_policy.explicitly_replaces(candidate.content, predicate="location")
@@ -161,14 +195,17 @@ def _semantic_conflict(candidate: MemoryCandidate, memory: MemoryRecord) -> bool
 
 
 def _adjudicate_v3(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> MemoryDecision:
-    """Use retrieval only to find targets; the guard owns mutation authority."""
+    """函数功能：`_adjudicate_v3` 负责处理 adjudicate v3，服务于本文件职责：最终裁决。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memories: memories 参数，由调用方传入，类型为 `list[MemoryRecord]`。
+    返回结果说明：
+        返回 `MemoryDecision` 类型结果；具体字段和语义由调用方按该对象约定使用。
+    """
     exact = [memory for memory in memories if candidate.effective_memory_key == memory.effective_memory_key]
     if not exact:
-        # Exact identity is the default.  The guard also permits one narrow
-        # exception: an active short task name may be refined by a later,
-        # strictly more specific suffix (for example “做简历” -> “做 Agent
-        # 开发简历”).  Retrieval merely supplies candidates; the local guard
-        # remains the authority that permits the mutation.
+        # 默认要求精确身份匹配；guard 只允许一个窄例外：active 短任务名可被后续更具体标题细化。
+        # 检索只负责提供候选，是否允许该变更仍以 Relation Guard 为准。
         refinements = [
             memory
             for memory in memories
@@ -194,7 +231,13 @@ def _adjudicate_v3(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> 
 
 
 def adjudicate_memory(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> MemoryDecision:
-    """Return an explainable decision; this function never writes to storage."""
+    """函数功能：`adjudicate_memory` 负责处理 adjudicate memory，服务于本文件职责：最终裁决。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memories: memories 参数，由调用方传入，类型为 `list[MemoryRecord]`。
+    返回结果说明：
+        返回 `MemoryDecision` 类型结果；具体字段和语义由调用方按该对象约定使用。
+    """
     if not candidate.should_store:
         return _decision(candidate, "new", "discard", candidate.confidence, candidate.effective_reason or "candidate_should_not_store")
     if not memories:

@@ -1,4 +1,9 @@
-"""Build measured runtime metrics from structured task logs."""
+"""文件作用：指标聚合。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -13,9 +18,11 @@ OUTPUT_PATH = Path("docs/metrics/latest.json")
 
 
 def load_events() -> list[dict[str, Any]]:
-    """负责“加载events”。
-
-    该函数是 `scripts.build_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`load_events` 负责加载 events，服务于本文件职责：指标聚合。
+    传参：
+        无。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     events: list[dict[str, Any]] = []
     if not LOG_DIR.exists():
@@ -32,9 +39,12 @@ def load_events() -> list[dict[str, Any]]:
 
 
 def percentile(values: list[int], ratio: float) -> int | None:
-    """负责“percentile”。
-
-    该函数是 `scripts.build_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`percentile` 负责处理 percentile，服务于本文件职责：指标聚合。
+    传参：
+        values: values 参数，由调用方传入，类型为 `list[int]`。
+        ratio: ratio 参数，由调用方传入，类型为 `float`。
+    返回结果说明：
+        返回 `int | None`；未命中或无需处理时可返回 `None`。
     """
     if not values:
         return None
@@ -44,9 +54,11 @@ def percentile(values: list[int], ratio: float) -> int | None:
 
 
 def build_metrics(events: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“构建指标”。
-
-    该函数是 `scripts.build_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`build_metrics` 负责构建 metrics，服务于本文件职责：指标聚合。
+    传参：
+        events: events 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     success_events = [
         event
@@ -70,9 +82,12 @@ def build_metrics(events: list[dict[str, Any]]) -> dict[str, Any]:
         by_type.setdefault(task_type, []).append(event)
 
     def durations(task_type: str, field: str) -> list[int]:
-        """负责“durations”。
-
-        该函数是 `scripts.build_metrics` 中的`build_metrics` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`durations` 负责处理 durations，服务于本文件职责：指标聚合。
+        传参：
+            task_type: task type 参数，由调用方传入，类型为 `str`。
+            field: field 参数，由调用方传入，类型为 `str`。
+        返回结果说明：
+            返回 `list[int]`，表示按条件筛选、构造或查询得到的列表。
         """
         values = []
         for event in by_type.get(task_type, []):
@@ -102,7 +117,12 @@ def build_metrics(events: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：指标聚合。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     existing = {}
     if OUTPUT_PATH.exists():

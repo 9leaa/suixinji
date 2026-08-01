@@ -1,4 +1,9 @@
-"""Measured PostgreSQL and Redis metrics for one distributed load-test tenant."""
+"""文件作用：分布式指标采集。
+
+项目关系：本文件依赖 `core.settings`、`infrastructure.database`、`infrastructure.redis_client`、`infrastructure.redis_keys` 等 6 个模块；被 `scripts.collect_distributed_metrics`、`scripts.wait_distributed_run`、`tests.test_stage4_metrics`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -21,9 +26,12 @@ from runtime.streams.client import GROUPS
 
 
 def percentile(values: list[int], ratio: float) -> int | None:
-    """负责“percentile”。
-
-    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`percentile` 负责处理 percentile，服务于本文件职责：分布式指标采集。
+    传参：
+        values: values 参数，由调用方传入，类型为 `list[int]`。
+        ratio: ratio 参数，由调用方传入，类型为 `float`。
+    返回结果说明：
+        返回 `int | None`；未命中或无需处理时可返回 `None`。
     """
     if not values:
         return None
@@ -33,9 +41,12 @@ def percentile(values: list[int], ratio: float) -> int | None:
 
 
 def _duration_ms(start: datetime | None, end: datetime | None) -> int | None:
-    """负责“durationms”。
-
-    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_duration_ms` 负责处理 duration ms，服务于本文件职责：分布式指标采集。
+    传参：
+        start: start 参数，由调用方传入，类型为 `datetime | None`。
+        end: end 参数，由调用方传入，类型为 `datetime | None`。
+    返回结果说明：
+        返回 `int | None`；未命中或无需处理时可返回 `None`。
     """
     if start is None or end is None:
         return None
@@ -43,9 +54,11 @@ def _duration_ms(start: datetime | None, end: datetime | None) -> int | None:
 
 
 def _status_counts(items: list[Any]) -> dict[str, int]:
-    """负责“状态counts”。
-
-    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_status_counts` 负责处理 status counts，服务于本文件职责：分布式指标采集。
+    传参：
+        items: 待遍历或处理的元素集合，类型为 `list[Any]`。
+    返回结果说明：
+        返回 `dict[str, int]`，表示结构化结果、载荷或状态映射。
     """
     counts: dict[str, int] = {}
     for item in items:
@@ -55,9 +68,11 @@ def _status_counts(items: list[Any]) -> dict[str, int]:
 
 
 def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
-    """负责“collectdatabase指标”。
-
-    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`collect_database_metrics` 负责采集 database metrics，服务于本文件职责：分布式指标采集。
+    传参：
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     with session_scope() as session:
         inbox = list(session.execute(select(InboxMessage).where(InboxMessage.tenant_id == tenant_id)).scalars())
@@ -169,9 +184,13 @@ def collect_database_metrics(tenant_id: str) -> dict[str, Any]:
 
 
 def _grouped_status_counts(session: Any, model: Any, tenant_id: str) -> dict[str, int]:
-    """负责“grouped状态counts”。
-
-    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_grouped_status_counts` 负责处理 grouped status counts，服务于本文件职责：分布式指标采集。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        model: model 参数，由调用方传入，类型为 `Any`。
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, int]`，表示结构化结果、载荷或状态映射。
     """
     rows = session.execute(
         select(model.status, func.count()).where(model.tenant_id == tenant_id).group_by(model.status)
@@ -180,7 +199,12 @@ def _grouped_status_counts(session: Any, model: Any, tenant_id: str) -> dict[str
 
 
 def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
-    """Collect queue progress with aggregate SQL suitable for frequent polling."""
+    """函数功能：`collect_wait_metrics` 负责采集 wait metrics，服务于本文件职责：分布式指标采集。
+    传参：
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
+    """
     with session_scope() as session:
         inbox_status = _grouped_status_counts(session, InboxMessage, tenant_id)
         task_status = _grouped_status_counts(session, Task, tenant_id)
@@ -266,9 +290,11 @@ def collect_wait_metrics(tenant_id: str) -> dict[str, Any]:
 
 
 def _collect_stream_metrics_once(keys: RedisKeys) -> dict[str, Any]:
-    """负责“collect流指标once”。
-
-    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_collect_stream_metrics_once` 负责采集 stream metrics once，服务于本文件职责：分布式指标采集。
+    传参：
+        keys: keys 参数，由调用方传入，类型为 `RedisKeys`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     client = get_redis()
     lag = 0
@@ -295,9 +321,12 @@ def _collect_stream_metrics_once(keys: RedisKeys) -> dict[str, Any]:
 
 
 def collect_stream_metrics(keys: RedisKeys = KEYS, *, max_attempts: int = 3) -> dict[str, Any]:
-    """负责“collect流指标”。
-
-    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`collect_stream_metrics` 负责采集 stream metrics，服务于本文件职责：分布式指标采集。
+    传参：
+        keys: keys 参数，由调用方传入，类型为 `RedisKeys`，默认值为 `KEYS`。
+        max_attempts: max attempts 参数，由调用方传入，类型为 `int`，默认值为 `3`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     for attempt in range(max(1, max_attempts)):
         try:
@@ -310,9 +339,11 @@ def collect_stream_metrics(keys: RedisKeys = KEYS, *, max_attempts: int = 3) -> 
 
 
 def collect_lock_metrics(*, since: str | None = None) -> dict[str, int | None]:
-    """负责“collect锁指标”。
-
-    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`collect_lock_metrics` 负责采集 lock metrics，服务于本文件职责：分布式指标采集。
+    传参：
+        since: since 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, int | None]`，表示结构化结果、载荷或状态映射。
     """
     since_dt = datetime.fromisoformat(since) if since else None
     values: list[int] = []
@@ -345,7 +376,14 @@ def reconcile_retry_submission(
     *,
     database_accepted: int,
 ) -> dict[str, Any]:
-    """Reconcile idempotent replays of the same request corpus."""
+    """函数功能：`reconcile_retry_submission` 负责对账 retry submission，服务于本文件职责：分布式指标采集。
+    传参：
+        initial: initial 参数，由调用方传入，类型为 `dict[str, Any]`。
+        retries: retries 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+        database_accepted: database accepted 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
+    """
     if not retries:
         return dict(initial)
     submitted = int(initial.get("submitted") or 0)
@@ -384,9 +422,14 @@ def build_report(
     submission: dict[str, Any] | None = None,
     locks: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """负责“构建报告”。
-
-    该函数是 `runtime.distributed_metrics` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`build_report` 负责构建 report，服务于本文件职责：分布式指标采集。
+    传参：
+        database: database 参数，由调用方传入，类型为 `dict[str, Any]`。
+        streams: streams 参数，由调用方传入，类型为 `dict[str, Any]`。
+        submission: submission 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+        locks: locks 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     submission = submission or {}
     root_status = database.get("root_task_status") or {}

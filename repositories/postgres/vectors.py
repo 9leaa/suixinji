@@ -1,4 +1,9 @@
-"""PostgreSQL pgvector note embedding repository."""
+"""文件作用：Note 向量数据访问。
+
+项目关系：本文件依赖 `core.config`、`core.sensitive`、`infrastructure.database`、`infrastructure.schema` 等 5 个模块；被 `eval.large_live_retrieval_eval`、`eval.live_retrieval_eval`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -14,9 +19,11 @@ from infrastructure.schema import Note, NoteEmbedding
 
 
 def _vector_item(row: NoteEmbedding) -> Any:
-    """负责“向量条目”。
-
-    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_vector_item` 负责处理 vector item，服务于本文件职责：Note 向量数据访问。
+    传参：
+        row: row 参数，由调用方传入，类型为 `NoteEmbedding`。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     from storage.vector_store import VectorItem
     metadata = dict(row.metadata_json or {})
@@ -30,9 +37,11 @@ def _vector_item(row: NoteEmbedding) -> Any:
 
 
 def load_vector_items(space_id: str) -> list[Any]:
-    """负责“加载向量条目列表”。
-
-    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`load_vector_items` 负责加载 vector items，服务于本文件职责：Note 向量数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `list[Any]`，表示按条件筛选、构造或查询得到的列表。
     """
     with session_scope() as session:
         rows = session.execute(
@@ -45,9 +54,12 @@ def load_vector_items(space_id: str) -> list[Any]:
 
 
 def save_vector_items(space_id: str, items: list[Any]) -> None:
-    """负责“保存向量条目列表”。
-
-    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`save_vector_items` 负责保存 vector items，服务于本文件职责：Note 向量数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        items: 待遍历或处理的元素集合，类型为 `list[Any]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     existing = {item.note_id for item in load_vector_items(space_id)}
     incoming = {item.note_id for item in items}
@@ -58,9 +70,13 @@ def save_vector_items(space_id: str, items: list[Any]) -> None:
 
 
 def vector_item_exists(space_id: str, note_id: str, message_id: str | None = None) -> bool:
-    """负责“向量条目exists”。
-
-    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`vector_item_exists` 负责处理 vector item exists，服务于本文件职责：Note 向量数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     with session_scope() as session:
         statement = select(NoteEmbedding.note_id).join(Note).where(Note.space_id == space_id)
@@ -72,9 +88,12 @@ def vector_item_exists(space_id: str, note_id: str, message_id: str | None = Non
 
 
 def add_vector_item(space_id: str, item: Any) -> bool:
-    """负责“添加向量条目”。
-
-    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`add_vector_item` 负责处理 add vector item，服务于本文件职责：Note 向量数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        item: item 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if len(item.embedding) != 1024:
         raise ValueError(f"PostgreSQL note embedding must have 1024 dimensions, got {len(item.embedding)}")
@@ -104,9 +123,12 @@ def add_vector_item(space_id: str, item: Any) -> bool:
 
 
 def remove_vector_item(space_id: str, note_id: str) -> bool:
-    """负责“移除向量条目”。
-
-    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`remove_vector_item` 负责移除 vector item，服务于本文件职责：Note 向量数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     with session_scope() as session:
         result = session.execute(
@@ -125,9 +147,15 @@ def search_related(
     exclude_note_id: str | None = None,
     min_score: float | None = None,
 ) -> list[Any]:
-    """负责“检索related”。
-
-    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`search_related` 负责搜索 related，服务于本文件职责：Note 向量数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query_embedding: query embedding 参数，由调用方传入，类型为 `list[float]`。
+        top_k: top k 参数，由调用方传入，类型为 `int`，默认值为 `3`。
+        exclude_note_id: exclude note id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        min_score: min score 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[Any]`，表示按条件筛选、构造或查询得到的列表。
     """
     from storage.vector_store import SearchResult
     if top_k <= 0:
@@ -158,8 +186,12 @@ def search_related(
 
 
 def search_related_note_ids(space_id: str, query_embedding: list[float], **kwargs: Any) -> list[str]:
-    """负责“检索related笔记标识列表”。
-
-    该函数是 `repositories.postgres.vectors` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`search_related_note_ids` 负责搜索 related note ids，服务于本文件职责：Note 向量数据访问。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query_embedding: query embedding 参数，由调用方传入，类型为 `list[float]`。
+        **kwargs: kwargs 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     return [result.note_id for result in search_related(space_id, query_embedding, **kwargs)]

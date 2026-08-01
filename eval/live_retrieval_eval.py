@@ -1,10 +1,9 @@
-"""Run a live, isolated retrieval + LLM answer evaluation.
+"""文件作用：小规模真实检索评测。
 
-This evaluator writes only to a fresh PostgreSQL ``space_id`` prefixed with
-``eval_live_``. It uses the real embedding endpoint for Note/Memory vectors
-and the real configured LLM for the answer cases. The original Feishu space
-is never read or modified.
+项目关系：本文件依赖 `agent`、`core.config`、`core.llm_client`、`eval.common` 等 11 个模块；被 暂无静态导入方或仅作为入口脚本执行。
 """
+
+
 
 from __future__ import annotations
 
@@ -43,17 +42,21 @@ DATASET_PATH = ROOT / "eval" / "data" / "live_retrieval_cases.json"
 
 
 def _now(offset: int = 0) -> str:
-    """负责“now”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_now` 负责获取当前时间，服务于本文件职责：小规模真实检索评测。
+    传参：
+        offset: 偏移量，用于分页或定位，类型为 `int`，默认值为 `0`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return (datetime.now().astimezone() - timedelta(seconds=offset)).isoformat()
 
 
 def _note_text(note: dict[str, Any]) -> str:
-    """负责“笔记文本”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_note_text` 负责处理 note text，服务于本文件职责：小规模真实检索评测。
+    传参：
+        note: note 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return "\n".join(
         str(value)
@@ -69,9 +72,12 @@ def _note_text(note: dict[str, Any]) -> str:
 
 
 def _insert_notes(space_id: str, notes: list[dict[str, Any]]) -> int:
-    """负责“插入笔记列表”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_insert_notes` 负责处理 insert notes，服务于本文件职责：小规模真实检索评测。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        notes: notes 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     model = str(get_embedding_config().model)
     created = 0
@@ -115,16 +121,20 @@ def _insert_notes(space_id: str, notes: list[dict[str, Any]]) -> int:
 
 
 def _ensure_memory_vector(memory_id: str, *, timeout: float = 90.0) -> None:
-    """Let the normal worker claim the vector, or complete it in this process."""
+    """函数功能：`_ensure_memory_vector` 负责确保 memory vector，服务于本文件职责：小规模真实检索评测。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        timeout: 超时时间，单位由调用方约定，类型为 `float`，默认值为 `90.0`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         with session_scope() as session:
             row = session.get(MemoryVector, memory_id)
             if row is not None and row.status == "ready" and row.embedding is not None:
                 return
-        # The distributed embedding worker normally handles this task. If it
-        # has not claimed it yet, claim and complete through the same API so
-        # the evaluation is not coupled to worker scheduling.
+        # 分布式 embedding worker 通常处理该任务；若尚未认领，则通过同一 API 认领并完成，避免评测依赖 worker 调度时机。
         from repositories.postgres.memory import claim_memory_vector
 
         claim = claim_memory_vector(memory_id)
@@ -144,9 +154,12 @@ def _ensure_memory_vector(memory_id: str, *, timeout: float = 90.0) -> None:
 
 
 def _insert_memories(space_id: str, memories: list[dict[str, Any]]) -> dict[str, str]:
-    """负责“插入memories”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_insert_memories` 负责处理 insert memories，服务于本文件职责：小规模真实检索评测。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        memories: memories 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, str]`，表示结构化结果、载荷或状态映射。
     """
     ids: dict[str, str] = {}
     for item in memories:
@@ -176,9 +189,12 @@ def _insert_memories(space_id: str, memories: list[dict[str, Any]]) -> dict[str,
 
 
 def _metrics(ranks: list[int | None], *, cutoff: int = 5) -> dict[str, float]:
-    """负责“指标”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_metrics` 负责处理 metrics，服务于本文件职责：小规模真实检索评测。
+    传参：
+        ranks: ranks 参数，由调用方传入，类型为 `list[int | None]`。
+        cutoff: cutoff 参数，由调用方传入，类型为 `int`，默认值为 `5`。
+    返回结果说明：
+        返回 `dict[str, float]`，表示结构化结果、载荷或状态映射。
     """
     valid = [rank for rank in ranks if rank is not None]
     return {
@@ -192,9 +208,11 @@ def _metrics(ranks: list[int | None], *, cutoff: int = 5) -> dict[str, float]:
 
 
 def _latency_metrics(results: list[dict[str, Any]]) -> dict[str, float]:
-    """负责“latency指标”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_latency_metrics` 负责处理 latency metrics，服务于本文件职责：小规模真实检索评测。
+    传参：
+        results: results 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, float]`，表示结构化结果、载荷或状态映射。
     """
     values = sorted(float(item["latency_ms"]) for item in results)
     if not values:
@@ -207,9 +225,13 @@ def _latency_metrics(results: list[dict[str, Any]]) -> dict[str, float]:
 
 
 def _run_note_eval(space_id: str, cases: list[dict[str, Any]], id_map: dict[str, str]) -> dict[str, Any]:
-    """负责“运行笔记评测”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_run_note_eval` 负责运行 note eval，服务于本文件职责：小规模真实检索评测。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+        id_map: id map 参数，由调用方传入，类型为 `dict[str, str]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     results: list[dict[str, Any]] = []
     ranks: list[int | None] = []
@@ -235,9 +257,13 @@ def _run_note_eval(space_id: str, cases: list[dict[str, Any]], id_map: dict[str,
 
 
 def _run_memory_eval(space_id: str, cases: list[dict[str, Any]], id_map: dict[str, str]) -> dict[str, Any]:
-    """负责“运行记忆评测”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_run_memory_eval` 负责运行 memory eval，服务于本文件职责：小规模真实检索评测。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+        id_map: id map 参数，由调用方传入，类型为 `dict[str, str]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     results: list[dict[str, Any]] = []
     ranks: list[int | None] = []
@@ -289,17 +315,23 @@ def _run_memory_eval(space_id: str, cases: list[dict[str, Any]], id_map: dict[st
 
 
 def _run_llm_eval(space_id: str, cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“运行LLM评测”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_run_llm_eval` 负责运行 llm eval，服务于本文件职责：小规模真实检索评测。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     original = query_agent._complete_json_with_hooks
     call_count = 0
 
     def counted(*args: Any, **kwargs: Any) -> Any:
-        """负责“counted”。
-
-        该函数是 `eval.live_retrieval_eval` 中的`_run_llm_eval` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`counted` 负责处理 counted，服务于本文件职责：小规模真实检索评测。
+        传参：
+            *args: args 参数，由调用方传入，类型为 `Any`。
+            **kwargs: kwargs 参数，由调用方传入，类型为 `Any`。
+        返回结果说明：
+            返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         nonlocal call_count
         call_count += 1
@@ -314,7 +346,7 @@ def _run_llm_eval(space_id: str, cases: list[dict[str, Any]]) -> dict[str, Any]:
             error = None
             try:
                 answer = query_agent.answer_question(space_id, str(case["question"]), max_steps=4)
-            except Exception as exc:  # record the failure instead of aborting the set
+            except Exception as exc:  # pragma: no cover - 记录失败而不是中止整组评测
                 answer = ""
                 error = f"{type(exc).__name__}: {exc}"
             groups = case.get("must_include", [])
@@ -347,18 +379,22 @@ def _run_llm_eval(space_id: str, cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _cleanup_space(space_id: str) -> None:
-    """负责“cleanup空间”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_cleanup_space` 负责清理 space，服务于本文件职责：小规模真实检索评测。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with session_scope() as session:
         session.execute(delete(Space).where(Space.id == space_id))
 
 
 def run(*, keep: bool = True) -> dict[str, Any]:
-    """负责“运行”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run` 负责运行，服务于本文件职责：小规模真实检索评测。
+    传参：
+        keep: keep 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     dataset = json.loads(DATASET_PATH.read_text(encoding="utf-8"))
     space_id = f"eval_live_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
@@ -385,9 +421,11 @@ def run(*, keep: bool = True) -> dict[str, Any]:
 
 
 def _print_report(report: dict[str, Any]) -> None:
-    """负责“print报告”。
-
-    该函数是 `eval.live_retrieval_eval` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_print_report` 负责处理 print report，服务于本文件职责：小规模真实检索评测。
+    传参：
+        report: report 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     print(json.dumps({key: report[key] for key in ("dataset_version", "space_id", "created_notes", "created_memories", "real_embedding", "real_llm")}, ensure_ascii=False))
     print("section\tcases\thit_rate\trecall@1\trecall@3\trecall@5\tMRR\tstate_acc\tpolarity_acc\tanswer_acc\tavg_ms\tp95_ms")
@@ -399,7 +437,12 @@ def _print_report(report: dict[str, Any]) -> None:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：小规模真实检索评测。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", default=None)
     parser.add_argument("--keep", action="store_true", help="keep the isolated evaluation space (default behavior is also isolated)")

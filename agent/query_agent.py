@@ -1,4 +1,9 @@
-"""Query ReAct agent for searching and reasoning over stored notes."""
+"""文件作用：问答主编排。
+
+项目关系：本文件依赖 `agent.hooks`、`agent.query_intent`、`agent.query_planner`、`agent.query_route_features` 等 16 个模块；被 `apps.handlers`、`bot.feishu_bot`、`runtime.executor`、`scripts.smoke_distributed_hooks`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -92,9 +97,12 @@ _CURRENT_FACT_MARKERS = ("住在哪里", "住哪", "现在住", "目前住", "�
 
 
 def _clip(text: str | None, limit: int = 500) -> str:
-    """负责“clip”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_clip` 负责处理 clip，服务于本文件职责：问答主编排。
+    传参：
+        text: 输入文本内容，类型为 `str | None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `500`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     if not text:
         return ""
@@ -105,9 +113,11 @@ def _clip(text: str | None, limit: int = 500) -> str:
 
 
 def _parse_ts(ts: str | None) -> datetime | None:
-    """负责“解析ts”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_parse_ts` 负责解析 ts，服务于本文件职责：问答主编排。
+    传参：
+        ts: ts 参数，由调用方传入，类型为 `str | None`。
+    返回结果说明：
+        返回 `datetime | None`；未命中或无需处理时可返回 `None`。
     """
     if not ts:
         return None
@@ -121,9 +131,11 @@ def _parse_ts(ts: str | None) -> datetime | None:
 
 
 def _coerce_tags(value: Any) -> list[str]:
-    """负责“coercetags”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_coerce_tags` 负责处理 coerce tags，服务于本文件职责：问答主编排。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     if value is None:
         return []
@@ -135,9 +147,12 @@ def _coerce_tags(value: Any) -> list[str]:
 
 
 def _coerce_bool(value: Any, default: bool = True) -> bool:
-    """负责“coercebool”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_coerce_bool` 负责处理 coerce bool，服务于本文件职责：问答主编排。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+        default: default 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if isinstance(value, bool):
         return value
@@ -153,17 +168,21 @@ def _coerce_bool(value: Any, default: bool = True) -> bool:
 
 
 def _normalized_query(value: str) -> str:
-    """负责“normalized查询”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_normalized_query` 负责查询 normalized，服务于本文件职责：问答主编排。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return " ".join(value.strip().casefold().rstrip("?？").split())
 
 
 def _deterministic_route(question: str) -> dict[str, Any] | None:
-    """负责“deterministic路由”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_deterministic_route` 负责路由 deterministic，服务于本文件职责：问答主编排。
+    传参：
+        question: 用户问题文本，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     normalized = _normalized_query(question)
     type_match = re.fullmatch(r"/(?:type|类型)\s+(.+)", normalized)
@@ -257,7 +276,13 @@ def _deterministic_route(question: str) -> dict[str, Any] | None:
 
 
 def _intent_route(question: str, *, trace: dict[str, Any] | None = None) -> dict[str, Any] | None:
-    """Use the fast structured classifier only for the Memory V3 rollout."""
+    """函数功能：`_intent_route` 负责路由 intent，服务于本文件职责：问答主编排。
+    传参：
+        question: 用户问题文本，类型为 `str`。
+        trace: trace 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
+    """
     if not settings.QUERY_INTENT_MODEL_ENABLED:
         return None
     if settings.QUERY_ROUTER_V2_ENABLED and settings.QUERY_ROUTER_LLM_ON_UNCERTAIN and not should_call_query_intent_llm(question):
@@ -288,9 +313,12 @@ def _intent_route(question: str, *, trace: dict[str, Any] | None = None) -> dict
 
 
 def _safe_tool_args(action: str, args: dict[str, Any]) -> dict[str, Any]:
-    """负责“安全工具参数”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_safe_tool_args` 负责处理 safe tool args，服务于本文件职责：问答主编排。
+    传参：
+        action: action 参数，由调用方传入，类型为 `str`。
+        args: args 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     safe: dict[str, Any] = {"tool": action}
     for key in ("type", "note_type", "tags", "tag", "limit", "top_k", "min_score", "days", "note_id", "match_all_tags", "memory_type"):
@@ -302,9 +330,11 @@ def _safe_tool_args(action: str, args: dict[str, Any]) -> dict[str, Any]:
 
 
 def _result_ids(result: Any) -> list[str]:
-    """负责“结果标识列表”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_result_ids` 负责处理 result ids，服务于本文件职责：问答主编排。
+    传参：
+        result: 上游步骤返回的结果对象，类型为 `Any`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     ids: list[str] = []
     if isinstance(result, list):
@@ -322,7 +352,12 @@ def _result_ids(result: Any) -> list[str]:
 
 
 def _low_quality_memory_result(result: Any) -> bool:
-    """Detect weak non-empty recall so complex queries can recover."""
+    """函数功能：`_low_quality_memory_result` 负责处理 low quality memory result，服务于本文件职责：问答主编排。
+    传参：
+        result: 上游步骤返回的结果对象，类型为 `Any`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     if not isinstance(result, list) or not result:
         return True
     scores = [float(item.get("score") or 0.0) for item in result if isinstance(item, dict)]
@@ -335,7 +370,13 @@ def _low_quality_memory_result(result: Any) -> bool:
 
 
 def _fuse_memory_results(groups: list[list[dict[str, Any]]], *, limit: int = 5) -> list[dict[str, Any]]:
-    """Fuse original/rewrite/decomposition results while retaining topic coverage."""
+    """函数功能：`_fuse_memory_results` 负责处理 fuse memory results，服务于本文件职责：问答主编排。
+    传参：
+        groups: groups 参数，由调用方传入，类型为 `list[list[dict[str, Any]]]`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `5`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
+    """
     candidates: dict[str, dict[str, Any]] = {}
     fusion: dict[str, float] = {}
     appearances: dict[str, int] = {}
@@ -362,9 +403,11 @@ def _fuse_memory_results(groups: list[list[dict[str, Any]]], *, limit: int = 5) 
 
 
 def _evidence_items(evidence: Any) -> list[dict[str, Any]]:
-    """负责“evidence条目列表”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_evidence_items` 负责处理 evidence items，服务于本文件职责：问答主编排。
+    传参：
+        evidence: evidence 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     items: list[dict[str, Any]] = []
     if isinstance(evidence, list):
@@ -377,9 +420,12 @@ def _evidence_items(evidence: Any) -> list[dict[str, Any]]:
 
 
 def _merge_evidence(current: list[dict[str, Any]], result: Any) -> list[dict[str, Any]]:
-    """负责“合并evidence”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_merge_evidence` 负责合并 evidence，服务于本文件职责：问答主编排。
+    传参：
+        current: current 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+        result: 上游步骤返回的结果对象，类型为 `Any`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     merged = list(current)
     seen = {str(item.get("id")) for item in merged if item.get("id")}
@@ -392,9 +438,12 @@ def _merge_evidence(current: list[dict[str, Any]], result: Any) -> list[dict[str
 
 
 def _cited_evidence(observations: list[dict[str, Any]], evidence_ids: Any) -> list[dict[str, Any]]:
-    """负责“citedevidence”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_cited_evidence` 负责处理 cited evidence，服务于本文件职责：问答主编排。
+    传参：
+        observations: observations 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+        evidence_ids: evidence ids 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     if not isinstance(evidence_ids, list):
         return []
@@ -420,7 +469,14 @@ def _source_lines(
     memory_limit: int = 5,
     note_limit: int = 5,
 ) -> list[str]:
-    """Format selected evidence with independent memory and note limits."""
+    """函数功能：`_source_lines` 负责处理 source lines，服务于本文件职责：问答主编排。
+    传参：
+        selected_evidence: selected evidence 参数，由调用方传入，类型为 `Any`。
+        memory_limit: memory limit 参数，由调用方传入，类型为 `int`，默认值为 `5`。
+        note_limit: note limit 参数，由调用方传入，类型为 `int`，默认值为 `5`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
+    """
     lines: list[str] = []
     seen: set[str] = set()
     memory_count = 0
@@ -448,9 +504,12 @@ def _source_lines(
 
 
 def _with_sources(answer: str, selected_evidence: Any) -> str:
-    """负责“withsources”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_with_sources` 负责处理 with sources，服务于本文件职责：问答主编排。
+    传参：
+        answer: answer 参数，由调用方传入，类型为 `str`。
+        selected_evidence: selected evidence 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     sources = _source_lines(selected_evidence)
     if not sources:
@@ -465,9 +524,14 @@ def _log_final_answer(
     source: str,
     observations: list[dict[str, Any]] | None = None,
 ) -> None:
-    """负责“logfinalanswer”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_log_final_answer` 负责记录日志 final answer，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        answer: answer 参数，由调用方传入，类型为 `str`。
+        source: source 参数，由调用方传入，类型为 `str`。
+        observations: observations 参数，由调用方传入，类型为 `list[dict[str, Any]] | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     log_event(
         "query.final_answer",
@@ -481,9 +545,12 @@ def _log_final_answer(
 
 
 def _note_brief(note: dict[str, Any], *, text_limit: int = 500) -> dict[str, Any]:
-    """负责“笔记brief”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_note_brief` 负责处理 note brief，服务于本文件职责：问答主编排。
+    传参：
+        note: note 参数，由调用方传入，类型为 `dict[str, Any]`。
+        text_limit: text limit 参数，由调用方传入，类型为 `int`，默认值为 `500`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     return {
         "id": note.get("id"),
@@ -499,17 +566,22 @@ def _note_brief(note: dict[str, Any], *, text_limit: int = 500) -> dict[str, Any
 
 
 def _safe_notes(space_id: str) -> list[dict[str, Any]]:
-    """负责“安全笔记列表”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_safe_notes` 负责处理 safe notes，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     return [note for note in load_index(space_id) if is_note_queryable(note)]
 
 
 def _find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
-    """负责“查找笔记”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_find_note` 负责查找 note，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     for note in _safe_notes(space_id):
         if note.get("id") == note_id:
@@ -525,7 +597,16 @@ def filter_notes(
     match_all_tags: bool = True,
     limit: int = 30,
 ) -> list[dict[str, Any]]:
-    """Filter notes deterministically by fixed type and fixed tags."""
+    """函数功能：`filter_notes` 负责过滤 notes，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_type: note type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        tags: tags 参数，由调用方传入，类型为 `list[str] | None`，默认值为 `None`。
+        match_all_tags: match all tags 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `30`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
+    """
     limit = max(1, min(int(limit), 100))
     query_type = str(note_type or "").strip()
     query_tags = [normalize_tag(tag) for tag in (tags or []) if normalize_tag(tag)]
@@ -577,9 +658,13 @@ def filter_notes(
 
 
 def by_type(space_id: str, note_type: str, limit: int = 30) -> list[dict[str, Any]]:
-    """负责“by类型”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`by_type` 负责处理 by type，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_type: note type 参数，由调用方传入，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `30`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     return filter_notes(
         space_id,
@@ -589,9 +674,13 @@ def by_type(space_id: str, note_type: str, limit: int = 30) -> list[dict[str, An
 
 
 def by_tag(space_id: str, tag: str, limit: int = 10) -> list[dict[str, Any]]:
-    """负责“bytag”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`by_tag` 负责处理 by tag，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        tag: tag 参数，由调用方传入，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `10`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     return filter_notes(
         space_id,
@@ -607,9 +696,14 @@ def semantic_search(
     top_k: int = QUERY_TOP_K,
     min_score: float = DEFAULT_QUERY_MIN_SCORE,
 ) -> list[dict[str, Any]]:
-    """负责“semantic检索”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`semantic_search` 负责搜索 semantic，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        top_k: top k 参数，由调用方传入，类型为 `int`，默认值为 `QUERY_TOP_K`。
+        min_score: min score 参数，由调用方传入，类型为 `float`，默认值为 `DEFAULT_QUERY_MIN_SCORE`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     query = query.strip()
     if not query:
@@ -618,9 +712,7 @@ def semantic_search(
     top_k = max(1, min(int(top_k), 10))
     min_score = float(min_score)
     if STORAGE_BACKEND == "postgres" and settings.NOTE_HYBRID_RETRIEVAL_ENABLED:
-        # Dense recall is optional during note-vector backfill.  Hybrid search
-        # still returns exact/sparse evidence when the embedding provider is
-        # unavailable or a note has not received a vector yet.
+        # Note 向量回填期间，稠密召回是可选路径；embedding provider 不可用或 Note 尚无向量时，混合检索仍会返回精确/稀疏证据。
         embedding = None
         if settings.NOTE_HYBRID_VECTOR_ENABLED:
             try:
@@ -682,9 +774,11 @@ _QUERY_FILLERS = (
 
 
 def _lexical_terms(text: str) -> set[str]:
-    """负责“lexicalterms”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_lexical_terms` 负责处理 lexical terms，服务于本文件职责：问答主编排。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `set[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     value = str(text or "").casefold()
     for filler in _QUERY_FILLERS:
@@ -701,7 +795,14 @@ def _lexical_terms(text: str) -> set[str]:
 
 
 def provisional_search(space_id: str, query: str, limit: int = 5) -> list[dict[str, Any]]:
-    """Search newly saved notes locally while LLM enrichment is still running."""
+    """函数功能：`provisional_search` 负责搜索 provisional，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `5`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
+    """
     query_terms = _lexical_terms(query)
     if not query_terms:
         return []
@@ -744,7 +845,15 @@ def memory_note_fallback(
     limit: int = QUERY_TOP_K,
     min_score: float = DEFAULT_QUERY_MIN_SCORE,
 ) -> list[dict[str, Any]]:
-    """Read normal notes only when a memory-oriented lookup is empty."""
+    """函数功能：`memory_note_fallback` 负责处理 memory note fallback，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `QUERY_TOP_K`。
+        min_score: min score 参数，由调用方传入，类型为 `float`，默认值为 `DEFAULT_QUERY_MIN_SCORE`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
+    """
     if STORAGE_BACKEND == "postgres":
         if settings.NOTE_HYBRID_RETRIEVAL_ENABLED:
             return semantic_search(space_id, query, top_k=limit, min_score=min_score)
@@ -753,9 +862,12 @@ def memory_note_fallback(
 
 
 def get_note(space_id: str, note_id: str) -> dict[str, Any]:
-    """负责“获取笔记”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_note` 负责获取 note，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     note = _postgres_find_note(space_id, note_id) if STORAGE_BACKEND == "postgres" else _find_note(space_id, note_id)
     if note is not None and not is_note_queryable(note):
@@ -766,9 +878,13 @@ def get_note(space_id: str, note_id: str) -> dict[str, Any]:
 
 
 def list_recent(space_id: str, days: int = 7, limit: int = 10) -> list[dict[str, Any]]:
-    """负责“列出recent”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_recent` 负责列出 recent，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        days: days 参数，由调用方传入，类型为 `int`，默认值为 `7`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `10`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     days = max(1, min(int(days), 365))
     limit = max(1, min(int(limit), 30))
@@ -790,9 +906,13 @@ def list_recent(space_id: str, days: int = 7, limit: int = 10) -> list[dict[str,
 
 
 def follow_links(space_id: str, note_id: str, limit: int = 5) -> dict[str, Any]:
-    """负责“followlinks”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`follow_links` 负责处理 follow links，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `5`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     limit = max(1, min(int(limit), 20))
     if STORAGE_BACKEND == "postgres":
@@ -849,7 +969,16 @@ def related_notes(
     min_score: float = DEFAULT_QUERY_MIN_SCORE,
     limit: int = 5,
 ) -> dict[str, Any]:
-    """Find a note by natural language and return its bidirectional related notes."""
+    """函数功能：`related_notes` 负责处理 related notes，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        top_k: top k 参数，由调用方传入，类型为 `int`，默认值为 `3`。
+        min_score: min score 参数，由调用方传入，类型为 `float`，默认值为 `DEFAULT_QUERY_MIN_SCORE`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `5`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
+    """
     candidates = semantic_search(
         space_id,
         query,
@@ -878,9 +1007,13 @@ def related_notes(
 
 
 def _execute_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
-    """负责“execute工具”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_execute_tool` 负责执行 tool，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        action: action 参数，由调用方传入，类型为 `str`。
+        args: args 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if action == "by_type":
         return by_type(
@@ -946,14 +1079,22 @@ def _run_tool(
     trace: dict[str, Any] | None = None,
     hook_context: AgentRunContext | None = None,
 ) -> Any:
-    """负责“运行工具”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_run_tool` 负责运行 tool，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        action: action 参数，由调用方传入，类型为 `str`。
+        args: args 参数，由调用方传入，类型为 `dict[str, Any]`。
+        trace: trace 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+        hook_context: hook context 参数，由调用方传入，类型为 `AgentRunContext | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     def execute() -> Any:
-        """负责“execute”。
-
-        该函数是 `agent.query_agent` 中的`_run_tool` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`execute` 负责执行，服务于本文件职责：问答主编排。
+        传参：
+            无。
+        返回结果说明：
+            返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         with observe(
             "query.tool_call",
@@ -974,9 +1115,11 @@ def _run_tool(
 
 
 def _fallback_answer(observations: list[dict[str, Any]]) -> str:
-    """负责“fallbackanswer”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_fallback_answer` 负责处理 fallback answer，服务于本文件职责：问答主编排。
+    传参：
+        observations: observations 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     candidates = []
     for observation in observations:
@@ -1011,9 +1154,11 @@ def _fallback_answer(observations: list[dict[str, Any]]) -> str:
 
 
 def _provisional_answer(notes: list[dict[str, Any]]) -> str:
-    """负责“provisionalanswer”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_provisional_answer` 负责处理 provisional answer，服务于本文件职责：问答主编排。
+    传参：
+        notes: notes 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     lines = ["刚收到的记录还在后台完善分类，但已经可以查询："]
     for note in notes[:3]:
@@ -1023,9 +1168,11 @@ def _provisional_answer(notes: list[dict[str, Any]]) -> str:
 
 
 def _memory_still_updating_answer(notes: list[dict[str, Any]]) -> str:
-    """负责“记忆stillupdatinganswer”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_memory_still_updating_answer` 负责处理 memory still updating answer，服务于本文件职责：问答主编排。
+    传参：
+        notes: notes 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     prefix = "最新记录已保存，长期记忆仍在更新。"
     if not notes:
@@ -1042,14 +1189,23 @@ def _complete_json_with_hooks(
     model_role: str = "balanced",
     llm_task: str | None = None,
 ) -> dict[str, Any]:
-    """负责“完成JSONwithhooks”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_complete_json_with_hooks` 负责完成 json with hooks，服务于本文件职责：问答主编排。
+    传参：
+        context: 当前 Agent 或运行时上下文，携带租户、空间、请求和统计信息，类型为 `AgentRunContext | None`。
+        name: name 参数，由调用方传入，类型为 `str`。
+        system_prompt: system prompt 参数，由调用方传入，类型为 `str`。
+        user_prompt: user prompt 参数，由调用方传入，类型为 `str`。
+        model_role: model role 参数，由调用方传入，类型为 `str`，默认值为 `'balanced'`。
+        llm_task: llm task 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     def call() -> dict[str, Any]:
-        """负责“call”。
-
-        该函数是 `agent.query_agent` 中的`_complete_json_with_hooks` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`call` 负责调用，服务于本文件职责：问答主编排。
+        传参：
+            无。
+        返回结果说明：
+            返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
         """
         try:
             return complete_json(system_prompt=system_prompt, user_prompt=user_prompt, model_role=model_role, llm_task=llm_task)
@@ -1074,9 +1230,13 @@ def _complete_json_with_hooks(
 
 
 def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hook_context: AgentRunContext | None = None) -> str:
-    """负责“synthesizeanswer”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_synthesize_answer` 负责处理 synthesize answer，服务于本文件职责：问答主编排。
+    传参：
+        question: 用户问题文本，类型为 `str`。
+        observations: observations 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+        hook_context: hook context 参数，由调用方传入，类型为 `AgentRunContext | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     payload = {
         "question": question,
@@ -1098,9 +1258,14 @@ def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hoo
 
 
 def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_context: AgentRunContext | None) -> str:
-    """负责“answerquestion实现”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_answer_question_impl` 负责处理 answer question impl，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        question: 用户问题文本，类型为 `str`。
+        max_steps: max steps 参数，由调用方传入，类型为 `int`。
+        hook_context: hook context 参数，由调用方传入，类型为 `AgentRunContext | None`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     question = question.strip()
     max_steps = max(1, min(int(max_steps), 4))
@@ -1181,10 +1346,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     reason="validated_fast_llm_plan",
                 )
             if fast_route is not None and str(fast_route.get("action")) == "memory_prefetch":
-                # The structured intent already decided this is not one of the
-                # bounded Memory-first fast paths.  Continue to the normal
-                # memory-prefetch/ReAct flow instead of the legacy short-query
-                # note-only shortcut.
+                # 结构化意图已判断它不属于有界 Memory 优先快路径，因此继续走常规 memory-prefetch/ReAct 流程。
                 fast_route = None
             if (
                 fast_route is not None
@@ -1192,9 +1354,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 and query_plan.complexity == "complex"
                 and query_plan.routing_state == "complex"
             ):
-                # Complex state questions need bounded multi-query recall; a
-                # type-only fast route can otherwise return one topic early and
-                # hide the second half of a comparison.
+                # 复杂状态问题需要有界多查询召回；只按类型走快路径可能提前返回一个主题，遮住对比问题的另一半。
                 fast_route = None
             if provisional:
                 observations.append(
@@ -1212,11 +1372,8 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     reason="read_after_write",
                 )
                 add_step(trace, "note_search", output_summary={"result_count": len(provisional), "ids": _result_ids(provisional)})
-                # The immediate answer path is deliberately independent of
-                # query intent and vector availability.  A lexical hit here is
-                # the note that was just durably saved; waiting for the memory
-                # worker (or invoking the model) would make a user's follow-up
-                # question appear to have lost that message.
+                # 立即回答路径刻意不依赖查询意图和向量可用性；这里的词法命中就是刚持久化的 Note。
+                # 若等待 Memory worker 或调用模型，用户追问时可能误以为刚才的消息丢失。
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(provisional)})
                 add_step(trace, "rerank", output_summary={"strategy": "local_lexical_recency", "ids": _result_ids(provisional)})
                 answer = _with_sources(_provisional_answer(provisional), provisional)
@@ -1309,6 +1466,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 },
                 reason="prefetch_active_memory",
             )
+            #先做一次简单查询
             memory_prefetch = _run_tool(
                 space_id,
                 "memory_search",
@@ -1316,9 +1474,8 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 trace=trace,
                 hook_context=hook_context,
             )
-            # Complex-query variants also run for weak non-empty recall and
-            # multi-topic decomposition. This recovers from plausible-looking
-            # but incomplete candidates without penalising simple lookups.
+            # 复杂查询变体也用于弱但非空的召回和多主题拆解；这样能补救看似合理但不完整的候选，同时不影响简单查询。
+            # 确实是复杂查询，已经生成检索变体，元查询结果较弱时，进行扩展查询
             should_expand = (
                 query_plan.complexity == "complex"
                 and bool(query_plan.retrieval_queries)
@@ -1374,6 +1531,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                                 "result": variant_result,
                             }
                         )
+                #原始排名高、多个子问题都命中、自身检索分数高
                 if result_groups:
                     memory_prefetch = _fuse_memory_results(result_groups, limit=5)
             add_step(
@@ -1399,9 +1557,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 )
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(memory_prefetch)})
 
-            # A multi-clause question can need raw note context even when a
-            # memory hit exists for another clause. Keep this bounded to the
-            # planned variants so ordinary lookups stay Memory-first.
+            # 多子句问题即使命中某个 Memory，也可能还需要原始 Note 语境；该补充限定在计划变体内，保证普通查询仍以 Memory 优先。
             if (
                 query_plan.complexity == "complex"
                 and query_plan.use_decomposition
@@ -1440,6 +1596,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 )
 
             react_llm_task = "query_complex_reasoning" if query_plan.complexity == "complex" or max_steps > 2 else "query_routing"
+            #ReAct主体
             for step in range(max_steps):
                 payload = {
                     "question": question,
@@ -1552,9 +1709,17 @@ def answer_question(
     message_id: str | None = None,
     task_id: str | None = None,
 ) -> str:
-    """负责“answerquestion”。
-
-    该函数是 `agent.query_agent` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`answer_question` 负责处理 answer question，服务于本文件职责：问答主编排。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        question: 用户问题文本，类型为 `str`。
+        max_steps: max steps 参数，由调用方传入，类型为 `int`，默认值为 `4`。
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `'default'`。
+        user_id: 用户标识，用于鉴权、限流、会话和数据归属，类型为 `str | None`，默认值为 `None`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str | None`，默认值为 `None`。
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     context = AgentRunContext.create(
         space_id=space_id,

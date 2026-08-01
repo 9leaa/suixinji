@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Read-only audit for likely unsafe historical memory merges.
+"""文件作用：记忆错误合并审计。
 
-The script only reports identifiers and reason codes.  It never writes to the
-database, never invokes an LLM, and deliberately avoids printing memory text.
+项目关系：本文件依赖 `memory.models`、`memory.repository`；被 暂无静态导入方或仅作为入口脚本执行。
 """
+
+
 
 from __future__ import annotations
 
@@ -23,9 +24,12 @@ from memory.repository import list_memories
 
 
 def audit_space(space_id: str, *, limit: int = 2_000) -> dict[str, Any]:
-    """负责“审计空间”。
-
-    该函数是 `scripts.audit_memory_false_merges` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`audit_space` 负责处理 audit space，服务于本文件职责：记忆错误合并审计。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `2000`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     findings: list[dict[str, Any]] = []
     scanned = list_memories(space_id, status=None, limit=max(1, min(int(limit), 10_000)))
@@ -41,8 +45,7 @@ def audit_space(space_id: str, *, limit: int = 2_000) -> dict[str, Any]:
     for (memory_type, key), memories in keys.items():
         if len(memories) < 2:
             continue
-        # Multiple active rows on an identical V3 key can be a retry artifact
-        # or a previously unsafe merge/split.  Report it for human review.
+        # 同一个 V3 key 下出现多条 active 记录，可能是重试产物或早期不安全合并/拆分结果，需要报告给人工复核。
         active = [memory for memory in memories if memory.status == "active"]
         if len(active) > 1 and any(memory.memory_key_version == MEMORY_KEY_V3_VERSION for memory in active):
             for memory in active:
@@ -61,7 +64,12 @@ def audit_space(space_id: str, *, limit: int = 2_000) -> dict[str, Any]:
 
 
 def main() -> int:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：记忆错误合并审计。
+    传参：
+        无。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
+    """
     parser = argparse.ArgumentParser(description="Read-only Memory V3 false-merge audit")
     parser.add_argument("--space-id", required=True, help="target space; required to avoid accidental global scans")
     parser.add_argument("--limit", type=int, default=2_000)

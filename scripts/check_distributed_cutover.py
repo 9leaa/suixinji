@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-"""Read-only production cutover checks for the distributed backend."""
+"""文件作用：分布式切换检查。
+
+项目关系：本文件依赖 `alembic.config`、`alembic.script`、`infrastructure.database`、`infrastructure.redis_client` 等 6 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -40,17 +45,24 @@ REQUIRED_TABLES = {
 
 
 def _add(report: dict[str, Any], level: str, check: str, detail: Any) -> None:
-    """负责“添加”。
-
-    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_add` 负责处理 add，服务于本文件职责：分布式切换检查。
+    传参：
+        report: report 参数，由调用方传入，类型为 `dict[str, Any]`。
+        level: level 参数，由调用方传入，类型为 `str`。
+        check: check 参数，由调用方传入，类型为 `str`。
+        detail: detail 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     report[level].append({"check": check, "detail": detail})
 
 
 def check_configuration(report: dict[str, Any]) -> None:
-    """负责“检查configuration”。
-
-    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_configuration` 负责检查 configuration，服务于本文件职责：分布式切换检查。
+    传参：
+        report: report 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     expected = {
         "STORAGE_BACKEND": "postgres",
@@ -68,9 +80,12 @@ def check_configuration(report: dict[str, Any]) -> None:
 
 
 def check_postgres(report: dict[str, Any], *, allow_pending: bool) -> None:
-    """负责“检查postgres”。
-
-    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_postgres` 负责检查 postgres，服务于本文件职责：分布式切换检查。
+    传参：
+        report: report 参数，由调用方传入，类型为 `dict[str, Any]`。
+        allow_pending: allow pending 参数，由调用方传入，类型为 `bool`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     try:
         engine = get_engine()
@@ -106,9 +121,11 @@ def check_postgres(report: dict[str, Any], *, allow_pending: bool) -> None:
 
 
 def check_redis(report: dict[str, Any]) -> None:
-    """负责“检查redis”。
-
-    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_redis` 负责检查 redis，服务于本文件职责：分布式切换检查。
+    传参：
+        report: report 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     try:
         client = get_redis()
@@ -133,9 +150,11 @@ def check_redis(report: dict[str, Any]) -> None:
 
 
 def check_local_recovery_assets(report: dict[str, Any]) -> None:
-    """负责“检查localrecoveryassets”。
-
-    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_local_recovery_assets` 负责检查 local recovery assets，服务于本文件职责：分布式切换检查。
+    传参：
+        report: report 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     cache_files = list((ROOT / "data" / "cache").glob("*.jsonl"))
     note_indexes = list((ROOT / "data" / "notes").glob("*/index.json"))
@@ -152,9 +171,11 @@ def check_local_recovery_assets(report: dict[str, Any]) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    """负责“解析参数”。
-
-    该函数是 `scripts.check_distributed_cutover` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`parse_args` 负责解析 args，服务于本文件职责：分布式切换检查。
+    传参：
+        无。
+    返回结果说明：
+        返回 `argparse.Namespace` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--allow-pending", action="store_true")
@@ -163,7 +184,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：分布式切换检查。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     args = parse_args()
     report: dict[str, Any] = {"passed": [], "warnings": [], "blockers": []}
     check_configuration(report)

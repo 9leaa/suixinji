@@ -1,4 +1,9 @@
-"""Optional strong-model advisory for high-risk Memory relations."""
+"""文件作用：人工审查建议。
+
+项目关系：本文件依赖 `core`、`core.llm_client`、`memory.models`；被 `memory.consolidator`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -24,9 +29,13 @@ def maybe_memory_relation_advisory(
     memories: list[MemoryRecord],
     decision: MemoryDecision,
 ) -> dict[str, Any] | None:
-    """负责“maybe记忆关系advisory”。
-
-    该函数是 `memory.advisory` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`maybe_memory_relation_advisory` 负责处理 maybe memory relation advisory，服务于本文件职责：人工审查建议。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        memories: memories 参数，由调用方传入，类型为 `list[MemoryRecord]`。
+        decision: decision 参数，由调用方传入，类型为 `MemoryDecision`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     if not settings.STRONG_ESCALATION_ENABLED or decision.recommended_action not in HIGH_RISK_ACTIONS:
         return None

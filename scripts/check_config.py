@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-"""Check deployment configuration before starting Suixinji."""
+"""文件作用：配置检查。
+
+项目关系：本文件依赖 `core.settings`、`infrastructure.database`、`infrastructure.redis_client`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -27,26 +32,32 @@ REQUIRED = [
 
 
 def ok(message: str) -> None:
-    """负责“ok”。
-
-    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`ok` 负责处理 ok，服务于本文件职责：配置检查。
+    传参：
+        message: message 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     print(f"[OK] {message}")
 
 
 def fail(message: str) -> None:
-    """负责“失败”。
-
-    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`fail` 负责处理 fail，服务于本文件职责：配置检查。
+    传参：
+        message: message 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     print(f"[FAIL] {message}")
     raise SystemExit(1)
 
 
 def check_env_file() -> None:
-    """负责“检查envfile”。
-
-    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_env_file` 负责检查 env file，服务于本文件职责：配置检查。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if not ENV_PATH.exists():
         fail(".env 不存在，请先从 .env.example 复制并填写")
@@ -55,9 +66,11 @@ def check_env_file() -> None:
 
 
 def check_required_env() -> None:
-    """负责“检查requiredenv”。
-
-    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_required_env` 负责检查 required env，服务于本文件职责：配置检查。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     missing = [key for key in REQUIRED if not os.getenv(key)]
     if missing:
@@ -75,9 +88,11 @@ def check_required_env() -> None:
 
 
 def check_memory_config() -> None:
-    """负责“检查记忆配置”。
-
-    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_memory_config` 负责检查 memory config，服务于本文件职责：配置检查。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     mode = os.getenv("SUIXINJI_MEMORY_EXTRACTOR_MODE", "rules").strip().lower()
     if mode not in {"rules", "llm", "hybrid"}:
@@ -118,9 +133,11 @@ def check_memory_config() -> None:
 
 
 def check_data_dir() -> None:
-    """负责“检查数据dir”。
-
-    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_data_dir` 负责检查 data dir，服务于本文件职责：配置检查。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     test_file = DATA_DIR / ".write_test"
@@ -134,9 +151,11 @@ def check_data_dir() -> None:
 
 
 def check_storage_backend() -> None:
-    """负责“检查storagebackend”。
-
-    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_storage_backend` 负责检查 storage backend，服务于本文件职责：配置检查。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     backend = os.getenv("STORAGE_BACKEND", "local").strip().lower()
     if backend not in {"local", "postgres"}:
@@ -156,9 +175,11 @@ def check_storage_backend() -> None:
 
 
 def check_database_budget() -> None:
-    """负责“检查databasebudget”。
-
-    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_database_budget` 负责检查 database budget，服务于本文件职责：配置检查。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     backend = os.getenv("STORAGE_BACKEND", "local").strip().lower()
     if backend != "postgres":
@@ -187,9 +208,11 @@ def check_database_budget() -> None:
 
 
 def check_api_config() -> None:
-    """负责“检查API配置”。
-
-    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_api_config` 负责检查 api config，服务于本文件职责：配置检查。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     from core.settings import API_HOST, API_PORT
 
@@ -203,9 +226,11 @@ def check_api_config() -> None:
 
 
 def check_coordination_backend() -> None:
-    """负责“检查coordinationbackend”。
-
-    该函数是 `scripts.check_config` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`check_coordination_backend` 负责检查 coordination backend，服务于本文件职责：配置检查。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     coordination = os.getenv("COORDINATION_BACKEND", "local").strip().lower()
     queue = os.getenv("TASK_QUEUE_BACKEND", "local").strip().lower()
@@ -230,7 +255,12 @@ def check_coordination_backend() -> None:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：配置检查。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     check_env_file()
     check_required_env()
     check_memory_config()

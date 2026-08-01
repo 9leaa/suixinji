@@ -1,3 +1,9 @@
+"""文件作用：PostgreSQL repositories、租户隔离及 schema CRUD。
+
+项目关系：本文件依赖 `core.wal`、`infrastructure.database`、`infrastructure.schema`、`memory.models` 等 8 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from __future__ import annotations
 
 import os
@@ -19,7 +25,12 @@ from runtime.query_metrics import capture_sql_queries
 
 
 def _postgres_ready() -> bool:
-    """验证“postgresready”场景的预期行为与回归边界。"""
+    """函数功能：`_postgres_ready` 负责处理 postgres ready，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        无。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     if not os.getenv("DATABASE_URL"):
         return False
     try:
@@ -33,7 +44,12 @@ pytestmark = pytest.mark.skipif(not _postgres_ready(), reason="PostgreSQL integr
 
 @pytest.fixture
 def pg_space():
-    """验证“pg空间”场景的预期行为与回归边界。"""
+    """函数功能：`pg_space` 负责处理 pg space，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_id = f"test-{uuid.uuid4().hex}"
     yield space_id
     with session_scope() as session:
@@ -41,7 +57,13 @@ def pg_space():
 
 
 def _wal(space_id: str, message_id: str) -> WalRecord:
-    """验证“预写日志”场景的预期行为与回归边界。"""
+    """函数功能：`_wal` 负责处理 wal，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str`。
+    返回结果说明：
+        返回 `WalRecord` 类型结果；具体字段和语义由调用方按该对象约定使用。
+    """
     return WalRecord(
         id=f"wal-{uuid.uuid4().hex}",
         source="test",
@@ -57,7 +79,12 @@ def _wal(space_id: str, message_id: str) -> WalRecord:
 
 
 def test_postgres_inbox_and_note_contract(pg_space):
-    """验证“postgresinboxand笔记contract”场景的预期行为与回归边界。"""
+    """函数功能：`test_postgres_inbox_and_note_contract` 负责验证 postgres inbox and note contract 场景，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        pg_space: pg space 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     message_id = f"message-{uuid.uuid4().hex}"
     record = _wal(pg_space, message_id)
     assert inbox.append_message_once(record) is True
@@ -93,7 +120,12 @@ def test_postgres_inbox_and_note_contract(pg_space):
 
 
 def test_postgres_pgvector_contract(pg_space):
-    """验证“postgrespgvectorcontract”场景的预期行为与回归边界。"""
+    """函数功能：`test_postgres_pgvector_contract` 负责验证 postgres pgvector contract 场景，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        pg_space: pg space 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     note = NoteMetadata(
         id=f"note-{uuid.uuid4().hex}",
         message_id=f"message-{uuid.uuid4().hex}",
@@ -118,7 +150,12 @@ def test_postgres_pgvector_contract(pg_space):
 
 
 def test_postgres_memory_summary_and_delivery_contract(pg_space):
-    """验证“postgres记忆总结and投递contract”场景的预期行为与回归边界。"""
+    """函数功能：`test_postgres_memory_summary_and_delivery_contract` 负责验证 postgres memory summary and delivery contract 场景，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        pg_space: pg space 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     created = memory.insert_memory(pg_space, MemoryCandidate("preference", "用户喜欢咖啡", 0.8, 0.9), source_note_id="note-1")
     corrected = memory.correct_memory(created.id, "用户喜欢牛奶")
     assert corrected is not None
@@ -150,7 +187,12 @@ def test_postgres_memory_summary_and_delivery_contract(pg_space):
 
 
 def test_postgres_memory_search_tolerates_omitted_chinese_connectives(pg_space):
-    """Retrieval should not require an exact Chinese character sequence."""
+    """函数功能：`test_postgres_memory_search_tolerates_omitted_chinese_connectives` 负责验证 postgres memory search tolerates omitted chinese connectives 场景，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        pg_space: pg space 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     created = memory.insert_memory(
         pg_space,
         MemoryCandidate(
@@ -177,7 +219,12 @@ def test_postgres_memory_search_tolerates_omitted_chinese_connectives(pg_space):
 
 
 def test_postgres_memory_candidate_lifecycle(pg_space):
-    """验证“postgres记忆候选生命周期”场景的预期行为与回归边界。"""
+    """函数功能：`test_postgres_memory_candidate_lifecycle` 负责验证 postgres memory candidate lifecycle 场景，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        pg_space: pg space 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     candidate = MemoryCandidate(
         "preference",
         "用户喜欢绿茶",
@@ -197,7 +244,12 @@ def test_postgres_memory_candidate_lifecycle(pg_space):
 
 
 def test_postgres_memory_list_and_adjudication_query_budgets(pg_space):
-    """验证“postgres记忆列出andadjudication查询budgets”场景的预期行为与回归边界。"""
+    """函数功能：`test_postgres_memory_list_and_adjudication_query_budgets` 负责验证 postgres memory list and adjudication query budgets 场景，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        pg_space: pg space 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     for index in range(5):
         memory.insert_memory(
             pg_space,
@@ -231,7 +283,12 @@ def test_postgres_memory_list_and_adjudication_query_budgets(pg_space):
 
 
 def test_postgres_note_specialized_query_budgets(pg_space):
-    """验证“postgres笔记specialized查询budgets”场景的预期行为与回归边界。"""
+    """函数功能：`test_postgres_note_specialized_query_budgets` 负责验证 postgres note specialized query budgets 场景，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        pg_space: pg space 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     for index in range(8):
         note = NoteMetadata(
             id=f"note-{uuid.uuid4().hex}",
@@ -262,11 +319,21 @@ def test_postgres_note_specialized_query_budgets(pg_space):
 
 
 def test_postgres_same_message_is_inserted_once_under_concurrency(pg_space):
-    """验证“postgressame消息是否为insertedonceunderconcurrency”场景的预期行为与回归边界。"""
+    """函数功能：`test_postgres_same_message_is_inserted_once_under_concurrency` 负责验证 postgres same message is inserted once under concurrency 场景，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        pg_space: pg space 参数，由调用方传入。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     message_id = f"message-{uuid.uuid4().hex}"
 
     def write(index: int) -> bool:
-        """验证“写入”场景的预期行为与回归边界。"""
+        """函数功能：`write` 负责写入，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+        传参：
+            index: index 参数，由调用方传入，类型为 `int`。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
+        """
         return inbox.append_message_once(_wal(pg_space, message_id))
 
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -280,11 +347,21 @@ def test_postgres_same_message_is_inserted_once_under_concurrency(pg_space):
 
 
 def test_postgres_memory_versions_are_serialized_under_concurrency(pg_space):
-    """验证“postgres记忆versionsareserializedunderconcurrency”场景的预期行为与回归边界。"""
+    """函数功能：`test_postgres_memory_versions_are_serialized_under_concurrency` 负责验证 postgres memory versions are serialized under concurrency 场景，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        pg_space: pg space 参数，由调用方传入。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     created = memory.insert_memory(pg_space, MemoryCandidate("semantic", "版本 0", 0.8, 0.9), source_note_id="note-0")
 
     def update(index: int):
-        """验证“更新”场景的预期行为与回归边界。"""
+        """函数功能：`update` 负责更新，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+        传参：
+            index: index 参数，由调用方传入，类型为 `int`。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         return memory.update_memory(created.id, content=f"版本 {index + 1}", reason="concurrency-test")
 
     with ThreadPoolExecutor(max_workers=6) as pool:
@@ -300,11 +377,21 @@ def test_postgres_memory_versions_are_serialized_under_concurrency(pg_space):
 
 
 def test_postgres_delivery_reservation_is_single_winner(pg_space):
-    """验证“postgres投递reservation是否为singlewinner”场景的预期行为与回归边界。"""
+    """函数功能：`test_postgres_delivery_reservation_is_single_winner` 负责验证 postgres delivery reservation is single winner 场景，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+    传参：
+        pg_space: pg space 参数，由调用方传入。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     key = f"delivery-{uuid.uuid4().hex}"
 
     def reserve(_index: int):
-        """验证“预约”场景的预期行为与回归边界。"""
+        """函数功能：`reserve` 负责预约，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
+        传参：
+            _index:  index 参数，由调用方传入，类型为 `int`。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         return delivery.reserve_delivery(key, delivery_type="query", space_id=pg_space)
 
     with ThreadPoolExecutor(max_workers=8) as pool:

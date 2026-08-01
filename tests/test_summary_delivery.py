@@ -1,3 +1,9 @@
+"""文件作用：总结生成后 delivery 预约/发送。
+
+项目关系：本文件依赖 `runtime`、`runtime.delivery_store`、`runtime.executor`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from types import SimpleNamespace
 
 from runtime import delivery_store
@@ -6,14 +12,26 @@ from runtime.executor import BoundedTaskExecutor
 
 
 def isolate_delivery_store(monkeypatch, tmp_path):
-    """验证“isolate投递存储”场景的预期行为与回归边界。"""
+    """函数功能：`isolate_delivery_store` 负责处理 isolate delivery store，服务于本文件职责：总结生成后 delivery 预约/发送。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+        tmp_path: tmp path 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(delivery_store, "DATA_DIR", tmp_path)
     monkeypatch.setattr(delivery_store, "DELIVERY_DIR", tmp_path / "deliveries")
     monkeypatch.setattr(delivery_store, "DELIVERY_PATH", tmp_path / "deliveries" / "index.json")
 
 
 def test_auto_summary_delivery_is_sent_once(monkeypatch, tmp_path):
-    """验证“auto总结投递是否为sentonce”场景的预期行为与回归边界。"""
+    """函数功能：`test_auto_summary_delivery_is_sent_once` 负责验证 auto summary delivery is sent once 场景，服务于本文件职责：总结生成后 delivery 预约/发送。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+        tmp_path: tmp path 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     isolate_delivery_store(monkeypatch, tmp_path)
     monkeypatch.setattr(
         "runtime.executor.generate_summary",

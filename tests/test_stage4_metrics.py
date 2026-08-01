@@ -1,3 +1,9 @@
+"""文件作用：Stage 4 指标生成与阈值。
+
+项目关系：本文件依赖 `runtime.distributed_metrics`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from __future__ import annotations
 
 import pytest
@@ -6,14 +12,24 @@ from runtime.distributed_metrics import build_report, percentile, reconcile_retr
 
 
 def test_percentile_uses_measured_values():
-    """验证“percentileusesmeasuredvalues”场景的预期行为与回归边界。"""
+    """函数功能：`test_percentile_uses_measured_values` 负责验证 percentile uses measured values 场景，服务于本文件职责：Stage 4 指标生成与阈值。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     assert percentile([], 0.95) is None
     assert percentile([1, 2, 3, 100], 0.50) == 3
     assert percentile([1, 2, 3, 100], 0.95) == 100
 
 
 def test_distributed_report_enforces_conservation():
-    """验证“distributed报告enforcesconservation”场景的预期行为与回归边界。"""
+    """函数功能：`test_distributed_report_enforces_conservation` 负责验证 distributed report enforces conservation 场景，服务于本文件职责：Stage 4 指标生成与阈值。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     database = {
         "accepted": 7,
         "root_task_status": {"completed": 5, "queued": 1, "dead_letter": 1},
@@ -36,7 +52,12 @@ def test_distributed_report_enforces_conservation():
 
 
 def test_distributed_report_reconciles_client_timeout_with_durable_inbox():
-    """验证“distributed报告reconcilesclient超时withdurableinbox”场景的预期行为与回归边界。"""
+    """函数功能：`test_distributed_report_reconciles_client_timeout_with_durable_inbox` 负责验证 distributed report reconciles client timeout with durable inbox 场景，服务于本文件职责：Stage 4 指标生成与阈值。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     database = {"accepted": 10, "root_task_status": {"completed": 10}}
     submission = {"submitted": 12, "accepted": 8, "duplicate": 2, "rate_limited": 0, "failed": 2}
     report = build_report(database, {}, submission=submission)
@@ -47,7 +68,12 @@ def test_distributed_report_reconciles_client_timeout_with_durable_inbox():
 
 
 def test_retry_reconciliation_separates_timeouts_from_intrinsic_duplicates():
-    """验证“重试reconciliationseparatestimeoutsfromintrinsicduplicates”场景的预期行为与回归边界。"""
+    """函数功能：`test_retry_reconciliation_separates_timeouts_from_intrinsic_duplicates` 负责验证 retry reconciliation separates timeouts from intrinsic duplicates 场景，服务于本文件职责：Stage 4 指标生成与阈值。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     initial = {
         "submitted": 1000,
         "accepted": 866,
@@ -84,7 +110,12 @@ def test_retry_reconciliation_separates_timeouts_from_intrinsic_duplicates():
 
 
 def test_retry_reconciliation_rejects_a_different_request_corpus():
-    """验证“重试reconciliationrejectsadifferent请求corpus”场景的预期行为与回归边界。"""
+    """函数功能：`test_retry_reconciliation_rejects_a_different_request_corpus` 负责验证 retry reconciliation rejects a different request corpus 场景，服务于本文件职责：Stage 4 指标生成与阈值。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     with pytest.raises(ValueError, match="same request corpus"):
         reconcile_retry_submission(
             {"submitted": 10},

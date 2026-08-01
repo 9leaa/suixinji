@@ -1,3 +1,9 @@
+"""文件作用：早期 ReAct 查询流程。
+
+项目关系：本文件依赖 `agent`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 import json
 
 from agent import query_agent
@@ -21,7 +27,12 @@ NOTES = [
 
 
 def test_answer_question_empty_question_does_not_call_llm(monkeypatch):
-    """验证“answerquestionemptyquestiondoesnotcallLLM”场景的预期行为与回归边界。"""
+    """函数功能：`test_answer_question_empty_question_does_not_call_llm` 负责验证 answer question empty question does not call llm 场景，服务于本文件职责：早期 ReAct 查询流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(query_agent, "complete_json", lambda **kwargs: (_ for _ in ()).throw(AssertionError("should not call llm")))
 
     answer = query_agent.answer_question(SPACE_ID, "   ")
@@ -30,11 +41,23 @@ def test_answer_question_empty_question_does_not_call_llm(monkeypatch):
 
 
 def test_answer_question_fast_routes_current_task_then_synthesizes_once(monkeypatch):
-    """验证“answerquestionfastroutescurrent任务thensynthesizesonce”场景的预期行为与回归边界。"""
+    """函数功能：`test_answer_question_fast_routes_current_task_then_synthesizes_once` 负责验证 answer question fast routes current task then synthesizes once 场景，服务于本文件职责：早期 ReAct 查询流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     prompts = []
 
     def fake_complete_json(system_prompt, user_prompt, model_role=None):
-        """验证“fake完成JSON”场景的预期行为与回归边界。"""
+        """函数功能：`fake_complete_json` 负责完成 json，服务于本文件职责：早期 ReAct 查询流程。
+        传参：
+            system_prompt: system prompt 参数，由调用方传入。
+            user_prompt: user prompt 参数，由调用方传入。
+            model_role: model role 参数，由调用方传入，默认值为 `None`。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         prompts.append(json.loads(user_prompt))
         assert model_role == "balanced"
         return {"final_answer": "你现在有 1 个任务：测试任务。"}
@@ -54,7 +77,12 @@ def test_answer_question_fast_routes_current_task_then_synthesizes_once(monkeypa
 
 
 def test_answer_question_defaults_to_semantic_search_when_llm_returns_no_action(monkeypatch):
-    """验证“answerquestiondefaults转换为semantic检索whenLLMreturns不action”场景的预期行为与回归边界。"""
+    """函数功能：`test_answer_question_defaults_to_semantic_search_when_llm_returns_no_action` 负责验证 answer question defaults to semantic search when llm returns no action 场景，服务于本文件职责：早期 ReAct 查询流程。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     calls = []
     decisions = iter(
         [
@@ -79,7 +107,12 @@ def test_answer_question_defaults_to_semantic_search_when_llm_returns_no_action(
 
 
 def test_synthesize_answer_falls_back_when_llm_fails():
-    """验证“synthesizeanswerfallsbackwhenLLMfails”场景的预期行为与回归边界。"""
+    """函数功能：`test_synthesize_answer_falls_back_when_llm_fails` 负责验证 synthesize answer falls back when llm fails 场景，服务于本文件职责：早期 ReAct 查询流程。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     observations = [
         {
             "tool": "filter_notes",

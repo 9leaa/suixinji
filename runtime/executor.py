@@ -1,4 +1,9 @@
-"""Bounded task executor for ingest, query, and summary work."""
+"""文件作用：本地有界异步执行器。
+
+项目关系：本文件依赖 `agent.query_agent`、`core.file_lock`、`core.observability`、`core.settings` 等 9 个模块；被 `bot.feishu_bot`、`runtime.enrichment_drainer`、`runtime.pending_drainer`、`summary.scheduler` 等 8 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -32,6 +37,10 @@ SendText = Callable[[str, str], bool]
 
 
 class BoundedTaskExecutor:
+    """类功能：`BoundedTaskExecutor` 封装与“本地有界异步执行器”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     def __init__(
         self,
         *,
@@ -39,7 +48,14 @@ class BoundedTaskExecutor:
         queue_size: int = TASK_QUEUE_SIZE,
         send_text: SendText | None = None,
     ) -> None:
-        """初始化`BoundedTaskExecutor` 实例并建立后续调用所需的状态。"""
+        """函数功能：`BoundedTaskExecutor.__init__` 在类 `BoundedTaskExecutor` 中负责初始化实例状态，服务于本文件职责：本地有界异步执行器。
+        传参：
+            max_workers: max workers 参数，由调用方传入，类型为 `int`，默认值为 `MAX_WORKERS`。
+            queue_size: queue size 参数，由调用方传入，类型为 `int`，默认值为 `TASK_QUEUE_SIZE`。
+            send_text: send text 参数，由调用方传入，类型为 `SendText | None`，默认值为 `None`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         self._pool = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="suixinji-task")
         self._enrichment_pool = ThreadPoolExecutor(
             max_workers=ENRICHMENT_MAX_WORKERS,
@@ -62,9 +78,11 @@ class BoundedTaskExecutor:
         self._shutdown_lock = threading.Lock()
 
     def set_send_text(self, send_text: SendText) -> None:
-        """负责“设置发送文本”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor.set_send_text` 在类 `BoundedTaskExecutor` 中负责设置 send text，服务于本文件职责：本地有界异步执行器。
+        传参：
+            send_text: send text 参数，由调用方传入，类型为 `SendText`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         self._send_text = send_text
 
@@ -76,9 +94,14 @@ class BoundedTaskExecutor:
         notify_on_success: bool = False,
         source: str = "direct",
     ) -> Task:
-        """负责“submit接收写入”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor.submit_ingest` 在类 `BoundedTaskExecutor` 中负责处理 submit ingest，服务于本文件职责：本地有界异步执行器。
+        传参：
+            record: 待处理或持久化的记录对象，类型为 `Any`。
+            chat_id: chat id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+            notify_on_success: notify on success 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+            source: source 参数，由调用方传入，类型为 `str`，默认值为 `'direct'`。
+        返回结果说明：
+            返回 `Task` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         record_dict = _record_to_dict(record)
         message_id = str(record_dict.get("message_id") or "")
@@ -107,9 +130,14 @@ class BoundedTaskExecutor:
         return submitted
 
     def submit_query(self, space_id: str, question: str, chat_id: str, message_id: str | None = None) -> Task:
-        """负责“submit查询”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor.submit_query` 在类 `BoundedTaskExecutor` 中负责查询 submit，服务于本文件职责：本地有界异步执行器。
+        传参：
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+            question: 用户问题文本，类型为 `str`。
+            chat_id: chat id 参数，由调用方传入，类型为 `str`。
+            message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str | None`，默认值为 `None`。
+        返回结果说明：
+            返回 `Task` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         delivery_key = query_key(space_id, message_id) if message_id else query_key(space_id, "unknown")
         task = create_task(
@@ -135,9 +163,17 @@ class BoundedTaskExecutor:
         delivery_key: str | None = None,
         delivery_type: str | None = None,
     ) -> Task:
-        """负责“submit总结”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor.submit_summary` 在类 `BoundedTaskExecutor` 中负责处理 submit summary，服务于本文件职责：本地有界异步执行器。
+        传参：
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+            range_key: range key 参数，由调用方传入，类型为 `str`。
+            chat_id: chat id 参数，由调用方传入，类型为 `str`。
+            message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str | None`，默认值为 `None`。
+            on_success: on success 参数，由调用方传入，类型为 `Callable[[], None] | None`，默认值为 `None`。
+            delivery_key: delivery key 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+            delivery_type: delivery type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        返回结果说明：
+            返回 `Task` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         if delivery_key is None and message_id:
             delivery_key = manual_summary_key(space_id, message_id)
@@ -156,9 +192,11 @@ class BoundedTaskExecutor:
         return self._submit(task, self._run_summary)
 
     def get_stats(self) -> dict[str, Any]:
-        """负责“获取统计”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor.get_stats` 在类 `BoundedTaskExecutor` 中负责获取 stats，服务于本文件职责：本地有界异步执行器。
+        传参：
+            无。
+        返回结果说明：
+            返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
         """
         stats = self._registry.get_stats()
         stats.update(
@@ -174,40 +212,52 @@ class BoundedTaskExecutor:
         return stats
 
     def remaining_slots(self) -> int:
-        """负责“remainingslots”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor.remaining_slots` 在类 `BoundedTaskExecutor` 中负责处理 remaining slots，服务于本文件职责：本地有界异步执行器。
+        传参：
+            无。
+        返回结果说明：
+            返回 `int`，表示计算得到的数值结果。
         """
         return int(getattr(self._slots, "_value", 0))
 
     def has_inflight_ingest(self, space_id: str, message_id: str) -> bool:
-        """负责“是否包含inflight接收写入”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor.has_inflight_ingest` 在类 `BoundedTaskExecutor` 中负责判断是否包含 inflight ingest，服务于本文件职责：本地有界异步执行器。
+        传参：
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+            message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str`。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         with self._inflight_ingest_lock:
             return (space_id, message_id) in self._inflight_ingest_keys
 
     def inflight_ingest_count(self) -> int:
-        """负责“inflight接收写入统计”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor.inflight_ingest_count` 在类 `BoundedTaskExecutor` 中负责计数 inflight ingest，服务于本文件职责：本地有界异步执行器。
+        传参：
+            无。
+        返回结果说明：
+            返回 `int`，表示计算得到的数值结果。
         """
         with self._inflight_ingest_lock:
             return len(self._inflight_ingest_keys)
 
     def inflight_enrichment_count(self) -> int:
-        """负责“inflightenrichment统计”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor.inflight_enrichment_count` 在类 `BoundedTaskExecutor` 中负责计数 inflight enrichment，服务于本文件职责：本地有界异步执行器。
+        传参：
+            无。
+        返回结果说明：
+            返回 `int`，表示计算得到的数值结果。
         """
         with self._inflight_enrichment_lock:
             return len(self._inflight_enrichment)
 
     def submit_enrichment(self, space_id: str, note_id: str) -> bool:
-        """负责“submitenrichment”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor.submit_enrichment` 在类 `BoundedTaskExecutor` 中负责处理 submit enrichment，服务于本文件职责：本地有界异步执行器。
+        传参：
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+            note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         key = (str(space_id), str(note_id))
         if not key[0] or not key[1]:
@@ -225,9 +275,11 @@ class BoundedTaskExecutor:
         return True
 
     def shutdown(self) -> None:
-        """负责“shutdown”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor.shutdown` 在类 `BoundedTaskExecutor` 中负责处理 shutdown，服务于本文件职责：本地有界异步执行器。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with self._shutdown_lock:
             self._shutdown = True
@@ -241,9 +293,13 @@ class BoundedTaskExecutor:
         *,
         on_finished: Callable[[], None] | None = None,
     ) -> Task:
-        """负责“submit”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._submit` 在类 `BoundedTaskExecutor` 中负责处理 submit，服务于本文件职责：本地有界异步执行器。
+        传参：
+            task: task 参数，由调用方传入，类型为 `Task`。
+            runner: runner 参数，由调用方传入，类型为 `Callable[[Task], None]`。
+            on_finished: on finished 参数，由调用方传入，类型为 `Callable[[], None] | None`，默认值为 `None`。
+        返回结果说明：
+            返回 `Task` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         with self._shutdown_lock:
             if self._shutdown:
@@ -264,9 +320,12 @@ class BoundedTaskExecutor:
         return task
 
     def _reject(self, task: Task, error: str) -> Task:
-        """负责“reject”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._reject` 在类 `BoundedTaskExecutor` 中负责拒绝，服务于本文件职责：本地有界异步执行器。
+        传参：
+            task: task 参数，由调用方传入，类型为 `Task`。
+            error: 当前捕获的异常对象，类型为 `str`。
+        返回结果说明：
+            返回 `Task` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         rejected = self._registry.reject(task, error)
         log_event(
@@ -282,9 +341,13 @@ class BoundedTaskExecutor:
         return rejected
 
     def _run_task(self, task: Task, runner: Callable[[Task], None], on_finished: Callable[[], None] | None = None) -> None:
-        """负责“运行任务”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._run_task` 在类 `BoundedTaskExecutor` 中负责运行 task，服务于本文件职责：本地有界异步执行器。
+        传参：
+            task: task 参数，由调用方传入，类型为 `Task`。
+            runner: runner 参数，由调用方传入，类型为 `Callable[[Task], None]`。
+            on_finished: on finished 参数，由调用方传入，类型为 `Callable[[], None] | None`，默认值为 `None`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         self._registry.mark_running(task.id)
         log_event(
@@ -325,9 +388,11 @@ class BoundedTaskExecutor:
             self._slots.release()
 
     def _run_ingest(self, task: Task) -> None:
-        """负责“运行接收写入”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._run_ingest` 在类 `BoundedTaskExecutor` 中负责运行 ingest，服务于本文件职责：本地有界异步执行器。
+        传参：
+            task: task 参数，由调用方传入，类型为 `Task`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         record = task.payload["record"]
         chat_id = task.payload.get("chat_id")
@@ -347,15 +412,16 @@ class BoundedTaskExecutor:
             self.submit_enrichment(task.space_id, note_id)
 
     def _run_query(self, task: Task) -> None:
-        """负责“运行查询”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._run_query` 在类 `BoundedTaskExecutor` 中负责运行 query，服务于本文件职责：本地有界异步执行器。
+        传参：
+            task: task 参数，由调用方传入，类型为 `Task`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         question = str(task.payload["question"])
         chat_id = str(task.payload["chat_id"])
         try:
-            # A query may race the previous ingest task.  Flush the same space
-            # through the fast local archival stage before reading notes.
+            # 查询可能与前一个 ingest 任务竞争；读取 Note 前先把同一 space 快速推进到本地归档阶段。
             with get_space_lock(task.space_id):
                 process_pending(task.space_id)
             answer = answer_question(task.space_id, question)
@@ -371,9 +437,11 @@ class BoundedTaskExecutor:
         )
 
     def _run_enrichment(self, key: tuple[str, str]) -> None:
-        """负责“运行enrichment”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._run_enrichment` 在类 `BoundedTaskExecutor` 中负责运行 enrichment，服务于本文件职责：本地有界异步执行器。
+        传参：
+            key: key 参数，由调用方传入，类型为 `tuple[str, str]`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         space_id, note_id = key
         log_event("worker.enrichment_queued", space_id=space_id, record_id=note_id)
@@ -402,9 +470,11 @@ class BoundedTaskExecutor:
             self._enrichment_slots.release()
 
     def _run_summary(self, task: Task) -> None:
-        """负责“运行总结”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._run_summary` 在类 `BoundedTaskExecutor` 中负责运行 summary，服务于本文件职责：本地有界异步执行器。
+        传参：
+            task: task 参数，由调用方传入，类型为 `Task`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         range_key = str(task.payload["range_key"])
         chat_id = str(task.payload["chat_id"])
@@ -433,9 +503,16 @@ class BoundedTaskExecutor:
         task: Task,
         on_sent: Callable[[], None] | None = None,
     ) -> None:
-        """负责“deliver”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._deliver` 在类 `BoundedTaskExecutor` 中负责处理 deliver，服务于本文件职责：本地有界异步执行器。
+        传参：
+            chat_id: chat id 参数，由调用方传入，类型为 `str`。
+            text: 输入文本内容，类型为 `str`。
+            delivery_key: delivery key 参数，由调用方传入，类型为 `str`。
+            delivery_type: delivery type 参数，由调用方传入，类型为 `str`。
+            task: task 参数，由调用方传入，类型为 `Task`。
+            on_sent: on sent 参数，由调用方传入，类型为 `Callable[[], None] | None`，默认值为 `None`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         if self._send_text is None:
             return
@@ -476,9 +553,12 @@ class BoundedTaskExecutor:
             on_sent()
 
     def _deliver_query_failure_notice(self, chat_id: str, task: Task) -> None:
-        """负责“deliver查询failurenotice”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._deliver_query_failure_notice` 在类 `BoundedTaskExecutor` 中负责查询 failure notice，服务于本文件职责：本地有界异步执行器。
+        传参：
+            chat_id: chat id 参数，由调用方传入，类型为 `str`。
+            task: task 参数，由调用方传入，类型为 `Task`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         try:
             self._deliver(
@@ -492,9 +572,11 @@ class BoundedTaskExecutor:
             LOGGER.exception("Failed to send query failure notice: task_id=%s", task.id)
 
     def _summary_lock(self, space_id: str) -> threading.Lock:
-        """负责“总结锁”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._summary_lock` 在类 `BoundedTaskExecutor` 中负责加锁 summary，服务于本文件职责：本地有界异步执行器。
+        传参：
+            space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        返回结果说明：
+            返回 `threading.Lock` 类型结果；具体字段和语义由调用方按该对象约定使用。
         """
         with self._summary_locks_guard:
             lock = self._summary_locks.get(space_id)
@@ -504,9 +586,11 @@ class BoundedTaskExecutor:
             return lock
 
     def _reserve_inflight_ingest(self, key: tuple[str, str]) -> bool:
-        """负责“预约inflight接收写入”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._reserve_inflight_ingest` 在类 `BoundedTaskExecutor` 中负责预约 inflight ingest，服务于本文件职责：本地有界异步执行器。
+        传参：
+            key: key 参数，由调用方传入，类型为 `tuple[str, str]`。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         with self._inflight_ingest_lock:
             if key in self._inflight_ingest_keys:
@@ -515,18 +599,22 @@ class BoundedTaskExecutor:
             return True
 
     def _release_inflight_ingest(self, key: tuple[str, str]) -> None:
-        """负责“释放inflight接收写入”。
-
-        该函数是 `runtime.executor` 中的`BoundedTaskExecutor` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`BoundedTaskExecutor._release_inflight_ingest` 在类 `BoundedTaskExecutor` 中负责释放 inflight ingest，服务于本文件职责：本地有界异步执行器。
+        传参：
+            key: key 参数，由调用方传入，类型为 `tuple[str, str]`。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with self._inflight_ingest_lock:
             self._inflight_ingest_keys.discard(key)
 
 
 def _record_to_dict(record: Any) -> dict[str, Any]:
-    """负责“记录转换为dict”。
-
-    该函数是 `runtime.executor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_record_to_dict` 负责记录 to dict，服务于本文件职责：本地有界异步执行器。
+    传参：
+        record: 待处理或持久化的记录对象，类型为 `Any`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     if isinstance(record, dict):
         return dict(record)
@@ -534,9 +622,11 @@ def _record_to_dict(record: Any) -> dict[str, Any]:
 
 
 def _note_id(note: Any) -> str:
-    """负责“笔记标识”。
-
-    该函数是 `runtime.executor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_note_id` 负责处理 note id，服务于本文件职责：本地有界异步执行器。
+    传参：
+        note: note 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     if note is None:
         return ""
@@ -546,9 +636,11 @@ def _note_id(note: Any) -> str:
 
 
 def _task_timing(task: Task) -> dict[str, int | None]:
-    """负责“任务timing”。
-
-    该函数是 `runtime.executor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_task_timing` 负责处理 task timing，服务于本文件职责：本地有界异步执行器。
+    传参：
+        task: task 参数，由调用方传入，类型为 `Task`。
+    返回结果说明：
+        返回 `dict[str, int | None]`，表示结构化结果、载荷或状态映射。
     """
     return {
         "queue_wait_ms": task.queue_wait_ms,
@@ -558,9 +650,11 @@ def _task_timing(task: Task) -> dict[str, int | None]:
 
 
 def _looks_uncertain_send_error(exc: BaseException) -> bool:
-    """负责“looksuncertain发送错误”。
-
-    该函数是 `runtime.executor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_looks_uncertain_send_error` 负责发送 error，服务于本文件职责：本地有界异步执行器。
+    传参：
+        exc: 当前捕获的异常对象，类型为 `BaseException`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     text = f"{type(exc).__name__}: {exc}".casefold()
     return "timeout" in text or "timed out" in text or "connection" in text
@@ -571,9 +665,11 @@ _default_lock = threading.Lock()
 
 
 def get_task_executor(send_text: SendText | None = None) -> BoundedTaskExecutor:
-    """负责“获取任务executor”。
-
-    该函数是 `runtime.executor` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_task_executor` 负责获取 task executor，服务于本文件职责：本地有界异步执行器。
+    传参：
+        send_text: send text 参数，由调用方传入，类型为 `SendText | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `BoundedTaskExecutor` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     global _default_executor
     with _default_lock:

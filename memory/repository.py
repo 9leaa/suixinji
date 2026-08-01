@@ -1,4 +1,9 @@
-"""SQLite repository for versioned, auditable long-term memory."""
+"""文件作用：本地 SQLite Memory repository。
+
+项目关系：本文件依赖 `core.settings`、`memory.canonicalizer`、`memory.models`、`memory.policies` 等 8 个模块；被 `apps.scheduler`、`core.worker`、`eval.eval_memory`、`eval.eval_memory_quality` 等 30 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -43,9 +48,11 @@ _SCHEMA_LOCK = threading.RLock()
 
 
 def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
-    """负责“connect”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_connect` 负责连接，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `sqlite3.Connection` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     path = Path(db_path or DB_PATH)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -59,17 +66,22 @@ def _connect(db_path: str | Path | None = None) -> sqlite3.Connection:
 
 
 def _is_locked_error(exc: Exception) -> bool:
-    """负责“是否为locked错误”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_is_locked_error` 负责判断是否为 locked error，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        exc: 当前捕获的异常对象，类型为 `Exception`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     return isinstance(exc, sqlite3.OperationalError) and "locked" in str(exc).casefold()
 
 
 def _run_write(operation: Callable[[], T], *, max_attempts: int | None = None) -> T:
-    """负责“运行写入”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_run_write` 负责运行 write，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        operation: operation 参数，由调用方传入，类型为 `Callable[[], T]`。
+        max_attempts: max attempts 参数，由调用方传入，类型为 `int | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `T` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     attempts = max(1, int(max_attempts or MEMORY_DB_WRITE_MAX_ATTEMPTS))
     delay = 0.05
@@ -85,9 +97,11 @@ def _run_write(operation: Callable[[], T], *, max_attempts: int | None = None) -
 
 
 def _parse_iso(value: str | None) -> datetime | None:
-    """负责“解析iso”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_parse_iso` 负责解析 iso，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str | None`。
+    返回结果说明：
+        返回 `datetime | None`；未命中或无需处理时可返回 `None`。
     """
     if not value:
         return None
@@ -101,9 +115,12 @@ def _parse_iso(value: str | None) -> datetime | None:
 
 
 def _is_stale(value: str | None, *, lease_seconds: int) -> bool:
-    """负责“是否为stale”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_is_stale` 负责判断是否为 stale，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str | None`。
+        lease_seconds: lease seconds 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     parsed = _parse_iso(value)
     if parsed is None:
@@ -112,25 +129,37 @@ def _is_stale(value: str | None, *, lease_seconds: int) -> bool:
 
 
 def _ensure_column(conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
-    """Apply an additive SQLite migration for databases created by older releases."""
+    """函数功能：`_ensure_column` 负责确保 column，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        conn: 数据库或 Redis 连接对象，类型为 `sqlite3.Connection`。
+        table: table 参数，由调用方传入，类型为 `str`。
+        column: column 参数，由调用方传入，类型为 `str`。
+        definition: definition 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     existing = {str(row["name"]) for row in conn.execute(f"PRAGMA table_info({table})").fetchall()}
     if column not in existing:
         conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
 
 
 def init_db(db_path: str | Path | None = None) -> None:
-    """负责“初始化db”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`init_db` 负责处理 init db，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with _SCHEMA_LOCK:
         _init_db(db_path)
 
 
 def _init_db(db_path: str | Path | None = None) -> None:
-    """负责“初始化db”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_init_db` 负责处理 init db，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with _connect(db_path) as conn:
         conn.executescript(
@@ -376,9 +405,13 @@ def _init_db(db_path: str | Path | None = None) -> None:
 
 
 def _memory_from_row(row: sqlite3.Row, *, sources: list[MemorySource] | None = None, versions: list[MemoryVersion] | None = None) -> MemoryRecord:
-    """负责“记忆fromrow”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_memory_from_row` 负责处理 memory from row，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        row: row 参数，由调用方传入，类型为 `sqlite3.Row`。
+        sources: sources 参数，由调用方传入，类型为 `list[MemorySource] | None`，默认值为 `None`。
+        versions: versions 参数，由调用方传入，类型为 `list[MemoryVersion] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     try:
         scope = json.loads(row["scope_json"] or "{}")
@@ -415,9 +448,11 @@ def _memory_from_row(row: sqlite3.Row, *, sources: list[MemorySource] | None = N
 
 
 def _candidate_from_row(row: sqlite3.Row) -> MemoryCandidate:
-    """负责“候选fromrow”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_candidate_from_row` 负责处理 candidate from row，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        row: row 参数，由调用方传入，类型为 `sqlite3.Row`。
+    返回结果说明：
+        返回 `MemoryCandidate` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     try:
         scope = json.loads(row["scope_json"] or "{}")
@@ -465,14 +500,26 @@ def save_memory_candidate(
     decision_id: str | None = None,
     db_path: str | Path | None = None,
 ) -> MemoryCandidate:
-    """Persist one candidate without resetting a terminal retry state."""
+    """函数功能：`save_memory_candidate` 负责保存 memory candidate，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'extracted'`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+        decision_id: decision id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryCandidate` 类型结果；具体字段和语义由调用方按该对象约定使用。
+    """
     init_db(db_path)
     now = utc_now_iso()
 
     def _operation() -> None:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`save_memory_candidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with _connect(db_path) as conn:
             existing = conn.execute(
@@ -543,9 +590,12 @@ def save_memory_candidate(
 
 
 def get_memory_candidate(candidate_id: str, db_path: str | Path | None = None) -> MemoryCandidate | None:
-    """负责“获取记忆候选”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_memory_candidate` 负责获取 memory candidate，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        candidate_id: candidate id 参数，由调用方传入，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryCandidate | None`；未命中或无需处理时可返回 `None`。
     """
     init_db(db_path)
     with _connect(db_path) as conn:
@@ -554,9 +604,12 @@ def get_memory_candidate(candidate_id: str, db_path: str | Path | None = None) -
 
 
 def get_memory_candidate_status(candidate_id: str, db_path: str | Path | None = None) -> str | None:
-    """负责“获取记忆候选状态”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_memory_candidate_status` 负责获取 memory candidate status，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        candidate_id: candidate id 参数，由调用方传入，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     init_db(db_path)
     with _connect(db_path) as conn:
@@ -572,9 +625,15 @@ def mark_memory_candidate(
     decision_id: str | None = None,
     db_path: str | Path | None = None,
 ) -> bool:
-    """负责“标记记忆候选”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_memory_candidate` 负责标记 memory candidate，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        candidate_id: candidate id 参数，由调用方传入，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+        decision_id: decision id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     allowed = {"extracted", "validated", "adjudicated", "applied", "pending_review", "discarded", "failed", "processing"}
     if status not in allowed:
@@ -583,9 +642,11 @@ def mark_memory_candidate(
     now = utc_now_iso()
 
     def _operation() -> bool:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`mark_memory_candidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         with _connect(db_path) as conn:
             result = conn.execute(
@@ -603,9 +664,13 @@ def mark_memory_candidate(
 
 
 def list_retryable_memory_candidates(space_id: str, *, limit: int = 100, db_path: str | Path | None = None) -> list[MemoryCandidate]:
-    """负责“列出retryable记忆candidates”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_retryable_memory_candidates` 负责列出 retryable memory candidates，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `100`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryCandidate]`，表示按条件筛选、构造或查询得到的列表。
     """
     init_db(db_path)
     with _connect(db_path) as conn:
@@ -621,9 +686,11 @@ def list_retryable_memory_candidates(space_id: str, *, limit: int = 100, db_path
 
 
 def _extraction_state_from_row(row: sqlite3.Row) -> MemoryExtractionState:
-    """负责“extraction状态fromrow”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_extraction_state_from_row` 负责处理 extraction state from row，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        row: row 参数，由调用方传入，类型为 `sqlite3.Row`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return MemoryExtractionState(
         note_id=str(row["note_id"]),
@@ -640,9 +707,11 @@ def _extraction_state_from_row(row: sqlite3.Row) -> MemoryExtractionState:
 
 
 def _consolidation_run_from_row(row: sqlite3.Row) -> ConsolidationRun:
-    """负责“consolidation运行fromrow”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_consolidation_run_from_row` 负责运行 from row，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        row: row 参数，由调用方传入，类型为 `sqlite3.Row`。
+    返回结果说明：
+        返回 `ConsolidationRun` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return ConsolidationRun(
         id=str(row["id"]),
@@ -658,9 +727,12 @@ def _consolidation_run_from_row(row: sqlite3.Row) -> ConsolidationRun:
 
 
 def _load_sources(conn: sqlite3.Connection, memory_id: str) -> list[MemorySource]:
-    """负责“加载sources”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_load_sources` 负责加载 sources，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        conn: 数据库或 Redis 连接对象，类型为 `sqlite3.Connection`。
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+    返回结果说明：
+        返回 `list[MemorySource]`，表示按条件筛选、构造或查询得到的列表。
     """
     rows = conn.execute(
         "SELECT memory_id, note_id, relation, created_at FROM memory_sources WHERE memory_id = ? ORDER BY created_at",
@@ -670,9 +742,12 @@ def _load_sources(conn: sqlite3.Connection, memory_id: str) -> list[MemorySource
 
 
 def _load_versions(conn: sqlite3.Connection, memory_id: str) -> list[MemoryVersion]:
-    """负责“加载versions”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_load_versions` 负责加载 versions，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        conn: 数据库或 Redis 连接对象，类型为 `sqlite3.Connection`。
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+    返回结果说明：
+        返回 `list[MemoryVersion]`，表示按条件筛选、构造或查询得到的列表。
     """
     rows = conn.execute(
         """
@@ -717,9 +792,22 @@ def _add_version(
     reason: str | None = None,
     source_note_id: str | None = None,
 ) -> None:
-    """负责“添加版本”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_add_version` 负责处理 add version，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        conn: 数据库或 Redis 连接对象，类型为 `sqlite3.Connection`。
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        version: version 参数，由调用方传入，类型为 `int`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`。
+        task_status: task status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        confidence: confidence 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+        importance: importance 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+        valid_from: valid from 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        valid_until: valid until 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        reason: reason 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     conn.execute(
         """
@@ -748,9 +836,15 @@ def _add_version(
 
 
 def _add_source_row(conn: sqlite3.Connection, memory_id: str, note_id: str, relation: str, *, now: str | None = None) -> bool:
-    """负责“添加来源row”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_add_source_row` 负责处理 add source row，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        conn: 数据库或 Redis 连接对象，类型为 `sqlite3.Connection`。
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        relation: relation 参数，由调用方传入，类型为 `str`。
+        now: now 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if relation not in SOURCE_RELATIONS:
         raise ValueError(f"invalid source relation: {relation}")
@@ -781,9 +875,18 @@ def _insert_memory_row(
     memory_id: str | None = None,
     now: str | None = None,
 ) -> str:
-    """负责“插入记忆row”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_insert_memory_row` 负责处理 insert memory row，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        conn: 数据库或 Redis 连接对象，类型为 `sqlite3.Connection`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str`。
+        source_relation: source relation 参数，由调用方传入，类型为 `str`，默认值为 `'created_from'`。
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'active'`。
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str | None`，默认值为 `None`。
+        now: now 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     if status not in MEMORY_STATUSES:
         raise ValueError(f"invalid memory status: {status}")
@@ -854,9 +957,17 @@ def _add_relation_row(
     decision_id: str | None,
     now: str,
 ) -> None:
-    """负责“添加关系row”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_add_relation_row` 负责处理 add relation row，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        conn: 数据库或 Redis 连接对象，类型为 `sqlite3.Connection`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        source_memory_id: source memory id 参数，由调用方传入，类型为 `str`。
+        target_memory_id: target memory id 参数，由调用方传入，类型为 `str`。
+        relation: relation 参数，由调用方传入，类型为 `str`。
+        decision_id: decision id 参数，由调用方传入，类型为 `str | None`。
+        now: now 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if relation not in MEMORY_RELATION_TYPES:
         raise ValueError(f"invalid memory relation: {relation}")
@@ -891,9 +1002,18 @@ def _insert_decision_row(
     error: str | None = None,
     now: str | None = None,
 ) -> None:
-    """负责“插入决策row”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_insert_decision_row` 负责处理 insert decision row，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        conn: 数据库或 Redis 连接对象，类型为 `sqlite3.Connection`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        decision: decision 参数，由调用方传入，类型为 `MemoryDecision`。
+        status: status 参数，由调用方传入，类型为 `str`。
+        result_memory_ids: result memory ids 参数，由调用方传入，类型为 `list[str] | None`，默认值为 `None`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+        now: now 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if decision.recommended_action not in DECISION_ACTIONS:
         raise ValueError(f"invalid decision action: {decision.recommended_action}")
@@ -935,16 +1055,23 @@ def _insert_decision_row(
 
 
 def add_source(memory_id: str, note_id: str, relation: str, db_path: str | Path | None = None) -> bool:
-    """负责“添加来源”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`add_source` 负责处理 add source，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        relation: relation 参数，由调用方传入，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     init_db(db_path)
 
     def _operation() -> bool:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`add_source` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         with _connect(db_path) as conn:
             return _add_source_row(conn, memory_id, note_id, relation)
@@ -961,9 +1088,16 @@ def insert_memory(
     status: str = "active",
     db_path: str | Path | None = None,
 ) -> MemoryRecord:
-    """负责“插入记忆”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`insert_memory` 负责处理 insert memory，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str`。
+        source_relation: source relation 参数，由调用方传入，类型为 `str`，默认值为 `'created_from'`。
+        status: status 参数，由调用方传入，类型为 `str`，默认值为 `'active'`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if status not in MEMORY_STATUSES:
         raise ValueError(f"invalid memory status: {status}")
@@ -971,9 +1105,11 @@ def insert_memory(
     memory_id = new_id("mem")
 
     def _operation() -> None:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`insert_memory` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with _connect(db_path) as conn:
             _insert_memory_row(
@@ -995,9 +1131,12 @@ def insert_memory(
 
 
 def get_memory(memory_id: str, db_path: str | Path | None = None) -> MemoryRecord | None:
-    """负责“获取记忆”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_memory` 负责获取 memory，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     init_db(db_path)
     with _connect(db_path) as conn:
@@ -1017,9 +1156,17 @@ def list_memories(
     limit: int = 20,
     db_path: str | Path | None = None,
 ) -> list[MemoryRecord]:
-    """负责“列出memories”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_memories` 负责列出 memories，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str | None`，默认值为 `'active'`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        memory_key: memory key 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        include_expired: include expired 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `20`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryRecord]`，表示按条件筛选、构造或查询得到的列表。
     """
     init_db(db_path)
     clauses = ["space_id = ?"]
@@ -1051,9 +1198,15 @@ def list_adjudication_candidates(
     limit: int = 200,
     db_path: str | Path | None = None,
 ) -> list[MemoryRecord]:
-    """负责“列出adjudicationcandidates”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_adjudication_candidates` 负责列出 adjudication candidates，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str`。
+        memory_key: memory key 参数，由调用方传入，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `200`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryRecord]`，表示按条件筛选、构造或查询得到的列表。
     """
     memories = list_memories(
         space_id,
@@ -1074,9 +1227,15 @@ def hybrid_adjudication_candidates(
     limit: int = 20,
     db_path: str | Path | None = None,
 ) -> list[MemoryRecord]:
-    """负责“混合adjudicationcandidates”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`hybrid_adjudication_candidates` 负责处理 hybrid adjudication candidates，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        query_embedding: query embedding 参数，由调用方传入，类型为 `list[float] | None`，默认值为 `None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `20`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryRecord]`，表示按条件筛选、构造或查询得到的列表。
     """
     del query_embedding
     from memory.canonicalizer import task_identity_compatible
@@ -1122,10 +1281,7 @@ def hybrid_adjudication_candidates(
             structured_params.append(max(30, min(int(limit) * 3, 200)))
             structured_rows = conn.execute(structured_sql, structured_params).fetchall()
         if candidate.memory_type == "task":
-            # Legacy V2 tasks may have generic subject/predicate slots, so
-            # their old key cannot be reached by the V3 structured filters.
-            # Bring a bounded task slice to the local identity bridge; the
-            # Relation Guard still decides whether any row is compatible.
+            # 旧版 V2 任务可能使用泛化 subject/predicate 槽位，V3 结构化过滤无法命中旧 key；向本地 identity bridge 提供有界任务切片，最终兼容性仍由 Relation Guard 判断。
             structured_rows.extend(
                 conn.execute(
                     "SELECT * FROM memories WHERE space_id = ? AND status = 'active' AND memory_type = 'task' "
@@ -1137,9 +1293,11 @@ def hybrid_adjudication_candidates(
         memories = [_memory_from_row(row) for row in rows_by_id.values()]
 
     def _matches(memory: MemoryRecord) -> bool:
-        """负责“matches”。
-
-        该函数是 `memory.repository` 中的`hybrid_adjudication_candidates` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_matches` 负责处理 matches，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         if memory.effective_memory_key == candidate.effective_memory_key:
             return True
@@ -1163,17 +1321,23 @@ def expire_due_memories(
     limit: int = 500,
     db_path: str | Path | None = None,
 ) -> int:
-    """负责“expireduememories”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`expire_due_memories` 负责处理过期状态 due memories，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str | None`，默认值为 `None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `500`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     init_db(db_path)
     now = utc_now_iso()
 
     def _operation() -> int:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`expire_due_memories` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            返回 `int`，表示计算得到的数值结果。
         """
         with _connect(db_path) as conn:
             clauses = ["status = 'active'", "valid_until IS NOT NULL", "valid_until <= ?"]
@@ -1214,16 +1378,30 @@ def update_memory(
     source_note_id: str | None = None,
     db_path: str | Path | None = None,
 ) -> MemoryRecord | None:
-    """负责“更新记忆”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`update_memory` 负责更新 memory，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str | None`，默认值为 `None`。
+        status: status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        task_status: task status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        valid_until: valid until 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        confidence: confidence 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+        importance: importance 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+        last_confirmed_at: last confirmed at 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        reason: reason 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     init_db(db_path)
 
     def _operation() -> bool:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`update_memory` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         with _connect(db_path) as conn:
             row = conn.execute("SELECT * FROM memories WHERE id = ?", (memory_id,)).fetchone()
@@ -1316,9 +1494,26 @@ def _versioned_update_row(
     source_note_id: str | None,
     now: str,
 ) -> None:
-    """负责“versioned更新row”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_versioned_update_row` 负责更新 row，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        conn: 数据库或 Redis 连接对象，类型为 `sqlite3.Connection`。
+        row: row 参数，由调用方传入，类型为 `sqlite3.Row`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str | None`，默认值为 `None`。
+        status: status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        task_status: task status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        valid_until: valid until 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        confidence: confidence 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+        importance: importance 参数，由调用方传入，类型为 `float | None`，默认值为 `None`。
+        last_confirmed_at: last confirmed at 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        object_value: object value 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        scope: scope 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+        memory_key: memory key 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        memory_key_version: memory key version 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        reason: reason 参数，由调用方传入，类型为 `str`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str | None`。
+        now: now 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     next_version = int(row["current_version"] or 1) + 1
     next_content = content if content is not None else str(row["content"])
@@ -1387,7 +1582,17 @@ def _archive_terminal_task_duplicates_row(
     source_note_id: str,
     now: str,
 ) -> list[str]:
-    """Archive older active task rows that share the terminal update identity."""
+    """函数功能：`_archive_terminal_task_duplicates_row` 负责归档 terminal task duplicates row，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        conn: 数据库或 Redis 连接对象，类型为 `sqlite3.Connection`。
+        target_row: target row 参数，由调用方传入，类型为 `sqlite3.Row`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        decision_id: decision id 参数，由调用方传入，类型为 `str`。
+        source_note_id: source note id 参数，由调用方传入，类型为 `str`。
+        now: now 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
+    """
     if candidate.memory_type != "task" or candidate.task_status not in {"done", "cancelled"}:
         return []
     from memory.canonicalizer import task_identity_compatible
@@ -1443,13 +1648,25 @@ def apply_memory_decision(
     merged_content: str | None = None,
     db_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Apply one adjudicated action and its audit records in a single transaction."""
+    """函数功能：`apply_memory_decision` 负责处理 apply memory decision，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
+        decision: decision 参数，由调用方传入，类型为 `MemoryDecision`。
+        merged_content: merged content 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
+    """
     init_db(db_path)
 
     def _operation() -> dict[str, Any]:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`apply_memory_decision` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
         """
         with _connect(db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
@@ -1644,9 +1861,11 @@ def apply_memory_decision(
         error_type = type(exc).__name__
 
         def _record_failure() -> None:
-            """负责“记录failure”。
-
-            该函数是 `memory.repository` 中的`apply_memory_decision` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+            """函数功能：`_record_failure` 负责记录 failure，服务于本文件职责：本地 SQLite Memory repository。
+            传参：
+                无。
+            返回结果说明：
+                无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
             """
             with _connect(db_path) as conn:
                 _insert_decision_row(
@@ -1666,9 +1885,12 @@ def apply_memory_decision(
 
 
 def mark_accessed(memory_ids: list[str], db_path: str | Path | None = None) -> None:
-    """负责“标记accessed”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_accessed` 负责标记 accessed，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_ids: memory ids 参数，由调用方传入，类型为 `list[str]`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     if not memory_ids:
         return
@@ -1676,9 +1898,11 @@ def mark_accessed(memory_ids: list[str], db_path: str | Path | None = None) -> N
     now = utc_now_iso()
 
     def _operation() -> None:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`mark_accessed` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with _connect(db_path) as conn:
             conn.executemany(
@@ -1690,18 +1914,25 @@ def mark_accessed(memory_ids: list[str], db_path: str | Path | None = None) -> N
 
 
 def flush_access_counts(*, limit: int = 1000, db_path: str | Path | None = None) -> int:
-    """负责“刷新accesscounts”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`flush_access_counts` 负责处理 flush access counts，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `1000`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     del limit, db_path
     return 0
 
 
 def soft_delete_memory(memory_id: str, *, reason: str = "user_forget", db_path: str | Path | None = None) -> MemoryRecord | None:
-    """负责“soft删除记忆”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`soft_delete_memory` 负责软删除 delete memory，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        reason: reason 参数，由调用方传入，类型为 `str`，默认值为 `'user_forget'`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     return update_memory(memory_id, status="deleted", reason=reason, db_path=db_path)
 
@@ -1714,9 +1945,15 @@ def correct_memory(
     reason: str = "user_correct",
     db_path: str | Path | None = None,
 ) -> MemoryRecord | None:
-    """负责“correct记忆”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`correct_memory` 负责处理 correct memory，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+        task_status: task status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        reason: reason 参数，由调用方传入，类型为 `str`，默认值为 `'user_correct'`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     existing = get_memory(memory_id, db_path=db_path)
     if existing is None:
@@ -1744,13 +1981,21 @@ def correct_memory(
 
 
 def purge_memory(memory_id: str, db_path: str | Path | None = None) -> bool:
-    """Permanently remove one memory and its local indexes after a soft delete or explicit user request."""
+    """函数功能：`purge_memory` 负责彻底清除 memory，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     init_db(db_path)
 
     def _operation() -> bool:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`purge_memory` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            返回 `bool`，表示判断、写入或处理是否成功。
         """
         with _connect(db_path) as conn:
             exists = conn.execute("SELECT 1 FROM memories WHERE id = ?", (memory_id,)).fetchone()
@@ -1767,13 +2012,21 @@ def purge_memory(memory_id: str, db_path: str | Path | None = None) -> bool:
 
 
 def approve_pending_memory(memory_id: str, db_path: str | Path | None = None) -> MemoryRecord | None:
-    """Approve a pending candidate by applying its original relation to the target."""
+    """函数功能：`approve_pending_memory` 负责批准 pending memory，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
+    """
     init_db(db_path)
 
     def _operation() -> str | None:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`approve_pending_memory` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            返回 `str | None`；未命中或无需处理时可返回 `None`。
         """
         with _connect(db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
@@ -1981,9 +2234,13 @@ def approve_pending_memory(memory_id: str, db_path: str | Path | None = None) ->
 
 
 def reject_pending_memory(memory_id: str, *, reason: str = "user_rejected_pending_memory", db_path: str | Path | None = None) -> MemoryRecord | None:
-    """负责“reject待处理记忆”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`reject_pending_memory` 负责拒绝 pending memory，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        reason: reason 参数，由调用方传入，类型为 `str`，默认值为 `'user_rejected_pending_memory'`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     pending = get_memory(memory_id, db_path=db_path)
     if pending is None or pending.status != "pending_review":
@@ -2007,9 +2264,13 @@ def reject_pending_memory(memory_id: str, *, reason: str = "user_rejected_pendin
 
 
 def edit_pending_memory(memory_id: str, content: str, db_path: str | Path | None = None) -> MemoryRecord | None:
-    """负责“edit待处理记忆”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`edit_pending_memory` 负责处理 edit pending memory，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     pending = get_memory(memory_id, db_path=db_path)
     if pending is None or pending.status != "pending_review" or not content.strip():
@@ -2055,9 +2316,14 @@ def resolve_memory_conflict(
     content: str | None = None,
     db_path: str | Path | None = None,
 ) -> MemoryRecord | None:
-    """负责“处理记忆conflict”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`resolve_memory_conflict` 负责解析 memory conflict，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        resolution: resolution 参数，由调用方传入，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     if resolution not in {"keep", "merge", "archive"}:
         raise ValueError("resolution must be keep, merge, or archive")
@@ -2078,9 +2344,15 @@ def list_memory_decisions(
     limit: int = 50,
     db_path: str | Path | None = None,
 ) -> list[dict[str, Any]]:
-    """负责“列出记忆decisions”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_memory_decisions` 负责列出 memory decisions，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str | None`，默认值为 `None`。
+        status: status 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `50`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     init_db(db_path)
     clauses = ["space_id = ?"]
@@ -2124,9 +2396,12 @@ def list_memory_relations(
     *,
     db_path: str | Path | None = None,
 ) -> list[MemoryRelation]:
-    """负责“列出记忆relations”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_memory_relations` 负责列出 memory relations，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        memory_id: Memory 标识，用于定位长期记忆，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryRelation]`，表示按条件筛选、构造或查询得到的列表。
     """
     init_db(db_path)
     with _connect(db_path) as conn:
@@ -2162,16 +2437,25 @@ def add_memory_relation(
     decision_id: str | None = None,
     db_path: str | Path | None = None,
 ) -> None:
-    """负责“添加记忆关系”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`add_memory_relation` 负责处理 add memory relation，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        source_memory_id: source memory id 参数，由调用方传入，类型为 `str`。
+        target_memory_id: target memory id 参数，由调用方传入，类型为 `str`。
+        relation: relation 参数，由调用方传入，类型为 `str`。
+        decision_id: decision id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     init_db(db_path)
 
     def _operation() -> None:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`add_memory_relation` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with _connect(db_path) as conn:
             _add_relation_row(
@@ -2188,16 +2472,21 @@ def add_memory_relation(
 
 
 def save_memory_trace(trace: dict[str, Any], db_path: str | Path | None = None) -> None:
-    """负责“保存记忆追踪”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`save_memory_trace` 负责保存 memory trace，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        trace: trace 参数，由调用方传入，类型为 `dict[str, Any]`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     init_db(db_path)
 
     def _operation() -> None:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`save_memory_trace` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with _connect(db_path) as conn:
             conn.execute(
@@ -2222,9 +2511,12 @@ def save_memory_trace(trace: dict[str, Any], db_path: str | Path | None = None) 
 
 
 def note_has_memory(note_id: str, db_path: str | Path | None = None) -> bool:
-    """负责“笔记是否包含记忆”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`note_has_memory` 负责判断是否包含 memory，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     init_db(db_path)
     with _connect(db_path) as conn:
@@ -2233,9 +2525,12 @@ def note_has_memory(note_id: str, db_path: str | Path | None = None) -> bool:
 
 
 def get_extraction_state(note_id: str, db_path: str | Path | None = None) -> MemoryExtractionState | None:
-    """负责“获取extraction状态”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_extraction_state` 负责获取 extraction state，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState | None`；未命中或无需处理时可返回 `None`。
     """
     init_db(db_path)
     with _connect(db_path) as conn:
@@ -2254,9 +2549,18 @@ def _mark_extraction_state(
     increment_attempt: bool = False,
     db_path: str | Path | None = None,
 ) -> MemoryExtractionState:
-    """负责“标记extraction状态”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_mark_extraction_state` 负责标记 extraction state，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`。
+        candidate_count: candidate count 参数，由调用方传入，类型为 `int`，默认值为 `0`。
+        processed_count: processed count 参数，由调用方传入，类型为 `int`，默认值为 `0`。
+        error: 当前捕获的异常对象，类型为 `str | None`，默认值为 `None`。
+        increment_attempt: increment attempt 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     if status not in MEMORY_EXTRACTION_STATUSES:
         raise ValueError(f"invalid memory extraction status: {status}")
@@ -2267,9 +2571,11 @@ def _mark_extraction_state(
     attempt_delta = 1 if increment_attempt else 0
 
     def _operation() -> None:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`_mark_extraction_state` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with _connect(db_path) as conn:
             conn.execute(
@@ -2313,9 +2619,13 @@ def _mark_extraction_state(
 
 
 def mark_extraction_processing(note_id: str, space_id: str, db_path: str | Path | None = None) -> MemoryExtractionState:
-    """负责“标记extractionprocessing”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_processing` 负责标记 extraction processing，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(note_id, space_id, "processing", increment_attempt=True, db_path=db_path)
 
@@ -2328,9 +2638,15 @@ def mark_extraction_completed(
     processed_count: int,
     db_path: str | Path | None = None,
 ) -> MemoryExtractionState:
-    """负责“标记extractioncompleted”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_completed` 负责标记 extraction completed，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        candidate_count: candidate count 参数，由调用方传入，类型为 `int`。
+        processed_count: processed count 参数，由调用方传入，类型为 `int`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(
         note_id,
@@ -2343,9 +2659,13 @@ def mark_extraction_completed(
 
 
 def mark_extraction_empty(note_id: str, space_id: str, db_path: str | Path | None = None) -> MemoryExtractionState:
-    """负责“标记extractionempty”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_empty` 负责标记 extraction empty，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(note_id, space_id, "empty", db_path=db_path)
 
@@ -2355,9 +2675,13 @@ def mark_extraction_empty_attempt(
     space_id: str,
     db_path: str | Path | None = None,
 ) -> MemoryExtractionState:
-    """负责“标记extractionempty尝试”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_empty_attempt` 负责标记 extraction empty attempt，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(note_id, space_id, "empty", increment_attempt=True, db_path=db_path)
 
@@ -2371,9 +2695,16 @@ def mark_extraction_partial(
     error: str,
     db_path: str | Path | None = None,
 ) -> MemoryExtractionState:
-    """负责“标记extractionpartial”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_partial` 负责标记 extraction partial，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        candidate_count: candidate count 参数，由调用方传入，类型为 `int`。
+        processed_count: processed count 参数，由调用方传入，类型为 `int`。
+        error: 当前捕获的异常对象，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(
         note_id,
@@ -2387,9 +2718,14 @@ def mark_extraction_partial(
 
 
 def mark_extraction_failed(note_id: str, space_id: str, *, error: str, db_path: str | Path | None = None) -> MemoryExtractionState:
-    """负责“标记extractionfailed”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_extraction_failed` 负责标记 extraction failed，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `MemoryExtractionState` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return _mark_extraction_state(note_id, space_id, "failed", error=error, db_path=db_path)
 
@@ -2400,9 +2736,13 @@ def list_retryable_extraction_states(
     limit: int = 100,
     db_path: str | Path | None = None,
 ) -> list[MemoryExtractionState]:
-    """负责“列出retryableextractionstates”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`list_retryable_extraction_states` 负责列出 retryable extraction states，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `100`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[MemoryExtractionState]`，表示按条件筛选、构造或查询得到的列表。
     """
     init_db(db_path)
     with _connect(db_path) as conn:
@@ -2419,9 +2759,12 @@ def list_retryable_extraction_states(
 
 
 def consolidation_period_key(cadence: str, day: date) -> str:
-    """负责“consolidationperiod键”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`consolidation_period_key` 负责处理 consolidation period key，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        cadence: cadence 参数，由调用方传入，类型为 `str`。
+        day: day 参数，由调用方传入，类型为 `date`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     cadence = cadence.strip().lower()
     if cadence == "daily":
@@ -2440,17 +2783,24 @@ def reserve_consolidation_run(
     period_key: str,
     db_path: str | Path | None = None,
 ) -> ConsolidationRun | None:
-    """负责“预约consolidation运行”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`reserve_consolidation_run` 负责预约 consolidation run，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        cadence: cadence 参数，由调用方传入，类型为 `str`。
+        period_key: period key 参数，由调用方传入，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `ConsolidationRun | None`；未命中或无需处理时可返回 `None`。
     """
     cadence = cadence.strip().lower()
     init_db(db_path)
 
     def _operation() -> str | None:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`reserve_consolidation_run` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            返回 `str | None`；未命中或无需处理时可返回 `None`。
         """
         with _connect(db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
@@ -2497,9 +2847,12 @@ def reserve_consolidation_run(
 
 
 def get_consolidation_run(run_id: str, db_path: str | Path | None = None) -> ConsolidationRun | None:
-    """负责“获取consolidation运行”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_consolidation_run` 负责获取 consolidation run，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        run_id: run id 参数，由调用方传入，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `ConsolidationRun | None`；未命中或无需处理时可返回 `None`。
     """
     init_db(db_path)
     with _connect(db_path) as conn:
@@ -2508,18 +2861,24 @@ def get_consolidation_run(run_id: str, db_path: str | Path | None = None) -> Con
 
 
 def mark_consolidation_completed(run_id: str, result: dict[str, Any], db_path: str | Path | None = None) -> None:
-    """负责“标记consolidationcompleted”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_consolidation_completed` 负责标记 consolidation completed，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        run_id: run id 参数，由调用方传入，类型为 `str`。
+        result: 上游步骤返回的结果对象，类型为 `dict[str, Any]`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     init_db(db_path)
     now = utc_now_iso()
     payload = json.dumps(result, ensure_ascii=False, sort_keys=True)
 
     def _operation() -> None:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`mark_consolidation_completed` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with _connect(db_path) as conn:
             conn.execute(
@@ -2535,17 +2894,23 @@ def mark_consolidation_completed(run_id: str, result: dict[str, Any], db_path: s
 
 
 def mark_consolidation_failed(run_id: str, error: str, db_path: str | Path | None = None) -> None:
-    """负责“标记consolidationfailed”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_consolidation_failed` 负责标记 consolidation failed，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        run_id: run id 参数，由调用方传入，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     init_db(db_path)
     now = utc_now_iso()
 
     def _operation() -> None:
-        """负责“operation”。
-
-        该函数是 `memory.repository` 中的`mark_consolidation_failed` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`_operation` 负责处理 operation，服务于本文件职责：本地 SQLite Memory repository。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         with _connect(db_path) as conn:
             conn.execute(
@@ -2571,9 +2936,18 @@ def search_memories(
     mark_access: bool = True,
     db_path: str | Path | None = None,
 ) -> list[tuple[MemoryRecord, float]]:
-    """负责“检索memories”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`search_memories` 负责搜索 memories，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        query: 检索或查询文本，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        include_inactive: include inactive 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        min_score: min score 参数，由调用方传入，类型为 `float`，默认值为 `MEMORY_QUERY_MIN_SCORE`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `10`。
+        mark_access: mark access 参数，由调用方传入，类型为 `bool`，默认值为 `True`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `list[tuple[MemoryRecord, float]]`，表示按条件筛选、构造或查询得到的列表。
     """
     from memory.retriever import score_memory
 
@@ -2594,9 +2968,12 @@ def search_memories(
 
 
 def stats(space_id: str, db_path: str | Path | None = None) -> dict[str, Any]:
-    """负责“统计”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`stats` 负责处理 stats，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     init_db(db_path)
     with _connect(db_path) as conn:
@@ -2671,9 +3048,11 @@ def stats(space_id: str, db_path: str | Path | None = None) -> dict[str, Any]:
 
 
 def schema_tables(db_path: str | Path | None = None) -> set[str]:
-    """负责“模式tables”。
-
-    该函数是 `memory.repository` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`schema_tables` 负责处理 schema tables，服务于本文件职责：本地 SQLite Memory repository。
+    传参：
+        db_path: db path 参数，由调用方传入，类型为 `str | Path | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `set[str]` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     init_db(db_path)
     with _connect(db_path) as conn:

@@ -1,8 +1,20 @@
+"""文件作用：用户反馈存储。
+
+项目关系：本文件依赖 `core`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from core import feedback
 
 
 def test_save_feedback_writes_jsonl(tmp_path, monkeypatch):
-    """验证“保存反馈writesjsonl”场景的预期行为与回归边界。"""
+    """函数功能：`test_save_feedback_writes_jsonl` 负责验证 save feedback writes jsonl 场景，服务于本文件职责：用户反馈存储。
+    传参：
+        tmp_path: tmp path 参数，由调用方传入。
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(feedback, "FEEDBACK_DIR", tmp_path)
 
     record = feedback.save_feedback(
@@ -22,7 +34,12 @@ def test_save_feedback_writes_jsonl(tmp_path, monkeypatch):
 
 
 def test_create_feedback_strips_text():
-    """验证“创建反馈strips文本”场景的预期行为与回归边界。"""
+    """函数功能：`test_create_feedback_strips_text` 负责验证 create feedback strips text 场景，服务于本文件职责：用户反馈存储。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     record = feedback.create_feedback_record(
         space_id="space1",
         message_id=None,

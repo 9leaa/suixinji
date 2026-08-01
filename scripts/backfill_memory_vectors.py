@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Schedule missing/current long-term Memory vectors through the outbox.
+"""文件作用：Memory 向量回填。
 
-The script is safe to run repeatedly. It only enqueues work when
-SUIXINJI_MEMORY_VECTOR_LIFECYCLE_ENABLED=true; actual embedding is performed
-by the normal memory worker and remains retryable/idempotent.
+项目关系：本文件依赖 `repositories.postgres.memory`；被 暂无静态导入方或仅作为入口脚本执行。
 """
+
+
 
 from __future__ import annotations
 
@@ -21,7 +21,12 @@ from repositories.postgres.memory import schedule_memory_vector_backfill
 
 
 def main() -> int:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：Memory 向量回填。
+    传参：
+        无。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--status", default="active", choices=("active", "inactive", "archived"))
     parser.add_argument("--limit", type=int, default=10000)

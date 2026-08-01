@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-"""Process-based Stage 4 chaos runner. Commands are previews unless --execute is set."""
+"""文件作用：分布式混沌测试。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -27,9 +32,11 @@ ROLE_COMMANDS = {
 
 
 def load_state() -> dict[str, str]:
-    """负责“加载状态”。
-
-    该函数是 `scripts.chaos_test_distributed` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`load_state` 负责加载 state，服务于本文件职责：分布式混沌测试。
+    传参：
+        无。
+    返回结果说明：
+        返回 `dict[str, str]`，表示结构化结果、载荷或状态映射。
     """
     if not STATE_FILE.exists():
         raise SystemExit(f"Stage 4 state is missing: {STATE_FILE}")
@@ -42,9 +49,11 @@ def load_state() -> dict[str, str]:
 
 
 def process_env(state: dict[str, str]) -> dict[str, str]:
-    """负责“处理env”。
-
-    该函数是 `scripts.chaos_test_distributed` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`process_env` 负责处理 env，服务于本文件职责：分布式混沌测试。
+    传参：
+        state: state 参数，由调用方传入，类型为 `dict[str, str]`。
+    返回结果说明：
+        返回 `dict[str, str]`，表示结构化结果、载荷或状态映射。
     """
     return {
         **os.environ,
@@ -68,17 +77,22 @@ def process_env(state: dict[str, str]) -> dict[str, str]:
 
 
 def pid_for(role: str) -> int:
-    """负责“pidfor”。
-
-    该函数是 `scripts.chaos_test_distributed` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`pid_for` 负责处理 pid for，服务于本文件职责：分布式混沌测试。
+    传参：
+        role: role 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     return int((PID_DIR / f"{role}.pid").read_text(encoding="utf-8"))
 
 
 def restart(role: str, state: dict[str, str]) -> int:
-    """负责“restart”。
-
-    该函数是 `scripts.chaos_test_distributed` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`restart` 负责处理 restart，服务于本文件职责：分布式混沌测试。
+    传参：
+        role: role 参数，由调用方传入，类型为 `str`。
+        state: state 参数，由调用方传入，类型为 `dict[str, str]`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     command = [part.format(redis_env=state["REDIS_ENV"]) for part in ROLE_COMMANDS[role]]
     log_handle = (LOG_DIR / f"{role}.log").open("a", encoding="utf-8")
@@ -88,9 +102,11 @@ def restart(role: str, state: dict[str, str]) -> int:
 
 
 def parse_args() -> argparse.Namespace:
-    """负责“解析参数”。
-
-    该函数是 `scripts.chaos_test_distributed` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`parse_args` 负责解析 args，服务于本文件职责：分布式混沌测试。
+    传参：
+        无。
+    返回结果说明：
+        返回 `argparse.Namespace` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--execute", action="store_true")
@@ -100,7 +116,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：分布式混沌测试。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     args = parse_args()
     state = load_state()
     steps: list[dict[str, Any]] = []

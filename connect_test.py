@@ -1,3 +1,9 @@
+"""文件作用：外部连接连通性辅助脚本。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 import os
 from dotenv import load_dotenv
 from openai import OpenAI

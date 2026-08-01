@@ -1,4 +1,9 @@
-"""Task-level LLM routing policy."""
+"""文件作用：模型能力策略。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 `core.model_router`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -7,12 +12,22 @@ from enum import Enum
 
 
 class ModelRole(str, Enum):
+    """类功能：`ModelRole` 封装与“模型能力策略”相关的数据结构、状态或行为。
+    继承关系：继承 `str`、`Enum`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     FAST = "fast"
     BALANCED = "balanced"
     STRONG = "strong"
 
 
 class LLMTask(str, Enum):
+    """类功能：`LLMTask` 封装与“模型能力策略”相关的数据结构、状态或行为。
+    继承关系：继承 `str`、`Enum`，复用其接口或生命周期约定。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     NOTE_CLASSIFICATION = "note_classification"
     MEMORY_EXTRACTION = "memory_extraction"
     QUERY_INTENT = "query_intent"
@@ -27,6 +42,10 @@ class LLMTask(str, Enum):
 
 @dataclass(frozen=True)
 class ModelRoute:
+    """类功能：`ModelRoute` 封装与“模型能力策略”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     task: LLMTask
     role: ModelRole
     reason: str
@@ -72,9 +91,11 @@ DEFAULT_ROUTES: dict[LLMTask, ModelRoute] = {
 
 
 def coerce_task(value: LLMTask | str | None) -> LLMTask | None:
-    """负责“coerce任务”。
-
-    该函数是 `core.model_policy` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`coerce_task` 负责处理 coerce task，服务于本文件职责：模型能力策略。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `LLMTask | str | None`。
+    返回结果说明：
+        返回 `LLMTask | None`；未命中或无需处理时可返回 `None`。
     """
     if isinstance(value, LLMTask):
         return value
@@ -87,9 +108,11 @@ def coerce_task(value: LLMTask | str | None) -> LLMTask | None:
 
 
 def coerce_role(value: ModelRole | str | None) -> ModelRole | None:
-    """负责“coercerole”。
-
-    该函数是 `core.model_policy` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`coerce_role` 负责处理 coerce role，服务于本文件职责：模型能力策略。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `ModelRole | str | None`。
+    返回结果说明：
+        返回 `ModelRole | None`；未命中或无需处理时可返回 `None`。
     """
     if isinstance(value, ModelRole):
         return value

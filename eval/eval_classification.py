@@ -1,4 +1,9 @@
-"""Run offline classification evaluation with the real classifier."""
+"""文件作用：Note 分类评测。
+
+项目关系：本文件依赖 `core.classifier`、`eval.common`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -15,9 +20,13 @@ from eval.common import aggregate_boolean_scores, load_jsonl, score_classificati
 
 
 def run(cases_path: Path, *, dry_run: bool = False, max_cases: int | None = None) -> dict[str, object]:
-    """负责“运行”。
-
-    该函数是 `eval.eval_classification` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run` 负责运行，服务于本文件职责：Note 分类评测。
+    传参：
+        cases_path: cases path 参数，由调用方传入，类型为 `Path`。
+        dry_run: dry run 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+        max_cases: max cases 参数，由调用方传入，类型为 `int | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `dict[str, object]`，表示结构化结果、载荷或状态映射。
     """
     cases = load_jsonl(cases_path)
     if max_cases is not None:
@@ -39,7 +48,12 @@ def run(cases_path: Path, *, dry_run: bool = False, max_cases: int | None = None
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：Note 分类评测。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     parser = argparse.ArgumentParser(description="Evaluate note classification quality.")
     parser.add_argument("--cases", default="eval/data/classification_cases.jsonl")
     parser.add_argument("--output", default="eval/results/classification_results.json")

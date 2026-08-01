@@ -1,3 +1,9 @@
+"""文件作用：Note 标签/类型过滤。
+
+项目关系：本文件依赖 `agent`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from agent import query_agent
 
 SPACE_ID = "space_test"
@@ -44,17 +50,32 @@ NOTES = [
 
 
 def patch_notes(monkeypatch):
-    """验证“patch笔记列表”场景的预期行为与回归边界。"""
+    """函数功能：`patch_notes` 负责处理 patch notes，服务于本文件职责：Note 标签/类型过滤。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     monkeypatch.setattr(query_agent, "load_index", lambda space_id: list(NOTES))
 
 
 def ids(items):
-    """验证“标识列表”场景的预期行为与回归边界。"""
+    """函数功能：`ids` 负责处理 ids，服务于本文件职责：Note 标签/类型过滤。
+    传参：
+        items: 待遍历或处理的元素集合。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     return [item["id"] for item in items]
 
 
 def test_filter_notes_by_type_sorts_desc(monkeypatch):
-    """验证“筛选笔记列表by类型sortsdesc”场景的预期行为与回归边界。"""
+    """函数功能：`test_filter_notes_by_type_sorts_desc` 负责验证 filter notes by type sorts desc 场景，服务于本文件职责：Note 标签/类型过滤。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     patch_notes(monkeypatch)
 
     results = query_agent.filter_notes(SPACE_ID, note_type="生活")
@@ -64,7 +85,12 @@ def test_filter_notes_by_type_sorts_desc(monkeypatch):
 
 
 def test_filter_notes_by_all_tags(monkeypatch):
-    """验证“筛选笔记列表byalltags”场景的预期行为与回归边界。"""
+    """函数功能：`test_filter_notes_by_all_tags` 负责验证 filter notes by all tags 场景，服务于本文件职责：Note 标签/类型过滤。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     patch_notes(monkeypatch)
 
     results = query_agent.filter_notes(
@@ -78,7 +104,12 @@ def test_filter_notes_by_all_tags(monkeypatch):
 
 
 def test_filter_notes_by_any_tag(monkeypatch):
-    """验证“筛选笔记列表byanytag”场景的预期行为与回归边界。"""
+    """函数功能：`test_filter_notes_by_any_tag` 负责验证 filter notes by any tag 场景，服务于本文件职责：Note 标签/类型过滤。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     patch_notes(monkeypatch)
 
     results = query_agent.filter_notes(
@@ -91,7 +122,12 @@ def test_filter_notes_by_any_tag(monkeypatch):
 
 
 def test_filter_notes_rejects_invalid_type_or_tag(monkeypatch):
-    """验证“筛选笔记列表rejectsinvalid类型ortag”场景的预期行为与回归边界。"""
+    """函数功能：`test_filter_notes_rejects_invalid_type_or_tag` 负责验证 filter notes rejects invalid type or tag 场景，服务于本文件职责：Note 标签/类型过滤。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     patch_notes(monkeypatch)
 
     assert query_agent.filter_notes(SPACE_ID, note_type="工作") == []
@@ -99,7 +135,12 @@ def test_filter_notes_rejects_invalid_type_or_tag(monkeypatch):
 
 
 def test_by_type_and_by_tag_are_thin_wrappers(monkeypatch):
-    """验证“by类型andbytagarethinwrappers”场景的预期行为与回归边界。"""
+    """函数功能：`test_by_type_and_by_tag_are_thin_wrappers` 负责验证 by type and by tag are thin wrappers 场景，服务于本文件职责：Note 标签/类型过滤。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     patch_notes(monkeypatch)
 
     assert ids(query_agent.by_type(SPACE_ID, "任务")) == ["n3"]
@@ -107,7 +148,12 @@ def test_by_type_and_by_tag_are_thin_wrappers(monkeypatch):
 
 
 def test_get_note_and_follow_links(monkeypatch):
-    """验证“获取笔记andfollowlinks”场景的预期行为与回归边界。"""
+    """函数功能：`test_get_note_and_follow_links` 负责验证 get note and follow links 场景，服务于本文件职责：Note 标签/类型过滤。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     patch_notes(monkeypatch)
 
     note = query_agent.get_note(SPACE_ID, "n3")
@@ -120,7 +166,12 @@ def test_get_note_and_follow_links(monkeypatch):
 
 
 def test_run_tool_coerces_filter_args(monkeypatch):
-    """验证“运行工具coerces筛选参数”场景的预期行为与回归边界。"""
+    """函数功能：`test_run_tool_coerces_filter_args` 负责验证 run tool coerces filter args 场景，服务于本文件职责：Note 标签/类型过滤。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     patch_notes(monkeypatch)
 
     result = query_agent._run_tool(

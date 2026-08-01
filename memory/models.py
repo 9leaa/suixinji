@@ -1,4 +1,9 @@
-"""Shared models and constants for the core memory system."""
+"""文件作用：Memory 领域模型与常量。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 `agent.hooks.context`、`eval.eval_memory`、`eval.eval_memory_quality`、`eval.large_live_retrieval_eval` 等 45 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -17,7 +22,7 @@ MEMORY_STATUSES = {
     "forgotten",
     "archived",
     "pending_review",
-    # Kept for compatibility with the existing public commands.
+    # 为兼容现有公开命令而保留。
     "deleted",
     "expired",
 }
@@ -43,23 +48,34 @@ SLOT_SEMANTIC_PREDICATES = {
 
 
 def utc_now_iso() -> str:
-    """负责“utcnowiso”。
-
-    该函数是 `memory.models` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`utc_now_iso` 负责处理 UTC 时间 now iso，服务于本文件职责：Memory 领域模型与常量。
+    传参：
+        无。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
 def new_id(prefix: str) -> str:
-    """负责“new标识”。
-
-    该函数是 `memory.models` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`new_id` 负责处理 new id，服务于本文件职责：Memory 领域模型与常量。
+    传参：
+        prefix: prefix 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return f"{prefix}_{uuid.uuid4().hex[:12]}"
 
 
 def candidate_id_for(note_id: str, memory_type: str, content: str) -> str:
-    """Return a stable candidate id so retries remain auditable and idempotent."""
+    """函数功能：`candidate_id_for` 负责处理 candidate id for，服务于本文件职责：Memory 领域模型与常量。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
+    """
     key = f"{note_id}\x1f{memory_type}\x1f{normalize_content(content)}"
     return f"cand_{uuid.uuid5(uuid.NAMESPACE_URL, key).hex[:16]}"
 
@@ -73,7 +89,17 @@ def candidate_id_for_evidence(
     evidence_span: str | None = None,
     clause_index: int | None = None,
 ) -> str:
-    """Return a stable id for clause-level candidate extraction."""
+    """函数功能：`candidate_id_for_evidence` 负责处理 candidate id for evidence，服务于本文件职责：Memory 领域模型与常量。
+    传参：
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`。
+        memory_key: memory key 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        evidence_span: evidence span 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        clause_index: clause index 参数，由调用方传入，类型为 `int | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
+    """
     key = "\x1f".join(
         [
             str(note_id or ""),
@@ -87,9 +113,11 @@ def candidate_id_for_evidence(
 
 
 def normalize_content(text: str) -> str:
-    """负责“normalizecontent”。
-
-    该函数是 `memory.models` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`normalize_content` 负责归一化 content，服务于本文件职责：Memory 领域模型与常量。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     value = str(text or "").casefold()
     value = re.sub(r"[\s\W_]+", "", value, flags=re.UNICODE)
@@ -106,15 +134,23 @@ def memory_key_for(
     object_value: str | None = None,
     content: str = "",
 ) -> str:
-    """Build a stable topic key used to scope destructive adjudication."""
+    """函数功能：`memory_key_for` 负责处理 memory key for，服务于本文件职责：Memory 领域模型与常量。
+    传参：
+        memory_type: memory type 参数，由调用方传入，类型为 `str`。
+        subject: subject 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        predicate: predicate 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        object_value: object value 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        content: 需要处理、保存或展示的文本内容，类型为 `str`，默认值为 `''`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
+    """
     subject_key = normalize_content(subject or "用户") or "用户"
     if subject_key in {"user", "me", "myself"}:
         subject_key = "user"
     predicate_key = normalize_content(predicate or memory_type) or memory_type
     object_key = normalize_content(object_value or "")
     if memory_type == "preference":
-        # Polarity is deliberately excluded: positive and negative statements
-        # about one topic must meet in the same adjudication key.
+        # 这里刻意排除 polarity：同一主题的正向和负向陈述必须进入同一个裁决 key。
         topic = object_key or normalize_content(content)
         topic = re.sub(
             r"(?:用户|本人|我现在|我最近|我|喜欢|更喜欢|最喜欢|偏好|习惯|不喜欢|讨厌|厌恶|不爱|不想|不打算|暂时不|过敏|优先选择|优先)",
@@ -144,6 +180,10 @@ def memory_key_for(
 
 @dataclass(frozen=True)
 class MemoryCandidate:
+    """类功能：`MemoryCandidate` 封装与“Memory 领域模型与常量”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     memory_type: str
     content: str
     importance: float
@@ -173,9 +213,11 @@ class MemoryCandidate:
     memory_key_version: str = MEMORY_KEY_VERSION
 
     def __post_init__(self) -> None:
-        """负责“post初始化”。
-
-        该函数是 `memory.models` 中的`MemoryCandidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`MemoryCandidate.__post_init__` 在类 `MemoryCandidate` 中负责处理 post init，服务于本文件职责：Memory 领域模型与常量。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         if self.memory_type not in MEMORY_TYPES:
             raise ValueError(f"invalid memory_type: {self.memory_type}")
@@ -184,25 +226,31 @@ class MemoryCandidate:
 
     @property
     def normalized_content(self) -> str:
-        """负责“normalizedcontent”。
-
-        该函数是 `memory.models` 中的`MemoryCandidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`MemoryCandidate.normalized_content` 在类 `MemoryCandidate` 中负责处理 normalized content，服务于本文件职责：Memory 领域模型与常量。
+        传参：
+            无。
+        返回结果说明：
+            返回 `str`，通常是格式化后的文本、标识或路径。
         """
         return normalize_content(self.content)
 
     @property
     def effective_reason(self) -> str | None:
-        """负责“effectivereason”。
-
-        该函数是 `memory.models` 中的`MemoryCandidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`MemoryCandidate.effective_reason` 在类 `MemoryCandidate` 中负责处理 effective reason，服务于本文件职责：Memory 领域模型与常量。
+        传参：
+            无。
+        返回结果说明：
+            返回 `str | None`；未命中或无需处理时可返回 `None`。
         """
         return self.extraction_reason or self.reason
 
     @property
     def effective_memory_key(self) -> str:
-        """负责“effective记忆键”。
-
-        该函数是 `memory.models` 中的`MemoryCandidate` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`MemoryCandidate.effective_memory_key` 在类 `MemoryCandidate` 中负责处理 effective memory key，服务于本文件职责：Memory 领域模型与常量。
+        传参：
+            无。
+        返回结果说明：
+            返回 `str`，通常是格式化后的文本、标识或路径。
         """
         return self.memory_key or memory_key_for(
             self.memory_type,
@@ -215,6 +263,10 @@ class MemoryCandidate:
 
 @dataclass(frozen=True, kw_only=True)
 class MemoryDecision:
+    """类功能：`MemoryDecision` 封装与“Memory 领域模型与常量”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     candidate_id: str
     relation: str
     target_memory_ids: list[str]
@@ -232,9 +284,11 @@ class MemoryDecision:
     retry_of_decision_id: str | None = None
 
     def __post_init__(self) -> None:
-        """负责“post初始化”。
-
-        该函数是 `memory.models` 中的`MemoryDecision` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`MemoryDecision.__post_init__` 在类 `MemoryDecision` 中负责处理 post init，服务于本文件职责：Memory 领域模型与常量。
+        传参：
+            无。
+        返回结果说明：
+            无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         if self.relation not in DECISION_RELATIONS:
             raise ValueError(f"invalid decision relation: {self.relation}")
@@ -246,6 +300,10 @@ class MemoryDecision:
 
 @dataclass(frozen=True)
 class MemorySource:
+    """类功能：`MemorySource` 封装与“Memory 领域模型与常量”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     memory_id: str
     note_id: str
     relation: str
@@ -254,6 +312,10 @@ class MemorySource:
 
 @dataclass(frozen=True)
 class MemoryVersion:
+    """类功能：`MemoryVersion` 封装与“Memory 领域模型与常量”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     id: str
     memory_id: str
     version: int
@@ -271,6 +333,10 @@ class MemoryVersion:
 
 @dataclass(frozen=True)
 class MemoryRelation:
+    """类功能：`MemoryRelation` 封装与“Memory 领域模型与常量”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     id: str
     space_id: str
     source_memory_id: str
@@ -282,6 +348,10 @@ class MemoryRelation:
 
 @dataclass(frozen=True)
 class MemoryExtractionState:
+    """类功能：`MemoryExtractionState` 封装与“Memory 领域模型与常量”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     note_id: str
     space_id: str
     status: str
@@ -296,6 +366,10 @@ class MemoryExtractionState:
 
 @dataclass(frozen=True)
 class ConsolidationRun:
+    """类功能：`ConsolidationRun` 封装与“Memory 领域模型与常量”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     id: str
     space_id: str
     cadence: str
@@ -309,6 +383,10 @@ class ConsolidationRun:
 
 @dataclass(frozen=True)
 class MemoryRecord:
+    """类功能：`MemoryRecord` 封装与“Memory 领域模型与常量”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     id: str
     space_id: str
     memory_type: str
@@ -338,9 +416,11 @@ class MemoryRecord:
 
     @property
     def effective_memory_key(self) -> str:
-        """负责“effective记忆键”。
-
-        该函数是 `memory.models` 中的`MemoryRecord` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`MemoryRecord.effective_memory_key` 在类 `MemoryRecord` 中负责处理 effective memory key，服务于本文件职责：Memory 领域模型与常量。
+        传参：
+            无。
+        返回结果说明：
+            返回 `str`，通常是格式化后的文本、标识或路径。
         """
         return self.memory_key or memory_key_for(
             self.memory_type,
@@ -351,9 +431,11 @@ class MemoryRecord:
         )
 
     def to_dict(self) -> dict[str, Any]:
-        """负责“转换为dict”。
-
-        该函数是 `memory.models` 中的`MemoryRecord` 的方法；具体输入、输出和异常边界由类型标注及调用方约定。
+        """函数功能：`MemoryRecord.to_dict` 在类 `MemoryRecord` 中负责转换为目标结构 dict，服务于本文件职责：Memory 领域模型与常量。
+        传参：
+            无。
+        返回结果说明：
+            返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
         """
         return {
             "id": self.id,

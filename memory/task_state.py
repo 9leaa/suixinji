@@ -1,4 +1,9 @@
-"""Deterministic task lifecycle parsing shared by extraction and controls."""
+"""文件作用：任务状态归一化与对账。
+
+项目关系：本文件依赖 `memory.models`；被 `memory.extractor`、`memory.repository`、`memory.service`、`repositories.postgres.memory`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -6,7 +11,12 @@ from memory.models import TASK_STATUSES
 
 
 def infer_task_status(text: str) -> str | None:
-    """Infer an explicit lifecycle state; return None when absent."""
+    """函数功能：`infer_task_status` 负责处理 infer task status，服务于本文件职责：任务状态归一化与对账。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
+    """
     value = str(text or "")
     if any(token in value for token in ("取消", "不用做", "不做了")):
         return "cancelled"
@@ -26,9 +36,11 @@ def infer_task_status(text: str) -> str | None:
 
 
 def validate_task_status(value: str | None) -> str | None:
-    """负责“校验任务状态”。
-
-    该函数是 `memory.task_state` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`validate_task_status` 负责校验 task status，服务于本文件职责：任务状态归一化与对账。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str | None`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     if value is None:
         return None

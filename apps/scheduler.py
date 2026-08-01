@@ -1,4 +1,9 @@
-"""Leader-locked distributed Scheduler role."""
+"""文件作用：分布式 scheduler 入口。
+
+项目关系：本文件依赖 `core.observability`、`core.settings`、`infrastructure.redis_keys`、`infrastructure.redis_lock` 等 10 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -21,9 +26,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 def run_once() -> bool:
-    """负责“运行once”。
-
-    该函数是 `apps.scheduler` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run_once` 负责运行 once，服务于本文件职责：分布式 scheduler 入口。
+    传参：
+        无。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     lock = RedisDistributedLock(KEYS.lock_scheduler("distributed"), ttl_ms=SCHEDULER_LEADER_TTL_MS)
     if not lock.acquire(wait_seconds=0):
@@ -60,7 +67,12 @@ def run_once() -> bool:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：分布式 scheduler 入口。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     logging.basicConfig(level=logging.INFO)
     log_process_started("scheduler")
     while True:

@@ -1,4 +1,9 @@
-"""Evaluate the 360-case Memory V2 quality set without external model calls."""
+"""文件作用：Memory 质量评测。
+
+项目关系：本文件依赖 `eval.common`、`memory`、`memory.adjudicator`、`memory.extractor` 等 8 个模块；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -15,8 +20,7 @@ from typing import Any
 if str(Path(__file__).resolve().parents[1]) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-# The quality set is intentionally offline.  Keep it independent from the
-# deployment's PostgreSQL/Redis settings and from agent observability hooks.
+# 质量集刻意保持离线，避免依赖部署环境中的 PostgreSQL/Redis 设置和 Agent 可观测性 hook。
 os.environ["STORAGE_BACKEND"] = "local"
 os.environ["COORDINATION_BACKEND"] = "local"
 os.environ["TASK_QUEUE_BACKEND"] = "local"
@@ -40,9 +44,11 @@ RELATIONS = ("new", "same", "merge", "update_task", "supersede", "conflict")
 
 
 def _f1(precision_counts: tuple[int, int, int]) -> dict[str, float]:
-    """负责“f1”。
-
-    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_f1` 负责处理 f1，服务于本文件职责：Memory 质量评测。
+    传参：
+        precision_counts: precision counts 参数，由调用方传入，类型为 `tuple[int, int, int]`。
+    返回结果说明：
+        返回 `dict[str, float]`，表示结构化结果、载荷或状态映射。
     """
     true_positive, false_positive, false_negative = precision_counts
     precision = true_positive / (true_positive + false_positive) if true_positive + false_positive else 0.0
@@ -55,9 +61,11 @@ def _f1(precision_counts: tuple[int, int, int]) -> dict[str, float]:
 
 
 def _extract_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“抽取报告”。
-
-    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_extract_report` 负责抽取 report，服务于本文件职责：Memory 质量评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     type_counts: Counter[str] = Counter()
     results: list[dict[str, Any]] = []
@@ -103,9 +111,12 @@ def _extract_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _task_status(text: str, *, old: bool = False) -> str | None:
-    """负责“任务状态”。
-
-    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_task_status` 负责处理 task status，服务于本文件职责：Memory 质量评测。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+        old: old 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     if "记得" in text or "待办" in text:
         return "todo"
@@ -119,9 +130,14 @@ def _task_status(text: str, *, old: bool = False) -> str | None:
 
 
 def _candidate(text: str, memory_type: str, note_id: str, *, old: bool = False) -> MemoryCandidate:
-    """负责“候选”。
-
-    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_candidate` 负责处理 candidate，服务于本文件职责：Memory 质量评测。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+        memory_type: memory type 参数，由调用方传入，类型为 `str`。
+        note_id: Note 标识，用于定位原始记录，类型为 `str`。
+        old: old 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        返回 `MemoryCandidate` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     signature = preference_signature(text) if memory_type == "preference" else None
     predicate = None
@@ -145,9 +161,11 @@ def _candidate(text: str, memory_type: str, note_id: str, *, old: bool = False) 
 
 
 def _relation_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“关系报告”。
-
-    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_relation_report` 负责处理 relation report，服务于本文件职责：Memory 质量评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     predictions: list[str] = []
     expected: list[str] = []
@@ -197,9 +215,11 @@ def _relation_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _retrieval_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“retrieval报告”。
-
-    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_retrieval_report` 负责处理 retrieval report，服务于本文件职责：Memory 质量评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     recalls: list[float] = []
     reciprocal_ranks: list[float] = []
@@ -230,9 +250,11 @@ def _retrieval_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _e2e_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
-    """负责“e2e报告”。
-
-    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_e2e_report` 负责处理 e2e report，服务于本文件职责：Memory 质量评测。
+    传参：
+        cases: cases 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     results: list[dict[str, Any]] = []
     old_db = memory_repository.DB_PATH
@@ -269,9 +291,11 @@ def _e2e_report(cases: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _routing_plan() -> dict[str, Any]:
-    """负责“routing规划”。
-
-    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_routing_plan` 负责生成计划 routing，服务于本文件职责：Memory 质量评测。
+    传参：
+        无。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     return {
         "baseline_external_calls": False,
@@ -290,9 +314,11 @@ def _routing_plan() -> dict[str, Any]:
 
 
 def run(*, output: Path) -> dict[str, Any]:
-    """负责“运行”。
-
-    该函数是 `eval.eval_memory_quality` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`run` 负责运行，服务于本文件职责：Memory 质量评测。
+    传参：
+        output: output 参数，由调用方传入，类型为 `Path`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     cases = load_jsonl(DATASET)
     grouped: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -315,7 +341,12 @@ def run(*, output: Path) -> dict[str, Any]:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：Memory 质量评测。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     parser = argparse.ArgumentParser(description="Run the offline Memory quality baseline")
     parser.add_argument("--output", type=Path, default=ROOT / "docs" / "memory_eval" / "baseline.json")
     args = parser.parse_args()

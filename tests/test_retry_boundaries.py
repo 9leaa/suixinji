@@ -1,3 +1,9 @@
+"""文件作用：可重试/不可重试错误边界。
+
+项目关系：本文件依赖 `runtime`、`runtime.executor`、`runtime.retry`、`runtime.task`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 from types import SimpleNamespace
 
 import pytest
@@ -8,11 +14,21 @@ from runtime.task import TASK_FAILED
 
 
 def test_task_runner_failure_does_not_retry_whole_ingest(monkeypatch):
-    """验证“任务runnerfailuredoesnot重试whole接收写入”场景的预期行为与回归边界。"""
+    """函数功能：`test_task_runner_failure_does_not_retry_whole_ingest` 负责验证 task runner failure does not retry whole ingest 场景，服务于本文件职责：可重试/不可重试错误边界。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     calls = []
 
     def fail_once(record):
-        """验证“失败once”场景的预期行为与回归边界。"""
+        """函数功能：`fail_once` 负责处理 fail once，服务于本文件职责：可重试/不可重试错误边界。
+        传参：
+            record: 待处理或持久化的记录对象。
+        返回结果说明：
+            无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         calls.append(record["id"])
         raise RuntimeError("boom")
 
@@ -27,7 +43,13 @@ def test_task_runner_failure_does_not_retry_whole_ingest(monkeypatch):
 
 
 def test_send_success_then_state_update_failure_does_not_resend(monkeypatch, tmp_path):
-    """验证“发送successthen状态更新failuredoesnotresend”场景的预期行为与回归边界。"""
+    """函数功能：`test_send_success_then_state_update_failure_does_not_resend` 负责验证 send success then state update failure does not resend 场景，服务于本文件职责：可重试/不可重试错误边界。
+    传参：
+        monkeypatch: monkeypatch 参数，由调用方传入。
+        tmp_path: tmp path 参数，由调用方传入。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     from runtime import delivery_store
 
     monkeypatch.setattr(delivery_store, "DATA_DIR", tmp_path)
@@ -40,7 +62,12 @@ def test_send_success_then_state_update_failure_does_not_resend(monkeypatch, tmp
     sent = []
 
     def on_success():
-        """验证“success”场景的预期行为与回归边界。"""
+        """函数功能：`on_success` 负责处理 on success，服务于本文件职责：可重试/不可重试错误边界。
+        传参：
+            无。
+        返回结果说明：
+            无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         raise RuntimeError("state update failed")
 
     executor = BoundedTaskExecutor(
@@ -57,11 +84,21 @@ def test_send_success_then_state_update_failure_does_not_resend(monkeypatch, tmp
 
 
 def test_retry_external_call_uses_explicit_retryable_predicate():
-    """验证“重试externalcallusesexplicitretryablepredicate”场景的预期行为与回归边界。"""
+    """函数功能：`test_retry_external_call_uses_explicit_retryable_predicate` 负责验证 retry external call uses explicit retryable predicate 场景，服务于本文件职责：可重试/不可重试错误边界。
+    传参：
+        无。
+    返回结果说明：
+        返回计算后的结果对象；具体类型取决于实际执行分支。
+    """
     calls = []
 
     def flaky():
-        """验证“flaky”场景的预期行为与回归边界。"""
+        """函数功能：`flaky` 负责处理 flaky，服务于本文件职责：可重试/不可重试错误边界。
+        传参：
+            无。
+        返回结果说明：
+            返回计算后的结果对象；具体类型取决于实际执行分支。
+        """
         calls.append("call")
         if len(calls) < 2:
             raise TimeoutError("temporary")
@@ -72,11 +109,21 @@ def test_retry_external_call_uses_explicit_retryable_predicate():
 
 
 def test_retry_external_call_does_not_retry_non_retryable_error():
-    """验证“重试externalcalldoesnot重试nonretryable错误”场景的预期行为与回归边界。"""
+    """函数功能：`test_retry_external_call_does_not_retry_non_retryable_error` 负责验证 retry external call does not retry non retryable error 场景，服务于本文件职责：可重试/不可重试错误边界。
+    传参：
+        无。
+    返回结果说明：
+        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     calls = []
 
     def bad_json():
-        """验证“badJSON”场景的预期行为与回归边界。"""
+        """函数功能：`bad_json` 负责处理 JSON 数据 bad，服务于本文件职责：可重试/不可重试错误边界。
+        传参：
+            无。
+        返回结果说明：
+            无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+        """
         calls.append("call")
         raise ValueError("invalid json")
 

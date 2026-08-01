@@ -1,4 +1,9 @@
-"""PostgreSQL task state, attempts, retries, and idempotency."""
+"""文件作用：Task 与 attempt 数据访问。
+
+项目关系：本文件依赖 `core.settings`、`infrastructure.database`、`infrastructure.schema`、`memory.models` 等 6 个模块；被 `apps.outbox_relay`、`apps.scheduler`、`runtime.streams.worker`、`tests.test_stage5_dispatch_performance` 等 5 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -23,9 +28,11 @@ from repositories.postgres.dispatch import (
 
 
 def create_task(task: dict[str, Any]) -> bool:
-    """负责“创建任务”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`create_task` 负责创建 task，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        task: task 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     space_id = str(task["space_id"])
     tenant_id = str(task.get("tenant_id") or DEFAULT_TENANT_ID)
@@ -56,9 +63,11 @@ def create_task(task: dict[str, Any]) -> bool:
 
 
 def get_task(task_id: str) -> dict[str, Any] | None:
-    """负责“获取任务”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_task` 负责获取 task，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     with session_scope() as session:
         row = session.get(Task, task_id)
@@ -68,9 +77,13 @@ def get_task(task_id: str) -> dict[str, Any] | None:
 
 
 def update_task_status(task_id: str, status: str, **updates: Any) -> None:
-    """负责“更新任务状态”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`update_task_status` 负责更新 task status，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`。
+        **updates: updates 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     allowed = {
         "attempt_count",
@@ -88,9 +101,13 @@ def update_task_status(task_id: str, status: str, **updates: Any) -> None:
 
 
 def claim_task(task_id: str, worker_id: str, *, stale_after_seconds: int = TASK_LEASE_SECONDS) -> dict[str, Any] | None:
-    """负责“认领任务”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`claim_task` 负责认领 task，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+        worker_id: worker id 参数，由调用方传入，类型为 `str`。
+        stale_after_seconds: stale after seconds 参数，由调用方传入，类型为 `int`，默认值为 `TASK_LEASE_SECONDS`。
+    返回结果说明：
+        返回 `dict[str, Any] | None`，表示结构化结果、载荷或状态映射。
     """
     now = datetime.now().astimezone()
     stale_before = now - timedelta(seconds=max(1, stale_after_seconds))
@@ -170,9 +187,15 @@ def renew_task_lease(
     lease_seconds: int = TASK_LEASE_SECONDS,
     session_role: str | None = None,
 ) -> bool:
-    """负责“renew任务lease”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`renew_task_lease` 负责处理 renew task lease，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+        lease_token: lease token 参数，由调用方传入，类型为 `str`。
+        claim_version: claim version 参数，由调用方传入，类型为 `int`。
+        lease_seconds: lease seconds 参数，由调用方传入，类型为 `int`，默认值为 `TASK_LEASE_SECONDS`。
+        session_role: session role 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     now = datetime.now().astimezone()
     with session_scope(role=session_role) as session:
@@ -198,9 +221,15 @@ def _owned_running_task(
     claim_version: int,
     now: datetime,
 ) -> Task | None:
-    """负责“ownedrunning任务”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_owned_running_task` 负责处理 owned running task，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+        lease_token: lease token 参数，由调用方传入，类型为 `str`。
+        claim_version: claim version 参数，由调用方传入，类型为 `int`。
+        now: now 参数，由调用方传入，类型为 `datetime`。
+    返回结果说明：
+        返回 `Task | None`；未命中或无需处理时可返回 `None`。
     """
     return session.execute(
         select(Task)
@@ -227,9 +256,19 @@ def _complete_task_with_inbox_outcome(
     finalize: bool,
     now: datetime,
 ) -> bool:
-    """负责“完成任务withinboxoutcome”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_complete_task_with_inbox_outcome` 负责完成 task with inbox outcome，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+        lease_token: lease token 参数，由调用方传入，类型为 `str`。
+        claim_version: claim version 参数，由调用方传入，类型为 `int`。
+        inbox_id: inbox id 参数，由调用方传入，类型为 `str`。
+        note_completed: note completed 参数，由调用方传入，类型为 `bool`。
+        memory_completed: memory completed 参数，由调用方传入，类型为 `bool`。
+        finalize: finalize 参数，由调用方传入，类型为 `bool`。
+        now: now 参数，由调用方传入，类型为 `datetime`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     completed = session.execute(
         text(
@@ -432,9 +471,18 @@ def complete_task(
     memory_ready_inbox_id: str | None = None,
     ingest_complete_inbox_id: str | None = None,
 ) -> bool:
-    """负责“完成任务”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`complete_task` 负责完成 task，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+        lease_token: lease token 参数，由调用方传入，类型为 `str`。
+        claim_version: claim version 参数，由调用方传入，类型为 `int`。
+        release_inbox_id: release inbox id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        activate_task_id: activate task id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        note_ready_inbox_id: note ready inbox id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        memory_ready_inbox_id: memory ready inbox id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+        ingest_complete_inbox_id: ingest complete inbox id 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     outcomes = [release_inbox_id, activate_task_id, note_ready_inbox_id, memory_ready_inbox_id, ingest_complete_inbox_id]
     if sum(value is not None for value in outcomes) > 1:
@@ -539,9 +587,11 @@ def complete_task(
 
 
 def _barrier_inbox_id(row: Task) -> str | None:
-    """负责“barrierinbox标识”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_barrier_inbox_id` 负责处理 barrier inbox id，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        row: row 参数，由调用方传入，类型为 `Task`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     payload = dict(row.payload_json or {})
     value = payload.get("barrier_inbox_id") or payload.get("inbox_id")
@@ -549,9 +599,14 @@ def _barrier_inbox_id(row: Task) -> str | None:
 
 
 def _cancel_blocked_dependents(session: Any, parent_task_id: str, error: str, now: datetime) -> None:
-    """负责“cancelblockeddependents”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_cancel_blocked_dependents` 负责处理 cancel blocked dependents，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
+        parent_task_id: parent task id 参数，由调用方传入，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str`。
+        now: now 参数，由调用方传入，类型为 `datetime`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     rows = list(
         session.execute(
@@ -577,9 +632,15 @@ def fail_task(
     lease_token: str,
     claim_version: int,
 ) -> str:
-    """负责“失败任务”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`fail_task` 负责处理 fail task，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str`。
+        retry_delay_seconds: retry delay seconds 参数，由调用方传入，类型为 `float`。
+        lease_token: lease token 参数，由调用方传入，类型为 `str`。
+        claim_version: claim version 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     now = datetime.now().astimezone()
     with session_scope() as session:
@@ -636,9 +697,15 @@ def defer_task(
     lease_token: str,
     claim_version: int,
 ) -> bool:
-    """负责“defer任务”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`defer_task` 负责处理 defer task，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        task_id: 任务标识，用于查询、更新或幂等处理任务状态，类型为 `str`。
+        reason: reason 参数，由调用方传入，类型为 `str`。
+        retry_delay_seconds: retry delay seconds 参数，由调用方传入，类型为 `float`。
+        lease_token: lease token 参数，由调用方传入，类型为 `str`。
+        claim_version: claim version 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     now = datetime.now().astimezone()
     with session_scope() as session:
@@ -667,9 +734,12 @@ def defer_task(
 
 
 def enqueue_due_retries(*, limit: int = 50, task_ids: list[str] | None = None) -> int:
-    """负责“enqueuedueretries”。
-
-    该函数是 `repositories.postgres.tasks` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`enqueue_due_retries` 负责处理 enqueue due retries，服务于本文件职责：Task 与 attempt 数据访问。
+    传参：
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `50`。
+        task_ids: task ids 参数，由调用方传入，类型为 `list[str] | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     now = datetime.now().astimezone()
     count = 0

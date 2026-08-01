@@ -1,4 +1,9 @@
-"""Feishu bot receiver for the Suixinji Agent P1 ingestion pipeline."""
+"""文件作用：飞书事件入口、命令 UI、文本发送。
+
+项目关系：本文件依赖 `agent.query_agent`、`apps.receiver`、`core.feedback`、`core.observability` 等 19 个模块；被 `apps.handlers`、`tests.test_memory_commands`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -80,7 +85,14 @@ _lark_client: Any | None = None
 
 
 def _get_attr(obj: Any, name: str, default: Any = None) -> Any:
-    """Read a value from either an SDK model object or a dict."""
+    """函数功能：`_get_attr` 负责获取 attr，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        obj: obj 参数，由调用方传入，类型为 `Any`。
+        name: name 参数，由调用方传入，类型为 `str`。
+        default: default 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
+    """
     if obj is None:
         return default
     if isinstance(obj, dict):
@@ -89,7 +101,14 @@ def _get_attr(obj: Any, name: str, default: Any = None) -> Any:
 
 
 def _get_first_attr(obj: Any, names: tuple[str, ...], default: Any = None) -> Any:
-    """Read the first non-empty attribute from an SDK model object or a dict."""
+    """函数功能：`_get_first_attr` 负责获取 first attr，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        obj: obj 参数，由调用方传入，类型为 `Any`。
+        names: names 参数，由调用方传入，类型为 `tuple[str, ...]`。
+        default: default 参数，由调用方传入，类型为 `Any`，默认值为 `None`。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
+    """
     for name in names:
         value = _get_attr(obj, name)
         if value not in (None, ""):
@@ -98,7 +117,12 @@ def _get_first_attr(obj: Any, names: tuple[str, ...], default: Any = None) -> An
 
 
 def require_feishu_config() -> None:
-    """Ensure the required Feishu app credentials exist before starting."""
+    """函数功能：`require_feishu_config` 负责处理 require feishu config，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     missing = []
     if not APP_ID:
         missing.append("FEISHU_APP_ID")
@@ -109,7 +133,12 @@ def require_feishu_config() -> None:
 
 
 def get_lark_client() -> Any:
-    """Create and cache the Feishu OpenAPI client."""
+    """函数功能：`get_lark_client` 负责获取 lark client，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        无。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
+    """
     global _lark_client
     if _lark_client is None:
         require_feishu_config()
@@ -118,7 +147,13 @@ def get_lark_client() -> Any:
 
 
 def send_text(chat_id: str, text: str) -> None:
-    """Send a text message to a Feishu chat by chat_id."""
+    """函数功能：`send_text` 负责发送 text，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        chat_id: chat id 参数，由调用方传入，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     content = json.dumps({"text": text}, ensure_ascii=False)
     request = (
         CreateMessageRequest.builder()
@@ -142,7 +177,13 @@ def send_text(chat_id: str, text: str) -> None:
 
 
 def safe_send_text(chat_id: str, text: str) -> bool:
-    """Try to send a text message without breaking the ingestion path."""
+    """函数功能：`safe_send_text` 负责发送 text，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        chat_id: chat id 参数，由调用方传入，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
+    """
     try:
         send_text(chat_id, text)
         return True
@@ -152,7 +193,12 @@ def safe_send_text(chat_id: str, text: str) -> bool:
 
 
 def parse_text_content(content: Any) -> str:
-    """Extract plain text from Feishu message.content."""
+    """函数功能：`parse_text_content` 负责解析 text content，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        content: 需要处理、保存或展示的文本内容，类型为 `Any`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
+    """
     if isinstance(content, dict):
         return str(content.get("text", ""))
 
@@ -169,7 +215,13 @@ def parse_text_content(content: Any) -> str:
 
 
 def strip_bot_mentions(text: str, message: Any) -> str:
-    """Remove leading bot mentions from group-chat text messages."""
+    """函数功能：`strip_bot_mentions` 负责处理 strip bot mentions，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+        message: message 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
+    """
     mentions = _get_attr(message, "mentions", []) or []
     for mention in mentions:
         key = _get_attr(mention, "key")
@@ -181,7 +233,12 @@ def strip_bot_mentions(text: str, message: Any) -> str:
 
 
 def extract_sender(event: Any) -> dict[str, Any]:
-    """Extract sender fields from a Feishu message event."""
+    """函数功能：`extract_sender` 负责抽取 sender，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        event: event 参数，由调用方传入，类型为 `Any`。
+    返回结果说明：
+        返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
+    """
     sender = _get_attr(event, "sender")
     sender_id = _get_attr(sender, "sender_id")
 
@@ -195,7 +252,14 @@ def extract_sender(event: Any) -> dict[str, Any]:
 
 
 def build_space_id(chat_type: str, chat_id: str | None, sender: dict[str, Any]) -> str:
-    """Build the internal space_id used for WAL and note storage."""
+    """函数功能：`build_space_id` 负责构建 space id，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        chat_type: chat type 参数，由调用方传入，类型为 `str`。
+        chat_id: chat id 参数，由调用方传入，类型为 `str | None`。
+        sender: sender 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
+    """
     open_id = sender.get("open_id")
     if chat_type == "p2p" and open_id:
         return f"p_{open_id}"
@@ -207,9 +271,12 @@ def build_space_id(chat_type: str, chat_id: str | None, sender: dict[str, Any]) 
 
 
 def _parse_limit(value: Any, default: int) -> int:
-    """负责“解析限制”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_parse_limit` 负责解析 limit，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+        default: default 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
     """
     try:
         return max(1, min(int(value), 100))
@@ -218,9 +285,11 @@ def _parse_limit(value: Any, default: int) -> int:
 
 
 def _split_tags(value: str) -> list[str]:
-    """负责“切分tags”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_split_tags` 负责切分 tags，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     return [
         item.strip()
@@ -230,9 +299,13 @@ def _split_tags(value: str) -> list[str]:
 
 
 def _format_note_results(notes: list[dict[str, Any]], title: str, limit: int = 8) -> str:
-    """负责“格式化笔记results”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_format_note_results` 负责格式化 note results，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        notes: notes 参数，由调用方传入，类型为 `list[dict[str, Any]]`。
+        title: title 参数，由调用方传入，类型为 `str`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `8`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     if not notes:
         return f"{title}：没有找到匹配的笔记。"
@@ -251,9 +324,11 @@ def _format_note_results(notes: list[dict[str, Any]], title: str, limit: int = 8
 
 
 def _parse_filter_args(raw: str) -> dict[str, str]:
-    """负责“解析筛选参数”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_parse_filter_args` 负责解析 filter args，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        raw: raw 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `dict[str, str]`，表示结构化结果、载荷或状态映射。
     """
     args: dict[str, str] = {}
     for part in raw.split():
@@ -267,9 +342,11 @@ def _parse_filter_args(raw: str) -> dict[str, str]:
     return args
 
 def _format_summary_auto_status(space_id: str) -> str:
-    """负责“格式化总结auto状态”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_format_summary_auto_status` 负责格式化 summary auto status，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     sub = get_summary_subscription(space_id)
     if sub is None:
@@ -286,17 +363,22 @@ def _format_summary_auto_status(space_id: str) -> str:
 
 
 def _clip_status_text(value: Any, limit: int = 80) -> str:
-    """负责“clip状态文本”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_clip_status_text` 负责处理 clip status text，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `Any`。
+        limit: 数量上限，用于限制返回、扫描或处理规模，类型为 `int`，默认值为 `80`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return safe_text_preview(str(value or ""), limit=limit)
 
 
 def _format_system_status(space_id: str) -> str:
-    """负责“格式化system状态”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_format_system_status` 负责格式化 system status，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     pending_count = len(load_pending_records(space_id))
     sub = get_summary_subscription(space_id)
@@ -345,9 +427,13 @@ def _format_system_status(space_id: str) -> str:
 
 
 def _handle_summary_auto_command(space_id: str, chat_id: str, text: str) -> str | None:
-    """负责“处理总结auto命令”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_handle_summary_auto_command` 负责处理 summary auto command，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        chat_id: chat id 参数，由调用方传入，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     if not (text == "/summary_auto" or text.startswith("/summary_auto ")):
         return None
@@ -384,9 +470,12 @@ def _handle_summary_auto_command(space_id: str, chat_id: str, text: str) -> str 
     return "用法：/summary_auto on｜off｜status｜time 22:00"
 
 def _handle_direct_query_command(space_id: str, text: str) -> str | None:
-    """负责“处理direct查询命令”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_handle_direct_query_command` 负责处理 direct query command，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     if text.startswith("/type"):
         raw = text.removeprefix("/type").strip()
@@ -441,9 +530,12 @@ def _handle_direct_query_command(space_id: str, text: str) -> str | None:
 
 
 def _handle_memory_command(space_id: str, text: str) -> str | None:
-    """负责“处理记忆命令”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_handle_memory_command` 负责处理 memory command，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     if not (text == "/memory" or text.startswith("/memory ")):
         return None
@@ -500,9 +592,11 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
 
 
 def _handle_trace_command(text: str) -> str | None:
-    """负责“处理追踪命令”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_handle_trace_command` 负责处理 trace command，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        text: 输入文本内容，类型为 `str`。
+    返回结果说明：
+        返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     if not (text == "/trace" or text.startswith("/trace ")):
         return None
@@ -526,9 +620,15 @@ def _log_duplicate_event(
     command: str,
     in_progress: bool = False,
 ) -> None:
-    """负责“log重复事件”。
-
-    该函数是 `bot.feishu_bot` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_log_duplicate_event` 负责记录日志 duplicate event，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str | None`。
+        task_type: task type 参数，由调用方传入，类型为 `str`。
+        command: command 参数，由调用方传入，类型为 `str`。
+        in_progress: in progress 参数，由调用方传入，类型为 `bool`，默认值为 `False`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     log_event(
         "feishu.message.duplicate",
@@ -540,7 +640,12 @@ def _log_duplicate_event(
 
 
 def handle_text_message(data: P2ImMessageReceiveV1) -> None:
-    """Handle a Feishu im.message.receive_v1 event."""
+    """函数功能：`handle_text_message` 负责处理 text message，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        data: 待处理的数据对象或结构化映射，类型为 `P2ImMessageReceiveV1`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     event = data.event
     header = _get_attr(data, "header")
     message = event.message
@@ -913,7 +1018,12 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
 
 
 def do_p2_im_message_receive_v1(data: P2ImMessageReceiveV1) -> None:
-    """Feishu SDK callback for the message receive v2.0 event."""
+    """函数功能：`do_p2_im_message_receive_v1` 负责接收 v1，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        data: 待处理的数据对象或结构化映射，类型为 `P2ImMessageReceiveV1`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     try:
         handle_text_message(data)
     except Exception:
@@ -921,7 +1031,12 @@ def do_p2_im_message_receive_v1(data: P2ImMessageReceiveV1) -> None:
 
 
 def build_event_handler() -> Any:
-    """Build the Feishu event dispatcher for long-connection mode."""
+    """函数功能：`build_event_handler` 负责构建 event handler，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        无。
+    返回结果说明：
+        返回 `Any` 类型结果；具体字段和语义由调用方按该对象约定使用。
+    """
     return (
         lark.EventDispatcherHandler.builder(ENCRYPT_KEY, VERIFICATION_TOKEN)
         .register_p2_im_message_receive_v1(do_p2_im_message_receive_v1)
@@ -930,7 +1045,12 @@ def build_event_handler() -> Any:
 
 
 def recover_pending_records() -> None:
-    """Recover pending WAL records before receiving new Feishu events."""
+    """函数功能：`recover_pending_records` 负责处理 recover pending records，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     space_ids = list_wal_space_ids()
     if not space_ids:
         LOGGER.info("No WAL files found for startup recovery")
@@ -948,7 +1068,12 @@ def recover_pending_records() -> None:
 
 
 def start() -> None:
-    """Start the Feishu long-connection client and block the current process."""
+    """函数功能：`start` 负责启动，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     require_feishu_config()
     logging.basicConfig(
         level=logging.INFO,
@@ -977,9 +1102,7 @@ def start() -> None:
         APP_ID,
         APP_SECRET,
         event_handler=build_event_handler(),
-        # INFO includes the temporary WebSocket access URL and ticket.  Keep
-        # third-party transport logs at WARNING so credentials never land in
-        # runtime.log during a normal connection.
+        # INFO 会包含临时 WebSocket 访问 URL 和 ticket；第三方传输日志保持 WARNING，避免正常连接时凭据落入 runtime.log。
         log_level=lark.LogLevel.WARNING,
     )
     LOGGER.info("Starting Feishu long-connection client...")

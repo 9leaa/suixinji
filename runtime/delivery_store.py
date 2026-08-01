@@ -1,4 +1,9 @@
-"""Local delivery idempotency store."""
+"""文件作用：本地 delivery 去重存储。
+
+项目关系：本文件依赖 `core.observability`、`core.settings`、`repositories.postgres`、`runtime.task`；被 `apps.handlers`、`apps.worker`、`bot.feishu_bot`、`repositories.postgres.delivery` 等 12 个模块。
+"""
+
+
 
 from __future__ import annotations
 
@@ -28,6 +33,10 @@ _LOCK = threading.RLock()
 
 @dataclass
 class DeliveryRecord:
+    """类功能：`DeliveryRecord` 封装与“本地 delivery 去重存储”相关的数据结构、状态或行为。
+    传参：类构造参数以 `__init__`、dataclass 字段或父类约定为准。
+    返回结果说明：实例方法按各自 docstring 返回；类本身用于创建可复用对象或类型约束。
+    """
     delivery_key: str
     delivery_type: str
     space_id: str
@@ -49,7 +58,16 @@ def reserve_delivery(
     message_id: str | None = None,
     tenant_id: str = "default",
 ) -> DeliveryRecord | None:
-    """Reserve a send operation if it is safe to attempt."""
+    """函数功能：`reserve_delivery` 负责预约 delivery，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        delivery_key: delivery key 参数，由调用方传入，类型为 `str`。
+        delivery_type: delivery type 参数，由调用方传入，类型为 `str`。
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str | None`，默认值为 `None`。
+        tenant_id: 租户标识，用于数据库和 Redis key 的租户隔离，类型为 `str`，默认值为 `'default'`。
+    返回结果说明：
+        返回 `DeliveryRecord | None`；未命中或无需处理时可返回 `None`。
+    """
     del tenant_id
     with _LOCK:
         items = _load_raw()
@@ -95,33 +113,43 @@ def reserve_delivery(
 
 
 def mark_sent(delivery_key: str) -> None:
-    """负责“标记sent”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_sent` 负责标记 sent，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        delivery_key: delivery key 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     _update_status(delivery_key, DELIVERY_SENT, None)
 
 
 def mark_failed(delivery_key: str, error: str) -> None:
-    """负责“标记failed”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_failed` 负责标记 failed，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        delivery_key: delivery key 参数，由调用方传入，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     _update_status(delivery_key, DELIVERY_FAILED, error)
 
 
 def mark_unknown(delivery_key: str, error: str) -> None:
-    """负责“标记unknown”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`mark_unknown` 负责标记 unknown，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        delivery_key: delivery key 参数，由调用方传入，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     _update_status(delivery_key, DELIVERY_UNKNOWN, error)
 
 
 def get_delivery(delivery_key: str) -> DeliveryRecord | None:
-    """负责“获取投递”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`get_delivery` 负责获取 delivery，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        delivery_key: delivery key 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `DeliveryRecord | None`；未命中或无需处理时可返回 `None`。
     """
     raw = _load_raw().get(delivery_key)
     if raw is None:
@@ -130,9 +158,12 @@ def get_delivery(delivery_key: str) -> DeliveryRecord | None:
 
 
 def is_reservation_expired(record: DeliveryRecord, now: datetime | None = None) -> bool:
-    """负责“是否为reservationexpired”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`is_reservation_expired` 负责判断是否为 reservation expired，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        record: 待处理或持久化的记录对象，类型为 `DeliveryRecord`。
+        now: now 参数，由调用方传入，类型为 `datetime | None`，默认值为 `None`。
+    返回结果说明：
+        返回 `bool`，表示判断、写入或处理是否成功。
     """
     if record.status != DELIVERY_RESERVED:
         return False
@@ -143,7 +174,12 @@ def is_reservation_expired(record: DeliveryRecord, now: datetime | None = None) 
 
 
 def recover_stale_reserved_deliveries() -> int:
-    """Mark expired reserved deliveries as failed so they can be retried later."""
+    """函数功能：`recover_stale_reserved_deliveries` 负责处理 recover stale reserved deliveries，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        无。
+    返回结果说明：
+        返回 `int`，表示计算得到的数值结果。
+    """
     recovered = 0
     with _LOCK:
         items = _load_raw()
@@ -171,9 +207,13 @@ def recover_stale_reserved_deliveries() -> int:
 
 
 def _update_status(delivery_key: str, status: str, error: str | None) -> None:
-    """负责“更新状态”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_update_status` 负责更新 status，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        delivery_key: delivery key 参数，由调用方传入，类型为 `str`。
+        status: status 参数，由调用方传入，类型为 `str`。
+        error: 当前捕获的异常对象，类型为 `str | None`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with _LOCK:
         items = _load_raw()
@@ -188,9 +228,11 @@ def _update_status(delivery_key: str, status: str, error: str | None) -> None:
 
 
 def _load_raw() -> dict[str, dict[str, Any]]:
-    """负责“加载raw”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_load_raw` 负责加载 raw，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        无。
+    返回结果说明：
+        返回 `dict[str, dict[str, Any]]`，表示结构化结果、载荷或状态映射。
     """
     with _LOCK:
         if not DELIVERY_PATH.exists():
@@ -199,9 +241,11 @@ def _load_raw() -> dict[str, dict[str, Any]]:
 
 
 def _save_raw(items: dict[str, dict[str, Any]]) -> None:
-    """负责“保存raw”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_save_raw` 负责保存 raw，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        items: 待遍历或处理的元素集合，类型为 `dict[str, dict[str, Any]]`。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     with _LOCK:
         DELIVERY_DIR.mkdir(parents=True, exist_ok=True)
@@ -212,9 +256,11 @@ def _save_raw(items: dict[str, dict[str, Any]]) -> None:
 
 
 def _record_from_raw(raw: dict[str, Any]) -> DeliveryRecord:
-    """负责“记录fromraw”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_record_from_raw` 负责记录 from raw，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        raw: raw 参数，由调用方传入，类型为 `dict[str, Any]`。
+    返回结果说明：
+        返回 `DeliveryRecord` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     return DeliveryRecord(
         delivery_key=str(raw["delivery_key"]),
@@ -232,17 +278,21 @@ def _record_from_raw(raw: dict[str, Any]) -> DeliveryRecord:
 
 
 def _future_iso(seconds: int) -> str:
-    """负责“futureiso”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_future_iso` 负责处理 future iso，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        seconds: seconds 参数，由调用方传入，类型为 `int`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return (datetime.now().astimezone() + timedelta(seconds=seconds)).isoformat(timespec="milliseconds")
 
 
 def _parse_iso(value: str) -> datetime:
-    """负责“解析iso”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`_parse_iso` 负责解析 iso，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        value: 待转换、校验或计算的值，类型为 `str`。
+    返回结果说明：
+        返回 `datetime` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     parsed = datetime.fromisoformat(value)
     if parsed.tzinfo is None:
@@ -251,33 +301,46 @@ def _parse_iso(value: str) -> datetime:
 
 
 def ingest_archived_key(space_id: str, message_id: str) -> str:
-    """负责“接收写入archived键”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`ingest_archived_key` 负责处理 ingest archived key，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return f"ingest:{space_id}:{message_id}:archived"
 
 
 def query_key(space_id: str, message_id: str) -> str:
-    """负责“查询键”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`query_key` 负责查询 key，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return f"query:{space_id}:{message_id}"
 
 
 def manual_summary_key(space_id: str, message_id: str) -> str:
-    """负责“manual总结键”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`manual_summary_key` 负责处理 manual summary key，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        message_id: 外部或本地消息标识，用于入口幂等和追踪，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return f"manual_summary:{space_id}:{message_id}"
 
 
 def auto_summary_key(space_id: str, range_key: str, date: str) -> str:
-    """负责“auto总结键”。
-
-    该函数是 `runtime.delivery_store` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`auto_summary_key` 负责处理 auto summary key，服务于本文件职责：本地 delivery 去重存储。
+    传参：
+        space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
+        range_key: range key 参数，由调用方传入，类型为 `str`。
+        date: date 参数，由调用方传入，类型为 `str`。
+    返回结果说明：
+        返回 `str`，通常是格式化后的文本、标识或路径。
     """
     return f"auto_summary:{space_id}:{range_key}:{date}"
 

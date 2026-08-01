@@ -1,5 +1,10 @@
 #!/usr/bin/env python
-"""Delete one Stage 4 test tenant and its dedicated Redis namespace."""
+"""文件作用：Stage 4 测试清理。
+
+项目关系：本文件依赖 `infrastructure.database`、`infrastructure.redis_client`、`infrastructure.redis_keys`、`infrastructure.schema`；被 暂无静态导入方或仅作为入口脚本执行。
+"""
+
+
 
 from __future__ import annotations
 
@@ -21,9 +26,11 @@ from infrastructure.schema import OutboxEvent, Task, Tenant
 
 
 def parse_args() -> argparse.Namespace:
-    """负责“解析参数”。
-
-    该函数是 `scripts.cleanup_stage4_run` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`parse_args` 负责解析 args，服务于本文件职责：Stage 4 测试清理。
+    传参：
+        无。
+    返回结果说明：
+        返回 `argparse.Namespace` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--tenant-id", required=True)
@@ -33,7 +40,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """作为脚本入口，解析运行参数并启动本模块定义的处理流程。"""
+    """函数功能：`main` 负责作为命令行入口解析参数并调度执行，服务于本文件职责：Stage 4 测试清理。
+    传参：
+        无。
+    返回结果说明：
+        无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
+    """
     args = parse_args()
     if not args.confirm:
         raise SystemExit("--confirm is required")

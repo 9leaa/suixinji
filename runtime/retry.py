@@ -1,4 +1,9 @@
-"""Retry helpers for transient external failures."""
+"""文件作用：重试策略。
+
+项目关系：本文件依赖 无直接本地模块依赖；被 `tests.test_retry_boundaries`。
+"""
+
+
 
 from __future__ import annotations
 
@@ -17,9 +22,13 @@ def retry_external_call(
     max_retries: int,
     retryable: Callable[[BaseException], bool],
 ) -> T:
-    """负责“重试externalcall”。
-
-    该函数是 `runtime.retry` 中的模块函数；具体输入、输出和异常边界由类型标注及调用方约定。
+    """函数功能：`retry_external_call` 负责重试 external call，服务于本文件职责：重试策略。
+    传参：
+        fn: fn 参数，由调用方传入，类型为 `Callable[[], T]`。
+        max_retries: max retries 参数，由调用方传入，类型为 `int`。
+        retryable: retryable 参数，由调用方传入，类型为 `Callable[[BaseException], bool]`。
+    返回结果说明：
+        返回 `T` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     attempt = 0
     while True:
