@@ -612,6 +612,9 @@ def extract_llm_candidates(
         if memory_type not in MEMORY_TYPES or not content:
             continue
         task_status = str(row.get("task_status") or "").strip().lower() or None
+        # 兼容尚未跟随新 prompt 切换的模型输出；持久化只使用四状态模型。
+        if task_status == "in_progress":
+            task_status = "todo"
         if task_status not in TASK_STATUSES:
             task_status = None
         entities = row.get("entities") if isinstance(row.get("entities"), list) else []

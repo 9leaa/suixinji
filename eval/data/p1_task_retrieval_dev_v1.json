@@ -17,7 +17,7 @@
       "title": "冰柜温区标记",
       "alias": "冷冻分区标签",
       "detail": "冰柜按生鲜、熟食和备用分区，标签贴在抽屉外侧。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-003",
@@ -33,7 +33,7 @@
       "title": "烘干机绒毛盒",
       "alias": "烘干滤网清理",
       "detail": "烘干机每次使用后清空绒毛盒，深层滤网每月拆洗。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-005",
@@ -49,7 +49,7 @@
       "title": "窗纱磁吸修补",
       "alias": "纱窗边角修复",
       "detail": "窗纱边角脱胶先清洁表面，再用磁吸条重新固定。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-007",
@@ -65,7 +65,7 @@
       "title": "洗碗机盐仓补充",
       "alias": "洗碗机软化盐",
       "detail": "洗碗机提示缺盐时先确认水硬度设置，再补充专用盐。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-009",
@@ -81,7 +81,7 @@
       "title": "窗帘轨道润滑",
       "alias": "窗轨异响处理",
       "detail": "窗帘轨道出现异响时先清理灰尘，再少量涂硅基润滑剂。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-011",
@@ -97,7 +97,7 @@
       "title": "接口契约核对",
       "alias": "接口字段复核",
       "detail": "接口上线前逐个核对字段类型，发现不一致先更新契约文档。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-013",
@@ -113,7 +113,7 @@
       "title": "缓存预热脚本",
       "alias": "缓存预热任务",
       "detail": "大版本发布前先运行缓存预热脚本，观察五分钟命中率。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-015",
@@ -129,7 +129,7 @@
       "title": "依赖漏洞复核",
       "alias": "依赖安全检查",
       "detail": "依赖扫描出现高危项时先确认是否实际使用，再安排升级。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-017",
@@ -145,7 +145,7 @@
       "title": "异步任务重放",
       "alias": "队列消息重放",
       "detail": "消息处理失败时只重放指定批次，不直接重置整条队列。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-019",
@@ -161,7 +161,7 @@
       "title": "监控告警收敛",
       "alias": "告警规则整理",
       "detail": "告警重复触发时合并规则，并保留真正需要值班响应的条件。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-021",
@@ -177,7 +177,7 @@
       "title": "月末合同归档",
       "alias": "合同归档整理",
       "detail": "月末把已签合同按客户和月份归档，缺少签署页的列入补件清单。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-023",
@@ -193,7 +193,7 @@
       "title": "供应商资料更新",
       "alias": "供应商信息维护",
       "detail": "供应商更换联系人后更新资料，并重新确认付款账户。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-025",
@@ -209,7 +209,7 @@
       "title": "入职设备交接",
       "alias": "新员工设备交接",
       "detail": "新员工领设备时核对序列号、配件和归还日期。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-027",
@@ -225,7 +225,7 @@
       "title": "客户问题回访",
       "alias": "问题闭环回访",
       "detail": "客户问题修复后两天内回访，记录是否真正解决而不只看工单关闭。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-029",
@@ -241,7 +241,7 @@
       "title": "培训材料校对",
       "alias": "培训文档校验",
       "detail": "培训材料发出前检查链接、截图和版本号，避免新旧页面混用。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-031",
@@ -257,7 +257,7 @@
       "title": "车站行李寄存",
       "alias": "车站行李托管",
       "detail": "长时间换乘时先确认寄存柜尺寸和取件截止时间。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-033",
@@ -273,7 +273,7 @@
       "title": "活动雨备通知",
       "alias": "活动雨天预案",
       "detail": "户外活动遇雨时提前两小时发出集合点变更通知。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-035",
@@ -289,7 +289,7 @@
       "title": "返程票改签",
       "alias": "返程车票调整",
       "detail": "行程变化先比较改签和退票成本，再决定是否调整返程票。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-037",
@@ -305,7 +305,7 @@
       "title": "儿童座位分配",
       "alias": "亲子座位安排",
       "detail": "亲子活动按年龄和视线分配座位，过道位置留给需要照顾的孩子。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-039",
@@ -321,7 +321,7 @@
       "title": "活动照片交付",
       "alias": "活动照片整理",
       "detail": "活动照片按日期和环节命名，交付前抽查清晰度和隐私内容。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-041",
@@ -337,7 +337,7 @@
       "title": "单词复习计划",
       "alias": "词汇复习安排",
       "detail": "单词复习按间隔重复执行，周末集中处理遗忘率高的词。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-043",
@@ -353,7 +353,7 @@
       "title": "长文资料整理",
       "alias": "文章资料归档",
       "detail": "长文资料按论点和来源分组，引用处先标出页码。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-045",
@@ -369,7 +369,7 @@
       "title": "作品集版本更新",
       "alias": "作品集迭代",
       "detail": "作品集每次更新保留旧版本，首页只展示已经复盘过的项目。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-047",
@@ -385,7 +385,7 @@
       "title": "读书笔记整理",
       "alias": "书籍笔记归档",
       "detail": "读书笔记按主题归档，结论和原文摘录分开记录。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-049",
@@ -401,7 +401,7 @@
       "title": "考试报名确认",
       "alias": "考试报名处理",
       "detail": "考试报名后确认考点、证件和缴费状态，临近截止日再次检查。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-051",
@@ -417,7 +417,7 @@
       "title": "阳台花盆换位",
       "alias": "花盆光照调整",
       "detail": "阳台植物叶片发黄时先调整花盆位置，观察一周再决定是否换土。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-053",
@@ -433,7 +433,7 @@
       "title": "冰箱食材盘点",
       "alias": "食材库存清点",
       "detail": "周末盘点冰箱食材，优先处理三天内到期的食物。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-055",
@@ -449,7 +449,7 @@
       "title": "旧物捐赠打包",
       "alias": "旧物捐赠整理",
       "detail": "旧物捐赠前清洁并按品类装箱，箱外写明数量和去向。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-057",
@@ -465,7 +465,7 @@
       "title": "水电读数记录",
       "alias": "水电表读数",
       "detail": "每月固定日期拍水电表，异常增长先排查漏水再缴费。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     },
     {
       "topic_id": "P1-059",
@@ -481,7 +481,7 @@
       "title": "节日礼物采购",
       "alias": "节日礼品准备",
       "detail": "节日礼物提前购买，易碎品单独包装并记录收件地址。",
-      "task_status": "in_progress"
+      "task_status": "todo"
     }
   ],
   "cases": [
@@ -571,7 +571,7 @@
       "query": "冰柜温区标记这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-002",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-002_1",
@@ -579,7 +579,7 @@
       "query": "找出我关于冰柜温区标记的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-002",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-002_2",
@@ -587,7 +587,7 @@
       "query": "之前说的冰柜温区标记，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-002",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-002_3",
@@ -595,7 +595,7 @@
       "query": "冷冻分区标签后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-002",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-002_4",
@@ -603,7 +603,7 @@
       "query": "我还需要处理冷冻分区标签吗？",
       "style": "alias_task",
       "expected_id": "m_P1-002",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-002_5",
@@ -611,7 +611,7 @@
       "query": "上次提到的冰柜温区标记进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-002",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-002_6",
@@ -619,7 +619,7 @@
       "query": "帮我看看冷冻分区标签这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-002",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-002_7",
@@ -627,7 +627,7 @@
       "query": "冰柜温区标记要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-002",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-002_8",
@@ -635,7 +635,7 @@
       "query": "关于冷冻分区标签的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-002",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-002_9",
@@ -643,7 +643,7 @@
       "query": "把冰柜温区标记对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-002",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-003_0",
@@ -731,7 +731,7 @@
       "query": "烘干机绒毛盒这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-004",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-004_1",
@@ -739,7 +739,7 @@
       "query": "找出我关于烘干机绒毛盒的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-004",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-004_2",
@@ -747,7 +747,7 @@
       "query": "之前说的烘干机绒毛盒，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-004",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-004_3",
@@ -755,7 +755,7 @@
       "query": "烘干滤网清理后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-004",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-004_4",
@@ -763,7 +763,7 @@
       "query": "我还需要处理烘干滤网清理吗？",
       "style": "alias_task",
       "expected_id": "m_P1-004",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-004_5",
@@ -771,7 +771,7 @@
       "query": "上次提到的烘干机绒毛盒进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-004",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-004_6",
@@ -779,7 +779,7 @@
       "query": "帮我看看烘干滤网清理这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-004",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-004_7",
@@ -787,7 +787,7 @@
       "query": "烘干机绒毛盒要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-004",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-004_8",
@@ -795,7 +795,7 @@
       "query": "关于烘干滤网清理的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-004",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-004_9",
@@ -803,7 +803,7 @@
       "query": "把烘干机绒毛盒对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-004",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-005_0",
@@ -891,7 +891,7 @@
       "query": "窗纱磁吸修补这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-006",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-006_1",
@@ -899,7 +899,7 @@
       "query": "找出我关于窗纱磁吸修补的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-006",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-006_2",
@@ -907,7 +907,7 @@
       "query": "之前说的窗纱磁吸修补，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-006",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-006_3",
@@ -915,7 +915,7 @@
       "query": "纱窗边角修复后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-006",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-006_4",
@@ -923,7 +923,7 @@
       "query": "我还需要处理纱窗边角修复吗？",
       "style": "alias_task",
       "expected_id": "m_P1-006",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-006_5",
@@ -931,7 +931,7 @@
       "query": "上次提到的窗纱磁吸修补进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-006",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-006_6",
@@ -939,7 +939,7 @@
       "query": "帮我看看纱窗边角修复这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-006",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-006_7",
@@ -947,7 +947,7 @@
       "query": "窗纱磁吸修补要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-006",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-006_8",
@@ -955,7 +955,7 @@
       "query": "关于纱窗边角修复的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-006",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-006_9",
@@ -963,7 +963,7 @@
       "query": "把窗纱磁吸修补对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-006",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-007_0",
@@ -1051,7 +1051,7 @@
       "query": "洗碗机盐仓补充这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-008",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-008_1",
@@ -1059,7 +1059,7 @@
       "query": "找出我关于洗碗机盐仓补充的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-008",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-008_2",
@@ -1067,7 +1067,7 @@
       "query": "之前说的洗碗机盐仓补充，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-008",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-008_3",
@@ -1075,7 +1075,7 @@
       "query": "洗碗机软化盐后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-008",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-008_4",
@@ -1083,7 +1083,7 @@
       "query": "我还需要处理洗碗机软化盐吗？",
       "style": "alias_task",
       "expected_id": "m_P1-008",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-008_5",
@@ -1091,7 +1091,7 @@
       "query": "上次提到的洗碗机盐仓补充进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-008",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-008_6",
@@ -1099,7 +1099,7 @@
       "query": "帮我看看洗碗机软化盐这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-008",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-008_7",
@@ -1107,7 +1107,7 @@
       "query": "洗碗机盐仓补充要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-008",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-008_8",
@@ -1115,7 +1115,7 @@
       "query": "关于洗碗机软化盐的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-008",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-008_9",
@@ -1123,7 +1123,7 @@
       "query": "把洗碗机盐仓补充对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-008",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-009_0",
@@ -1211,7 +1211,7 @@
       "query": "窗帘轨道润滑这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-010",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-010_1",
@@ -1219,7 +1219,7 @@
       "query": "找出我关于窗帘轨道润滑的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-010",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-010_2",
@@ -1227,7 +1227,7 @@
       "query": "之前说的窗帘轨道润滑，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-010",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-010_3",
@@ -1235,7 +1235,7 @@
       "query": "窗轨异响处理后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-010",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-010_4",
@@ -1243,7 +1243,7 @@
       "query": "我还需要处理窗轨异响处理吗？",
       "style": "alias_task",
       "expected_id": "m_P1-010",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-010_5",
@@ -1251,7 +1251,7 @@
       "query": "上次提到的窗帘轨道润滑进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-010",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-010_6",
@@ -1259,7 +1259,7 @@
       "query": "帮我看看窗轨异响处理这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-010",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-010_7",
@@ -1267,7 +1267,7 @@
       "query": "窗帘轨道润滑要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-010",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-010_8",
@@ -1275,7 +1275,7 @@
       "query": "关于窗轨异响处理的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-010",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-010_9",
@@ -1283,7 +1283,7 @@
       "query": "把窗帘轨道润滑对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-010",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-011_0",
@@ -1371,7 +1371,7 @@
       "query": "接口契约核对这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-012",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-012_1",
@@ -1379,7 +1379,7 @@
       "query": "找出我关于接口契约核对的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-012",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-012_2",
@@ -1387,7 +1387,7 @@
       "query": "之前说的接口契约核对，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-012",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-012_3",
@@ -1395,7 +1395,7 @@
       "query": "接口字段复核后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-012",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-012_4",
@@ -1403,7 +1403,7 @@
       "query": "我还需要处理接口字段复核吗？",
       "style": "alias_task",
       "expected_id": "m_P1-012",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-012_5",
@@ -1411,7 +1411,7 @@
       "query": "上次提到的接口契约核对进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-012",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-012_6",
@@ -1419,7 +1419,7 @@
       "query": "帮我看看接口字段复核这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-012",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-012_7",
@@ -1427,7 +1427,7 @@
       "query": "接口契约核对要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-012",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-012_8",
@@ -1435,7 +1435,7 @@
       "query": "关于接口字段复核的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-012",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-012_9",
@@ -1443,7 +1443,7 @@
       "query": "把接口契约核对对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-012",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-013_0",
@@ -1531,7 +1531,7 @@
       "query": "缓存预热脚本这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-014",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-014_1",
@@ -1539,7 +1539,7 @@
       "query": "找出我关于缓存预热脚本的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-014",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-014_2",
@@ -1547,7 +1547,7 @@
       "query": "之前说的缓存预热脚本，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-014",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-014_3",
@@ -1555,7 +1555,7 @@
       "query": "缓存预热任务后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-014",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-014_4",
@@ -1563,7 +1563,7 @@
       "query": "我还需要处理缓存预热任务吗？",
       "style": "alias_task",
       "expected_id": "m_P1-014",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-014_5",
@@ -1571,7 +1571,7 @@
       "query": "上次提到的缓存预热脚本进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-014",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-014_6",
@@ -1579,7 +1579,7 @@
       "query": "帮我看看缓存预热任务这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-014",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-014_7",
@@ -1587,7 +1587,7 @@
       "query": "缓存预热脚本要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-014",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-014_8",
@@ -1595,7 +1595,7 @@
       "query": "关于缓存预热任务的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-014",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-014_9",
@@ -1603,7 +1603,7 @@
       "query": "把缓存预热脚本对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-014",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-015_0",
@@ -1691,7 +1691,7 @@
       "query": "依赖漏洞复核这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-016",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-016_1",
@@ -1699,7 +1699,7 @@
       "query": "找出我关于依赖漏洞复核的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-016",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-016_2",
@@ -1707,7 +1707,7 @@
       "query": "之前说的依赖漏洞复核，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-016",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-016_3",
@@ -1715,7 +1715,7 @@
       "query": "依赖安全检查后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-016",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-016_4",
@@ -1723,7 +1723,7 @@
       "query": "我还需要处理依赖安全检查吗？",
       "style": "alias_task",
       "expected_id": "m_P1-016",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-016_5",
@@ -1731,7 +1731,7 @@
       "query": "上次提到的依赖漏洞复核进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-016",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-016_6",
@@ -1739,7 +1739,7 @@
       "query": "帮我看看依赖安全检查这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-016",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-016_7",
@@ -1747,7 +1747,7 @@
       "query": "依赖漏洞复核要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-016",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-016_8",
@@ -1755,7 +1755,7 @@
       "query": "关于依赖安全检查的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-016",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-016_9",
@@ -1763,7 +1763,7 @@
       "query": "把依赖漏洞复核对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-016",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-017_0",
@@ -1851,7 +1851,7 @@
       "query": "异步任务重放这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-018",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-018_1",
@@ -1859,7 +1859,7 @@
       "query": "找出我关于异步任务重放的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-018",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-018_2",
@@ -1867,7 +1867,7 @@
       "query": "之前说的异步任务重放，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-018",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-018_3",
@@ -1875,7 +1875,7 @@
       "query": "队列消息重放后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-018",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-018_4",
@@ -1883,7 +1883,7 @@
       "query": "我还需要处理队列消息重放吗？",
       "style": "alias_task",
       "expected_id": "m_P1-018",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-018_5",
@@ -1891,7 +1891,7 @@
       "query": "上次提到的异步任务重放进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-018",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-018_6",
@@ -1899,7 +1899,7 @@
       "query": "帮我看看队列消息重放这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-018",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-018_7",
@@ -1907,7 +1907,7 @@
       "query": "异步任务重放要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-018",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-018_8",
@@ -1915,7 +1915,7 @@
       "query": "关于队列消息重放的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-018",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-018_9",
@@ -1923,7 +1923,7 @@
       "query": "把异步任务重放对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-018",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-019_0",
@@ -2011,7 +2011,7 @@
       "query": "监控告警收敛这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-020",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-020_1",
@@ -2019,7 +2019,7 @@
       "query": "找出我关于监控告警收敛的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-020",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-020_2",
@@ -2027,7 +2027,7 @@
       "query": "之前说的监控告警收敛，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-020",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-020_3",
@@ -2035,7 +2035,7 @@
       "query": "告警规则整理后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-020",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-020_4",
@@ -2043,7 +2043,7 @@
       "query": "我还需要处理告警规则整理吗？",
       "style": "alias_task",
       "expected_id": "m_P1-020",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-020_5",
@@ -2051,7 +2051,7 @@
       "query": "上次提到的监控告警收敛进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-020",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-020_6",
@@ -2059,7 +2059,7 @@
       "query": "帮我看看告警规则整理这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-020",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-020_7",
@@ -2067,7 +2067,7 @@
       "query": "监控告警收敛要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-020",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-020_8",
@@ -2075,7 +2075,7 @@
       "query": "关于告警规则整理的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-020",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-020_9",
@@ -2083,7 +2083,7 @@
       "query": "把监控告警收敛对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-020",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-021_0",
@@ -2171,7 +2171,7 @@
       "query": "月末合同归档这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-022",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-022_1",
@@ -2179,7 +2179,7 @@
       "query": "找出我关于月末合同归档的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-022",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-022_2",
@@ -2187,7 +2187,7 @@
       "query": "之前说的月末合同归档，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-022",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-022_3",
@@ -2195,7 +2195,7 @@
       "query": "合同归档整理后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-022",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-022_4",
@@ -2203,7 +2203,7 @@
       "query": "我还需要处理合同归档整理吗？",
       "style": "alias_task",
       "expected_id": "m_P1-022",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-022_5",
@@ -2211,7 +2211,7 @@
       "query": "上次提到的月末合同归档进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-022",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-022_6",
@@ -2219,7 +2219,7 @@
       "query": "帮我看看合同归档整理这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-022",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-022_7",
@@ -2227,7 +2227,7 @@
       "query": "月末合同归档要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-022",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-022_8",
@@ -2235,7 +2235,7 @@
       "query": "关于合同归档整理的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-022",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-022_9",
@@ -2243,7 +2243,7 @@
       "query": "把月末合同归档对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-022",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-023_0",
@@ -2331,7 +2331,7 @@
       "query": "供应商资料更新这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-024",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-024_1",
@@ -2339,7 +2339,7 @@
       "query": "找出我关于供应商资料更新的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-024",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-024_2",
@@ -2347,7 +2347,7 @@
       "query": "之前说的供应商资料更新，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-024",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-024_3",
@@ -2355,7 +2355,7 @@
       "query": "供应商信息维护后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-024",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-024_4",
@@ -2363,7 +2363,7 @@
       "query": "我还需要处理供应商信息维护吗？",
       "style": "alias_task",
       "expected_id": "m_P1-024",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-024_5",
@@ -2371,7 +2371,7 @@
       "query": "上次提到的供应商资料更新进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-024",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-024_6",
@@ -2379,7 +2379,7 @@
       "query": "帮我看看供应商信息维护这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-024",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-024_7",
@@ -2387,7 +2387,7 @@
       "query": "供应商资料更新要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-024",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-024_8",
@@ -2395,7 +2395,7 @@
       "query": "关于供应商信息维护的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-024",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-024_9",
@@ -2403,7 +2403,7 @@
       "query": "把供应商资料更新对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-024",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-025_0",
@@ -2491,7 +2491,7 @@
       "query": "入职设备交接这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-026",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-026_1",
@@ -2499,7 +2499,7 @@
       "query": "找出我关于入职设备交接的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-026",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-026_2",
@@ -2507,7 +2507,7 @@
       "query": "之前说的入职设备交接，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-026",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-026_3",
@@ -2515,7 +2515,7 @@
       "query": "新员工设备交接后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-026",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-026_4",
@@ -2523,7 +2523,7 @@
       "query": "我还需要处理新员工设备交接吗？",
       "style": "alias_task",
       "expected_id": "m_P1-026",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-026_5",
@@ -2531,7 +2531,7 @@
       "query": "上次提到的入职设备交接进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-026",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-026_6",
@@ -2539,7 +2539,7 @@
       "query": "帮我看看新员工设备交接这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-026",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-026_7",
@@ -2547,7 +2547,7 @@
       "query": "入职设备交接要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-026",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-026_8",
@@ -2555,7 +2555,7 @@
       "query": "关于新员工设备交接的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-026",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-026_9",
@@ -2563,7 +2563,7 @@
       "query": "把入职设备交接对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-026",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-027_0",
@@ -2651,7 +2651,7 @@
       "query": "客户问题回访这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-028",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-028_1",
@@ -2659,7 +2659,7 @@
       "query": "找出我关于客户问题回访的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-028",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-028_2",
@@ -2667,7 +2667,7 @@
       "query": "之前说的客户问题回访，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-028",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-028_3",
@@ -2675,7 +2675,7 @@
       "query": "问题闭环回访后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-028",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-028_4",
@@ -2683,7 +2683,7 @@
       "query": "我还需要处理问题闭环回访吗？",
       "style": "alias_task",
       "expected_id": "m_P1-028",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-028_5",
@@ -2691,7 +2691,7 @@
       "query": "上次提到的客户问题回访进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-028",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-028_6",
@@ -2699,7 +2699,7 @@
       "query": "帮我看看问题闭环回访这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-028",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-028_7",
@@ -2707,7 +2707,7 @@
       "query": "客户问题回访要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-028",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-028_8",
@@ -2715,7 +2715,7 @@
       "query": "关于问题闭环回访的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-028",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-028_9",
@@ -2723,7 +2723,7 @@
       "query": "把客户问题回访对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-028",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-029_0",
@@ -2811,7 +2811,7 @@
       "query": "培训材料校对这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-030",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-030_1",
@@ -2819,7 +2819,7 @@
       "query": "找出我关于培训材料校对的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-030",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-030_2",
@@ -2827,7 +2827,7 @@
       "query": "之前说的培训材料校对，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-030",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-030_3",
@@ -2835,7 +2835,7 @@
       "query": "培训文档校验后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-030",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-030_4",
@@ -2843,7 +2843,7 @@
       "query": "我还需要处理培训文档校验吗？",
       "style": "alias_task",
       "expected_id": "m_P1-030",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-030_5",
@@ -2851,7 +2851,7 @@
       "query": "上次提到的培训材料校对进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-030",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-030_6",
@@ -2859,7 +2859,7 @@
       "query": "帮我看看培训文档校验这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-030",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-030_7",
@@ -2867,7 +2867,7 @@
       "query": "培训材料校对要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-030",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-030_8",
@@ -2875,7 +2875,7 @@
       "query": "关于培训文档校验的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-030",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-030_9",
@@ -2883,7 +2883,7 @@
       "query": "把培训材料校对对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-030",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-031_0",
@@ -2971,7 +2971,7 @@
       "query": "车站行李寄存这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-032",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-032_1",
@@ -2979,7 +2979,7 @@
       "query": "找出我关于车站行李寄存的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-032",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-032_2",
@@ -2987,7 +2987,7 @@
       "query": "之前说的车站行李寄存，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-032",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-032_3",
@@ -2995,7 +2995,7 @@
       "query": "车站行李托管后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-032",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-032_4",
@@ -3003,7 +3003,7 @@
       "query": "我还需要处理车站行李托管吗？",
       "style": "alias_task",
       "expected_id": "m_P1-032",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-032_5",
@@ -3011,7 +3011,7 @@
       "query": "上次提到的车站行李寄存进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-032",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-032_6",
@@ -3019,7 +3019,7 @@
       "query": "帮我看看车站行李托管这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-032",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-032_7",
@@ -3027,7 +3027,7 @@
       "query": "车站行李寄存要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-032",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-032_8",
@@ -3035,7 +3035,7 @@
       "query": "关于车站行李托管的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-032",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-032_9",
@@ -3043,7 +3043,7 @@
       "query": "把车站行李寄存对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-032",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-033_0",
@@ -3131,7 +3131,7 @@
       "query": "活动雨备通知这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-034",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-034_1",
@@ -3139,7 +3139,7 @@
       "query": "找出我关于活动雨备通知的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-034",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-034_2",
@@ -3147,7 +3147,7 @@
       "query": "之前说的活动雨备通知，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-034",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-034_3",
@@ -3155,7 +3155,7 @@
       "query": "活动雨天预案后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-034",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-034_4",
@@ -3163,7 +3163,7 @@
       "query": "我还需要处理活动雨天预案吗？",
       "style": "alias_task",
       "expected_id": "m_P1-034",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-034_5",
@@ -3171,7 +3171,7 @@
       "query": "上次提到的活动雨备通知进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-034",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-034_6",
@@ -3179,7 +3179,7 @@
       "query": "帮我看看活动雨天预案这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-034",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-034_7",
@@ -3187,7 +3187,7 @@
       "query": "活动雨备通知要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-034",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-034_8",
@@ -3195,7 +3195,7 @@
       "query": "关于活动雨天预案的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-034",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-034_9",
@@ -3203,7 +3203,7 @@
       "query": "把活动雨备通知对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-034",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-035_0",
@@ -3291,7 +3291,7 @@
       "query": "返程票改签这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-036",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-036_1",
@@ -3299,7 +3299,7 @@
       "query": "找出我关于返程票改签的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-036",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-036_2",
@@ -3307,7 +3307,7 @@
       "query": "之前说的返程票改签，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-036",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-036_3",
@@ -3315,7 +3315,7 @@
       "query": "返程车票调整后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-036",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-036_4",
@@ -3323,7 +3323,7 @@
       "query": "我还需要处理返程车票调整吗？",
       "style": "alias_task",
       "expected_id": "m_P1-036",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-036_5",
@@ -3331,7 +3331,7 @@
       "query": "上次提到的返程票改签进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-036",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-036_6",
@@ -3339,7 +3339,7 @@
       "query": "帮我看看返程车票调整这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-036",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-036_7",
@@ -3347,7 +3347,7 @@
       "query": "返程票改签要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-036",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-036_8",
@@ -3355,7 +3355,7 @@
       "query": "关于返程车票调整的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-036",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-036_9",
@@ -3363,7 +3363,7 @@
       "query": "把返程票改签对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-036",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-037_0",
@@ -3451,7 +3451,7 @@
       "query": "儿童座位分配这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-038",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-038_1",
@@ -3459,7 +3459,7 @@
       "query": "找出我关于儿童座位分配的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-038",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-038_2",
@@ -3467,7 +3467,7 @@
       "query": "之前说的儿童座位分配，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-038",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-038_3",
@@ -3475,7 +3475,7 @@
       "query": "亲子座位安排后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-038",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-038_4",
@@ -3483,7 +3483,7 @@
       "query": "我还需要处理亲子座位安排吗？",
       "style": "alias_task",
       "expected_id": "m_P1-038",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-038_5",
@@ -3491,7 +3491,7 @@
       "query": "上次提到的儿童座位分配进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-038",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-038_6",
@@ -3499,7 +3499,7 @@
       "query": "帮我看看亲子座位安排这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-038",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-038_7",
@@ -3507,7 +3507,7 @@
       "query": "儿童座位分配要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-038",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-038_8",
@@ -3515,7 +3515,7 @@
       "query": "关于亲子座位安排的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-038",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-038_9",
@@ -3523,7 +3523,7 @@
       "query": "把儿童座位分配对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-038",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-039_0",
@@ -3611,7 +3611,7 @@
       "query": "活动照片交付这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-040",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-040_1",
@@ -3619,7 +3619,7 @@
       "query": "找出我关于活动照片交付的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-040",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-040_2",
@@ -3627,7 +3627,7 @@
       "query": "之前说的活动照片交付，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-040",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-040_3",
@@ -3635,7 +3635,7 @@
       "query": "活动照片整理后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-040",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-040_4",
@@ -3643,7 +3643,7 @@
       "query": "我还需要处理活动照片整理吗？",
       "style": "alias_task",
       "expected_id": "m_P1-040",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-040_5",
@@ -3651,7 +3651,7 @@
       "query": "上次提到的活动照片交付进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-040",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-040_6",
@@ -3659,7 +3659,7 @@
       "query": "帮我看看活动照片整理这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-040",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-040_7",
@@ -3667,7 +3667,7 @@
       "query": "活动照片交付要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-040",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-040_8",
@@ -3675,7 +3675,7 @@
       "query": "关于活动照片整理的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-040",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-040_9",
@@ -3683,7 +3683,7 @@
       "query": "把活动照片交付对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-040",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-041_0",
@@ -3771,7 +3771,7 @@
       "query": "单词复习计划这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-042",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-042_1",
@@ -3779,7 +3779,7 @@
       "query": "找出我关于单词复习计划的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-042",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-042_2",
@@ -3787,7 +3787,7 @@
       "query": "之前说的单词复习计划，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-042",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-042_3",
@@ -3795,7 +3795,7 @@
       "query": "词汇复习安排后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-042",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-042_4",
@@ -3803,7 +3803,7 @@
       "query": "我还需要处理词汇复习安排吗？",
       "style": "alias_task",
       "expected_id": "m_P1-042",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-042_5",
@@ -3811,7 +3811,7 @@
       "query": "上次提到的单词复习计划进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-042",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-042_6",
@@ -3819,7 +3819,7 @@
       "query": "帮我看看词汇复习安排这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-042",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-042_7",
@@ -3827,7 +3827,7 @@
       "query": "单词复习计划要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-042",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-042_8",
@@ -3835,7 +3835,7 @@
       "query": "关于词汇复习安排的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-042",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-042_9",
@@ -3843,7 +3843,7 @@
       "query": "把单词复习计划对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-042",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-043_0",
@@ -3931,7 +3931,7 @@
       "query": "长文资料整理这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-044",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-044_1",
@@ -3939,7 +3939,7 @@
       "query": "找出我关于长文资料整理的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-044",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-044_2",
@@ -3947,7 +3947,7 @@
       "query": "之前说的长文资料整理，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-044",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-044_3",
@@ -3955,7 +3955,7 @@
       "query": "文章资料归档后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-044",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-044_4",
@@ -3963,7 +3963,7 @@
       "query": "我还需要处理文章资料归档吗？",
       "style": "alias_task",
       "expected_id": "m_P1-044",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-044_5",
@@ -3971,7 +3971,7 @@
       "query": "上次提到的长文资料整理进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-044",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-044_6",
@@ -3979,7 +3979,7 @@
       "query": "帮我看看文章资料归档这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-044",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-044_7",
@@ -3987,7 +3987,7 @@
       "query": "长文资料整理要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-044",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-044_8",
@@ -3995,7 +3995,7 @@
       "query": "关于文章资料归档的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-044",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-044_9",
@@ -4003,7 +4003,7 @@
       "query": "把长文资料整理对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-044",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-045_0",
@@ -4091,7 +4091,7 @@
       "query": "作品集版本更新这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-046",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-046_1",
@@ -4099,7 +4099,7 @@
       "query": "找出我关于作品集版本更新的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-046",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-046_2",
@@ -4107,7 +4107,7 @@
       "query": "之前说的作品集版本更新，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-046",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-046_3",
@@ -4115,7 +4115,7 @@
       "query": "作品集迭代后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-046",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-046_4",
@@ -4123,7 +4123,7 @@
       "query": "我还需要处理作品集迭代吗？",
       "style": "alias_task",
       "expected_id": "m_P1-046",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-046_5",
@@ -4131,7 +4131,7 @@
       "query": "上次提到的作品集版本更新进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-046",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-046_6",
@@ -4139,7 +4139,7 @@
       "query": "帮我看看作品集迭代这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-046",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-046_7",
@@ -4147,7 +4147,7 @@
       "query": "作品集版本更新要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-046",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-046_8",
@@ -4155,7 +4155,7 @@
       "query": "关于作品集迭代的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-046",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-046_9",
@@ -4163,7 +4163,7 @@
       "query": "把作品集版本更新对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-046",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-047_0",
@@ -4251,7 +4251,7 @@
       "query": "读书笔记整理这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-048",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-048_1",
@@ -4259,7 +4259,7 @@
       "query": "找出我关于读书笔记整理的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-048",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-048_2",
@@ -4267,7 +4267,7 @@
       "query": "之前说的读书笔记整理，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-048",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-048_3",
@@ -4275,7 +4275,7 @@
       "query": "书籍笔记归档后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-048",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-048_4",
@@ -4283,7 +4283,7 @@
       "query": "我还需要处理书籍笔记归档吗？",
       "style": "alias_task",
       "expected_id": "m_P1-048",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-048_5",
@@ -4291,7 +4291,7 @@
       "query": "上次提到的读书笔记整理进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-048",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-048_6",
@@ -4299,7 +4299,7 @@
       "query": "帮我看看书籍笔记归档这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-048",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-048_7",
@@ -4307,7 +4307,7 @@
       "query": "读书笔记整理要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-048",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-048_8",
@@ -4315,7 +4315,7 @@
       "query": "关于书籍笔记归档的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-048",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-048_9",
@@ -4323,7 +4323,7 @@
       "query": "把读书笔记整理对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-048",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-049_0",
@@ -4411,7 +4411,7 @@
       "query": "考试报名确认这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-050",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-050_1",
@@ -4419,7 +4419,7 @@
       "query": "找出我关于考试报名确认的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-050",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-050_2",
@@ -4427,7 +4427,7 @@
       "query": "之前说的考试报名确认，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-050",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-050_3",
@@ -4435,7 +4435,7 @@
       "query": "考试报名处理后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-050",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-050_4",
@@ -4443,7 +4443,7 @@
       "query": "我还需要处理考试报名处理吗？",
       "style": "alias_task",
       "expected_id": "m_P1-050",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-050_5",
@@ -4451,7 +4451,7 @@
       "query": "上次提到的考试报名确认进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-050",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-050_6",
@@ -4459,7 +4459,7 @@
       "query": "帮我看看考试报名处理这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-050",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-050_7",
@@ -4467,7 +4467,7 @@
       "query": "考试报名确认要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-050",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-050_8",
@@ -4475,7 +4475,7 @@
       "query": "关于考试报名处理的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-050",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-050_9",
@@ -4483,7 +4483,7 @@
       "query": "把考试报名确认对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-050",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-051_0",
@@ -4571,7 +4571,7 @@
       "query": "阳台花盆换位这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-052",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-052_1",
@@ -4579,7 +4579,7 @@
       "query": "找出我关于阳台花盆换位的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-052",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-052_2",
@@ -4587,7 +4587,7 @@
       "query": "之前说的阳台花盆换位，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-052",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-052_3",
@@ -4595,7 +4595,7 @@
       "query": "花盆光照调整后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-052",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-052_4",
@@ -4603,7 +4603,7 @@
       "query": "我还需要处理花盆光照调整吗？",
       "style": "alias_task",
       "expected_id": "m_P1-052",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-052_5",
@@ -4611,7 +4611,7 @@
       "query": "上次提到的阳台花盆换位进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-052",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-052_6",
@@ -4619,7 +4619,7 @@
       "query": "帮我看看花盆光照调整这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-052",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-052_7",
@@ -4627,7 +4627,7 @@
       "query": "阳台花盆换位要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-052",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-052_8",
@@ -4635,7 +4635,7 @@
       "query": "关于花盆光照调整的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-052",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-052_9",
@@ -4643,7 +4643,7 @@
       "query": "把阳台花盆换位对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-052",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-053_0",
@@ -4731,7 +4731,7 @@
       "query": "冰箱食材盘点这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-054",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-054_1",
@@ -4739,7 +4739,7 @@
       "query": "找出我关于冰箱食材盘点的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-054",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-054_2",
@@ -4747,7 +4747,7 @@
       "query": "之前说的冰箱食材盘点，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-054",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-054_3",
@@ -4755,7 +4755,7 @@
       "query": "食材库存清点后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-054",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-054_4",
@@ -4763,7 +4763,7 @@
       "query": "我还需要处理食材库存清点吗？",
       "style": "alias_task",
       "expected_id": "m_P1-054",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-054_5",
@@ -4771,7 +4771,7 @@
       "query": "上次提到的冰箱食材盘点进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-054",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-054_6",
@@ -4779,7 +4779,7 @@
       "query": "帮我看看食材库存清点这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-054",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-054_7",
@@ -4787,7 +4787,7 @@
       "query": "冰箱食材盘点要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-054",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-054_8",
@@ -4795,7 +4795,7 @@
       "query": "关于食材库存清点的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-054",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-054_9",
@@ -4803,7 +4803,7 @@
       "query": "把冰箱食材盘点对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-054",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-055_0",
@@ -4891,7 +4891,7 @@
       "query": "旧物捐赠打包这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-056",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-056_1",
@@ -4899,7 +4899,7 @@
       "query": "找出我关于旧物捐赠打包的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-056",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-056_2",
@@ -4907,7 +4907,7 @@
       "query": "之前说的旧物捐赠打包，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-056",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-056_3",
@@ -4915,7 +4915,7 @@
       "query": "旧物捐赠整理后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-056",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-056_4",
@@ -4923,7 +4923,7 @@
       "query": "我还需要处理旧物捐赠整理吗？",
       "style": "alias_task",
       "expected_id": "m_P1-056",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-056_5",
@@ -4931,7 +4931,7 @@
       "query": "上次提到的旧物捐赠打包进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-056",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-056_6",
@@ -4939,7 +4939,7 @@
       "query": "帮我看看旧物捐赠整理这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-056",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-056_7",
@@ -4947,7 +4947,7 @@
       "query": "旧物捐赠打包要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-056",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-056_8",
@@ -4955,7 +4955,7 @@
       "query": "关于旧物捐赠整理的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-056",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-056_9",
@@ -4963,7 +4963,7 @@
       "query": "把旧物捐赠打包对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-056",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-057_0",
@@ -5051,7 +5051,7 @@
       "query": "水电读数记录这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-058",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-058_1",
@@ -5059,7 +5059,7 @@
       "query": "找出我关于水电读数记录的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-058",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-058_2",
@@ -5067,7 +5067,7 @@
       "query": "之前说的水电读数记录，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-058",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-058_3",
@@ -5075,7 +5075,7 @@
       "query": "水电表读数后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-058",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-058_4",
@@ -5083,7 +5083,7 @@
       "query": "我还需要处理水电表读数吗？",
       "style": "alias_task",
       "expected_id": "m_P1-058",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-058_5",
@@ -5091,7 +5091,7 @@
       "query": "上次提到的水电读数记录进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-058",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-058_6",
@@ -5099,7 +5099,7 @@
       "query": "帮我看看水电表读数这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-058",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-058_7",
@@ -5107,7 +5107,7 @@
       "query": "水电读数记录要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-058",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-058_8",
@@ -5115,7 +5115,7 @@
       "query": "关于水电表读数的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-058",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-058_9",
@@ -5123,7 +5123,7 @@
       "query": "把水电读数记录对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-058",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-059_0",
@@ -5211,7 +5211,7 @@
       "query": "节日礼物采购这件事现在是什么状态？",
       "style": "exact_status",
       "expected_id": "m_P1-060",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-060_1",
@@ -5219,7 +5219,7 @@
       "query": "找出我关于节日礼物采购的待办记录。",
       "style": "todo_phrase",
       "expected_id": "m_P1-060",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-060_2",
@@ -5227,7 +5227,7 @@
       "query": "之前说的节日礼物采购，下一步要做什么？",
       "style": "next_step",
       "expected_id": "m_P1-060",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-060_3",
@@ -5235,7 +5235,7 @@
       "query": "节日礼品准备后来到哪一步了？",
       "style": "alias_progress",
       "expected_id": "m_P1-060",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-060_4",
@@ -5243,7 +5243,7 @@
       "query": "我还需要处理节日礼品准备吗？",
       "style": "alias_task",
       "expected_id": "m_P1-060",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-060_5",
@@ -5251,7 +5251,7 @@
       "query": "上次提到的节日礼物采购进展如何？",
       "style": "exact_progress",
       "expected_id": "m_P1-060",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-060_6",
@@ -5259,7 +5259,7 @@
       "query": "帮我看看节日礼品准备这项安排。",
       "style": "alias_lookup",
       "expected_id": "m_P1-060",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-060_7",
@@ -5267,7 +5267,7 @@
       "query": "节日礼物采购要不要继续跟进？",
       "style": "exact_followup",
       "expected_id": "m_P1-060",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-060_8",
@@ -5275,7 +5275,7 @@
       "query": "关于节日礼品准备的工作还没结束吗？",
       "style": "alias_done",
       "expected_id": "m_P1-060",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     },
     {
       "case_id": "P1-060_9",
@@ -5283,7 +5283,7 @@
       "query": "把节日礼物采购对应的事项找出来。",
       "style": "exact_lookup",
       "expected_id": "m_P1-060",
-      "expected_status": "in_progress"
+      "expected_status": "todo"
     }
   ],
   "provenance": {

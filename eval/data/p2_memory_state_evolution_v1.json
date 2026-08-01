@@ -159,10 +159,10 @@
       "event_id": "P2-001-E1",
       "topic_id": "P2-001",
       "title": "季度报表提交",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -189,10 +189,10 @@
       "event_id": "P2-001-E4",
       "topic_id": "P2-001",
       "title": "季度报表提交",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -202,27 +202,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-001-E6",
       "topic_id": "P2-001",
       "title": "季度报表提交",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-002-E1",
       "topic_id": "P2-002",
       "title": "客户合同续签",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -249,10 +249,10 @@
       "event_id": "P2-002-E4",
       "topic_id": "P2-002",
       "title": "客户合同续签",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -262,27 +262,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-002-E6",
       "topic_id": "P2-002",
       "title": "客户合同续签",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-003-E1",
       "topic_id": "P2-003",
       "title": "仓库盘点安排",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -309,10 +309,10 @@
       "event_id": "P2-003-E4",
       "topic_id": "P2-003",
       "title": "仓库盘点安排",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -322,27 +322,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-003-E6",
       "topic_id": "P2-003",
       "title": "仓库盘点安排",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-004-E1",
       "topic_id": "P2-004",
       "title": "培训签到汇总",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -369,10 +369,10 @@
       "event_id": "P2-004-E4",
       "topic_id": "P2-004",
       "title": "培训签到汇总",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -382,27 +382,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-004-E6",
       "topic_id": "P2-004",
       "title": "培训签到汇总",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-005-E1",
       "topic_id": "P2-005",
       "title": "版本回滚演练",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -429,10 +429,10 @@
       "event_id": "P2-005-E4",
       "topic_id": "P2-005",
       "title": "版本回滚演练",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -442,27 +442,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-005-E6",
       "topic_id": "P2-005",
       "title": "版本回滚演练",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-006-E1",
       "topic_id": "P2-006",
       "title": "服务账号复核",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -489,10 +489,10 @@
       "event_id": "P2-006-E4",
       "topic_id": "P2-006",
       "title": "服务账号复核",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -502,27 +502,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-006-E6",
       "topic_id": "P2-006",
       "title": "服务账号复核",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-007-E1",
       "topic_id": "P2-007",
       "title": "预算初稿整理",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -549,10 +549,10 @@
       "event_id": "P2-007-E4",
       "topic_id": "P2-007",
       "title": "预算初稿整理",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -562,27 +562,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-007-E6",
       "topic_id": "P2-007",
       "title": "预算初稿整理",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-008-E1",
       "topic_id": "P2-008",
       "title": "供应商付款确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -609,10 +609,10 @@
       "event_id": "P2-008-E4",
       "topic_id": "P2-008",
       "title": "供应商付款确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -622,27 +622,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-008-E6",
       "topic_id": "P2-008",
       "title": "供应商付款确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-009-E1",
       "topic_id": "P2-009",
       "title": "产品截图更新",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -669,10 +669,10 @@
       "event_id": "P2-009-E4",
       "topic_id": "P2-009",
       "title": "产品截图更新",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -682,27 +682,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-009-E6",
       "topic_id": "P2-009",
       "title": "产品截图更新",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-010-E1",
       "topic_id": "P2-010",
       "title": "数据备份检查",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -729,10 +729,10 @@
       "event_id": "P2-010-E4",
       "topic_id": "P2-010",
       "title": "数据备份检查",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -742,27 +742,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-010-E6",
       "topic_id": "P2-010",
       "title": "数据备份检查",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-011-E1",
       "topic_id": "P2-011",
       "title": "机场接驳确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -789,10 +789,10 @@
       "event_id": "P2-011-E4",
       "topic_id": "P2-011",
       "title": "机场接驳确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -802,27 +802,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-011-E6",
       "topic_id": "P2-011",
       "title": "机场接驳确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-012-E1",
       "topic_id": "P2-012",
       "title": "活动物料寄送",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -849,10 +849,10 @@
       "event_id": "P2-012-E4",
       "topic_id": "P2-012",
       "title": "活动物料寄送",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -862,27 +862,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-012-E6",
       "topic_id": "P2-012",
       "title": "活动物料寄送",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-013-E1",
       "topic_id": "P2-013",
       "title": "课程作业上传",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -909,10 +909,10 @@
       "event_id": "P2-013-E4",
       "topic_id": "P2-013",
       "title": "课程作业上传",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -922,27 +922,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-013-E6",
       "topic_id": "P2-013",
       "title": "课程作业上传",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-014-E1",
       "topic_id": "P2-014",
       "title": "考试报名确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -969,10 +969,10 @@
       "event_id": "P2-014-E4",
       "topic_id": "P2-014",
       "title": "考试报名确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -982,27 +982,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-014-E6",
       "topic_id": "P2-014",
       "title": "考试报名确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-015-E1",
       "topic_id": "P2-015",
       "title": "家庭网络排障",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1029,10 +1029,10 @@
       "event_id": "P2-015-E4",
       "topic_id": "P2-015",
       "title": "家庭网络排障",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1042,27 +1042,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-015-E6",
       "topic_id": "P2-015",
       "title": "家庭网络排障",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-016-E1",
       "topic_id": "P2-016",
       "title": "宠物接种预约",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1089,10 +1089,10 @@
       "event_id": "P2-016-E4",
       "topic_id": "P2-016",
       "title": "宠物接种预约",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1102,27 +1102,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-016-E6",
       "topic_id": "P2-016",
       "title": "宠物接种预约",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-017-E1",
       "topic_id": "P2-017",
       "title": "药箱日期清点",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1149,10 +1149,10 @@
       "event_id": "P2-017-E4",
       "topic_id": "P2-017",
       "title": "药箱日期清点",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1162,27 +1162,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-017-E6",
       "topic_id": "P2-017",
       "title": "药箱日期清点",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-018-E1",
       "topic_id": "P2-018",
       "title": "阳台花盆换位",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1209,10 +1209,10 @@
       "event_id": "P2-018-E4",
       "topic_id": "P2-018",
       "title": "阳台花盆换位",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1222,27 +1222,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-018-E6",
       "topic_id": "P2-018",
       "title": "阳台花盆换位",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-019-E1",
       "topic_id": "P2-019",
       "title": "会议室设备检查",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1269,10 +1269,10 @@
       "event_id": "P2-019-E4",
       "topic_id": "P2-019",
       "title": "会议室设备检查",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1282,27 +1282,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-019-E6",
       "topic_id": "P2-019",
       "title": "会议室设备检查",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-020-E1",
       "topic_id": "P2-020",
       "title": "资料寄送登记",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1329,10 +1329,10 @@
       "event_id": "P2-020-E4",
       "topic_id": "P2-020",
       "title": "资料寄送登记",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1342,27 +1342,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-020-E6",
       "topic_id": "P2-020",
       "title": "资料寄送登记",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-021-E1",
       "topic_id": "P2-021",
       "title": "门禁权限回收",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1389,10 +1389,10 @@
       "event_id": "P2-021-E4",
       "topic_id": "P2-021",
       "title": "门禁权限回收",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1402,27 +1402,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-021-E6",
       "topic_id": "P2-021",
       "title": "门禁权限回收",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-022-E1",
       "topic_id": "P2-022",
       "title": "办公用品盘点",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1449,10 +1449,10 @@
       "event_id": "P2-022-E4",
       "topic_id": "P2-022",
       "title": "办公用品盘点",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1462,27 +1462,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-022-E6",
       "topic_id": "P2-022",
       "title": "办公用品盘点",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-023-E1",
       "topic_id": "P2-023",
       "title": "客户回访记录",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1509,10 +1509,10 @@
       "event_id": "P2-023-E4",
       "topic_id": "P2-023",
       "title": "客户回访记录",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1522,27 +1522,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-023-E6",
       "topic_id": "P2-023",
       "title": "客户回访记录",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-024-E1",
       "topic_id": "P2-024",
       "title": "项目风险复核",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1569,10 +1569,10 @@
       "event_id": "P2-024-E4",
       "topic_id": "P2-024",
       "title": "项目风险复核",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1582,27 +1582,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-024-E6",
       "topic_id": "P2-024",
       "title": "项目风险复核",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-025-E1",
       "topic_id": "P2-025",
       "title": "季度目标复盘",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1629,10 +1629,10 @@
       "event_id": "P2-025-E4",
       "topic_id": "P2-025",
       "title": "季度目标复盘",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1642,27 +1642,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-025-E6",
       "topic_id": "P2-025",
       "title": "季度目标复盘",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-026-E1",
       "topic_id": "P2-026",
       "title": "合同附件补齐",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1689,10 +1689,10 @@
       "event_id": "P2-026-E4",
       "topic_id": "P2-026",
       "title": "合同附件补齐",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1702,27 +1702,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-026-E6",
       "topic_id": "P2-026",
       "title": "合同附件补齐",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-027-E1",
       "topic_id": "P2-027",
       "title": "报表字段核对",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1749,10 +1749,10 @@
       "event_id": "P2-027-E4",
       "topic_id": "P2-027",
       "title": "报表字段核对",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1762,27 +1762,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-027-E6",
       "topic_id": "P2-027",
       "title": "报表字段核对",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-028-E1",
       "topic_id": "P2-028",
       "title": "跨组交接安排",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1809,10 +1809,10 @@
       "event_id": "P2-028-E4",
       "topic_id": "P2-028",
       "title": "跨组交接安排",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1822,27 +1822,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-028-E6",
       "topic_id": "P2-028",
       "title": "跨组交接安排",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-029-E1",
       "topic_id": "P2-029",
       "title": "演示环境刷新",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1869,10 +1869,10 @@
       "event_id": "P2-029-E4",
       "topic_id": "P2-029",
       "title": "演示环境刷新",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1882,27 +1882,27 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-029-E6",
       "topic_id": "P2-029",
       "title": "演示环境刷新",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     },
     {
       "event_id": "P2-030-E1",
       "topic_id": "P2-030",
       "title": "服务条款确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_update"
     },
     {
@@ -1929,10 +1929,10 @@
       "event_id": "P2-030-E4",
       "topic_id": "P2-030",
       "title": "服务条款确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "update_task",
       "expected_relation": "update_task",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "valid_reactivate"
     },
     {
@@ -1942,23 +1942,23 @@
       "new_status": "todo",
       "expected_action": "pending_review",
       "expected_relation": "conflict",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "invalid_transition"
     },
     {
       "event_id": "P2-030-E6",
       "topic_id": "P2-030",
       "title": "服务条款确认",
-      "new_status": "in_progress",
+      "new_status": "todo",
       "expected_action": "add_source",
       "expected_relation": "same",
-      "expected_active_status": "in_progress",
+      "expected_active_status": "todo",
       "kind": "same_status"
     }
   ],
   "provenance": {
     "purpose": "development_only",
     "tuning_allowed": true,
-    "sequence": "todo -> in_progress -> done -> invalid blocked -> reactivated -> invalid todo -> duplicate"
+    "sequence": "todo -> todo -> done -> invalid blocked -> reactivated -> invalid todo -> duplicate"
   }
 }

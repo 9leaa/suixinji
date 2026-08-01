@@ -98,7 +98,7 @@ def _implicit_terminal_reactivation(candidate: MemoryCandidate, memory: MemoryRe
     """
     if memory.task_status not in {"done", "cancelled"}:
         return False
-    if candidate.task_status not in {"todo", "in_progress"}:
+    if candidate.task_status != "todo":
         return False
     text = f"{candidate.evidence_span or ''} {candidate.content}"
     return not any(marker in text for marker in _EXPLICIT_REOPEN_MARKERS)

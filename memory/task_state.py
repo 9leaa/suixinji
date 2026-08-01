@@ -23,7 +23,7 @@ def infer_task_status(text: str) -> str | None:
     if any(token in value for token in ("卡住", "阻塞", "等确认")):
         return "blocked"
     if any(token in value for token in ("正在", "进行中", "继续")):
-        return "in_progress"
+        return "todo"
     if any(token in value for token in ("需要", "记得", "待办", "要做", "准备", "计划")):
         return "todo"
     if any(token in value for token in ("完成", "搞定", "已做完", "做完", "学完", "已学完", "弄好", "弄好了")):
@@ -31,7 +31,7 @@ def infer_task_status(text: str) -> str | None:
     if "已经" in value and any(token in value for token in ("换成", "更换为", "改成", "替换成", "部署", "发布")):
         return "done"
     if "准备" in value and any(token in value for token in ("最近", "现在", "重点")):
-        return "in_progress"
+        return "todo"
     return None
 
 

@@ -19,9 +19,9 @@
     {"id":"n_identifier","title":"工单标识符记录","type":"工作","tags":["ticket"],"summary":"记录工单标识符","text":"另一个工单 OPS-77 只涉及日志格式调整，与Redis连接池无关。"}
   ],
   "memories": [
-    {"id":"m_rag_task","memory_type":"task","content":"正在准备RAG混合检索实验报告","task_status":"in_progress","subject":"user","predicate":"task","object_value":"RAG混合检索实验报告"},
+    {"id":"m_rag_task","memory_type":"task","content":"正在准备RAG混合检索实验报告","task_status":"todo","subject":"user","predicate":"task","object_value":"RAG混合检索实验报告"},
     {"id":"m_rag_done","memory_type":"task","content":"已经完成学习RAG向量检索知识","task_status":"done","subject":"user","predicate":"task","object_value":"学习RAG向量检索知识"},
-    {"id":"m_agent_task","memory_type":"task","content":"正在制作Agent相关的简历","task_status":"in_progress","subject":"user","predicate":"task","object_value":"Agent相关简历"},
+    {"id":"m_agent_task","memory_type":"task","content":"正在制作Agent相关的简历","task_status":"todo","subject":"user","predicate":"task","object_value":"Agent相关简历"},
     {"id":"m_oat","memory_type":"preference","content":"用户喜欢喝燕麦拿铁","task_status":null,"subject":"user","predicate":"preference","object_value":"燕麦拿铁","polarity":"positive"},
     {"id":"m_coffee","memory_type":"preference","content":"用户不喜欢在工作日早上喝咖啡","task_status":null,"subject":"user","predicate":"preference","object_value":"工作日早上咖啡","polarity":"negative"},
     {"id":"m_project","memory_type":"semantic","content":"用户当前项目是随心记Agent记忆系统","task_status":null,"subject":"user","predicate":"current_project","object_value":"随心记Agent记忆系统"},
@@ -43,9 +43,9 @@
     {"case_id":"note_eval","query":"Recall@K MRR RAG评测指标","expected_ids":["n_rag_eval"]}
   ],
   "memory_cases": [
-    {"case_id":"memory_rag_task","query":"当前RAG混合检索任务是什么","expected_ids":["m_rag_task"],"expected_status":"in_progress"},
+    {"case_id":"memory_rag_task","query":"当前RAG混合检索任务是什么","expected_ids":["m_rag_task"],"expected_status":"todo"},
     {"case_id":"memory_rag_done","query":"我完成RAG向量检索学习了吗","expected_ids":["m_rag_done"],"expected_status":"done"},
-    {"case_id":"memory_agent","query":"Agent简历现在进展如何","expected_ids":["m_agent_task"],"expected_status":"in_progress"},
+    {"case_id":"memory_agent","query":"Agent简历现在进展如何","expected_ids":["m_agent_task"],"expected_status":"todo"},
     {"case_id":"memory_oat","query":"我现在喜欢什么饮品","expected_ids":["m_oat","m_tea"],"expected_polarity":"positive"},
     {"case_id":"memory_coffee","query":"工作日早上我喜欢喝咖啡吗","expected_ids":["m_coffee"],"expected_polarity":"negative"},
     {"case_id":"memory_project","query":"我当前主要项目是什么","expected_ids":["m_project"]},

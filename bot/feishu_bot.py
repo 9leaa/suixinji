@@ -561,7 +561,7 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
     if action == "correct" and len(parts) >= 3:
         content = parts[2]
         task_status = None
-        status_match = re.match(r"^--status(?:=|\s+)(todo|in_progress|blocked|done|cancelled)\s+(.+)$", content, flags=re.IGNORECASE)
+        status_match = re.match(r"^--status(?:=|\s+)(todo|blocked|done|cancelled)\s+(.+)$", content, flags=re.IGNORECASE)
         if status_match:
             task_status = status_match.group(1).lower()
             content = status_match.group(2)

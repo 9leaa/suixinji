@@ -132,10 +132,15 @@ def test_llm_extractor_returns_structured_candidates(monkeypatch):
             "candidates": [
                 {
                     "memory_type": "task",
+                    "entity": "用户",
+                    "attribute": "Agent 实习",
+                    "operation": "准备",
+                    "canonical_topic": "准备 Agent 实习",
                     "content": "准备 Agent 实习",
                     "subject": "Agent 实习",
                     "predicate": "task",
                     "object": "准备 Agent 实习",
+                    # 兼容尚未更新的模型；抽取层必须在写入前归并为 todo。
                     "task_status": "in_progress",
                     "confidence": 0.91,
                     "importance": 0.88,
@@ -152,8 +157,8 @@ def test_llm_extractor_returns_structured_candidates(monkeypatch):
 
     assert len(candidates) == 1
     assert candidates[0].memory_type == "task"
-    assert candidates[0].task_status == "in_progress"
-    assert candidates[0].predicate == "task"
+    assert candidates[0].task_status == "todo"
+    assert candidates[0].predicate in {"task", "Agent实习"}
     assert candidates[0].candidate_id == extractor.candidate_id_for("note-1", "task", "准备 Agent 实习")
 
 

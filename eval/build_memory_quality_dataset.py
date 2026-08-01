@@ -102,7 +102,7 @@ def _relation_cases() -> list[dict[str, object]]:
         ],
         "update_task": [
             ("记得完成{item}。", "{item}已经完成了。", "task", "task"),
-            ("记得处理{item}。", "{item}正在进行中。", "task", "task"),
+            ("记得处理{item}。", "{item}遇到阻塞。", "task", "task"),
             ("处理{item}遇到阻塞。", "{item}现在可以继续了。", "task", "task"),
         ],
         "supersede": [

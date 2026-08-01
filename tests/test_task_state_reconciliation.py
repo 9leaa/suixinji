@@ -6,10 +6,13 @@
 
 from __future__ import annotations
 
+import pytest
+
 from memory import extractor
 from memory import repository
 from memory.models import MemoryCandidate, MemoryDecision
 from memory.service import process_note_memory
+from memory.task_state import infer_task_status, validate_task_status
 
 
 def _enable_task_identity(monkeypatch) -> None:
@@ -25,6 +28,29 @@ def _enable_task_identity(monkeypatch) -> None:
     monkeypatch.setattr(settings, "MEMORY_CANONICAL_KEY_V3_ENABLED", True)
     monkeypatch.setattr(settings, "MEMORY_RELATION_GUARD_V3_ENABLED", True)
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "rules")
+
+
+def test_progress_wording_is_todo_and_old_status_is_rejected_for_new_writes() -> None:
+    assert infer_task_status("我正在整理报告，继续处理") == "todo"
+    with pytest.raises(ValueError, match="invalid task_status"):
+        validate_task_status("in_progress")
+    with pytest.raises(ValueError, match="invalid task_status"):
+        MemoryCandidate("task", "正在整理报告", 0.8, 0.9, task_status="in_progress")
+
+
+def test_legacy_in_progress_rows_are_read_as_todo_without_rewriting_data() -> None:
+    candidate = MemoryCandidate(
+        "task", "整理报告", 0.8, 0.9, task_status="todo", note_id="legacy-candidate-note", space_id="legacy-status"
+    )
+    repository.save_memory_candidate(candidate, space_id="legacy-status")
+    memory = repository.insert_memory("legacy-status", candidate, source_note_id="legacy-memory-note")
+
+    with repository._connect() as conn:
+        conn.execute("UPDATE memories SET task_status = 'in_progress' WHERE id = ?", (memory.id,))
+        conn.execute("UPDATE memory_candidates SET task_status = 'in_progress' WHERE candidate_id = ?", (candidate.candidate_id,))
+
+    assert repository.get_memory(memory.id).task_status == "todo"
+    assert repository.get_memory_candidate(candidate.candidate_id).task_status == "todo"
 
 
 def test_task_lifecycle_merges_action_wording(monkeypatch) -> None:
@@ -46,7 +72,7 @@ def test_task_lifecycle_merges_action_wording(monkeypatch) -> None:
     memories = repository.list_memories("task-wording", memory_type="task", limit=10)
     assert len(memories) == 1
     assert memories[0].task_status == "done"
-    assert memories[0].current_version == 3
+    assert memories[0].current_version == 2
 
 
 def test_legacy_generic_task_identity_is_updated(monkeypatch) -> None:
@@ -94,7 +120,7 @@ def test_terminal_update_archives_duplicate_active_tasks(monkeypatch) -> None:
             MemoryCandidate(
                 "task", text, 0.8, 0.9,
                 subject="制作随心记首页消息路径图", predicate="task", object_value=text,
-                task_status="in_progress",
+                task_status="todo",
             ),
             source_note_id=f"duplicate-source-{index}",
         )
@@ -118,7 +144,7 @@ def test_manual_task_correction_updates_structured_status() -> None:
     """
     task = repository.insert_memory(
         "task-correct",
-        MemoryCandidate("task", "正在制作报告", 0.8, 0.9, task_status="in_progress", subject="用户", predicate="报告", object_value="报告"),
+        MemoryCandidate("task", "正在制作报告", 0.8, 0.9, task_status="todo", subject="用户", predicate="报告", object_value="报告"),
         source_note_id="task-source",
     )
     corrected = repository.correct_memory(task.id, "这个报告已经做完了")
@@ -138,11 +164,11 @@ def test_edit_pending_task_revalidates_and_applies_status(monkeypatch) -> None:
     _enable_task_identity(monkeypatch)
     target = repository.insert_memory(
         "task-pending-edit",
-        MemoryCandidate("task", "正在整理报告", 0.8, 0.9, task_status="in_progress", subject="用户", predicate="报告", object_value="报告"),
+        MemoryCandidate("task", "正在整理报告", 0.8, 0.9, task_status="todo", subject="用户", predicate="报告", object_value="报告"),
         source_note_id="task-target",
     )
     candidate = MemoryCandidate(
-        "task", "正在整理报告", 0.8, 0.9, task_status="in_progress", subject="用户", predicate="报告", object_value="报告",
+        "task", "正在整理报告", 0.8, 0.9, task_status="todo", subject="用户", predicate="报告", object_value="报告",
         note_id="task-pending-note", space_id="task-pending-edit",
     )
     decision = MemoryDecision(

@@ -13,7 +13,7 @@
 
 2. **同一任务没有稳定身份**
    - `memory_key` 仍然过度依赖整句话。
-   - `todo / in_progress / done` 三种表达容易生成三个不同 Key。
+   - `todo / done` 与“正在进行”的不同表述容易生成多个不同 Key；“正在进行”现统一归入 `todo`。
 
 3. **召回和合并混在一起**
    - 检索到“可能相关”后，当前审理逻辑可能直接执行 `merge`。
@@ -168,7 +168,7 @@ class ExtractedMemoryCandidate(BaseModel):
     canonical_topic: str
 
     task_status: Literal[
-        "todo", "in_progress", "blocked", "done", "cancelled"
+        "todo", "blocked", "done", "cancelled"
     ] | None
     old_value: str | None
     new_value: str | None
@@ -289,7 +289,7 @@ task:随心记:大模型供应商:更换:global
 
 ```text
 todo
-→ in_progress，new_value=DeepSeek
+→ todo，new_value=DeepSeek
 → done，old_value=OpenAI，new_value=DeepSeek
 ```
 
@@ -614,11 +614,10 @@ Level 4：低置信度进入 pending_review
 
 ## 8.1 状态机
 
-保留当前：
+采用四状态模型：
 
 ```text
 todo
-in_progress
 blocked
 done
 cancelled
@@ -627,11 +626,10 @@ cancelled
 允许的转换：
 
 ```text
-todo → in_progress / blocked / done / cancelled
-in_progress → blocked / done / cancelled
-blocked → in_progress / done / cancelled
-done → in_progress
-cancelled → todo / in_progress
+todo → blocked / done / cancelled
+blocked → todo / done / cancelled
+done → todo（仅明确重开）
+cancelled → todo（仅明确重开）
 ```
 
 ## 8.2 正确生命周期
@@ -661,7 +659,7 @@ Memory:
 
 ```text
 同一个 Memory:
-  status = in_progress
+  status = todo
   new_value = DeepSeek
   version = 2
 ```
@@ -1143,10 +1141,10 @@ inputs = [
 
 ```text
 全部 memory_type=task
-状态 todo → in_progress → done
+状态 todo → todo → done
 三个 canonical_key 相同
 最终 memories 只有 1 条
-current_version=3
+current_version=3  # “正在换 DeepSeek”带来 new_value 更新，仍产生一个版本
 sources=3
 ```
 
@@ -1197,7 +1195,7 @@ DeepSeek 换好了吗？
 ## 17.5 状态倒退
 
 ```text
-done → in_progress
+done → todo（仅明确重开）
 ```
 
 允许重新打开，但必须：
@@ -1300,8 +1298,7 @@ Version：
 
 ```text
 v1 todo
-v2 in_progress，new_value=DeepSeek
-v3 done，old_value=OpenAI，new_value=DeepSeek
+v2 done，old_value=OpenAI，new_value=DeepSeek
 ```
 
 ---

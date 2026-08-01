@@ -11,11 +11,10 @@ import re
 
 
 ALLOWED_TRANSITIONS = {
-    "todo": {"in_progress", "blocked", "done", "cancelled"},
-    "in_progress": {"blocked", "done", "cancelled"},
-    "blocked": {"in_progress", "done", "cancelled"},
-    "done": {"in_progress"},
-    "cancelled": {"todo", "in_progress"},
+    "todo": {"blocked", "done", "cancelled"},
+    "blocked": {"todo", "done", "cancelled"},
+    "done": {"todo"},
+    "cancelled": {"todo"},
 }
 
 
@@ -58,6 +57,10 @@ def can_transition(old_status: str | None, new_status: str | None) -> bool:
     返回结果说明：
         返回 `bool`，表示判断、写入或处理是否成功。
     """
+    # 已持久化的旧记录可以在不写库的前提下继续参与后续状态演化。
+    # 新候选和新写入均不能再产生 in_progress。
+    if old_status == "in_progress":
+        old_status = "todo"
     if new_status is None or old_status == new_status:
         return True
     if old_status is None:

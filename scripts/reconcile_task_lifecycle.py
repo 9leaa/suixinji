@@ -51,7 +51,7 @@ def _parse_point(value: str) -> LifecyclePoint:
         note_id, status, content = value.split("|", 2)
     except ValueError as exc:
         raise argparse.ArgumentTypeError("--point format: NOTE_ID|todo|display content") from exc
-    if status not in {"todo", "in_progress", "blocked", "done", "cancelled"}:
+    if status not in {"todo", "blocked", "done", "cancelled"}:
         raise argparse.ArgumentTypeError(f"invalid task status: {status}")
     if not note_id or not content.strip():
         raise argparse.ArgumentTypeError("point needs a note id and display content")

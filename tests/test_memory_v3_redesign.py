@@ -202,7 +202,7 @@ def test_learning_task_lifecycle_is_stable_when_model_labels_vary_or_is_empty(mo
                         "attribute": "当前学习主题",
                         "operation": "学习",
                         "canonical_topic": "学习RAG知识",
-                        "task_status": "in_progress",
+                        "task_status": "todo",
                         "old_value": None,
                         "new_value": None,
                         "content": "正在学习RAG知识",
@@ -234,7 +234,7 @@ def test_learning_task_lifecycle_is_stable_when_model_labels_vary_or_is_empty(mo
     memory = memories[0]
     assert memory.memory_key == "task:用户:rag知识:学习:global"
     assert memory.task_status == "done"
-    assert memory.current_version == 3
+    assert memory.current_version == 2
     assert {source.note_id for source in memory.sources} == {"learning-1", "learning-2", "learning-3"}
 
 
@@ -250,7 +250,7 @@ def test_completion_wording_ignores_drifting_model_slots_for_one_lifecycle(monke
     model_outputs = iter(
         [
             {"candidates": [{"memory_type": "task", "entity": "记忆验收Zeta测试报告", "attribute": "完成状态", "operation": "完成", "canonical_topic": "完成记忆验收Zeta测试报告", "task_status": "todo", "old_value": None, "new_value": None, "content": "需要完成记忆验收 Zeta 的测试报告", "evidence_span": "我需要完成记忆验收 Zeta 的测试报告", "valid_from": None, "valid_until": None, "confidence": 0.9, "importance": 0.8, "should_store": True, "extraction_reason": "待办", "entities": ["Zeta"]}]},
-            {"candidates": [{"memory_type": "task", "entity": "记忆验收Zeta的测试报告", "attribute": "记忆验收Zeta的测试报告", "operation": "完成", "canonical_topic": "完成记忆验收Zeta的测试报告", "task_status": "in_progress", "old_value": None, "new_value": None, "content": "正在完成记忆验收 Zeta 的测试报告", "evidence_span": "我正在完成记忆验收 Zeta 的测试报告", "valid_from": None, "valid_until": None, "confidence": 0.9, "importance": 0.8, "should_store": True, "extraction_reason": "进行中", "entities": ["Zeta"]}]},
+            {"candidates": [{"memory_type": "task", "entity": "记忆验收Zeta的测试报告", "attribute": "记忆验收Zeta的测试报告", "operation": "完成", "canonical_topic": "完成记忆验收Zeta的测试报告", "task_status": "todo", "old_value": None, "new_value": None, "content": "正在完成记忆验收 Zeta 的测试报告", "evidence_span": "我正在完成记忆验收 Zeta 的测试报告", "valid_from": None, "valid_until": None, "confidence": 0.9, "importance": 0.8, "should_store": True, "extraction_reason": "进行中", "entities": ["Zeta"]}]},
             {"candidates": [{"memory_type": "task", "entity": "Zeta的测试报告", "attribute": "记忆验收Zeta的测试报告", "operation": "完成", "canonical_topic": "完成记忆验收Zeta测试报告", "task_status": "done", "old_value": None, "new_value": None, "content": "完成记忆验收 Zeta 的测试报告", "evidence_span": "我已经完成记忆验收 Zeta 的测试报告", "valid_from": None, "valid_until": None, "confidence": 0.95, "importance": 0.8, "should_store": True, "extraction_reason": "完成", "entities": ["Zeta"]}]},
         ]
     )
@@ -267,7 +267,7 @@ def test_completion_wording_ignores_drifting_model_slots_for_one_lifecycle(monke
     assert len(memories) == 1
     assert memories[0].memory_key == "task:用户:记忆验收zeta的测试报告:执行:global"
     assert memories[0].task_status == "done"
-    assert memories[0].current_version == 3
+    assert memories[0].current_version == 2
 
 
 def test_specific_task_name_refines_an_existing_short_name(monkeypatch):
@@ -290,7 +290,7 @@ def test_specific_task_name_refines_an_existing_short_name(monkeypatch):
     assert len(memories) == 1
     assert memories[0].memory_key == "task:用户:agent开发的简历:制作:global"
     assert memories[0].task_status == "done"
-    assert memories[0].current_version == 3
+    assert memories[0].current_version == 2
 
 
 def test_implicit_reopen_after_done_stays_pending_review(monkeypatch):
@@ -315,4 +315,4 @@ def test_implicit_reopen_after_done_stays_pending_review(monkeypatch):
     assert active[0].task_status == "done"
     assert active[0].current_version == 2
     assert len(pending) == 1
-    assert pending[0].task_status == "in_progress"
+    assert pending[0].task_status == "todo"

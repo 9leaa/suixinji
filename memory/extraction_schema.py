@@ -24,7 +24,7 @@ class ExtractedMemoryCandidate(BaseModel):
     attribute: str | None = None
     operation: str | None = None
     canonical_topic: str = ""
-    task_status: Literal["todo", "in_progress", "blocked", "done", "cancelled"] | None = None
+    task_status: Literal["todo", "blocked", "done", "cancelled"] | None = None
     old_value: str | None = None
     new_value: str | None = None
     evidence_span: str
@@ -50,6 +50,12 @@ class ExtractedMemoryCandidate(BaseModel):
             return None
         stripped = str(value).strip()
         return stripped or None
+
+    @field_validator("task_status", mode="before")
+    @classmethod
+    def _normalize_legacy_in_progress(cls, value: object) -> object:
+        """将滞后模型仍输出的旧状态无损归并为 todo。"""
+        return "todo" if str(value or "").strip().lower() == "in_progress" else value
 
     @model_validator(mode="after")
     def _validate_task_identity(self) -> "ExtractedMemoryCandidate":

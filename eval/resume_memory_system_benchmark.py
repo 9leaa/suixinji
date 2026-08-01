@@ -205,12 +205,12 @@ def _extraction_cases() -> list[dict[str, Any]]:
             "expected_content_terms": ["Memory", "验收报告"],
         },
         {
-            "case_id": "extract_task_in_progress",
+            "case_id": "extract_task_todo_from_progress_wording",
             "text": "我正在完成Memory V3验收报告",
             "should_store": True,
             "min_candidates": 1,
             "expected_types": ["task"],
-            "expected_task_status": "in_progress",
+            "expected_task_status": "todo",
             "expected_content_terms": ["Memory", "验收报告"],
         },
         {
@@ -676,7 +676,7 @@ def _score_lifecycle(cases: list[dict[str, Any]]) -> dict[str, Any]:
                 1
                 for row in rows
                 if row["case_id"].startswith("task_")
-                and any(memory["task_status"] in {"todo", "in_progress"} for memory in row["active"])
+                and any(memory["task_status"] == "todo" for memory in row["active"])
                 and any(memory["task_status"] == "done" for memory in row["active"])
             ),
             len(task_rows),

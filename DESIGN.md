@@ -100,7 +100,7 @@ memory_traces     完整 Trace JSON；同时保留 JSONL 运维副本
 episodic    具体事件
 semantic    稳定事实
 preference  偏好和约束
-task        待办和进度，含 todo/in_progress/blocked/done/cancelled
+task        待办和进度，含 todo/blocked/done/cancelled；“正在进行”归入 todo
 ```
 
 用户命令：

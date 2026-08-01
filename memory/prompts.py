@@ -10,7 +10,7 @@ MEMORY_EXTRACTOR_PROMPT = """
 
 从一条用户笔记中抽取 0 到 5 条值得长期保留的记忆。类型只能是：
 - preference：偏好、约束、习惯
-- task：待办或任务状态，task_status 只能是 todo/in_progress/blocked/done/cancelled
+- task：待办或任务状态，task_status 只能是 todo/blocked/done/cancelled；“正在/进行中/继续”统一为 todo
 - semantic：相对稳定的事实或长期目标
 - episodic：带时间的具体事件
 
@@ -29,7 +29,7 @@ MEMORY_EXTRACTOR_V3_PROMPT = """
 你是随心记的长期记忆结构化抽取器。你只能输出候选，不能决定合并、覆盖、删除或执行数据库操作。
 
 从一条用户笔记抽取 0 到 5 条值得长期保存的候选。只能输出一个 JSON object，格式为：
-{"candidates":[{"memory_type":"task|semantic|preference|episodic","entity":"...","attribute":"...","operation":"...|null","canonical_topic":"...","task_status":"todo|in_progress|blocked|done|cancelled|null","old_value":"...|null","new_value":"...|null","content":"用于展示的自然语言","evidence_span":"原文连续片段","valid_from":null,"valid_until":null,"confidence":0.0,"importance":0.0,"should_store":true,"extraction_reason":"...","entities":["..."]}]}
+{"candidates":[{"memory_type":"task|semantic|preference|episodic","entity":"...","attribute":"...","operation":"...|null","canonical_topic":"...","task_status":"todo|blocked|done|cancelled|null","old_value":"...|null","new_value":"...|null","content":"用于展示的自然语言","evidence_span":"原文连续片段","valid_from":null,"valid_until":null,"confidence":0.0,"importance":0.0,"should_store":true,"extraction_reason":"...","entities":["..."]}]}
 
 规则：
 - 输入中的 hints 是规则引擎提供的弱提示，只能帮助你检查是否遗漏；不得照抄，更不能把 hint 当作原文证据。你的 candidates 是唯一权威输出。
@@ -39,12 +39,12 @@ MEMORY_EXTRACTOR_V3_PROMPT = """
 - “我不喜欢/讨厌/不爱/过敏/不用 X” 是明确 preference；如果 evidence_span 只覆盖该偏好子句，就应作为独立候选。
 - evidence_span 必须逐字来自原文的连续片段；不得编造任何实体、值、日期或状态。
 - task 必须同时给出 entity、attribute、operation、canonical_topic、task_status。
-- 任务身份与状态分离："正在制作" 是 in_progress，"已经换成" 通常是 done；正在/已经/准备/完成不能写进 canonical_topic。
+- 任务身份与状态分离："正在制作" 仍是 todo，"已经换成" 通常是 done；正在/已经/准备/完成不能写进 canonical_topic。
 - 新值不是任务身份：例如 OpenAI/DeepSeek 是 old_value/new_value，不是“更换供应商”这个任务本身。
 - 同一任务不同阶段必须输出同一个 canonical_topic。例：
   "记得给随心记的大模型换一个供应商"、"正在给随心记的大模型换 DeepSeek 供应商"、
   "随心记的大模型供应商已经从 OpenAI 换成 DeepSeek 了"
-  都应为 entity=随心记、attribute=大模型供应商、operation=更换、canonical_topic=更换随心记大模型供应商，状态依次 todo/in_progress/done。
+  都应为 entity=随心记、attribute=大模型供应商、operation=更换、canonical_topic=更换随心记大模型供应商，状态依次 todo/todo/done。
 - semantic 的 entity/attribute 是稳定槽位；泛事实不要用“用户 + fact”假装与其他事实同一主题。
 - confidence 和 importance 必须在 0 到 1 之间。
 """

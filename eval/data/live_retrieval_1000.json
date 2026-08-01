@@ -86,7 +86,7 @@
       "memory_type": "task",
       "predicate": "task",
       "object_value": "Agent resume",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "polarity": null,
       "identifier": "AGENT-01",
       "keyword": "Agent resume"
@@ -296,7 +296,7 @@
       "memory_type": "task",
       "predicate": "task",
       "object_value": "memory vector lifecycle",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "polarity": null,
       "identifier": "产品-05",
       "keyword": "memory vector lifecycle"
@@ -446,7 +446,7 @@
       "memory_type": "task",
       "predicate": "task",
       "object_value": "test strategy",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "polarity": null,
       "identifier": "学习-05",
       "keyword": "test strategy"
@@ -596,7 +596,7 @@
       "memory_type": "task",
       "predicate": "task",
       "object_value": "技术会议报名",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "polarity": null,
       "identifier": "出行-05",
       "keyword": "技术会议报名"
@@ -686,7 +686,7 @@
       "memory_type": "task",
       "predicate": "task",
       "object_value": "writing outline",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "polarity": null,
       "identifier": "创作-01",
       "keyword": "writing outline"
@@ -731,7 +731,7 @@
       "memory_type": "task",
       "predicate": "task",
       "object_value": "reading plan",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "polarity": null,
       "identifier": "创作-04",
       "keyword": "reading plan"
@@ -1359,7 +1359,7 @@
       "id": "m_a_05",
       "memory_type": "task",
       "content": "用户正在处理Agent简历：Agent resume；记忆编号AGENT-01",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "subject": "user",
       "predicate": "task",
       "object_value": "Agent简历 Agent resume AGENT-01",
@@ -1499,7 +1499,7 @@
       "id": "m_a_19",
       "memory_type": "task",
       "content": "用户正在处理向量生命周期：memory vector lifecycle；记忆编号产品-05",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "subject": "user",
       "predicate": "task",
       "object_value": "向量生命周期 memory vector lifecycle 产品-05",
@@ -1599,7 +1599,7 @@
       "id": "m_a_29",
       "memory_type": "task",
       "content": "用户正在处理测试策略：test strategy；记忆编号学习-05",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "subject": "user",
       "predicate": "task",
       "object_value": "测试策略 test strategy 学习-05",
@@ -1699,7 +1699,7 @@
       "id": "m_a_39",
       "memory_type": "task",
       "content": "用户正在处理技术会议：技术会议报名；记忆编号出行-05",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "subject": "user",
       "predicate": "task",
       "object_value": "技术会议 技术会议报名 出行-05",
@@ -1759,7 +1759,7 @@
       "id": "m_a_45",
       "memory_type": "task",
       "content": "用户正在处理写作大纲：writing outline；记忆编号创作-01",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "subject": "user",
       "predicate": "task",
       "object_value": "写作大纲 writing outline 创作-01",
@@ -1789,7 +1789,7 @@
       "id": "m_a_48",
       "memory_type": "task",
       "content": "用户正在处理阅读：reading plan；记忆编号创作-04",
-      "task_status": "in_progress",
+      "task_status": "todo",
       "subject": "user",
       "predicate": "task",
       "object_value": "阅读 reading plan 创作-04",
@@ -2728,7 +2728,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v0",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -2740,7 +2740,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v1",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -2752,7 +2752,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v2",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -2764,7 +2764,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v3",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -2776,7 +2776,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v4",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -2788,7 +2788,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v5",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -2800,7 +2800,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v6",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -2812,7 +2812,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v7",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -5080,7 +5080,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v0",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -5092,7 +5092,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v1",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -5104,7 +5104,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v2",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -5116,7 +5116,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v3",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -5128,7 +5128,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v4",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -5140,7 +5140,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v5",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -5152,7 +5152,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v6",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -5164,7 +5164,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v7",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -6760,7 +6760,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v0",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -6772,7 +6772,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v1",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -6784,7 +6784,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v2",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -6796,7 +6796,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v3",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -6808,7 +6808,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v4",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -6820,7 +6820,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v5",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -6832,7 +6832,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v6",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -6844,7 +6844,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v7",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -8440,7 +8440,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v0",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -8452,7 +8452,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v1",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -8464,7 +8464,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v2",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -8476,7 +8476,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v3",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -8488,7 +8488,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v4",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -8500,7 +8500,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v5",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -8512,7 +8512,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v6",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -8524,7 +8524,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v7",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9448,7 +9448,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v0",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9460,7 +9460,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v1",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9472,7 +9472,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v2",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9484,7 +9484,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v3",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9496,7 +9496,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v4",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9508,7 +9508,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v5",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9520,7 +9520,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v6",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9532,7 +9532,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v7",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9952,7 +9952,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v0",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9964,7 +9964,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v1",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9976,7 +9976,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v2",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -9988,7 +9988,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v3",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -10000,7 +10000,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v4",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -10012,7 +10012,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v5",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -10024,7 +10024,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v6",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {
@@ -10036,7 +10036,7 @@
       ],
       "memory_type": "task",
       "query_style": "task_v7",
-      "expected_status": "in_progress",
+      "expected_status": "todo",
       "expected_polarity": null
     },
     {

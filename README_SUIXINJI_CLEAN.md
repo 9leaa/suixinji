@@ -86,7 +86,7 @@ Feishu Message
 普通笔记工具保存的是一条条静态文本，但用户的真实认知会不断变化：
 
 - “我喜欢喝牛奶”可能被更新为“我最近不喝牛奶”
-- “准备完善记忆系统”会从 `todo` 变成 `in_progress` 或 `done`
+- “准备完善记忆系统”保持 `todo`，直到变成 `blocked`、`done` 或 `cancelled`
 - 多条相近记录可能是在重复确认，也可能是补充、替代或冲突
 - 新消息已经接收后，即使 LLM、Embedding 或网络暂时失败，也不应丢失
 
@@ -140,7 +140,7 @@ Message Received
 | Memory Type | Example |
 |---|---|
 | `preference` | 喜欢、讨厌、习惯、过敏与偏好变化 |
-| `task` | 待办、进行中、阻塞、完成与取消 |
+| `task` | 待办、阻塞、完成与取消 |
 | `semantic` | 当前项目、学习重点、位置与稳定事实 |
 | `episodic` | 有时间背景的重要经历和事件 |
 

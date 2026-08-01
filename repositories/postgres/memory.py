@@ -310,7 +310,8 @@ def _record(
         importance=float(row.importance),
         confidence=float(row.confidence),
         status=row.status,
-        task_status=row.task_status,
+        # 旧数据库中的 in_progress 只在内存中归并，绝不在读取时回写用户数据。
+        task_status="todo" if row.task_status == "in_progress" else row.task_status,
         valid_from=_iso(row.valid_from),
         valid_until=_iso(row.valid_until),
         created_at=_iso(row.created_at) or "",
@@ -1545,7 +1546,7 @@ def _candidate_record(row: MemoryCandidateRow) -> MemoryCandidate:
         confidence=float(row.confidence),
         entities=list(row.entities_json or []),
         should_store=bool(row.should_store),
-        task_status=row.task_status,
+        task_status="todo" if row.task_status == "in_progress" else row.task_status,
         candidate_id=row.candidate_id,
         note_id=row.note_id,
         space_id=row.space_id,
@@ -1999,7 +2000,7 @@ def correct_memory(
             resolved_status = resolved_status or infer_task_status(content) or row.task_status
             if resolved_status != row.task_status and not can_transition(row.task_status, resolved_status):
                 raise ValueError(f"invalid task status transition: {row.task_status} -> {resolved_status}")
-            if row.task_status in {"done", "cancelled"} and resolved_status in {"todo", "in_progress"}:
+            if row.task_status in {"done", "cancelled"} and resolved_status == "todo":
                 reopen_markers = ("重新", "再次", "重做", "返工", "恢复", "再开始", "又开始")
                 if not any(marker in content for marker in reopen_markers):
                     raise ValueError("reopening a terminal task requires explicit wording")

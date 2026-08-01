@@ -26,7 +26,8 @@ MEMORY_STATUSES = {
     "deleted",
     "expired",
 }
-TASK_STATUSES = {"todo", "in_progress", "blocked", "done", "cancelled"}
+# “正在进行”是任务的自然语言进展描述，不再是独立的持久化状态；统一归入 todo。
+TASK_STATUSES = {"todo", "blocked", "done", "cancelled"}
 SOURCE_RELATIONS = {"created_from", "supported_by", "updated_by", "contradicted_by", "summarized_from"}
 DECISION_RELATIONS = {"new", "same", "merge", "update_task", "supersede", "conflict"}
 DECISION_ACTIONS = {"insert", "add_source", "merge", "update_task", "supersede", "conflict", "pending_review", "discard"}

@@ -50,7 +50,7 @@ FAMILIES = [
         ("HyDE", "HyDE实验", "HyDE can generate a hypothetical document, but it remains disabled by default in this system.", "学习", "task", "task", "HyDE experiment", "todo", None),
     ]),
     ("Agent", [
-        ("Agent简历", "Agent简历制作", "The Agent resume highlights RAG, tool calling, and memory-system engineering.", "任务", "task", "task", "Agent resume", "in_progress", None),
+        ("Agent简历", "Agent简历制作", "The Agent resume highlights RAG, tool calling, and memory-system engineering.", "任务", "task", "task", "Agent resume", "todo", None),
         ("工具调用", "Agent工具调用", "The Agent tool-calling design validates arguments before executing retrieval tools.", "工作", "semantic", "current_project", "tool calling", None, None),
         ("规划器", "Agent规划器", "The query planner routes simple questions fast and reserves decomposition for complex questions.", "学习", "semantic", "learning_focus", "query planner", None, None),
         ("记忆Agent", "记忆Agent架构", "The Agent memory architecture separates evidence Notes from current-state Memory.", "工作", "semantic", "current_project", "memory agent", None, None),
@@ -68,7 +68,7 @@ FAMILIES = [
         ("Relation Guard", "Relation Guard规则", "Relation Guard blocks unsafe merges and keeps terminal task reactivation under review.", "设计", "semantic", "learning_focus", "relation guard", None, None),
         ("敏感笔记", "敏感笔记保护", "Sensitive notes containing credentials are discarded and never returned by normal retrieval.", "设计", "semantic", "learning_focus", "sensitive notes", None, None),
         ("Watermark", "读后写Watermark", "The memory barrier waits for the relevant sequence watermark before current-state reads.", "设计", "semantic", "learning_focus", "memory watermark", None, None),
-        ("向量生命周期", "Memory向量生命周期", "Memory vectors move through pending, processing, ready, and failed states with retryable tasks.", "设计", "task", "task", "memory vector lifecycle", "in_progress", None),
+        ("向量生命周期", "Memory向量生命周期", "Memory vectors move through pending, processing, ready, and failed states with retryable tasks.", "设计", "task", "task", "memory vector lifecycle", "todo", None),
     ]),
     ("工作", [
         ("周报", "周报整理", "The weekly report summarizes completed work, blockers, and next actions with source evidence.", "任务", "task", "task", "weekly report", "todo", None),
@@ -82,7 +82,7 @@ FAMILIES = [
         ("SQL索引", "SQL索引学习", "SQL indexes should match the filter and ordering pattern instead of being added blindly.", "学习", "semantic", "learning_focus", "SQL indexes", None, None),
         ("分布式系统", "分布式系统学习", "Distributed systems require idempotency, leases, retries, and an observable state machine.", "学习", "semantic", "learning_focus", "distributed systems", None, None),
         ("指标体系", "指标体系学习", "A useful metric separates retrieval quality, state accuracy, answer correctness, and latency.", "学习", "semantic", "learning_focus", "metrics", None, None),
-        ("测试策略", "测试策略学习", "A test strategy combines unit, integration, property, load, and live end-to-end samples.", "学习", "task", "task", "test strategy", "in_progress", None),
+        ("测试策略", "测试策略学习", "A test strategy combines unit, integration, property, load, and live end-to-end samples.", "学习", "task", "task", "test strategy", "todo", None),
     ]),
     ("生活", [
         ("燕麦拿铁", "燕麦拿铁偏好", "最近更喜欢燕麦拿铁，口味偏淡，工作日早上通常选择它。", "生活", "preference", "preference", "燕麦拿铁", None, "positive"),
@@ -96,7 +96,7 @@ FAMILIES = [
         ("杭州通勤", "杭州通勤安排", "工作日通勤通常乘坐地铁，遇到大雨时改为打车。", "出行", "semantic", "habit", "杭州通勤", None, None),
         ("酒店", "出差酒店偏好", "出差订酒店时优先选择靠近地铁站且可以延迟退房的房型。", "出行", "preference", "preference", "地铁附近酒店", None, "positive"),
         ("火车票", "火车票计划", "周五晚上出发的火车票需要提前购买，避免临时无票。", "出行", "task", "task", "周五火车票", "todo", None),
-        ("技术会议", "技术会议报名", "计划报名秋季技术会议，重点关注检索和Agent工程实践分享。", "出行", "task", "task", "技术会议报名", "in_progress", None),
+        ("技术会议", "技术会议报名", "计划报名秋季技术会议，重点关注检索和Agent工程实践分享。", "出行", "task", "task", "技术会议报名", "todo", None),
     ]),
     ("财务学习", [
         ("订阅预算", "订阅预算", "每月订阅服务预算需要控制在固定范围内，月底统一检查。", "计划", "task", "task", "订阅预算", "todo", None),
@@ -106,10 +106,10 @@ FAMILIES = [
         ("储蓄计划", "储蓄计划", "每月收入到账后先执行固定储蓄，再安排可变支出。", "计划", "semantic", "habit", "saving plan", None, None),
     ]),
     ("创作", [
-        ("写作大纲", "文章写作大纲", "文章先列出问题、证据、反例和结论，再开始润色表达。", "创作", "task", "task", "writing outline", "in_progress", None),
+        ("写作大纲", "文章写作大纲", "文章先列出问题、证据、反例和结论，再开始润色表达。", "创作", "task", "task", "writing outline", "todo", None),
         ("摄影", "摄影练习", "摄影练习重点观察光线方向、主体层次和背景干扰。", "兴趣", "semantic", "learning_focus", "photography", None, None),
         ("吉他", "吉他练习", "吉他练习安排在晚饭后，每次先做音阶再练习和弦转换。", "兴趣", "task", "habit", "guitar practice", "todo", None),
-        ("阅读", "阅读计划", "本月阅读计划包括一本分布式系统书和一本非虚构作品。", "兴趣", "task", "task", "reading plan", "in_progress", None),
+        ("阅读", "阅读计划", "本月阅读计划包括一本分布式系统书和一本非虚构作品。", "兴趣", "task", "task", "reading plan", "todo", None),
         ("电影", "电影偏好", "更喜欢节奏克制、人物关系复杂的剧情片。", "兴趣", "preference", "preference", "剧情片", None, "positive"),
     ]),
 ]
@@ -162,7 +162,7 @@ def _generate_dataset() -> dict[str, Any]:
         memory_prefix = "用户"
         identity = f"记忆编号{atom['identifier']}"
         if atom["memory_type"] == "task":
-            status_text = {"todo": "需要完成", "in_progress": "正在处理", "done": "已经完成"}.get(atom["task_status"], "需要处理")
+            status_text = {"todo": "需要处理", "blocked": "暂时阻塞", "done": "已经完成", "cancelled": "已经取消"}.get(atom["task_status"], "需要处理")
             content = f"{memory_prefix}{status_text}{atom['label']}：{atom['object_value']}；{identity}"
         elif atom["memory_type"] == "preference":
             content = f"{memory_prefix}{'喜欢' if atom['polarity'] == 'positive' else '不喜欢'}{atom['label']}：{atom['object_value']}；{identity}"

@@ -426,7 +426,8 @@ def _memory_from_row(row: sqlite3.Row, *, sources: list[MemorySource] | None = N
         importance=float(row["importance"]),
         confidence=float(row["confidence"]),
         status=str(row["status"]),
-        task_status=row["task_status"],
+        # 旧数据库中的 in_progress 只在内存中归并，绝不在读取时回写用户数据。
+        task_status="todo" if row["task_status"] == "in_progress" else row["task_status"],
         valid_from=row["valid_from"],
         valid_until=row["valid_until"],
         created_at=str(row["created_at"]),
@@ -469,7 +470,7 @@ def _candidate_from_row(row: sqlite3.Row) -> MemoryCandidate:
         confidence=float(row["confidence"]),
         entities=list(entities) if isinstance(entities, list) else [],
         should_store=bool(row["should_store"]),
-        task_status=row["task_status"],
+        task_status="todo" if row["task_status"] == "in_progress" else row["task_status"],
         candidate_id=str(row["candidate_id"]),
         note_id=str(row["note_id"]),
         space_id=str(row["space_id"]),
@@ -1966,7 +1967,7 @@ def correct_memory(
         resolved_status = resolved_status or infer_task_status(content) or existing.task_status
         if resolved_status != existing.task_status and not can_transition(existing.task_status, resolved_status):
             raise ValueError(f"invalid task status transition: {existing.task_status} -> {resolved_status}")
-        if existing.task_status in {"done", "cancelled"} and resolved_status in {"todo", "in_progress"}:
+        if existing.task_status in {"done", "cancelled"} and resolved_status == "todo":
             reopen_markers = ("重新", "再次", "重做", "返工", "恢复", "再开始", "又开始")
             if not any(marker in content for marker in reopen_markers):
                 raise ValueError("reopening a terminal task requires explicit wording")

@@ -2,7 +2,7 @@
 
 > 文档状态：设计稿  
 > 适用范围：Memory V3 写入链路、`/memory` 控制命令、动态用户画像  
-> 目标：让同一任务的 `todo → in_progress → done` 演化为一条可追溯的 Memory，而不是留下多个互相矛盾的活跃任务。
+> 目标：让同一任务在 `todo / blocked / done / cancelled` 四状态内演化为一条可追溯的 Memory；“正在进行”统一归入 `todo`，而不是留下多个互相矛盾的活跃任务。
 
 ---
 
@@ -10,12 +10,12 @@
 
 用户画像不是缓存，也不是没有刷新。
 
-`/memory profile` 每次读取活跃 Memory，并把 `task_status` 不是 `done/cancelled` 的 task 展示为“当前任务”。因此，只要旧 Memory 的结构化状态仍为 `in_progress` 或 `todo`，即使它的展示文案已经写成“已完成”，它仍会出现在用户画像中。
+`/memory profile` 每次读取活跃 Memory，并把 `task_status` 不是 `done/cancelled` 的 task 展示为“当前任务”。历史库中可能仍有已移除的 `in_progress`，运行时只读归并为 `todo`；不会在读取时自动改写用户数据。
 
 本次问题由两类缺陷叠加造成：
 
 1. **状态字段与修正文案脱节**：`correct_memory()` 和 `edit_pending_memory()` 只更新 `content`，不会重新计算或显式更新 `task_status`。
-2. **同一任务身份被拆分**：任务 identity 把“执行 / 制作 / 完成”等表达差异带入 key，或无法兼容旧 V2 key；完成消息因而插入新的 `done` Memory，没有更新原有的 `todo/in_progress` Memory。
+2. **同一任务身份被拆分**：任务 identity 把“执行 / 制作 / 完成”等表达差异带入 key，或无法兼容旧 V2 key；完成消息因而插入新的 `done` Memory，没有更新原有的未完成 Memory。
 
 修复目标不是让画像从文案中猜状态，而是保证：
 
@@ -33,7 +33,7 @@
 
 ## 2. 本次线上证据
 
-以下数据来自当前飞书 space 的近期消息、Candidate、Decision、Memory Version 和 `/memory profile` 读取结果。
+以下数据是删除 `in_progress` 前的历史证据；其中该值仅用于解释旧问题，不是当前可写状态。
 
 | 飞书消息（北京时间） | 抽取结果 | 实际落点 | 结论 |
 |---|---|---|---|
@@ -77,7 +77,7 @@ version reason = user_correct
    - content 只负责可读展示，不能单独决定画像状态。
 2. **状态变更必须可审计且受状态机约束**
    - 每次转换写入 Version、source 和 Decision；
-   - `done/cancelled → in_progress` 必须包含“重新、返工、再次、恢复”等明确重开证据，否则进入 review。
+   - `done/cancelled → todo` 必须包含“重新、返工、再次、恢复”等明确重开证据，否则进入 review。
 3. **动作措辞不是任务身份**
    - “制作、做、完成、执行、搞定”中，表达生命周期的词不能改变 identity；
    - 真正区分任务的是主体、规范化主题和范围。
@@ -121,16 +121,15 @@ memory_key_v4 = task:<owner>:<canonical_topic>:<scope>
 ### 4.2 TaskState
 
 ```text
-todo → in_progress → done
-                  ↘ cancelled
-todo / in_progress → blocked
-done / cancelled → in_progress   # 仅明确“重新/返工/恢复”
+todo → blocked / done / cancelled
+blocked → todo / done / cancelled
+done / cancelled → todo   # 仅明确“重新/返工/恢复”
 ```
 
 每个 task 必须满足：
 
 ```text
-memory_type == task  =>  task_status ∈ {todo, in_progress, blocked, done, cancelled}
+memory_type == task  =>  task_status ∈ {todo, blocked, done, cancelled}
 content 中的明确终态与 task_status 不得相反
 ```
 
@@ -169,7 +168,7 @@ flowchart TD
 
 ### 5.1 精确命中
 
-同一 identity 的 `todo → in_progress → done` 只更新同一条 Memory。`content` 可以变化，但 `memory_key_v4` 不变。
+同一 identity 的 `todo → done` 只更新同一条 Memory；“正在进行”只补充来源或显式任务值。`content` 可以变化，但 `memory_key_v4` 不变。
 
 ### 5.2 Legacy identity bridge
 
@@ -210,7 +209,7 @@ flowchart TD
 4. 如果用户显式传入 `--status`，以用户指定为准，但仍执行状态机检查；
 5. 发生终态重开且没有明确重开词时，拒绝静默更新并转 review。
 
-这能避免本次“内容已经完成、状态仍 in_progress”的结构性不一致。
+这能避免本次“内容已经完成、状态仍为未完成态”的结构性不一致。
 
 ### 6.2 编辑 pending 后必须重新审理
 
@@ -233,14 +232,14 @@ flowchart TD
 画像保持动态读取，不引入缓存或定时“刷新画像”。
 
 ```text
-当前任务 = active task 且 task_status ∈ {todo, in_progress, blocked}
+当前任务 = active task 且 task_status ∈ {todo, blocked}
 已完成任务 = active task 且 task_status ∈ {done, cancelled}  # 默认不展示在当前任务
 ```
 
 新增画像前的一致性检测（只告警、不通过文案猜测状态）：
 
 ```text
-若 content 具有明确终态表达，但 task_status 为 todo/in_progress/blocked
+若 content 具有明确终态表达，但 task_status 为 todo/blocked
   → 记录 profile_task_state_mismatch 指标
   → Trace 中标出 memory_id 和最后一个 Version reason
 ```
@@ -272,8 +271,8 @@ flowchart TD
 |---|---|---|
 | 同一 Memory 文案明确终态，最后版本原因为 `user_correct`，且无歧义 | 仅生成建议，需确认后写 `task_status=done` | 避免文本误判造成意外关单 |
 | 单个旧任务可唯一映射为 v4 identity | 回填 key，可灰度自动执行 | 不改变业务状态 |
-| 同 identity 有一条明确最新 `done` 和一条旧 `todo/in_progress` | 生成 merge/archive 预览，需确认 | 保护历史和可能的重开语义 |
-| 同 identity 出现 terminal 与非 terminal，且时间或重开意图不明确 | `pending_review` | 不自动丢失真实进行中任务 |
+| 同 identity 有一条明确最新 `done` 和一条旧 `todo` | 生成 merge/archive 预览，需确认 | 保护历史和可能的重开语义 |
+| 同 identity 出现 terminal 与非 terminal，且时间或重开意图不明确 | `pending_review` | 不自动丢失真实未完成任务 |
 | 主题仅向量相近或同项目 | 不处理 | 防止错误合并 |
 
 ### 8.3 对当前样本的预览结果
@@ -363,10 +362,10 @@ SUIXINJI_PROFILE_TASK_STATE_MISMATCH_ALERT_ENABLED
 
 | 用例 | 预期 |
 |---|---|
-| `需要制作首页消息路径图 → 正在制作 → 路径图做完了` | 一条 Memory，状态依次 `todo → in_progress → done` |
+| `需要制作首页消息路径图 → 正在制作 → 路径图做完了` | 一条 Memory，状态依次 `todo → todo → done` |
 | `需要完成 Zeta 冲突 → Zeta 冲突做完了` | 同一 identity 更新为 `done` |
 | `已完成 → 正在处理` | pending_review，不允许静默重开 |
-| `已完成 → 重新开始处理` | 明确重开后允许 `in_progress` |
+| `已完成 → 重新开始处理` | 明确重开后允许 `todo` |
 | `correct 文案为“已完成”` | content 与 `task_status=done` 同一 Version 更新 |
 | 编辑 pending 为完成表达 | 重新抽取并更新正确 target，不沿用旧 candidate |
 | 首页路径图与记忆演化图 | 绝不能合并 |
@@ -390,7 +389,7 @@ SUIXINJI_PROFILE_TASK_STATE_MISMATCH_ALERT_ENABLED
 
 - `/memory profile` 不再出现该任务；
 - Memory 只有一个 active canonical task，`task_status=done`；
-- Version 至少包含 todo、in_progress、done；
+- Version 至少包含 todo、done；“正在进行”只在任务值确有变化时新增 Version。
 - Trace 显示 `identity_match_route=exact_v4` 或 `legacy_bridge`，而不是 `insert`；
 - `/ask 我首页消息路径图完成了吗？` 能基于同一 Memory 正确回答。
 

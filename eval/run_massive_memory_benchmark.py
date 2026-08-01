@@ -341,9 +341,7 @@ def _operation_matches(expected: dict[str, Any], candidate: MemoryCandidate) -> 
     if operation in {"avoid", "dislike"}:
         return candidate.polarity == "negative" or any(token in candidate.content for token in ("不喜欢", "讨厌", "不爱", "不碰"))
     if operation in {"created", "create", "todo"}:
-        return candidate.task_status in {None, "todo", "in_progress"}
-    if operation == "in_progress":
-        return candidate.task_status == "in_progress" or "正在" in candidate.content or "推进" in candidate.content
+        return candidate.task_status in {None, "todo"}
     if operation in {"completed", "done"}:
         return candidate.task_status == "done" or any(token in candidate.content for token in ("完成", "做完"))
     if operation in {"cancelled", "canceled"}:
@@ -1403,8 +1401,6 @@ class MassiveBenchmarkRunner:
         task_status = None
         if operation in {"created", "create", "todo"}:
             task_status = "todo"
-        elif operation == "in_progress":
-            task_status = "in_progress"
         elif operation in {"completed", "done"}:
             task_status = "done"
         elif operation in {"cancelled", "canceled"}:
