@@ -14,6 +14,16 @@ from typing import Any
 
 from memory.models import MEMORY_KEY_V3_VERSION, MemoryCandidate, normalize_content
 from memory.policies.preference import preference_signature
+from memory.field_contracts import (
+    episodic_topic,
+    normalize_entity,
+    normalize_operation,
+    normalize_semantic_attribute,
+    normalize_task_status,
+    preference_topic,
+    semantic_topic,
+    task_attribute,
+)
 
 
 _TASK_OPERATION_ALIASES = {
@@ -123,7 +133,9 @@ def task_identity_compatible(candidate: Any, memory: Any) -> bool:
         subject = str(getattr(value, "subject", None) or "")
         object_value = str(getattr(value, "object_value", None) or "")
         content = str(getattr(value, "content", None) or "")
-        return _task_identity_topic(" ".join(item for item in (subject, object_value, content) if item))
+        parts = [_task_identity_topic(item) for item in (subject, object_value, content) if item]
+        parts = list(dict.fromkeys(item for item in parts if item))
+        return max(parts, key=len, default="")
 
     left, right = topic(candidate), topic(memory)
     if not left or not right:
@@ -350,7 +362,7 @@ def semantic_key(entity: str, attribute: str, canonical_topic: str, scope: str =
     返回结果说明：
         返回 `str`，通常是格式化后的文本、标识或路径。
     """
-    entity_key = normalize_identity(entity)
+    entity_key = "用户" if str(entity or "").strip() in {"", "我", "本人", "用户", "user", "me"} else normalize_identity(entity)
     attribute_key = normalize_identity(attribute)
     stable = _STABLE_SEMANTIC_ATTRIBUTES.get(attribute_key)
     if stable is not None:
@@ -368,7 +380,8 @@ def preference_key(entity: str, topic: str, scope: str = "global") -> str:
     返回结果说明：
         返回 `str`，通常是格式化后的文本、标识或路径。
     """
-    return f"preference:{normalize_identity(entity)}:{normalize_identity(topic)}:{normalize_scope(scope)}"
+    entity_key = "用户" if str(entity or "").strip() in {"", "我", "本人", "用户", "user", "me"} else normalize_identity(entity)
+    return f"preference:{entity_key}:{normalize_identity(topic)}:{normalize_scope(scope)}"
 
 
 def is_task_lifecycle_statement(text: str) -> bool:
@@ -379,6 +392,10 @@ def is_task_lifecycle_statement(text: str) -> bool:
         返回 `bool`，表示判断、写入或处理是否成功。
     """
     raw = str(text or "")
+    # “正在学习/研究 X” is a current learning focus (semantic) unless
+    # the sentence explicitly frames learning as a task or commitment.
+    if "学习" in raw and not any(marker in raw for marker in ("记得", "需要", "待办", "任务", "计划", "准备", "完成", "做完")):
+        return False
     return any(word in raw for word in _TASK_STATUS_WORDS) and any(
         operation in raw for operation in _TASK_OPERATION_ALIASES
     )
@@ -397,6 +414,9 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
 
     if memory_type == "task":
         entity, attribute, operation = _task_identity_from_text(source_text, candidate)
+        entity = normalize_entity(entity, memory_type="task") or "用户"
+        attribute = task_attribute(attribute, source_text) or attribute or "任务"
+        operation = normalize_operation(operation, source_text) or operation or "执行"
         old_value, new_value = _task_values(source_text, scope)
         topic_entity = "" if entity == "用户" else entity
         # 同时持久化确定性 identity projection；若保留不一致的模型 canonical_topic，后续对账和诊断会重新出现同样漂移。
@@ -409,12 +429,14 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
                 "scope": canonical_scope,
                 "old_value": old_value,
                 "new_value": new_value,
+                "task_status": normalize_task_status(candidate.task_status, source_text) or "todo",
                 "memory_key_version": MEMORY_KEY_V3_VERSION,
             }
         )
         return replace(
             candidate,
             subject=entity,
+            task_status=normalize_task_status(candidate.task_status, source_text) or "todo",
             predicate=attribute,
             object_value=new_value or candidate.object_value or attribute,
             memory_key=task_key(entity, attribute, operation, canonical_scope),
@@ -424,8 +446,8 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
 
     if memory_type == "preference":
         signature = preference_signature(source_text)
-        entity = str(candidate.subject or "用户")
-        topic = str(candidate.object_value or signature.topic or source_text)
+        entity = normalize_entity(candidate.subject, memory_type="preference") or "用户"
+        topic = preference_topic(source_text, scope.get("canonical_topic"), candidate.object_value) or signature.topic or source_text
         canonical_scope = str(scope.get("scope") or (signature.scopes[0] if signature.scopes else "global"))
         scope.update(
             {
@@ -445,9 +467,10 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
         )
 
     if memory_type == "semantic":
-        entity = str(candidate.subject or "用户")
-        attribute = str(candidate.predicate or "fact")
-        canonical_topic = str(scope.get("canonical_topic") or candidate.object_value or source_text)
+        entity = normalize_entity(candidate.subject, memory_type="semantic") or "用户"
+        raw_attribute = str(candidate.predicate or "").strip()
+        attribute = normalize_semantic_attribute(raw_attribute, source_text) or (raw_attribute if normalize_content(raw_attribute) in {"fact", "事实"} else "current_project")
+        canonical_topic = semantic_topic(attribute, scope.get("canonical_topic")) or source_text
         canonical_scope = str(scope.get("scope") or "current")
         scope.update(
             {
@@ -465,5 +488,32 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
             memory_key_version=MEMORY_KEY_V3_VERSION,
         )
 
+    if memory_type == "episodic":
+        entity = normalize_entity(candidate.subject, memory_type="episodic") or "用户"
+        topic = episodic_topic(source_text, scope.get("canonical_topic"), candidate.object_value) or source_text
+        canonical_scope = str(scope.get("scope") or "history")
+        scope.update(
+            {
+                "canonical_topic": topic,
+                "scope": canonical_scope,
+                "memory_key_version": MEMORY_KEY_V3_VERSION,
+            }
+        )
+        return replace(
+            candidate,
+            subject=entity,
+            predicate="event",
+            object_value=topic,
+            memory_key=f"episodic:{'用户' if entity == '用户' else normalize_identity(entity)}:event:{normalize_identity(topic)}",
+            scope=scope,
+            memory_key_version=MEMORY_KEY_V3_VERSION,
+        )
+
     scope.update({"memory_key_version": MEMORY_KEY_V3_VERSION})
     return replace(candidate, scope=scope, memory_key_version=MEMORY_KEY_V3_VERSION)
+
+
+def normalize_candidate_v3(candidate: MemoryCandidate, note_text: str | None = None) -> MemoryCandidate:
+    """Normalize every extractor output through one deterministic contract."""
+    del note_text
+    return canonicalize_candidate(candidate)

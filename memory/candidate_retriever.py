@@ -88,7 +88,9 @@ def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> fl
             ):
                 return 0.0
         if candidate.memory_type == "preference":
-            if preference_policy.topic_compatibility(candidate, memory) < 0.75:
+            comparative_alternative = preference_policy.is_comparative_alternative(candidate.content, memory.content)
+            ambiguous_conflict = preference_policy.is_ambiguous_conflict(candidate.content, memory.content)
+            if preference_policy.topic_compatibility(candidate, memory) < 0.75 and not comparative_alternative and not ambiguous_conflict:
                 return 0.0
 
     # 检索发生在裁决前，并被限制为较小 top-k；不能让共享句式模板或 A1/A10 这类子串关系把真正同主题 Memory 挤出列表。

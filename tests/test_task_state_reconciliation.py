@@ -11,7 +11,7 @@ import pytest
 from memory import extractor
 from memory import repository
 from memory.models import MemoryCandidate, MemoryDecision
-from memory.service import process_note_memory
+from memory.service import format_memory_profile, process_note_memory
 from memory.task_state import infer_task_status, validate_task_status
 
 
@@ -129,10 +129,13 @@ def test_terminal_update_archives_duplicate_active_tasks(monkeypatch) -> None:
         {"id": "duplicate-done", "space_id": "task-duplicates", "text": "我首页消息路径图也做完了"}
     )
 
-    assert result["results"][0]["archived_duplicate_ids"]
+    # Multiple historical matches are deliberately held for review; Stage 2
+    # never guesses which duplicate task should receive the completion.
+    assert result["results"][0]["action"] == "pending_review"
+    assert result["results"][0]["relation"] == "ambiguous_match"
     active = repository.list_memories("task-duplicates", memory_type="task", status="active", limit=10)
-    assert len(active) == 1
-    assert active[0].task_status == "done"
+    assert len(active) == 2
+    assert {item.task_status for item in active} == {"todo"}
 
 
 def test_manual_task_correction_updates_structured_status() -> None:
@@ -189,3 +192,30 @@ def test_edit_pending_task_revalidates_and_applies_status(monkeypatch) -> None:
     assert approved is not None
     assert approved.id == target.id
     assert approved.task_status == "done"
+
+
+def test_profile_keeps_only_latest_status_for_legacy_duplicate(monkeypatch) -> None:
+    _enable_task_identity(monkeypatch)
+    repository.insert_memory(
+        "profile-dedup",
+        MemoryCandidate(
+            "task", "制作随心记首页的消息路径图", 0.8, 0.9,
+            subject="制作随心记首页的消息路径图", predicate="task",
+            object_value="制作随心记首页的消息路径图", task_status="todo",
+        ),
+        source_note_id="profile-old",
+    )
+    repository.insert_memory(
+        "profile-dedup",
+        MemoryCandidate(
+            "task", "用户已完成首页消息路径图的制作", 0.8, 0.9,
+            subject="用户", predicate="首页消息路径图",
+            object_value="首页消息路径图", task_status="done",
+        ),
+        source_note_id="profile-new",
+    )
+
+    profile = format_memory_profile("profile-dedup")
+
+    assert "制作随心记首页的消息路径图" not in profile
+    assert "当前任务" not in profile

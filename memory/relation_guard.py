@@ -172,11 +172,15 @@ def evaluate_relation(candidate: MemoryCandidate, memory: MemoryRecord) -> Relat
         if candidate.normalized_content == memory.normalized_content:
             return RelationGuardResult("same", "add_source", "same_semantic_key_and_content", True)
         if _same(candidate.subject, memory.subject) and _same(candidate.predicate, memory.predicate):
-            return RelationGuardResult("conflict", "pending_review", "stable_semantic_slot_changed_requires_review", False)
+            if normalize_content(candidate.predicate or "") in {"learningfocus", "learning_focus"}:
+                return RelationGuardResult("merge", "merge", "stable_semantic_slot_latest_evidence", True)
+            return RelationGuardResult("supersede", "supersede", "stable_semantic_slot_latest_evidence", True)
         return RelationGuardResult("new", "insert", "semantic_identity_not_confirmed", False)
 
     if candidate.memory_type == "preference":
         same_scope = normalize_content(str(candidate.scope.get("scope") or "global")) == normalize_content(_scope(memory, "scope", "global"))
+        if same_scope and (preference_policy.is_ambiguous_conflict(candidate.content, memory.content) or preference_policy.is_comparative_alternative(candidate.content, memory.content)):
+            return RelationGuardResult("conflict", "pending_review", "ambiguous_preference_conflict", False)
         if exact_key and _same(candidate.subject, memory.subject) and same_scope:
             if preference_policy.is_ambiguous_conflict(candidate.content, memory.content):
                 return RelationGuardResult("conflict", "pending_review", "ambiguous_preference_conflict", False)

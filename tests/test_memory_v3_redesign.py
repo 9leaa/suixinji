@@ -288,7 +288,8 @@ def test_specific_task_name_refines_an_existing_short_name(monkeypatch):
     memories = list_memories("resume-space", memory_type="task")
 
     assert len(memories) == 1
-    assert memories[0].memory_key == "task:用户:agent开发的简历:制作:global"
+    # Stage 2 completion transitions preserve the historical task identity key.
+    assert memories[0].memory_key == "task:用户:简历:制作:global"
     assert memories[0].task_status == "done"
     assert memories[0].current_version == 2
 

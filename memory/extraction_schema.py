@@ -12,6 +12,13 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
+from memory.field_contracts import (
+    canonical_topic_for,
+    normalize_entity,
+    normalize_operation,
+    normalize_semantic_attribute,
+    normalize_task_status,
+)
 
 class ExtractedMemoryCandidate(BaseModel):
     """类功能：`ExtractedMemoryCandidate` 封装与“抽取结果 schema”相关的数据结构、状态或行为。
@@ -82,6 +89,57 @@ class ExtractedMemoryCandidate(BaseModel):
         return bool(self.evidence_span and self.evidence_span in source_text)
 
 
+def normalize_extracted_row(row: dict[str, object], source_text: str) -> dict[str, object]:
+    """Apply the type contract before Pydantic validation."""
+    normalized = dict(row)
+    memory_type = str(normalized.get("memory_type") or "").strip().lower()
+    normalized["memory_type"] = memory_type
+    normalized["entity"] = normalize_entity(normalized.get("entity"), memory_type=memory_type)
+    normalized["task_status"] = normalize_task_status(normalized.get("task_status"), source_text)
+    if memory_type == "task":
+        normalized["attribute"] = normalized.get("attribute") or normalized.get("canonical_topic")
+        normalized["operation"] = normalize_operation(normalized.get("operation"), source_text)
+        normalized["canonical_topic"] = canonical_topic_for(
+            "task", source_text=source_text, entity=normalized.get("entity"),
+            attribute=normalized.get("attribute"), operation=normalized.get("operation"),
+            topic_hint=normalized.get("canonical_topic"), new_value=normalized.get("new_value"),
+        ) or "任务"
+        normalized["entity"] = normalized.get("entity") or "用户"
+        normalized["attribute"] = normalized.get("attribute") or "任务"
+        normalized["operation"] = normalized.get("operation") or "执行"
+        normalized["task_status"] = normalized.get("task_status") or "todo"
+    elif memory_type == "semantic":
+        normalized["entity"] = normalized.get("entity") or "用户"
+        normalized["attribute"] = normalize_semantic_attribute(normalized.get("attribute"), source_text) or "fact"
+        normalized["operation"] = None
+        normalized["task_status"] = None
+        normalized["canonical_topic"] = canonical_topic_for(
+            "semantic", source_text=source_text, attribute=normalized["attribute"],
+            topic_hint=normalized.get("canonical_topic"),
+        ) or "用户当前事实"
+    elif memory_type == "preference":
+        normalized["entity"] = normalized.get("entity") or "用户"
+        normalized["attribute"] = "preference"
+        normalized["operation"] = None
+        normalized["task_status"] = None
+        normalized["canonical_topic"] = canonical_topic_for(
+            "preference", source_text=source_text,
+            topic_hint=normalized.get("canonical_topic"), new_value=normalized.get("new_value"),
+        ) or "未指定偏好主题"
+        normalized["new_value"] = normalized["canonical_topic"]
+    elif memory_type == "episodic":
+        normalized["entity"] = normalized.get("entity") or "用户"
+        normalized["attribute"] = "event"
+        normalized["operation"] = None
+        normalized["task_status"] = None
+        normalized["canonical_topic"] = canonical_topic_for(
+            "episodic", source_text=source_text,
+            topic_hint=normalized.get("canonical_topic"), new_value=normalized.get("new_value"),
+        ) or "事件"
+        normalized["new_value"] = normalized["canonical_topic"]
+    return normalized
+
+
 def parse_extracted_candidate(row: object, source_text: str) -> ExtractedMemoryCandidate | None:
     """函数功能：`parse_extracted_candidate` 负责解析 extracted candidate，服务于本文件职责：抽取结果 schema。
     传参：
@@ -93,7 +151,7 @@ def parse_extracted_candidate(row: object, source_text: str) -> ExtractedMemoryC
     if not isinstance(row, dict):
         return None
     try:
-        candidate = ExtractedMemoryCandidate.model_validate(row)
+        candidate = ExtractedMemoryCandidate.model_validate(normalize_extracted_row(row, source_text))
     except ValidationError:
         return None
     return candidate if candidate.evidence_is_grounded(source_text) else None

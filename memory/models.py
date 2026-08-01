@@ -29,7 +29,18 @@ MEMORY_STATUSES = {
 # “正在进行”是任务的自然语言进展描述，不再是独立的持久化状态；统一归入 todo。
 TASK_STATUSES = {"todo", "blocked", "done", "cancelled"}
 SOURCE_RELATIONS = {"created_from", "supported_by", "updated_by", "contradicted_by", "summarized_from"}
-DECISION_RELATIONS = {"new", "same", "merge", "update_task", "supersede", "conflict"}
+DECISION_RELATIONS = {
+    "new",
+    "same",
+    "merge",
+    "update_task",
+    "supersede",
+    "conflict",
+    # Stage 2 task-completion audit relations. These describe adjudication
+    # outcomes and are not task statuses.
+    "orphan_completion",
+    "ambiguous_match",
+}
 DECISION_ACTIONS = {"insert", "add_source", "merge", "update_task", "supersede", "conflict", "pending_review", "discard"}
 MEMORY_RELATION_TYPES = {"supersedes", "superseded_by", "conflicts_with", "supports", "summarized_from", "derived_from"}
 MEMORY_EXTRACTION_STATUSES = {"pending", "processing", "completed", "empty", "partial", "failed"}

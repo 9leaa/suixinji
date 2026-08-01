@@ -96,6 +96,26 @@ def _timeout_retries_for_route(route: Any) -> int:
     return min(1, max(0, int(settings.MEMORY_EXTRACTION_LLM_MAX_RETRIES)))
 
 
+def classify_llm_error(exc: BaseException | None = None, *, response: Any = None, phase: str | None = None) -> str:
+    """Return a stable, low-cardinality reason for LLM failures."""
+    name = type(exc).__name__.lower() if exc is not None else ""
+    text = str(exc or "").lower()
+    if "timeout" in name or "timeout" in text:
+        return "transport_timeout"
+    if any(token in name or token in text for token in ("connection", "connecterror", "network", "dns", "ssl")):
+        return "connection_error"
+    if any(token in name or token in text for token in ("ratelimit", "rate_limit", "429", "too many requests")):
+        return "rate_limit"
+    if any(token in text for token in (" 500", " 502", " 503", " 504", "server error", "bad gateway", "service unavailable")):
+        return "server_error"
+    if response is not None and not getattr(response, "choices", None):
+        return "empty_response"
+    if phase == "json" or "json" in name or "json" in text:
+        if any(token in text for token in ("unterminated", "unexpected end", "truncated")):
+            return "truncated_response"
+        return "invalid_json"
+    return "unknown"
+
 def build_openai_client(config: ChatConfig | EmbeddingConfig | None = None) -> OpenAI:
     """函数功能：`build_openai_client` 负责构建 openai client，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
     传参：
@@ -209,6 +229,7 @@ def complete_json(
                 "attempt": attempt,
                 "max_attempts": max_attempts,
                 "timeout_seconds": config.timeout_seconds,
+                "error_category": classify_llm_error(exc),
             }
             if attempt < max_attempts:
                 log_event(
@@ -254,6 +275,7 @@ def complete_json(
                     "attempt": attempt,
                     "max_attempts": max_attempts,
                     "timeout_seconds": config.timeout_seconds,
+                    "error_category": classify_llm_error(exc),
                 },
             )
             raise RuntimeError(
@@ -262,7 +284,7 @@ def complete_json(
                 f"base_url={_safe_base_url(config.base_url)!r}, "
                 f"prompt_chars={len(user_prompt)}, "
                 f"attempts={attempt}, "
-                f"cause={type(exc).__name__}."
+                f"error_category={classify_llm_error(exc)}, cause={type(exc).__name__}."
             ) from None
 
     if not response.choices:
@@ -270,7 +292,7 @@ def complete_json(
             "LLM returned no choices; "
             f"model={config.model!r}, "
             f"base_url={_safe_base_url(config.base_url)!r}, "
-            f"prompt_chars={len(user_prompt)}."
+            f"prompt_chars={len(user_prompt)}, error_category={classify_llm_error(response=response)}."
         )
 
     usage = getattr(response, "usage", None)
@@ -299,12 +321,12 @@ def complete_json(
             "LLM returned no message content; "
             f"model={config.model!r}, "
             f"base_url={_safe_base_url(config.base_url)!r}, "
-            f"prompt_chars={len(user_prompt)}."
+            f"prompt_chars={len(user_prompt)}, error_category=empty_response."
         )
 
     try:
         return extract_json_object(content)
-    except Exception:
+    except Exception as exc:
         output_preview = safe_text_preview(content, limit=200)
 
         raise RuntimeError(
@@ -312,7 +334,7 @@ def complete_json(
             f"model={config.model!r}, "
             f"base_url={_safe_base_url(config.base_url)!r}, "
             f"prompt_chars={len(user_prompt)}, "
-            f"output_preview={output_preview!r}."
+            f"output_preview={output_preview!r}, error_category={classify_llm_error(exc, phase='json')}."
         ) from None
 
 

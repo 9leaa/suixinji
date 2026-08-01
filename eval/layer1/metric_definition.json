@@ -1,0 +1,18 @@
+{
+  "version": "layer1-metrics-v1",
+  "stages": ["raw_llm", "schema_validated", "normalized", "final_candidate"],
+  "types": ["preference", "task", "semantic", "episodic"],
+  "fields": ["entity", "attribute", "operation", "canonical_topic", "task_status", "old_value", "new_value", "valid_from", "valid_until", "polarity", "memory_key"],
+  "key_fields": ["entity", "attribute", "operation", "canonical_topic", "task_status", "old_value", "new_value"],
+  "matching": ["evidence_span_exact", "memory_type_and_canonical_topic", "memory_type_and_memory_key", "stable_type_order"],
+  "null_policy": "null_equals_null; empty_string_normalizes_to_null",
+  "metrics": {
+    "should_store_f1": "harmonic_mean(precision(TP_should_store), recall(TP_should_store))",
+    "candidate_f1": "harmonic_mean(candidate_precision, candidate_recall)",
+    "memory_type_macro_f1": "mean(f1(preference), f1(task), f1(semantic), f1(episodic))",
+    "field_accuracy": "sum(correct_field_comparisons) / sum(gold_candidates)",
+    "key_field_accuracy": "sum(correct_comparisons_over_7_key_fields) / (gold_candidates * 7)",
+    "all_fields_exact": "gold_candidates_with_all_11_fields_correct / gold_candidates"
+  },
+  "missing_datasets": ["multi_candidate", "hard_language_and_noise"]
+}

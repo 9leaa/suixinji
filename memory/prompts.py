@@ -47,6 +47,12 @@ MEMORY_EXTRACTOR_V3_PROMPT = """
   都应为 entity=随心记、attribute=大模型供应商、operation=更换、canonical_topic=更换随心记大模型供应商，状态依次 todo/todo/done。
 - semantic 的 entity/attribute 是稳定槽位；泛事实不要用“用户 + fact”假装与其他事实同一主题。
 - confidence 和 importance 必须在 0 到 1 之间。
+- 字段契约是硬约束：preference 的 attribute 必须是 "preference"，operation/task_status 必须为 null；preference 的 new_value 只能是原文中的偏好对象。
+- semantic 的 attribute 只能使用这些枚举：location/current_project/current_employer/learning_focus/birthplace/school/major/job_target/primary_device/preferred_language；operation/task_status 必须为 null。
+- episodic 的 attribute 必须是 "event"，operation/task_status 必须为 null。
+- task 的 attribute 和 operation 必须是任务身份短语，不能填 task/任务/待办；task_status 只能四态，in_progress 归 todo。
+- canonical_topic 只能是基于原文的稳定主题提示；程序会基于证据重算 canonical_topic、memory_key 和 polarity，模型不得把状态、极性或新值写进任务身份。
+- 对非适用字段使用 null，不要用空字符串或泛化 fact；不要输出额外字段。
 """
 
 QUERY_INTENT_PROMPT = """

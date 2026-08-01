@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
+from dataclasses import replace
 import time
 from datetime import date, datetime
 from pathlib import Path
@@ -1671,6 +1672,21 @@ def apply_memory_decision(
         """
         with _connect(db_path) as conn:
             conn.execute("BEGIN IMMEDIATE")
+            prior = conn.execute(
+                "SELECT id, relation, recommended_action, status, result_memory_ids_json FROM memory_decisions "
+                "WHERE candidate_id = ? AND status IN ('applied', 'pending_review') ORDER BY created_at DESC LIMIT 1",
+                (candidate.candidate_id,),
+            ).fetchone()
+            if prior is not None:
+                try:
+                    prior_ids = json.loads(prior["result_memory_ids_json"] or "[]")
+                except (TypeError, json.JSONDecodeError):
+                    prior_ids = []
+                replay_action = "pending_review" if prior["status"] == "pending_review" else "same"
+                replay = {"action": replay_action, "relation": prior["relation"], "decision_id": prior["id"], "candidate_id": candidate.candidate_id, "idempotent": True, "result_memory_ids": prior_ids}
+                if prior_ids:
+                    replay["memory_id"] = prior_ids[0]
+                return replay
             now = utc_now_iso()
             action = decision.recommended_action
             result_memory_ids: list[str] = []
@@ -1687,6 +1703,28 @@ def apply_memory_decision(
                 target_row = conn.execute("SELECT * FROM memories WHERE id = ?", (target_id,)).fetchone()
                 if target_row is None:
                     raise ValueError(f"decision target memory not found: {target_id}")
+            decision_to_write = decision
+            if action == "update_task" and target_row is not None and candidate.memory_type == "task" and candidate.task_status == "done":
+                current_status = "todo" if target_row["task_status"] == "in_progress" else target_row["task_status"]
+                if current_status == "done":
+                    action = "add_source"
+                    result.update({"action": "add_source", "relation": "same", "original_action": "update_task", "idempotent": True})
+                elif current_status == "cancelled":
+                    decision_to_write = replace(
+                        decision,
+                        relation="conflict",
+                        recommended_action="pending_review",
+                        reason="stale_cancelled_task_completion_conflict",
+                    )
+                    action = "pending_review"
+                    result.update({"action": action, "relation": "conflict", "original_action": "update_task"})
+            for evidence in decision_to_write.evidence:
+                if not evidence.startswith("audit:"):
+                    continue
+                try:
+                    result["audit"] = json.loads(evidence[6:])
+                except (TypeError, json.JSONDecodeError):
+                    result["audit"] = evidence[6:]
 
             if action == "discard":
                 pass
@@ -1707,6 +1745,8 @@ def apply_memory_decision(
                 result["memory_id"] = memory_id
                 if target_id:
                     result["target_memory_id"] = target_id
+                if decision_to_write.target_memory_ids:
+                    result["target_memory_ids"] = list(decision_to_write.target_memory_ids)
             elif action == "add_source" and target_row is not None:
                 source_added = _add_source_row(conn, target_id, note_id, "supported_by", now=now)
                 if source_added:
@@ -1849,7 +1889,7 @@ def apply_memory_decision(
                 conn,
                 space_id=space_id,
                 note_id=note_id,
-                decision=decision,
+                decision=decision_to_write,
                 status="pending_review" if action == "pending_review" else "applied",
                 result_memory_ids=result_memory_ids,
                 now=now,

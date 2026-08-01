@@ -19,6 +19,7 @@ from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock
 from memory.consolidator import consolidate_candidate
 from memory.candidate_validator import contains_sensitive_data, validate_candidates
+from memory.canonicalizer import task_identity_compatible
 from memory.extractor import extract_candidates, may_contain_memory
 from memory.models import candidate_id_for
 from memory.shadow import build_shadow_report
@@ -704,8 +705,33 @@ def format_memory_profile(space_id: str) -> str:
     memories = list_memories(space_id, status="active", limit=100)
     if not memories:
         return "还没有足够的长期记忆生成用户画像。"
+    # The profile is a current-state projection, not an audit log. Older
+    # active V2/V3 rows can coexist with a newer terminal row after a key or
+    # wording change, so collapse compatible task identities before rendering.
+    task_memories = sorted(
+        (memory for memory in memories if memory.memory_type == "task"),
+        # SQLite timestamps are second-granular; when two lifecycle writes land
+        # in the same second, terminal status must win the current-state view.
+        key=lambda memory: (
+            memory.updated_at or "",
+            1 if memory.task_status in {"done", "cancelled"} else 0,
+            memory.current_version,
+            memory.id,
+        ),
+        reverse=True,
+    )
+    latest_tasks = []
+    for memory in task_memories:
+        matched = False
+        for existing in latest_tasks:
+            if memory.effective_memory_key == existing.effective_memory_key or task_identity_compatible(memory, existing):
+                matched = True
+                break
+        if not matched:
+            latest_tasks.append(memory)
+    profile_memories = [memory for memory in memories if memory.memory_type != "task"] + latest_tasks
     mismatches = []
-    for memory in memories:
+    for memory in profile_memories:
         if memory.memory_type != "task" or not memory.task_status:
             continue
         inferred_status = infer_task_status(memory.content)
@@ -718,10 +744,10 @@ def format_memory_profile(space_id: str) -> str:
             [{"memory_id": memory_id, "stored": stored, "inferred": inferred} for memory_id, stored, inferred in mismatches],
         )
     sections = [
-        ("当前任务", [memory for memory in memories if memory.memory_type == "task" and memory.task_status not in {"done", "cancelled"}]),
-        ("偏好与约束", [memory for memory in memories if memory.memory_type == "preference"]),
-        ("长期背景", [memory for memory in memories if memory.memory_type == "semantic"]),
-        ("近期事件", [memory for memory in memories if memory.memory_type == "episodic"][:5]),
+        ("当前任务", [memory for memory in profile_memories if memory.memory_type == "task" and memory.task_status not in {"done", "cancelled"}]),
+        ("偏好与约束", [memory for memory in profile_memories if memory.memory_type == "preference"]),
+        ("长期背景", [memory for memory in profile_memories if memory.memory_type == "semantic"]),
+        ("近期事件", [memory for memory in profile_memories if memory.memory_type == "episodic"][:5]),
     ]
     lines = ["动态用户画像："]
     for title, items in sections:

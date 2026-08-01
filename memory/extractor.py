@@ -21,7 +21,7 @@ from core.model_router import route_model
 from core.observability import log_event
 from core.sensitive import redact_sensitive_text
 from memory.candidate_validator import contains_sensitive_data
-from memory.canonicalizer import canonicalize_candidate, is_task_lifecycle_statement
+from memory.canonicalizer import canonicalize_candidate, is_task_lifecycle_statement, normalize_candidate_v3
 from memory.clause_splitter import split_clauses
 from memory.extraction_schema import parse_extracted_candidate
 from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for, candidate_id_for_evidence, memory_key_for
@@ -310,7 +310,7 @@ def _candidate(
         else None,
         scope=dict(scope or {}),
     )
-    return canonicalize_candidate(candidate) if settings.MEMORY_CANONICAL_KEY_V3_ENABLED else candidate
+    return normalize_candidate_v3(candidate, evidence_span or content) if settings.MEMORY_CANONICAL_KEY_V3_ENABLED else candidate
 
 
 def extract_rule_candidates(note_id: str, text: str, classification: dict[str, Any] | None = None) -> list[MemoryCandidate]:

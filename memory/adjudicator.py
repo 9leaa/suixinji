@@ -203,6 +203,19 @@ def _adjudicate_v3(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> 
         返回 `MemoryDecision` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     exact = [memory for memory in memories if candidate.effective_memory_key == memory.effective_memory_key]
+    if candidate.memory_type == "preference":
+        conflicts = [
+            memory for memory in memories
+            if preference_policy.scopes_compatible(candidate, memory)
+            and (
+                preference_policy.is_ambiguous_conflict(candidate.content, memory.content)
+                or preference_policy.is_comparative_alternative(candidate.content, memory.content)
+            )
+        ]
+        if conflicts:
+            best = max(conflicts, key=lambda memory: (memory.updated_at, memory.current_version))
+            return _decision(candidate, "conflict", "pending_review", _combined_confidence(candidate, 0.82), "ambiguous_preference_conflict", [best])
+
     if not exact:
         # 默认要求精确身份匹配；guard 只允许一个窄例外：active 短任务名可被后续更具体标题细化。
         # 检索只负责提供候选，是否允许该变更仍以 Relation Guard 为准。
