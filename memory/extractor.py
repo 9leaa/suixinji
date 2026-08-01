@@ -21,7 +21,7 @@ from core.model_router import route_model
 from core.observability import log_event
 from core.sensitive import redact_sensitive_text
 from memory.candidate_validator import contains_sensitive_data
-from memory.canonicalizer import canonicalize_candidate, is_task_lifecycle_statement, normalize_candidate_v3
+from memory.canonicalizer import is_task_lifecycle_statement, normalize_candidate_v3
 from memory.clause_splitter import split_clauses
 from memory.extraction_schema import parse_extracted_candidate
 from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for, candidate_id_for_evidence, memory_key_for
