@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import re
 import time
@@ -20,6 +21,10 @@ from core import settings
 from core.model_router import route_model
 from core.observability import log_event
 from core.sensitive import safe_text_preview
+from core.llm_key_pool import (
+    get_api_key_pool,
+    retry_after_seconds,
+)
 from core.config import (
     ChatConfig,
     EmbeddingConfig,
@@ -116,7 +121,11 @@ def classify_llm_error(exc: BaseException | None = None, *, response: Any = None
         return "invalid_json"
     return "unknown"
 
-def build_openai_client(config: ChatConfig | EmbeddingConfig | None = None) -> OpenAI:
+def build_openai_client(
+    config: ChatConfig | EmbeddingConfig | None = None,
+    *,
+    api_key: str | None = None,
+) -> OpenAI:
     """函数功能：`build_openai_client` 负责构建 openai client，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
     传参：
         config: 配置对象或配置映射，类型为 `ChatConfig | EmbeddingConfig | None`，默认值为 `None`。
@@ -127,8 +136,9 @@ def build_openai_client(config: ChatConfig | EmbeddingConfig | None = None) -> O
 
     kwargs: dict[str, Any] = {}
 
-    if config.api_key:
-        kwargs["api_key"] = config.api_key
+    selected_key = api_key if api_key is not None else config.api_key
+    if selected_key:
+        kwargs["api_key"] = selected_key
 
     if config.base_url:
         kwargs["base_url"] = config.base_url
@@ -140,6 +150,35 @@ def build_openai_client(config: ChatConfig | EmbeddingConfig | None = None) -> O
         kwargs["max_retries"] = config.max_retries
 
     return OpenAI(**kwargs)
+
+
+def _builder_accepts_api_key() -> bool:
+    try:
+        parameters = inspect.signature(build_openai_client).parameters
+        return "api_key" in parameters or any(p.kind == inspect.Parameter.VAR_KEYWORD for p in parameters.values())
+    except (TypeError, ValueError):
+        return True
+
+
+def _client_from_key_pool(
+    config: ChatConfig | EmbeddingConfig,
+    pool: Any,
+    used_keys: set[str],
+) -> tuple[OpenAI, str | None]:
+    """Select a key without exposing its value to logs or callers."""
+    key, wait_seconds = pool.acquire(exclude=used_keys)
+    if key is None and wait_seconds > 0:
+        time.sleep(wait_seconds)
+        key, _ = pool.acquire(exclude=used_keys)
+    if key is None:
+        return build_openai_client(config), None
+    used_keys.add(key)
+    # Keep the one-key compatibility path used by existing tests and callers.
+    if pool.size <= 1 and key == config.api_key:
+        return build_openai_client(config), key
+    if not _builder_accepts_api_key():
+        return build_openai_client(config), key
+    return build_openai_client(config, api_key=key), key
 
 
 def extract_json_object(content: str) -> dict[str, Any]:
@@ -180,6 +219,90 @@ def extract_json_object(content: str) -> dict[str, Any]:
     return data
 
 
+def _chat_completion_with_key_pool(
+    config: ChatConfig,
+    route: Any,
+    system_prompt: str,
+    user_prompt: str,
+    *,
+    timeout_retries: int,
+    start: float,
+) -> tuple[Any, int]:
+    pool = get_api_key_pool("chat", config.api_key)
+    used_keys: set[str] = set()
+    client, current_key = _client_from_key_pool(config, pool, used_keys)
+    attempt = 0
+    timeout_attempts = 0
+    while True:
+        attempt += 1
+        try:
+            response = client.chat.completions.create(
+                model=config.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0,
+            )
+            pool.report_success(current_key)
+            return response, attempt
+        except APITimeoutError as exc:
+            timeout_attempts += 1
+            if timeout_attempts <= timeout_retries:
+                log_event(
+                    "llm.complete_json",
+                    level="warning",
+                    status="retry",
+                    duration_ms=int((time.perf_counter() - start) * 1000),
+                    error=f"{type(exc).__name__}: {exc}",
+                    extra={
+                        "llm_task": route.task.value,
+                        "model_role": route.role.value,
+                        "model": config.model,
+                        "route_reason": route.reason,
+                        "fallback": False,
+                        "attempt": attempt,
+                        "max_attempts": timeout_retries + 1,
+                        "timeout_seconds": config.timeout_seconds,
+                        "error_category": classify_llm_error(exc),
+                        "retry_reason": "api_timeout",
+                        "api_key_slot": pool.slot(current_key),
+                    },
+                )
+                continue
+            pool.report_failure(current_key, category="transport_timeout")
+            if _builder_accepts_api_key() and pool.has_alternative(used_keys):
+                log_event(
+                    "llm.complete_json",
+                    level="warning",
+                    status="retry",
+                    duration_ms=int((time.perf_counter() - start) * 1000),
+                    error=f"{type(exc).__name__}: {exc}",
+                    extra={"retry_reason": "api_key_failover", "api_key_slot": pool.slot(current_key)},
+                )
+                client, current_key = _client_from_key_pool(config, pool, used_keys)
+                continue
+            raise
+        except Exception as exc:
+            category = classify_llm_error(exc)
+            pool.report_failure(current_key, category=category, retry_after=retry_after_seconds(exc))
+            if _builder_accepts_api_key() and category in {"rate_limit", "connection_error", "server_error"} and pool.has_alternative(used_keys):
+                log_event(
+                    "llm.complete_json",
+                    level="warning",
+                    status="retry",
+                    duration_ms=int((time.perf_counter() - start) * 1000),
+                    error=f"{type(exc).__name__}: {exc}",
+                    extra={
+                        "retry_reason": "api_key_failover",
+                        "error_category": category,
+                        "api_key_slot": pool.slot(current_key),
+                    },
+                )
+                client, current_key = _client_from_key_pool(config, pool, used_keys)
+                continue
+            raise
+
 def complete_json(
     system_prompt: str,
     user_prompt: str,
@@ -200,93 +323,76 @@ def complete_json(
     """
     route = route_model(task=llm_task, model_role=model_role, range_key=(route_context or {}).get("range_key"))
     config = _config_for_route(route)
-    client = build_openai_client(config)
     start = time.perf_counter()
     timeout_retries = _timeout_retries_for_route(route)
     max_attempts = timeout_retries + 1
-    attempt = 0
-
-    while True:
-        attempt += 1
-        try:
-            response = client.chat.completions.create(
-                model=config.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                temperature=0,
-            )
-            break
-        except APITimeoutError as exc:
-            duration_ms = int((time.perf_counter() - start) * 1000)
-            extra = {
+    try:
+        response, attempt = _chat_completion_with_key_pool(
+            config,
+            route,
+            system_prompt,
+            user_prompt,
+            timeout_retries=timeout_retries,
+            start=start,
+        )
+    except APITimeoutError as exc:
+        duration_ms = int((time.perf_counter() - start) * 1000)
+        extra = {
+            "llm_task": route.task.value,
+            "model_role": route.role.value,
+            "model": config.model,
+            "route_reason": route.reason,
+            "fallback": False,
+            "attempt": max_attempts,
+            "max_attempts": max_attempts,
+            "timeout_seconds": config.timeout_seconds,
+            "error_category": classify_llm_error(exc),
+        }
+        log_event(
+            "llm.complete_json",
+            level="error",
+            status="failed",
+            duration_ms=duration_ms,
+            error=f"{type(exc).__name__}: {exc}",
+            extra=extra,
+        )
+        raise RuntimeError(
+            "LLM chat completion failed; "
+            f"model={config.model!r}, "
+            f"base_url={_safe_base_url(config.base_url)!r}, "
+            f"prompt_chars={len(user_prompt)}, "
+            f"attempts={max_attempts}, "
+            f"timeout_seconds={config.timeout_seconds}, "
+            f"cause={type(exc).__name__}."
+        ) from None
+    except Exception as exc:
+        duration_ms = int((time.perf_counter() - start) * 1000)
+        log_event(
+            "llm.complete_json",
+            level="error",
+            status="failed",
+            duration_ms=duration_ms,
+            error=f"{type(exc).__name__}: {exc}",
+            extra={
                 "llm_task": route.task.value,
                 "model_role": route.role.value,
                 "model": config.model,
                 "route_reason": route.reason,
                 "fallback": False,
-                "attempt": attempt,
+                "attempt": attempt if "attempt" in locals() else 1,
                 "max_attempts": max_attempts,
                 "timeout_seconds": config.timeout_seconds,
                 "error_category": classify_llm_error(exc),
-            }
-            if attempt < max_attempts:
-                log_event(
-                    "llm.complete_json",
-                    level="warning",
-                    status="retry",
-                    duration_ms=duration_ms,
-                    error=f"{type(exc).__name__}: {exc}",
-                    extra={**extra, "retry_reason": "api_timeout"},
-                )
-                continue
-            log_event(
-                "llm.complete_json",
-                level="error",
-                status="failed",
-                duration_ms=duration_ms,
-                error=f"{type(exc).__name__}: {exc}",
-                extra=extra,
-            )
-            raise RuntimeError(
-                "LLM chat completion failed; "
-                f"model={config.model!r}, "
-                f"base_url={_safe_base_url(config.base_url)!r}, "
-                f"prompt_chars={len(user_prompt)}, "
-                f"attempts={attempt}, "
-                f"timeout_seconds={config.timeout_seconds}, "
-                f"cause={type(exc).__name__}."
-            ) from None
-        except Exception as exc:
-            duration_ms = int((time.perf_counter() - start) * 1000)
-            log_event(
-                "llm.complete_json",
-                level="error",
-                status="failed",
-                duration_ms=duration_ms,
-                error=f"{type(exc).__name__}: {exc}",
-                extra={
-                    "llm_task": route.task.value,
-                    "model_role": route.role.value,
-                    "model": config.model,
-                    "route_reason": route.reason,
-                    "fallback": False,
-                    "attempt": attempt,
-                    "max_attempts": max_attempts,
-                    "timeout_seconds": config.timeout_seconds,
-                    "error_category": classify_llm_error(exc),
-                },
-            )
-            raise RuntimeError(
-                "LLM chat completion failed; "
-                f"model={config.model!r}, "
-                f"base_url={_safe_base_url(config.base_url)!r}, "
-                f"prompt_chars={len(user_prompt)}, "
-                f"attempts={attempt}, "
-                f"error_category={classify_llm_error(exc)}, cause={type(exc).__name__}."
-            ) from None
-
+            },
+        )
+        raise RuntimeError(
+            "LLM chat completion failed; "
+            f"model={config.model!r}, "
+            f"base_url={_safe_base_url(config.base_url)!r}, "
+            f"prompt_chars={len(user_prompt)}, "
+            f"attempts={attempt if 'attempt' in locals() else 1}, "
+            f"error_category={classify_llm_error(exc)}, cause={type(exc).__name__}."
+        ) from None
     if not response.choices:
         raise RuntimeError(
             "LLM returned no choices; "
@@ -338,6 +444,35 @@ def complete_json(
         ) from None
 
 
+def _embedding_request_with_key_pool(config: EmbeddingConfig, normalized_text: str) -> Any:
+    pool = get_api_key_pool("embedding", config.api_key)
+    used_keys: set[str] = set()
+    client, current_key = _client_from_key_pool(config, pool, used_keys)
+    while True:
+        try:
+            response = client.embeddings.create(
+                model=config.model,
+                input=normalized_text,
+                dimensions=config.dimension,
+                encoding_format="float",
+            )
+            pool.report_success(current_key)
+            return response
+        except Exception as exc:
+            category = classify_llm_error(exc)
+            pool.report_failure(current_key, category=category, retry_after=retry_after_seconds(exc))
+            if _builder_accepts_api_key() and category in {"rate_limit", "connection_error", "server_error"} and pool.has_alternative(used_keys):
+                log_event(
+                    "llm.embed_text",
+                    level="warning",
+                    status="retry",
+                    error=f"{type(exc).__name__}: {exc}",
+                    extra={"retry_reason": "api_key_failover", "error_category": category, "api_key_slot": pool.slot(current_key)},
+                )
+                client, current_key = _client_from_key_pool(config, pool, used_keys)
+                continue
+            raise
+
 def embed_text(text: str) -> list[float]:
     """函数功能：`embed_text` 负责生成向量 text，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
     传参：
@@ -361,15 +496,8 @@ def embed_text(text: str) -> list[float]:
                 return cached
     except Exception:
         cache = None
-    client = build_openai_client(config)
-
     try:
-        response = client.embeddings.create(
-            model=config.model,
-            input=normalized_text,
-            dimensions=config.dimension,
-            encoding_format="float",
-        )
+        response = _embedding_request_with_key_pool(config, normalized_text)
     except Exception as exc:
         preview = safe_text_preview(text)
 
