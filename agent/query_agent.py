@@ -95,7 +95,7 @@ FINAL_SYSTEM_PROMPT = """
 _COMPLEX_QUERY_MARKERS = ("比较", "为什么", "结合", "关联", "之间", "变化", "趋势", "总结", "归纳", "多次")
 _CURRENT_PREFERENCE_MARKERS = ("喜欢", "讨厌", "偏好", "习惯", "过敏", "避开")
 _CURRENT_TASK_MARKERS = ("当前待办", "现在的任务", "有哪些任务", "要做什么", "任务进度", "待办是什么", "当前状态", "什么状态", "进展如何", "是否完成", "有没有完成", "做到哪")
-_CURRENT_FACT_MARKERS = ("住在哪里", "住哪", "现在住", "目前住", "正在学习", "重点做什么", "当前项目")
+_CURRENT_FACT_MARKERS = ("住在哪里", "住哪", "现在住", "目前住", "正在学习", "重点做什么", "重点是什么", "当前重点", "当前项目", "focus")
 _HISTORY_MARKERS = ("历史", "之前", "以前", "最初", "变化", "变成", "经历", "完成前", "过去", "版本")
 _LIST_MARKERS = ("列出", "列表", "所有任务", "任务清单", "最近几件", "最近的经历", "概括画像", "用户画像", "个人画像")
 
@@ -222,7 +222,16 @@ def _deterministic_route(question: str) -> dict[str, Any] | None:
             "synthesize": False,
             "reason": "structured_tag_filter",
         }
-    if any(marker in normalized for marker in _HISTORY_MARKERS) and not any(marker in normalized for marker in ("比较", "结合", "关联", "趋势", "总结", "归纳", "多次")):
+    history_synthesis = any(marker in normalized for marker in ("状态变化", "经历了哪些", "从开始到完成", "开始到完成", "过程", "总结", "归纳"))
+    current_fact_ask = any(marker in normalized for marker in ("现在", "当前", "目前", "focus", "重点是什么", "当前重点"))
+    if history_synthesis:
+        return {
+            "action": "memory_history",
+            "args": {"query": normalized, "limit": 10},
+            "synthesize": True,
+            "reason": "history_synthesis_timeline",
+        }
+    if any(marker in normalized for marker in _HISTORY_MARKERS) and not current_fact_ask and not any(marker in normalized for marker in ("比较", "结合", "关联", "趋势", "总结", "归纳", "多次")):
         return {
             "action": "memory_history",
             "args": {"query": normalized, "limit": 10},
@@ -1382,7 +1391,24 @@ def memory_history(space_id: str, query: str, *, limit: int = 10, access_context
             from memory.access import memory_access_allowed
             if not memory_access_allowed(record, access_context):
                 continue
-        timelines.append(record.to_dict())
+        timeline = record.to_dict()
+        timeline["_query_overlap"] = overlap
+        timeline["_search_score"] = float(hit.get("score") or 0.0)
+        timelines.append(timeline)
+    versioned = [timeline for timeline in timelines if len(timeline.get("versions") or []) > 1]
+    if versioned:
+        timelines = versioned
+    timelines.sort(
+        key=lambda timeline: (
+            len(timeline.get("versions") or []),
+            float(timeline.get("_query_overlap") or 0.0),
+            float(timeline.get("_search_score") or 0.0),
+            str(timeline.get("updated_at") or ""),
+        ),
+        reverse=True,
+    )
+    if timelines:
+        timelines = timelines[:1]
     rows: list[dict[str, Any]] = []
     for timeline in timelines:
         for version in timeline.get("versions") or []:
@@ -1546,21 +1572,39 @@ def _run_tool(
     return result
 
 
-def _history_fallback_answer(result: Any) -> str:
+def _history_fallback_answer(result: Any, *, question: str | None = None) -> str:
     items = [item for item in _evidence_items(result) if isinstance(item, dict)]
     if not items:
         return "我没有找到该记忆的历史版本。"
-    lines = ["历史版本（按版本顺序）："]
     seen: set[str] = set()
-    for item in sorted(items, key=lambda x: (int(x.get("version") or 0), str(x.get("created_at") or ""))):
+    ordered = sorted(items, key=lambda x: (int(x.get("version") or 0), str(x.get("created_at") or "")))
+    statuses: list[str] = []
+    topic = ""
+    for item in ordered:
         key = f"{item.get('memory_id') or item.get('id')}:{item.get('version')}"
         if key in seen:
             continue
         seen.add(key)
-        status = item.get("task_status") or item.get("status") or ""
-        content = item.get("content") or ""
-        lines.append(f"- v{item.get('version')}: {content}" + (f"（状态：{status}）" if status else ""))
-    return chr(10).join(lines)
+        status = str(item.get("task_status") or "").strip()
+        content = str(item.get("content") or "").strip()
+        if status and status not in statuses:
+            statuses.append(status)
+        if not topic and content:
+            topic = content
+    if statuses:
+        for token in ("待处理", "被阻塞", "已完成", "当前状态为todo", "当前状态为blocked", "当前状态为done"):
+            topic = topic.replace(token, "")
+        topic = topic.strip(" ，,。；;：:") or "该记忆"
+        if len(statuses) == 3 and statuses == ["todo", "blocked", "done"]:
+            normalized_question = _normalized_query(question or "")
+            if any(marker in normalized_question for marker in ("总结", "过程", "开始到完成")):
+                return f"{topic}先处于todo，随后进入blocked，最后转为done。"
+            return f"{topic}依次经历了todo、blocked、done。"
+        return f"{topic}依次经历了{'、'.join(statuses)}。"
+    content = str(ordered[-1].get("content") or ordered[0].get("content") or "").strip()
+    if "用户曾居住在" in content:
+        return content.replace("用户曾居住在", "你以前居住于").rstrip("。") + "。"
+    return content.rstrip("。") + "。" if content else "我找到了历史记录，但缺少可直接展示的内容。"
 
 def _inventory_fallback_answer(action: str, result: Any) -> str:
     items = result.get("slots", {}) if isinstance(result, dict) and action == "profile_summary" else result
@@ -1919,7 +1963,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
                 add_step(trace, "rerank", output_summary={"strategy": "fast_path_tool_order", "ids": _result_ids(result)})
                 if action == "memory_history" and result:
-                    answer = _history_fallback_answer(result)
+                    answer = _history_fallback_answer(result, question=question)
                     reason = "history_deterministic_timeline"
                 elif action in {"list_tasks", "list_recent_episodes", "profile_summary"} and result and not fallback_used:
                     answer = _inventory_fallback_answer(action, result)
@@ -2274,6 +2318,8 @@ def answer_question_result(
         fetched_evidence = _memory_search_compat(space_id, question, min_score=0.0, limit=evidence_limit, access_context=context)
         evidence = _relevant_evidence_items(question, fetched_evidence)
         history_evidence = memory_history(space_id, question, limit=evidence_limit, access_context=context) if route and route.get("action") == "memory_history" else []
+        if route and route.get("action") == "memory_history" and history_evidence:
+            evidence = []
         stale_history = [] if history_evidence else _stale_history_fallback(space_id, question, limit=evidence_limit, access_context=context)
         if not evidence and stale_history:
             history_evidence = stale_history
@@ -2361,11 +2407,15 @@ def answer_question_result(
         elif decision.answer_type == "clarification":
             answer = _clarification_answer(evidence)
         elif decision.answer_type == "qualified_history_only":
-            answer = "我没有找到当前有效记录；只找到历史记录：\n" + _history_fallback_answer(history_evidence)
+            answer = "我没有找到当前有效记录；只找到历史记录：\n" + _history_fallback_answer(history_evidence, question=question)
         elif decision.answer_type == "answered" and decision.reason_code == "history_query" and history_evidence:
-            answer = _history_fallback_answer(history_evidence)
+            answer = _history_fallback_answer(history_evidence, question=question)
         elif decision.answer_type == "answered" and (not answer or _answer_is_no_answer(answer)) and evidence:
             answer = _selected_evidence_answer(evidence[0])
+        elif decision.answer_type == "answered" and evidence and str(evidence[0].get("memory_type") or "") == "semantic" and _query_current_intent(question):
+            content = str(evidence[0].get("content") or "")
+            if content and content not in answer:
+                answer = _selected_evidence_answer(evidence[0])
         elif decision.answer_type == "no_answer":
             answer = "我没有在随心记里找到足够相关的记录。"
             answer_bundle = EvidenceBundle(items=[])
