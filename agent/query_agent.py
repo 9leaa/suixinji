@@ -23,6 +23,8 @@ from core.sensitive import mentions_sensitive_topic
 from core.settings import MEMORY_QUERY_MIN_SCORE, QUERY_MIN_SCORE, QUERY_TOP_K, STORAGE_BACKEND
 from core.taxonomy import is_valid_tag, is_valid_type, normalize_tag, normalize_type
 from memory.service import memory_search
+from memory.access import AccessContext
+from memory.repository import get_memory, list_memories
 from memory.consistency import wait_for_memory_barrier
 from memory.trace import add_step, finish_trace, start_trace
 from storage.note_storage import is_note_queryable, load_index
@@ -94,6 +96,8 @@ _COMPLEX_QUERY_MARKERS = ("比较", "为什么", "结合", "关联", "之间", "
 _CURRENT_PREFERENCE_MARKERS = ("喜欢", "讨厌", "偏好", "习惯", "过敏", "避开")
 _CURRENT_TASK_MARKERS = ("当前待办", "现在的任务", "有哪些任务", "要做什么", "任务进度", "待办是什么", "当前状态", "什么状态", "进展如何", "是否完成", "有没有完成", "做到哪")
 _CURRENT_FACT_MARKERS = ("住在哪里", "住哪", "现在住", "目前住", "正在学习", "重点做什么", "当前项目")
+_HISTORY_MARKERS = ("历史", "之前", "以前", "最初", "变化", "变成", "经历", "完成前", "过去", "版本")
+_LIST_MARKERS = ("列出", "列表", "所有任务", "任务清单", "最近几件", "最近的经历", "概括画像", "用户画像", "个人画像")
 
 
 def _clip(text: str | None, limit: int = 500) -> str:
@@ -218,6 +222,35 @@ def _deterministic_route(question: str) -> dict[str, Any] | None:
             "synthesize": False,
             "reason": "structured_tag_filter",
         }
+    if any(marker in normalized for marker in _HISTORY_MARKERS) and not any(marker in normalized for marker in ("比较", "结合", "关联", "趋势", "总结", "归纳", "多次")):
+        return {
+            "action": "memory_history",
+            "args": {"query": normalized, "limit": 10},
+            "synthesize": True,
+            "reason": "explicit_history_timeline",
+        }
+    if any(marker in normalized for marker in _LIST_MARKERS):
+        if any(marker in normalized for marker in ("任务", "待办", "进度", "状态")):
+            return {
+                "action": "list_tasks",
+                "args": {"limit": 30},
+                "fallback": {"action": "filter_notes", "args": {"type": "任务", "limit": 30}},
+                "synthesize": True,
+                "reason": "task_inventory",
+            }
+        if any(marker in normalized for marker in ("经历", "最近几件", "事件")):
+            return {
+                "action": "list_recent_episodes",
+                "args": {"limit": 10},
+                "synthesize": True,
+                "reason": "episode_inventory",
+            }
+        return {
+            "action": "profile_summary",
+            "args": {"query": normalized, "limit": 20},
+            "synthesize": True,
+            "reason": "profile_summary",
+        }
     if "最近" in normalized and any(marker in normalized for marker in ("笔记", "记录", "记了", "写了")):
         return {
             "action": "list_recent",
@@ -321,7 +354,7 @@ def _safe_tool_args(action: str, args: dict[str, Any]) -> dict[str, Any]:
         返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     safe: dict[str, Any] = {"tool": action}
-    for key in ("type", "note_type", "tags", "tag", "limit", "top_k", "min_score", "days", "note_id", "match_all_tags", "memory_type"):
+    for key in ("type", "note_type", "tags", "tag", "limit", "top_k", "min_score", "days", "note_id", "match_all_tags", "memory_type", "status", "operation"):
         if key in args:
             safe[key] = args.get(key)
     if "query" in args:
@@ -483,7 +516,7 @@ def _source_lines(
     note_count = 0
 
     for item in _evidence_items(selected_evidence):
-        item_id = str(item.get("id") or "")
+        item_id = str(item.get("memory_id") or item.get("id") or "")
         if not item_id or item_id in seen:
             continue
         seen.add(item_id)
@@ -515,6 +548,114 @@ def _with_sources(answer: str, selected_evidence: Any) -> str:
     if not sources:
         return answer
     return answer.rstrip() + "\n\n来源（最多展示 5 条记忆和 5 条笔记）：\n" + "\n".join(sources)
+
+
+def _build_evidence_bundle(selected_evidence: Any, observations: list[dict[str, Any]] | None = None):
+    """Build a structured evidence bundle from real runtime evidence only."""
+    from agent.answer_models import EvidenceBundle, RetrievalEvidence
+
+    selected_ids = set(_result_ids(selected_evidence))
+    items: list[RetrievalEvidence] = []
+    seen: set[str] = set()
+
+    def add_item(item: dict[str, Any], *, tool: str | None = None, selected: bool = False, rank: int | None = None) -> None:
+        item_id = str(item.get("id") or item.get("memory_id") or item.get("note_id") or "")
+        if not item_id or item_id in seen:
+            return
+        seen.add(item_id)
+        source_ids: list[str] = []
+        for source in item.get("sources") or []:
+            if isinstance(source, dict):
+                note_id = str(source.get("note_id") or source.get("source_ref") or "")
+                if note_id:
+                    source_ids.append(note_id)
+            elif source:
+                source_ids.append(str(source))
+        if item.get("source_note_id"):
+            source_ids.append(str(item.get("source_note_id")))
+        if item.get("selected_source_ids"):
+            source_ids.extend(str(source_id) for source_id in item.get("selected_source_ids") if source_id)
+        kind = "memory"
+        if item.get("history"):
+            kind = "version"
+        elif not item.get("memory_type") and (item.get("title") or item.get("text") or item.get("ts")):
+            kind = "source"
+        role = "candidate"
+        status = str(item.get("status") or "")
+        if status in {"superseded", "expired", "archived", "forgotten"}:
+            role = "stale_history"
+        elif status == "conflicted":
+            role = "conflict"
+        elif status in {"pending_review", "pending"}:
+            role = "candidate"
+        elif item.get("history"):
+            role = "history"
+        else:
+            role = "current"
+        evidence = RetrievalEvidence(
+            kind=kind,
+            id=item_id,
+            memory_id=str(item.get("memory_id") or item.get("id") or "") or None,
+            version_id=str(item.get("version_id") or item.get("id") or "") if kind == "version" else None,
+            source_ids=source_ids,
+            memory_type=str(item.get("memory_type") or "") or None,
+            status=status or None,
+            task_status=str(item.get("task_status") or "") or None,
+            score=float(item.get("score") or item.get("retrieval_fusion_score") or 0.0) if item.get("score") is not None or item.get("retrieval_fusion_score") is not None else None,
+            rank=rank,
+            channel=str(item.get("retrieval_channel") or item.get("channel") or "") or None,
+            tool=tool,
+            selected=selected or item_id in selected_ids,
+            role=role,
+            metadata={k: v for k, v in item.items() if k not in {"sources"}},
+        )
+        items.append(evidence)
+
+    observations = observations or []
+    for observation in observations:
+        tool = str(observation.get("tool") or "") or None
+        result = observation.get("result")
+        if isinstance(result, list):
+            for rank, item in enumerate(result, start=1):
+                if isinstance(item, dict):
+                    add_item(item, tool=tool, selected=str(item.get("id") or "") in selected_ids, rank=rank)
+        elif isinstance(result, dict):
+            add_item(result, tool=tool, selected=str(result.get("id") or "") in selected_ids, rank=1)
+            for rank, item in enumerate(result.get("related", []) if isinstance(result.get("related"), list) else [], start=2):
+                if isinstance(item, dict):
+                    add_item(item, tool=tool, selected=str(item.get("id") or "") in selected_ids, rank=rank)
+            for rank, item in enumerate(result.get("candidates", []) if isinstance(result.get("candidates"), list) else [], start=2):
+                if isinstance(item, dict):
+                    add_item(item, tool=tool, selected=str(item.get("id") or "") in selected_ids, rank=rank)
+
+    if isinstance(selected_evidence, list):
+        for item in selected_evidence:
+            if isinstance(item, dict):
+                add_item(item, selected=True)
+    elif isinstance(selected_evidence, dict):
+        add_item(selected_evidence, selected=True)
+
+    bundle = EvidenceBundle(items=items)
+    if not bundle.selected_context_refs:
+        bundle.selected_context_refs = list(dict.fromkeys(bundle.selected_memory_ids + bundle.selected_version_ids))
+    return bundle
+
+
+def _store_answer_evidence(
+    hook_context: AgentRunContext | None,
+    *,
+    answer_source: str,
+    selected_evidence: Any,
+    observations: list[dict[str, Any]],
+) -> None:
+    bundle = _build_evidence_bundle(selected_evidence, observations)
+    payload = bundle.to_dict()
+    payload["answer_source"] = answer_source
+    if hook_context is not None:
+        hook_context.metadata["answer_evidence_bundle"] = payload
+        hook_context.metadata["selected_context_refs"] = list(bundle.selected_context_refs)
+        hook_context.metadata["selected_tool_refs"] = list(bundle.selected_tool_refs)
+        hook_context.metadata["executed_tools"] = list(bundle.executed_tools)
 
 
 def _log_final_answer(
@@ -1006,7 +1147,100 @@ def related_notes(
     }
 
 
-def _execute_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
+def _memory_access_context(value: Any = None, *, requester: str | None = None) -> dict[str, Any] | None:
+    if value is None and requester is None:
+        return None
+    if isinstance(value, AccessContext):
+        return {"requester": value.requester, "owner_id": value.owner_id, "allow_sensitive": value.allow_sensitive, "allow_restricted": value.allow_restricted}
+    if isinstance(value, dict):
+        data = dict(value)
+        data.setdefault("requester", requester or "owner")
+        data.setdefault("owner_id", "owner")
+    else:
+        data = {"requester": requester or "owner", "owner_id": requester or "owner"}
+    return data
+
+
+def _memory_search_compat(space_id: str, query: str, **kwargs: Any) -> list[dict[str, Any]]:
+    try:
+        return memory_search(space_id, query, **kwargs)
+    except TypeError as exc:
+        if "access_context" not in str(exc):
+            raise
+        kwargs.pop("access_context", None)
+        return memory_search(space_id, query, **kwargs)
+
+
+def memory_history(space_id: str, query: str, *, limit: int = 10, access_context: Any = None) -> list[dict[str, Any]]:
+    # Use the existing search -> get_memory API pair so this helper works
+    # against both SQLite and PostgreSQL repository implementations without a
+    # separate timeline-only contract.
+    query_terms = _lexical_terms(query)
+    hits = _memory_search_compat(space_id, query, min_score=0.0, limit=limit, access_context=access_context)
+    timelines: list[dict[str, Any]] = []
+    for hit_index, hit in enumerate(hits):
+        memory_id = str(hit.get("memory_id") or hit.get("id") or "")
+        if not memory_id:
+            continue
+        hit_terms = _lexical_terms(" ".join(str(hit.get(key) or "") for key in ("content", "subject", "predicate", "object_value", "memory_key")))
+        overlap = len(query_terms & hit_terms) / max(1, len(query_terms))
+        if hit_index > 0 and query_terms and overlap < 0.12:
+            continue
+        record = get_memory(memory_id)
+        if record is None or str(record.space_id) != str(space_id):
+            continue
+        if access_context is not None:
+            from memory.access import memory_access_allowed
+            if not memory_access_allowed(record, access_context):
+                continue
+        timelines.append(record.to_dict())
+    rows: list[dict[str, Any]] = []
+    for timeline in timelines:
+        for version in timeline.get("versions") or []:
+            item = dict(version)
+            item["id"] = item.get("id") or f"{timeline.get('id')}:v{item.get('version')}"
+            item["memory_id"] = timeline.get("id")
+            item["memory_type"] = timeline.get("memory_type")
+            item["memory_key"] = timeline.get("memory_key")
+            item["history"] = True
+            item["sources"] = timeline.get("sources") or []
+            rows.append(item)
+    return rows
+
+
+def list_tasks(space_id: str, *, limit: int = 30, access_context: Any = None, status: str | None = None) -> list[dict[str, Any]]:
+    records = list_memories(space_id, status="active", memory_type="task", limit=max(1, min(int(limit), 100)))
+    if access_context is not None:
+        from memory.access import memory_access_allowed
+        records = [record for record in records if memory_access_allowed(record, access_context)]
+    result = []
+    for record in records:
+        if status and record.task_status != status:
+            continue
+        result.append(record.to_dict())
+    return result
+
+
+def list_recent_episodes(space_id: str, *, limit: int = 10, access_context: Any = None) -> list[dict[str, Any]]:
+    records = list_memories(space_id, status="active", memory_type="episodic", limit=max(1, min(int(limit), 100)))
+    if access_context is not None:
+        ctx = AccessContext.from_value(access_context)
+        records = [record for record in records if not record.scope.get("sensitivity") or ctx.allow_sensitive or str(ctx.requester or "owner") == str(record.scope.get("owner_id") or ctx.owner_id or "owner")]
+    return [record.to_dict() for record in records]
+
+
+def profile_summary(space_id: str, query: str, *, limit: int = 20, access_context: Any = None) -> dict[str, Any]:
+    slots: dict[str, list[dict[str, Any]]] = {}
+    for memory_type in ("preference", "task", "semantic", "episodic"):
+        hits = _memory_search_compat(space_id, query, memory_type=memory_type, min_score=0.0, limit=max(1, min(int(limit), 10)), access_context=access_context)
+        if hits:
+            slots[memory_type] = hits
+    return {"query": query, "slots": slots, "source": "structured_profile_summary"}
+
+
+
+
+def _execute_tool(space_id: str, action: str, args: dict[str, Any], *, access_context: Any = None) -> Any:
     """函数功能：`_execute_tool` 负责执行 tool，服务于本文件职责：问答主编排。
     传参：
         space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
@@ -1053,13 +1287,22 @@ def _execute_tool(space_id: str, action: str, args: dict[str, Any]) -> Any:
             args.get("limit", 5),
         )
     if action == "memory_search":
-        return memory_search(
+        return _memory_search_compat(
             space_id,
             str(args.get("query", "")),
             memory_type=args.get("memory_type"),
             min_score=args.get("min_score", DEFAULT_MEMORY_MIN_SCORE),
             limit=args.get("limit", 8),
+            access_context=access_context,
         )
+    if action == "memory_history":
+        return memory_history(space_id, str(args.get("query", "")), limit=args.get("limit", 10), access_context=access_context)
+    if action == "list_tasks":
+        return list_tasks(space_id, limit=args.get("limit", 30), status=args.get("status"), access_context=access_context)
+    if action == "list_recent_episodes":
+        return list_recent_episodes(space_id, limit=args.get("limit", 10), access_context=access_context)
+    if action == "profile_summary":
+        return profile_summary(space_id, str(args.get("query", "")), limit=args.get("limit", 20), access_context=access_context)
     if action == "memory_note_fallback":
         return memory_note_fallback(
             space_id,
@@ -1101,7 +1344,7 @@ def _run_tool(
             space_id=space_id,
             extra=_safe_tool_args(action, args),
         ):
-            return _execute_tool(space_id, action, args)
+            return _execute_tool(space_id, action, args, access_context=(hook_context.metadata.get("access_context") if hook_context else None))
 
     result = get_default_hook_manager().run_tool(hook_context, action, args, execute) if hook_context else execute()
     step = "memory_search" if action == "memory_search" else "note_search"
@@ -1112,6 +1355,42 @@ def _run_tool(
         output_summary={"result_count": len(_result_ids(result)), "ids": _result_ids(result)},
     )
     return result
+
+
+def _history_fallback_answer(result: Any) -> str:
+    items = [item for item in _evidence_items(result) if isinstance(item, dict)]
+    if not items:
+        return "我没有找到该记忆的历史版本。"
+    lines = ["历史版本（按版本顺序）："]
+    seen: set[str] = set()
+    for item in sorted(items, key=lambda x: (int(x.get("version") or 0), str(x.get("created_at") or ""))):
+        key = f"{item.get('memory_id') or item.get('id')}:{item.get('version')}"
+        if key in seen:
+            continue
+        seen.add(key)
+        status = item.get("task_status") or item.get("status") or ""
+        content = item.get("content") or ""
+        lines.append(f"- v{item.get('version')}: {content}" + (f"（状态：{status}）" if status else ""))
+    return chr(10).join(lines)
+
+def _inventory_fallback_answer(action: str, result: Any) -> str:
+    items = result.get("slots", {}) if isinstance(result, dict) and action == "profile_summary" else result
+    if action == "profile_summary":
+        lines = ["用户画像摘要："]
+        for memory_type, values in items.items():
+            for item in values[:5]:
+                lines.append(f"- [{memory_type}] {item.get('content') or item.get('summary') or item.get('object_value') or item.get('id')}")
+        return chr(10).join(lines) if len(lines) > 1 else "暂无可用的画像记录。"
+    values = [item for item in (items or []) if isinstance(item, dict)]
+    if not values:
+        return "暂无符合条件的记录。"
+    title = "当前任务：" if action == "list_tasks" else "近期事件："
+    lines = [title]
+    for item in values[:10]:
+        text = item.get("content") or item.get("object_value") or item.get("id")
+        status = item.get("task_status") or item.get("status") or ""
+        lines.append(f"- {text}" + (f"（{status}）" if status else ""))
+    return chr(10).join(lines)
 
 
 def _fallback_answer(observations: list[dict[str, Any]]) -> str:
@@ -1281,6 +1560,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
             _log_final_answer(space_id, answer, source="empty_question")
             add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)}, reason="empty_question")
             finish_trace(trace)
+            _store_answer_evidence(hook_context, answer_source="empty_question", selected_evidence=[], observations=[])
             return answer
 
         if mentions_sensitive_topic(question):
@@ -1295,6 +1575,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
             )
             add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
             finish_trace(trace)
+            _store_answer_evidence(hook_context, answer_source="sensitive_query_blocked", selected_evidence=[], observations=[])
             return answer
 
         observations: list[dict[str, Any]] = []
@@ -1326,7 +1607,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
 
         try:
             provisional = provisional_search(space_id, question, limit=5)
-            fast_route = _intent_route(question, trace=trace) or _deterministic_route(question)
+            fast_route = _deterministic_route(question) or _intent_route(question, trace=trace)
             model_plan = fast_route.get("query_plan") if isinstance(fast_route, dict) else None
             if isinstance(model_plan, dict):
                 query_plan = build_query_plan(question, model_plan=model_plan)
@@ -1381,6 +1662,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="no_llm_wait")
                 add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
                 finish_trace(trace)
+                _store_answer_evidence(hook_context, answer_source="provisional_read_after_write", selected_evidence=provisional, observations=observations)
                 return answer
 
             if fast_route is not None:
@@ -1412,6 +1694,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     }
                 )
                 fallback = fast_route.get("fallback")
+                fallback_used = False
                 if not result and isinstance(fallback, dict):
                     fallback_action = str(fallback["action"])
                     fallback_args = dict(fallback["args"])
@@ -1431,12 +1714,14 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                         }
                     )
                     result = fallback_result
+                    fallback_used = True
                 if not result and barrier is not None and barrier.get("status") == "timeout":
                     answer = _with_sources(_memory_still_updating_answer(provisional), selected_evidence)
                     _log_final_answer(space_id, answer, source="memory_barrier_timeout", observations=observations)
                     add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="memory_barrier_timeout")
                     add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
                     finish_trace(trace)
+                    _store_answer_evidence(hook_context, answer_source="memory_barrier_timeout", selected_evidence=selected_evidence, observations=observations)
                     return answer
                 if not result and provisional:
                     result = provisional
@@ -1444,7 +1729,13 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     selected_evidence = _merge_evidence(selected_evidence, result)
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
                 add_step(trace, "rerank", output_summary={"strategy": "fast_path_tool_order", "ids": _result_ids(result)})
-                if fast_route["synthesize"] and result:
+                if action == "memory_history" and result:
+                    answer = _history_fallback_answer(result)
+                    reason = "history_deterministic_timeline"
+                elif action in {"list_tasks", "list_recent_episodes", "profile_summary"} and result and not fallback_used:
+                    answer = _inventory_fallback_answer(action, result)
+                    reason = "structured_inventory_template"
+                elif fast_route["synthesize"] and result:
                     answer = _synthesize_answer(question, observations, hook_context=hook_context)
                     reason = "fast_path_single_synthesis"
                 else:
@@ -1455,6 +1746,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason=reason)
                 add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
                 finish_trace(trace)
+                _store_answer_evidence(hook_context, answer_source=reason, selected_evidence=selected_evidence, observations=observations)
                 return answer
 
             add_step(
@@ -1629,6 +1921,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                         error=f"{type(exc).__name__}: {exc}",
                         extra={"observation_count": len(observations)},
                     )
+                    _store_answer_evidence(hook_context, answer_source="react_fallback_after_error", selected_evidence=selected_evidence, observations=observations)
                     return answer
 
                 final_answer = str(decision.get("final_answer") or "").strip()
@@ -1649,6 +1942,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     add_step(trace, "answer_generated", output_summary={"answer_len": len(final_answer)}, reason="react_final")
                     add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
                     finish_trace(trace)
+                    _store_answer_evidence(hook_context, answer_source="react_final", selected_evidence=source_evidence, observations=observations)
                     return answer
 
                 action = decision.get("action")
@@ -1692,11 +1986,39 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
             add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="synthesized")
             add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
             finish_trace(trace)
+            _store_answer_evidence(hook_context, answer_source="synthesized", selected_evidence=selected_evidence, observations=observations)
             return answer
         except Exception as exc:
             add_step(trace, "answer_failed", status="failed", error=str(exc))
             finish_trace(trace, status="failed")
             raise
+
+
+def _run_answer_question_with_context(
+    space_id: str,
+    question: str,
+    max_steps: int,
+    *,
+    tenant_id: str = "default",
+    user_id: str | None = None,
+    message_id: str | None = None,
+    task_id: str | None = None,
+    access_context: dict[str, Any] | AccessContext | None = None,
+) -> tuple[str, AgentRunContext]:
+    context = AgentRunContext.create(
+        space_id=space_id,
+        run_type="query",
+        tenant_id=tenant_id,
+        user_id=user_id,
+        message_id=message_id,
+        task_id=task_id,
+        metadata={"question_len": len(question), "max_steps": max_steps, "access_context": _memory_access_context(access_context, requester=user_id or "owner")},
+    )
+    answer = get_default_hook_manager().run_agent(
+        context,
+        lambda: _answer_question_impl(space_id, question, max_steps, context),
+    )
+    return answer, context
 
 
 def answer_question(
@@ -1708,6 +2030,7 @@ def answer_question(
     user_id: str | None = None,
     message_id: str | None = None,
     task_id: str | None = None,
+    access_context: dict[str, Any] | AccessContext | None = None,
 ) -> str:
     """函数功能：`answer_question` 负责处理 answer question，服务于本文件职责：问答主编排。
     传参：
@@ -1721,16 +2044,119 @@ def answer_question(
     返回结果说明：
         返回 `str`，通常是格式化后的文本、标识或路径。
     """
-    context = AgentRunContext.create(
-        space_id=space_id,
-        run_type="query",
+    answer, _ = _run_answer_question_with_context(
+        space_id,
+        question,
+        max_steps,
         tenant_id=tenant_id,
         user_id=user_id,
         message_id=message_id,
         task_id=task_id,
-        metadata={"question_len": len(question), "max_steps": max_steps},
+        access_context=access_context,
     )
-    return get_default_hook_manager().run_agent(
-        context,
-        lambda: _answer_question_impl(space_id, question, max_steps, context),
-    )
+    return answer
+
+
+def _answer_is_no_answer(answer: str) -> bool:
+    text = str(answer or "")
+    return any(token in text for token in ("没有在随心记里找到", "没有找到", "没有足够信息", "无法确认", "没有相关记录", "暂无足够"))
+
+
+def answer_question_result(
+    space_id: str,
+    question: str,
+    max_steps: int = 4,
+    *,
+    tenant_id: str = "default",
+    user_id: str | None = None,
+    message_id: str | None = None,
+    task_id: str | None = None,
+    access_context: dict[str, Any] | AccessContext | None = None,
+) -> "AnswerResult":
+    """Structured contract; the legacy answer_question API remains string-returning."""
+    from agent.answer_models import AnswerResult, AnswerDecision, EvidenceBundle, SupportedClaim
+    context = _memory_access_context(access_context, requester=user_id or "owner")
+    try:
+        if mentions_sensitive_topic(question):
+            answer = "为保护安全，随心记不会保存或检索密码、密钥、令牌、身份证号、银行卡号等敏感凭据。"
+            return AnswerResult("restricted", answer, "sensitive_topic", decision=AnswerDecision("restricted", "sensitive_topic"))
+        route = _deterministic_route(question)
+        evidence = _memory_search_compat(space_id, question, min_score=0.0, limit=max(5, min(max_steps * 2, 20)), access_context=context)
+        history_evidence = memory_history(space_id, question, limit=max(5, min(max_steps * 2, 20)), access_context=context) if route and route.get("action") == "memory_history" else []
+        threshold = float(DEFAULT_MEMORY_MIN_SCORE)
+        evidence = [item for item in evidence if float(item.get("score") or 0.0) >= threshold]
+        all_evidence = list(evidence) + list(history_evidence)
+        answer, run_context = _run_answer_question_with_context(
+            space_id,
+            question,
+            max_steps,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            message_id=message_id,
+            task_id=task_id,
+            access_context=context,
+        )
+        answer_bundle = EvidenceBundle.from_dict(run_context.metadata.get("answer_evidence_bundle")) if isinstance(run_context.metadata.get("answer_evidence_bundle"), dict) else None
+        citations = re.findall(r"memory:([^｜\s]+)", answer or "")
+        if answer_bundle is None and all_evidence:
+            # Fallback only uses evidence that was actually fetched by this
+            # structured-answer call.  The normal production path stores the
+            # precise selected evidence bundle inside run_context metadata.
+            answer_bundle = _build_evidence_bundle(all_evidence, [])
+        selected_memory_ids = list(answer_bundle.selected_memory_ids) if answer_bundle is not None else []
+        selected_versions = list(answer_bundle.selected_version_ids) if answer_bundle is not None else []
+        selected_source_ids = list(answer_bundle.selected_source_ids) if answer_bundle is not None else []
+        selected_context_refs = list(answer_bundle.selected_context_refs) if answer_bundle is not None else []
+        selected_tool_refs = list(answer_bundle.selected_tool_refs) if answer_bundle is not None else []
+        executed_tools = list(answer_bundle.executed_tools) if answer_bundle is not None else []
+        evidence_bundle = answer_bundle
+        if not all_evidence and context and context.get("requester") not in {None, "owner"}:
+            unrestricted = _memory_search_compat(space_id, question, min_score=0.0, limit=3, access_context={"requester": "owner", "owner_id": "owner", "allow_sensitive": True, "allow_restricted": True})
+            if unrestricted:
+                answer_type, reason = "restricted", "acl_filtered_all_evidence"
+            else:
+                answer_type, reason = "no_answer", "no_relevant_evidence"
+        elif _answer_is_no_answer(answer) and not (route and route.get("action") == "memory_history"):
+            answer_type, reason = "no_answer", "no_relevant_evidence"
+        elif route and route.get("action") == "memory_history" and history_evidence:
+            answer_type, reason = "answered", "history_query"
+        elif any(str(item.get("status") or "") == "conflicted" for item in all_evidence) or any(token in answer for token in ("冲突", "存在两种", "不一致")):
+            answer_type, reason = "conflict", "conflicting_evidence"
+        else:
+            polarities: dict[str, set[str]] = {}
+            for item in all_evidence:
+                key = str(item.get("memory_key") or item.get("predicate") or item.get("id") or "")
+                polarity = str(item.get("polarity") or "")
+                if key and polarity:
+                    polarities.setdefault(key, set()).add(polarity)
+            if any(len(values) > 1 for values in polarities.values()):
+                answer_type, reason = "conflict", "polarity_conflict"
+            elif len(evidence) >= 2 and any(marker in question for marker in ("哪个", "哪一个", "哪条", "哪种")):
+                answer_type, reason = "clarification", "ambiguous_candidates"
+                answer = "我找到多个可能候选，无法安全地替你选定；请指定主题或时间范围。"
+            elif not evidence and not answer:
+                answer_type, reason = "system_error", "empty_answer"
+            else:
+                answer_type, reason = "answered", "evidence_supported"
+        if answer_type == "restricted":
+            answer = "这条记录受访问权限保护，当前请求无权查看具体内容。"
+        claim_text = answer.split("来源（", 1)[0].strip()
+        claims = [SupportedClaim(claim_text, memory_ids=selected_memory_ids, version_ids=selected_versions, source_ids=selected_source_ids)] if claim_text else []
+        return AnswerResult(
+            answer_type,
+            answer,
+            reason,
+            claims=claims,
+            citations=[{"memory_id": item} for item in citations],
+            selected_memory_ids=selected_memory_ids,
+            selected_version_ids=selected_versions,
+            selected_source_ids=selected_source_ids,
+            selected_context_refs=selected_context_refs,
+            selected_tool_refs=selected_tool_refs,
+            executed_tools=executed_tools,
+            evidence_bundle=evidence_bundle,
+            evidence_mode="history" if route and route.get("action") == "memory_history" else "current",
+            decision=AnswerDecision(answer_type, reason),
+        )
+    except Exception as exc:
+        return AnswerResult("system_error", "", f"{type(exc).__name__}:{exc}", retryable=True, decision=AnswerDecision("system_error", "query_exception"))

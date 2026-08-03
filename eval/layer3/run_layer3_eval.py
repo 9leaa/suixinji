@@ -287,6 +287,12 @@ class CaseRunner:
                 })
             return {"memories": result}
 
+    def _logical_ref(self, ref: Any) -> str:
+        ref_str = str(ref or "")
+        if not ref_str:
+            return ""
+        return self.db_to_logical.get(ref_str) or self.version_db_to_logical.get(ref_str) or self.source_note_to_logical.get(ref_str) or ref_str
+
     def cleanup(self) -> None:
         from sqlalchemy import select
         from infrastructure.schema import Space
@@ -385,18 +391,13 @@ class CaseRunner:
             db_id = str(item.get("id"))
             retrieved.append(self.db_to_logical.get(db_id, f"db:{db_id}"))
         cited = [self.db_to_logical.get(x, x) for x in sources]
-        answer_selected_memory_refs = [
-            self.db_to_logical.get(str(item), f"db:{item}")
-            for item in (answer_result_payload.get("selected_memory_ids") or [])
-        ]
-        answer_selected_version_refs = [
-            self.version_db_to_logical.get(str(item), f"db:{item}")
-            for item in (answer_result_payload.get("selected_version_ids") or [])
-        ]
-        answer_selected_source_refs = [
-            self.source_note_to_logical.get(str(item), str(item))
-            for item in (answer_result_payload.get("selected_source_ids") or [])
-        ]
+        answer_selected_memory_refs = [self._logical_ref(item) for item in (answer_result_payload.get("selected_memory_ids") or [])]
+        answer_selected_version_refs = [self._logical_ref(item) for item in (answer_result_payload.get("selected_version_ids") or [])]
+        answer_selected_source_refs = [self._logical_ref(item) for item in (answer_result_payload.get("selected_source_ids") or [])]
+        answer_selected_context_refs = [self._logical_ref(item) for item in (answer_result_payload.get("selected_context_refs") or [])]
+        answer_selected_tool_refs = [str(item) for item in (answer_result_payload.get("selected_tool_refs") or [])]
+        answer_executed_tools = [str(item) for item in (answer_result_payload.get("executed_tools") or [])]
+        answer_evidence_bundle = _safe_json(answer_result_payload.get("evidence_bundle"))
         source_refs_by_memory = {
             str(m.get("memory_ref")): [str(x) for x in (m.get("source_refs") or [])]
             for m in (inp.get("memory_snapshot") or {}).get("memories", [])
@@ -421,12 +422,12 @@ class CaseRunner:
             # production entry has not exposed a unified selected-context/tool-ref
             # contract yet, so these fields stay unavailable until Stage 1 wires
             # EvidenceBundle through the production answer path.
-            "selected_context_refs": None,
-            "selected_context_ref_status": "unavailable_until_stage1_evidence_bundle",
-            "selected_tool_refs": None,
-            "selected_tool_ref_status": "unavailable_until_stage1_evidence_bundle",
-            "executed_tools": None,
-            "executed_tools_status": "unavailable_until_stage1_evidence_bundle",
+            "selected_context_refs": answer_selected_context_refs or None,
+            "selected_context_ref_status": "available" if answer_selected_context_refs else "unavailable_until_stage1_evidence_bundle",
+            "selected_tool_refs": answer_selected_tool_refs or None,
+            "selected_tool_ref_status": "available" if answer_selected_tool_refs else "unavailable_until_stage1_evidence_bundle",
+            "executed_tools": answer_executed_tools or None,
+            "executed_tools_status": "available" if answer_executed_tools else "unavailable_until_stage1_evidence_bundle",
             "raw_channel_hits": raw_hits,
             "executed_channels": sorted(executed_channels),
             "answer": answer,
@@ -434,6 +435,10 @@ class CaseRunner:
             "answer_selected_memory_refs": answer_selected_memory_refs,
             "answer_selected_version_refs": answer_selected_version_refs,
             "answer_selected_source_refs": answer_selected_source_refs,
+            "answer_selected_context_refs": answer_selected_context_refs,
+            "answer_selected_tool_refs": answer_selected_tool_refs,
+            "answer_executed_tools": answer_executed_tools,
+            "answer_evidence_bundle": answer_evidence_bundle,
             "answer_memory_citations": cited,
             "answer_source_citations": cited_source_refs,
             "answer_citation_lines": [x for x in answer.splitlines() if "memory:" in x],
