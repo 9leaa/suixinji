@@ -174,6 +174,125 @@ def _candidate_for(raw: dict[str, Any], note_id: str):
     )
 
 
+def _embedding_contract_dict() -> dict[str, Any]:
+    from memory.vector_lifecycle import current_embedding_contract
+
+    model, dimension, version = current_embedding_contract()
+    return {"model": model, "dimension": int(dimension), "embedding_version": version}
+
+
+def _complete_seed_memory_vectors(memory_ids: list[str]) -> dict[str, Any]:
+    """Materialize ready memory_vectors for isolated Layer3 seed memories."""
+    from core.llm_client import embed_text
+    from repositories.postgres.memory import claim_memory_vector, complete_memory_vector
+
+    completed = 0
+    skipped = 0
+    failed: list[dict[str, Any]] = []
+    for memory_id in memory_ids:
+        claim = claim_memory_vector(memory_id)
+        if claim is None:
+            skipped += 1
+            continue
+        try:
+            embedding = embed_text(str(claim.get("text") or ""))
+            expected_dim = int(claim["dimension"])
+            if len(embedding) != expected_dim:
+                raise ValueError(f"embedding dimension mismatch: expected {expected_dim}, got {len(embedding)}")
+            if complete_memory_vector(
+                memory_id,
+                content_hash=str(claim["content_hash"]),
+                embedding=embedding,
+                model=str(claim["model"]),
+                dimension=expected_dim,
+                embedding_version=str(claim["embedding_version"]),
+            ):
+                completed += 1
+            else:
+                failed.append({"memory_id": memory_id, "error": "complete_memory_vector returned false"})
+        except Exception as exc:
+            failed.append({"memory_id": memory_id, "error_type": type(exc).__name__})
+    return {
+        "requested": len(memory_ids),
+        "completed": completed,
+        "already_ready_or_inactive": skipped,
+        "failed_count": len(failed),
+        "failed": failed[:10],
+    }
+
+
+def _embed_query_for_diagnostic(query: str) -> tuple[list[float] | None, dict[str, Any]]:
+    from core.llm_client import embed_text
+
+    contract = _embedding_contract_dict()
+    status = {"status": "not_attempted", "dimension": None, "contract": contract}
+    if not str(query or "").strip():
+        status["status"] = "empty_query"
+        return None, status
+    try:
+        embedding = embed_text(query)
+        status["dimension"] = len(embedding)
+        if len(embedding) != int(contract["dimension"]):
+            status["status"] = "dimension_mismatch"
+            return None, status
+        status["status"] = "success"
+        return embedding, status
+    except Exception as exc:
+        status["status"] = "failed"
+        status["error"] = f"{type(exc).__name__}: {exc}"
+        return None, status
+
+
+def _raw_vector_hits(
+    space_id: str,
+    query_embedding: list[float] | None,
+    *,
+    limit: int,
+    access_context: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    if not query_embedding:
+        return []
+    from sqlalchemy import select
+    from infrastructure.schema import Memory, MemoryVector
+    from memory.access import memory_access_allowed
+    from memory.vector_lifecycle import current_embedding_contract
+    from repositories.postgres.memory import session_scope
+
+    model, dimension, version = current_embedding_contract()
+    distance = MemoryVector.embedding.cosine_distance(query_embedding)
+    with session_scope() as session:
+        rows = list(
+            session.execute(
+                select(Memory, (1 - distance).label("raw_similarity"))
+                .join(MemoryVector, MemoryVector.memory_id == Memory.id)
+                .where(
+                    Memory.space_id == space_id,
+                    Memory.status == "active",
+                    MemoryVector.status == "ready",
+                    MemoryVector.embedding.is_not(None),
+                    MemoryVector.model == model,
+                    MemoryVector.dimension == int(dimension),
+                    MemoryVector.embedding_version == version,
+                )
+                .order_by(distance, Memory.updated_at.desc())
+                .limit(max(1, min(int(limit), 50)))
+            )
+        )
+        result: list[dict[str, Any]] = []
+        for rank, row in enumerate(rows, start=1):
+            memory, raw_similarity = row
+            if access_context is not None and not memory_access_allowed(memory, access_context):
+                continue
+            result.append(
+                {
+                    "memory_id": str(memory.id),
+                    "rank": rank,
+                    "raw_similarity": round(float(raw_similarity or 0.0), 6),
+                }
+            )
+        return result
+
+
 class CaseRunner:
     def __init__(self, case: dict[str, Any], run_id: str, top_k: int):
         self.case = case
@@ -184,6 +303,7 @@ class CaseRunner:
         self.version_db_to_logical: dict[str, str] = {}
         self.source_note_to_logical: dict[str, str] = {}
         self.space_id = f"l3_eval_{run_id}_{case['case_id']}"
+        self.seed_vector_summary: dict[str, Any] = {}
 
     def seed(self) -> None:
         from sqlalchemy import select
@@ -196,6 +316,7 @@ class CaseRunner:
             source_ref = str(source.get("source_ref") or "")
             if source_ref:
                 self.source_note_to_logical[f"layer3:{self.case['case_id']}:{source_ref}"] = source_ref
+        vector_memory_ids: list[str] = []
         with session_scope() as session:
             ensure_tenant_space(session, self.space_id, tenant_id="default", source="layer3_eval", metadata={"run_id": self.run_id})
             for logical_ref, raw in ((str(m["memory_ref"]), m) for m in snapshot.get("memories", [])):
@@ -218,6 +339,8 @@ class CaseRunner:
                 row.created_at = row.updated_at
                 row.updated_at = row.updated_at
                 row.last_confirmed_at = row.updated_at
+                if str(raw.get("status") or "active") == "active":
+                    vector_memory_ids.append(db_id)
                 for source_ref in source_refs[1:]:
                     _add_source(session, db_id, f"layer3:{self.case['case_id']}:{source_ref}", "supported_by")
                 versions = [v for v in snapshot.get("versions", []) if str(v.get("memory_ref")) == logical_ref]
@@ -252,10 +375,11 @@ class CaseRunner:
                         self.version_db_to_logical[str(target.id)] = version_ref
                     row.current_version = max(by_seq)
             session.flush()
+        self.seed_vector_summary = _complete_seed_memory_vectors(vector_memory_ids)
 
     def db_snapshot(self) -> dict[str, Any]:
         from sqlalchemy import select
-        from infrastructure.schema import Memory, MemorySource, MemoryVersion
+        from infrastructure.schema import Memory, MemorySource, MemoryVector, MemoryVersion
         from repositories.postgres.memory import session_scope
 
         with session_scope() as session:
@@ -264,6 +388,7 @@ class CaseRunner:
             for row in rows:
                 sources = list(session.execute(select(MemorySource).where(MemorySource.memory_id == row.id).order_by(MemorySource.note_id)).scalars())
                 versions = list(session.execute(select(MemoryVersion).where(MemoryVersion.memory_id == row.id).order_by(MemoryVersion.version)).scalars())
+                vector = session.get(MemoryVector, row.id)
                 result.append({
                     "id": row.id,
                     "logical_ref": self.db_to_logical.get(row.id),
@@ -277,6 +402,13 @@ class CaseRunner:
                     "updated_at": str(row.updated_at),
                     "access_count": row.access_count,
                     "last_accessed_at": str(row.last_accessed_at) if row.last_accessed_at else None,
+                    "vector": {
+                        "status": vector.status,
+                        "model": vector.model,
+                        "dimension": vector.dimension,
+                        "embedding_version": vector.embedding_version,
+                        "has_embedding": vector.embedding is not None,
+                    } if vector is not None else None,
                     "source_note_ids": sorted(str(x.note_id) for x in sources),
                     "versions": [
                         {"version": v.version, "content": v.content, "status": v.status, "task_status": v.task_status,
@@ -316,10 +448,17 @@ class CaseRunner:
         answer = ""
         errors: list[dict[str, Any]] = []
         self.seed()
+        if int(self.seed_vector_summary.get("failed_count") or 0) > 0:
+            errors.append({
+                "stage": "seed_vectors",
+                "type": "SeedVectorError",
+                "message": f"{self.seed_vector_summary['failed_count']} memory vectors failed to seed",
+            })
         pre = self.db_snapshot()
         inp = self.case["input"]
         query = str(inp.get("query") or "")
         expected = self.case.get("expected") or {}
+        query_embedding, query_embedding_status = _embed_query_for_diagnostic(query)
         retrieval_started = time.perf_counter()
         access_context = inp.get("access_context") or {}
         try:
@@ -328,7 +467,8 @@ class CaseRunner:
             errors.append({"stage": "retrieval", "type": type(exc).__name__, "message": str(exc)})
         retrieval_ms = (time.perf_counter() - retrieval_started) * 1000
         try:
-            for hit in hybrid_search_memory_hits(self.space_id, query, include_inactive=True, query_embedding=None, limit=self.top_k, access_context=access_context):
+            vector_raw_hits = {item["memory_id"]: item for item in _raw_vector_hits(self.space_id, query_embedding, limit=self.top_k, access_context=access_context)}
+            for hit in hybrid_search_memory_hits(self.space_id, query, include_inactive=True, query_embedding=query_embedding, limit=self.top_k, access_context=access_context):
                 executed_channels.update(name for name, rank in (("exact", hit.exact_rank), ("structured", hit.structured_rank), ("fts", hit.fts_rank), ("trigram", hit.trigram_rank), ("vector", hit.vector_rank)) if rank is not None)
                 raw_hits.append({
                     "memory_id": hit.memory.id,
@@ -338,6 +478,7 @@ class CaseRunner:
                     "fts_rank": hit.fts_rank,
                     "trigram_rank": hit.trigram_rank,
                     "vector_rank": hit.vector_rank,
+                    "vector_raw_similarity": vector_raw_hits.get(hit.memory.id, {}).get("raw_similarity"),
                     "rrf_score": hit.rrf_score,
                     "policy_score": hit.policy_score,
                     "final_score": hit.final_score,
@@ -412,6 +553,7 @@ class CaseRunner:
             "query": query,
             "query_time": inp.get("query_time"),
             "access_context": inp.get("access_context") or {},
+            "query_embedding_status": query_embedding_status,
             "expected_route": expected.get("expected_route"),
             "observed_route_diagnostic": route_name,
             "observed_route_detail": _safe_json(route),
@@ -446,6 +588,7 @@ class CaseRunner:
             "memory_snapshot_input": inp.get("memory_snapshot") or {},
             "pre_snapshot": pre,
             "post_snapshot": post,
+            "seed_vector_summary": self.seed_vector_summary,
             "errors": errors,
             "latency_ms": {"retrieval": round(retrieval_ms, 3), "answer": round(answer_ms, 3), "total": round((time.perf_counter() - start) * 1000, 3)},
         }
@@ -690,6 +833,61 @@ def aggregate(scored: list[dict[str, Any]], predictions: list[dict[str, Any]]) -
         for tag in item.get("tags") or []:
             tags[str(tag)].append(item)
     metrics["by_coverage_tag"] = {tag: aggregate_group(items) for tag, items in sorted(tags.items())}
+    semantic_predictions = [
+        pred for pred in predictions
+        if pred.get("dataset") == "semantic_paraphrase_and_noise" or "semantic" in set(pred.get("coverage_tags") or [])
+    ]
+    seed_total = 0
+    seed_ready = 0
+    contract_total = 0
+    contract_matched = 0
+    query_embedding_success = 0
+    recall_tags = ("paraphrase", "typo", "noise", "mixed_language")
+    recall_by_tag: dict[str, dict[str, Any]] = {}
+    for pred in semantic_predictions:
+        contract = (pred.get("query_embedding_status") or {}).get("contract") or {}
+        if (pred.get("query_embedding_status") or {}).get("status") == "success":
+            query_embedding_success += 1
+        for memory in (pred.get("pre_snapshot") or {}).get("memories", []):
+            if str(memory.get("status") or "") != "active":
+                continue
+            seed_total += 1
+            vector = memory.get("vector") or {}
+            ready = vector.get("status") == "ready" and bool(vector.get("has_embedding"))
+            if ready:
+                seed_ready += 1
+            if vector:
+                contract_total += 1
+                if (
+                    vector.get("model") == contract.get("model")
+                    and int(vector.get("dimension") or 0) == int(contract.get("dimension") or 0)
+                    and vector.get("embedding_version") == contract.get("embedding_version")
+                ):
+                    contract_matched += 1
+        expected = pred.get("expected") or {}
+        relevant = set(expected.get("relevant_current_refs") or []) | set(expected.get("relevant_history_refs") or [])
+        got = set((pred.get("retrieved_refs") or [])[:3])
+        for tag in recall_tags:
+            if tag not in set(pred.get("coverage_tags") or []):
+                continue
+            bucket = recall_by_tag.setdefault(tag, {"cases": 0, "hits": 0, "recall@3": 0.0})
+            bucket["cases"] += 1
+            if relevant and relevant & got:
+                bucket["hits"] += 1
+    for bucket in recall_by_tag.values():
+        bucket["recall@3"] = round(bucket["hits"] / bucket["cases"], 6) if bucket["cases"] else 0.0
+    metrics["stage2_semantic_retrieval"] = {
+        "cases": len(semantic_predictions),
+        "vector_seed_ready_rate": round(seed_ready / seed_total, 6) if seed_total else None,
+        "vector_seed_ready_count": seed_ready,
+        "vector_seed_expected_count": seed_total,
+        "embedding_contract_match_rate": round(contract_matched / contract_total, 6) if contract_total else None,
+        "embedding_contract_matched_count": contract_matched,
+        "embedding_contract_checked_count": contract_total,
+        "query_embedding_success_rate": round(query_embedding_success / len(semantic_predictions), 6) if semantic_predictions else None,
+        "query_embedding_success_count": query_embedding_success,
+        "recall_by_tag": recall_by_tag,
+    }
     return metrics
 
 
@@ -702,7 +900,7 @@ def write_reports(out_dir: Path, predictions: list[dict[str, Any]], scored: list
     metrics["overall"]["answer_error_count"] = len(answer_errors)
     metrics["overall"]["execution_error_count"] = len(execution_errors)
     metrics["overall"]["answer_error_types"] = dict(Counter(str(e.get("type")) for e in answer_errors))
-    retrieval = {"overall": metrics["overall"], "by_dataset": metrics["by_dataset"], "by_coverage_tag": metrics["by_coverage_tag"]}
+    retrieval = {"overall": metrics["overall"], "by_dataset": metrics["by_dataset"], "by_coverage_tag": metrics["by_coverage_tag"], "stage2_semantic_retrieval": metrics.get("stage2_semantic_retrieval", {})}
     answer = {"overall": metrics["overall"], "by_dataset": metrics["by_dataset"]}
     citation = {"overall": metrics["overall"], "by_dataset": metrics["by_dataset"]}
     answer_availability = {
@@ -739,7 +937,8 @@ def write_reports(out_dir: Path, predictions: list[dict[str, Any]], scored: list
     lines = ["# Layer 3 检索与回答评测报告", "", f"- Run ID: `{args.run_id}`", f"- Cases: **{len(predictions)}**", f"- Backend: `{os.getenv('STORAGE_BACKEND')}`", f"- Retrieval mode: `{os.getenv('SUIXINJI_MEMORY_RETRIEVAL_MODE')}`", f"- Production entry: `memory_search` + `answer_question`", f"- Answer calls with errors: **{len(answer_errors)}**", f"- Execution/seed errors: **{len(execution_errors)}**", f"- Answer error types: `{dict(Counter(str(e.get('type')) for e in answer_errors))}`", "", "## 总体指标", "", "```json", json.dumps(metrics["overall"], ensure_ascii=False, indent=2), "```", "", "## 按数据集", ""]
     for ds, data in metrics["by_dataset"].items():
         lines += [f"### {ds}", "", "```json", json.dumps(data, ensure_ascii=False, indent=2), "```", ""]
-    lines += ["## 关键安全与一致性门禁", "", f"- 敏感/越权访问：`{access['access_violation_count']}`", f"- 跨空间返回：`{access['cross_space_violation_count']}`", f"- 业务状态变更：`{access['business_state_mutation_count']}`（访问计数和最后访问时间不计入）", f"- restricted 期望/预测：`{access['restricted_expected_count']}` / `{access['restricted_predicted_count']}`", f"- stale 检索违规率：`{metrics['overall']['stale_retrieval_violation_rate']}`", f"- must-not-return 违规率：`{metrics['overall']['must_not_return_violation_rate']}`", f"- irrelevant 检索返回率：`{metrics['overall']['irrelevant_retrieval_rate']}`", f"- ambiguous candidate 使用率：`{metrics['overall']['ambiguous_candidate_usage_rate']}`", f"- stale 内容进入答案率：`{metrics['overall']['stale_answer_usage_rate']}`", f"- 禁止性断言率：`{metrics['overall']['forbidden_claim_rate']}`", "", "## 延迟", "", "```json", json.dumps(latency, ensure_ascii=False, indent=2), "```", "", "## Stage 0 说明", "", "- `selected_context_refs`、`selected_tool_refs`、`executed_tools` 在当前生产入口未暴露统一契约时保持 `null/unavailable`；评测器不会根据答案文本、Gold、路由诊断或额外补查推断这些字段。", "- `raw_channel_hits` 保存 exact/structured/FTS/trigram 的原始命中与 RRF/策略分数；它只用于诊断，不改变生产答案路径。", "- 历史版本、敏感访问上下文、pending-review 在当前生产入口中的支持程度会通过指标暴露，不在评测脚本中补写业务逻辑。", "- 每条 case 使用独立空间，测试结束后删除空间及其级联数据。"]
+    lines += ["## Stage 2 Semantic Retrieval 诊断", "", "```json", json.dumps(metrics.get("stage2_semantic_retrieval", {}), ensure_ascii=False, indent=2), "```", ""]
+    lines += ["## 关键安全与一致性门禁", "", f"- 敏感/越权访问：`{access['access_violation_count']}`", f"- 跨空间返回：`{access['cross_space_violation_count']}`", f"- 业务状态变更：`{access['business_state_mutation_count']}`（访问计数和最后访问时间不计入）", f"- restricted 期望/预测：`{access['restricted_expected_count']}` / `{access['restricted_predicted_count']}`", f"- stale 检索违规率：`{metrics['overall']['stale_retrieval_violation_rate']}`", f"- must-not-return 违规率：`{metrics['overall']['must_not_return_violation_rate']}`", f"- irrelevant 检索返回率：`{metrics['overall']['irrelevant_retrieval_rate']}`", f"- ambiguous candidate 使用率：`{metrics['overall']['ambiguous_candidate_usage_rate']}`", f"- stale 内容进入答案率：`{metrics['overall']['stale_answer_usage_rate']}`", f"- 禁止性断言率：`{metrics['overall']['forbidden_claim_rate']}`", "", "## 延迟", "", "```json", json.dumps(latency, ensure_ascii=False, indent=2), "```", "", "## Stage 0/2 说明", "", "- `selected_context_refs`、`selected_tool_refs`、`executed_tools` 在当前生产入口未暴露统一契约时保持 `null/unavailable`；评测器不会根据答案文本、Gold、路由诊断或额外补查推断这些字段。", "- `raw_channel_hits` 保存 exact/structured/FTS/trigram/vector 的原始命中与 RRF/策略分数；它只用于诊断，不改变生产答案路径。", "- Stage 2 会对 isolated seed memories 使用真实 memory vector lifecycle 补齐 ready `memory_vectors`，并记录 query embedding 状态、embedding contract 与 raw vector similarity。", "- 历史版本、敏感访问上下文、pending-review 在当前生产入口中的支持程度会通过指标暴露，不在评测脚本中补写业务逻辑。", "- 每条 case 使用独立空间，测试结束后删除空间及其级联数据。"]
     (out_dir / "layer3_summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
