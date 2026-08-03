@@ -294,7 +294,7 @@ Restricted 安全契约：
 
 - `l3_current_004` 从 no_answer 变为 answered。
 - `l3_semantic_003/005` 命中后变为 answered。
-- `l3_history_001` 为 answered 或 history_answered，不再被误归为 qualified_history_only。
+- `l3_history_001` 为 answered，不再被误归为 qualified_history_only。
 - `l3_noanswer_041` 为 qualified_history_only。
 - `l3_noanswer_001` 为 no_answer，且无 citation。
 - restricted case 不泄露敏感值。

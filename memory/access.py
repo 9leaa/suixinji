@@ -41,7 +41,7 @@ def access_decision(scope: dict[str, Any] | None, context: AccessContext | dict[
     access_scope = str(scope.get("access_scope") or scope.get("scope") or "owner").casefold()
     owner = str(scope.get("owner_id") or ctx.owner_id or "owner")
     requester = str(ctx.requester or "owner")
-    if sensitivity in {"sensitive", "secret", "restricted"} and not ctx.allow_sensitive:
+    if sensitivity in {"sensitive", "secret", "restricted", "high"} and not ctx.allow_sensitive:
         return False, "sensitive_denied"
     if access_scope in {"restricted", "private", "owner", "owner_only"}:
         if access_scope in {"restricted", "private"} and not ctx.allow_restricted:

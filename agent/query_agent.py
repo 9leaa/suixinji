@@ -1171,6 +1171,195 @@ def _memory_search_compat(space_id: str, query: str, **kwargs: Any) -> list[dict
         return memory_search(space_id, query, **kwargs)
 
 
+def _query_current_intent(question: str) -> bool:
+    normalized = _normalized_query(question)
+    return any(marker in normalized for marker in ("现在", "当前", "目前", "到底", "还算", "focus", "主要", "重点"))
+
+
+def _query_history_intent(question: str, route: dict[str, Any] | None = None) -> bool:
+    if route and route.get("action") == "memory_history":
+        return True
+    normalized = _normalized_query(question)
+    return any(marker in normalized for marker in ("历史", "之前", "以前", "最初", "变化", "变成", "经历", "完成前", "过去", "版本"))
+
+
+def _query_ambiguous_reference(question: str) -> bool:
+    normalized = _normalized_query(question)
+    return any(marker in normalized for marker in ("那个", "这个", "那件", "这件", "它", "哪个", "哪一个", "哪条", "哪种"))
+
+
+def _query_conflict_intent(question: str) -> bool:
+    normalized = _normalized_query(question)
+    return any(marker in normalized for marker in ("到底", "冲突", "矛盾", "不一致", "确认一下", "究竟"))
+
+
+def _evidence_identity_key(item: dict[str, Any]) -> str:
+    key = str(item.get("memory_key") or "").strip()
+    if key:
+        return key
+    memory_type = str(item.get("memory_type") or "")
+    subject = str(item.get("subject") or "")
+    predicate = str(item.get("predicate") or "")
+    topic = str((item.get("scope") or {}).get("canonical_topic") or item.get("object_value") or item.get("content") or "")
+    return "|".join(part for part in (memory_type, subject, predicate, topic) if part)
+
+
+def _item_query_overlap(question: str, item: dict[str, Any]) -> float:
+    text = " ".join(
+        str(item.get(key) or "")
+        for key in ("content", "subject", "predicate", "object_value", "memory_key", "task_status", "memory_type")
+    )
+    q_terms = _lexical_terms(question)
+    c_terms = _lexical_terms(text)
+    if not q_terms or not c_terms:
+        return 0.0
+    return len(q_terms & c_terms) / len(q_terms)
+
+
+def _relevant_evidence_items(question: str, evidence: list[dict[str, Any]], *, floor: float = 0.70) -> list[dict[str, Any]]:
+    """Keep high-confidence evidence. This avoids answering absent-topic asks from weak lexical overlap."""
+    if not evidence:
+        return []
+    ranked = sorted(
+        [item for item in evidence if isinstance(item, dict)],
+        key=lambda item: (float(item.get("score") or item.get("retrieval_fusion_score") or 0.0), _item_query_overlap(question, item)),
+        reverse=True,
+    )
+    if not ranked:
+        return []
+    top_score = float(ranked[0].get("score") or ranked[0].get("retrieval_fusion_score") or 0.0)
+    kept: list[dict[str, Any]] = []
+    for item in ranked:
+        score = float(item.get("score") or item.get("retrieval_fusion_score") or 0.0)
+        overlap = _item_query_overlap(question, item)
+        content = str(item.get("content") or item.get("object_value") or "")
+        current_focus_hit = (
+            _query_current_intent(question)
+            and str(item.get("memory_type") or "") == "semantic"
+            and score >= 0.45
+            and any(marker in content for marker in ("当前", "现在", "重点", "主要", "focus"))
+        )
+        if (
+            score >= floor
+            or (floor <= 0.0 and overlap >= 0.12)
+            or (top_score >= 0.90 and score >= max(0.45, top_score - 0.25))
+            or (score >= 0.45 and overlap >= 0.20)
+            or current_focus_hit
+        ):
+            kept.append(item)
+    return kept
+
+
+def _selected_evidence_answer(item: dict[str, Any], *, prefix: str = "根据记忆") -> str:
+    content = str(item.get("content") or item.get("summary") or item.get("object_value") or "").strip()
+    if not content:
+        return "我找到了相关记忆，但缺少可直接展示的内容。"
+    return f"{prefix}，{content}。"
+
+
+def _conflict_answer(items: list[dict[str, Any]]) -> str:
+    lines = ["我找到相互冲突或尚待确认的记录，不能武断选择其中一个："]
+    for item in items[:5]:
+        status = str(item.get("status") or "")
+        label = "待复核" if status in {"pending_review", "pending", "conflicted"} else "当前记录"
+        content = str(item.get("content") or item.get("object_value") or item.get("id") or "")
+        lines.append(f"- {label}：{content}")
+    return "\n".join(lines)
+
+
+def _clarification_answer(items: list[dict[str, Any]]) -> str:
+    lines = ["我找到多个可能对象，无法安全判断你指的是哪一个；请补充具体主题或阶段："]
+    for item in items[:5]:
+        content = str(item.get("content") or item.get("object_value") or item.get("id") or "")
+        lines.append(f"- {content}")
+    return "\n".join(lines)
+
+
+def _stale_history_fallback(space_id: str, question: str, *, limit: int = 8, access_context: Any = None) -> list[dict[str, Any]]:
+    """Read-only stale/history fallback for current questions with no active answer."""
+    try:
+        candidates = list_memories(space_id, status=None, limit=max(1, min(int(limit), 100)))
+    except TypeError:
+        candidates = list_memories(space_id, status=None, limit=max(1, min(int(limit), 100)))  # type: ignore[misc]
+    if access_context is not None:
+        from memory.access import memory_access_allowed
+        candidates = [memory for memory in candidates if memory_access_allowed(memory, access_context)]
+    rows: list[dict[str, Any]] = []
+    for memory in candidates:
+        status = str(getattr(memory, "status", "") or "")
+        if status not in {"superseded", "expired", "archived", "forgotten", "deleted"}:
+            continue
+        data = memory.to_dict()
+        overlap = _item_query_overlap(question, data)
+        if overlap < 0.08:
+            continue
+        versions = data.get("versions") or []
+        if versions:
+            for version in versions:
+                item = dict(version)
+                item["id"] = item.get("id") or f"{data.get('id')}:v{item.get('version')}"
+                item["memory_id"] = data.get("id")
+                item["memory_type"] = data.get("memory_type")
+                item["memory_key"] = data.get("memory_key")
+                item["history"] = True
+                item["status"] = status
+                item["sources"] = data.get("sources") or []
+                item["score"] = max(0.45, overlap)
+                rows.append(item)
+        else:
+            data["history"] = True
+            data["score"] = max(0.45, overlap)
+            rows.append(data)
+    return rows[: max(1, min(int(limit), 20))]
+
+
+def decide_answer(
+    question: str,
+    route: dict[str, Any] | None,
+    evidence_bundle: Any,
+    *,
+    current_evidence: list[dict[str, Any]] | None = None,
+    history_evidence: list[dict[str, Any]] | None = None,
+    restricted_denied: bool = False,
+) -> "AnswerDecision":
+    """Evidence-first answer decision. LLM/string text must not decide availability."""
+    from agent.answer_models import AnswerDecision, EvidenceBundle
+
+    bundle = EvidenceBundle.from_dict(evidence_bundle) if isinstance(evidence_bundle, dict) else evidence_bundle
+    items = list(getattr(bundle, "items", []) or [])
+    current_evidence = list(current_evidence or [])
+    history_evidence = list(history_evidence or [])
+    if restricted_denied or any(getattr(item, "kind", "") == "access_denied" or getattr(item, "role", "") == "access_denied" for item in items):
+        return AnswerDecision("restricted", "acl_filtered_all_evidence")
+    if not items and not current_evidence and not history_evidence:
+        return AnswerDecision("no_answer", "no_relevant_evidence")
+    if _query_history_intent(question, route) and (history_evidence or any(getattr(item, "role", "") in {"history", "stale_history"} for item in items)):
+        return AnswerDecision("answered", "history_query")
+    if _query_conflict_intent(question) and any(str(item.get("status") or "") in {"pending_review", "pending", "conflicted"} for item in current_evidence):
+        return AnswerDecision("conflict", "pending_review_conflict")
+    polarities: dict[str, set[str]] = {}
+    for item in current_evidence:
+        key = _evidence_identity_key(item)
+        polarity = str(item.get("polarity") or "")
+        if key and polarity:
+            polarities.setdefault(key, set()).add(polarity)
+    if any(len(values) > 1 for values in polarities.values()):
+        return AnswerDecision("conflict", "polarity_conflict")
+    if _query_ambiguous_reference(question):
+        active_items = [item for item in current_evidence if str(item.get("status") or "active") == "active"]
+        identity_count = len({str(item.get("memory_key") or item.get("id") or "") for item in active_items})
+        task_like = [item for item in active_items if str(item.get("memory_type") or "") == "task"]
+        if identity_count >= 2 and len(task_like) >= 2:
+            return AnswerDecision("clarification", "ambiguous_candidates")
+    if not current_evidence and history_evidence:
+        if _query_current_intent(question):
+            return AnswerDecision("qualified_history_only", "stale_history_only")
+        return AnswerDecision("answered", "history_query")
+    if current_evidence:
+        return AnswerDecision("answered", "evidence_supported")
+    return AnswerDecision("no_answer", "no_relevant_evidence")
+
+
 def memory_history(space_id: str, query: str, *, limit: int = 10, access_context: Any = None) -> list[dict[str, Any]]:
     # Use the existing search -> get_memory API pair so this helper works
     # against both SQLite and PostgreSQL repository implementations without a
@@ -2059,7 +2248,7 @@ def answer_question(
 
 def _answer_is_no_answer(answer: str) -> bool:
     text = str(answer or "")
-    return any(token in text for token in ("没有在随心记里找到", "没有找到", "没有足够信息", "无法确认", "没有相关记录", "暂无足够"))
+    return any(token in text for token in ("没有在随心记里找到", "没有找到", "没有足够信息", "无法确认", "没有相关记录", "暂无足够", "还没有关于", "没有关于", "我不知道", "无法确定"))
 
 
 def answer_question_result(
@@ -2074,18 +2263,61 @@ def answer_question_result(
     access_context: dict[str, Any] | AccessContext | None = None,
 ) -> "AnswerResult":
     """Structured contract; the legacy answer_question API remains string-returning."""
-    from agent.answer_models import AnswerResult, AnswerDecision, EvidenceBundle, SupportedClaim
+    from agent.answer_models import AnswerResult, AnswerDecision, EvidenceBundle, RetrievalEvidence, SupportedClaim
     context = _memory_access_context(access_context, requester=user_id or "owner")
     try:
         if mentions_sensitive_topic(question):
             answer = "为保护安全，随心记不会保存或检索密码、密钥、令牌、身份证号、银行卡号等敏感凭据。"
             return AnswerResult("restricted", answer, "sensitive_topic", decision=AnswerDecision("restricted", "sensitive_topic"))
         route = _deterministic_route(question)
-        evidence = _memory_search_compat(space_id, question, min_score=0.0, limit=max(5, min(max_steps * 2, 20)), access_context=context)
-        history_evidence = memory_history(space_id, question, limit=max(5, min(max_steps * 2, 20)), access_context=context) if route and route.get("action") == "memory_history" else []
-        threshold = float(DEFAULT_MEMORY_MIN_SCORE)
-        evidence = [item for item in evidence if float(item.get("score") or 0.0) >= threshold]
+        evidence_limit = max(5, min(max_steps * 2, 20))
+        fetched_evidence = _memory_search_compat(space_id, question, min_score=0.0, limit=evidence_limit, access_context=context)
+        evidence = _relevant_evidence_items(question, fetched_evidence)
+        history_evidence = memory_history(space_id, question, limit=evidence_limit, access_context=context) if route and route.get("action") == "memory_history" else []
+        stale_history = [] if history_evidence else _stale_history_fallback(space_id, question, limit=evidence_limit, access_context=context)
+        if not evidence and stale_history:
+            history_evidence = stale_history
+        if _query_conflict_intent(question):
+            pending = [
+                memory.to_dict()
+                for memory in list_memories(space_id, status="pending_review", limit=evidence_limit)
+            ]
+            if context is not None:
+                from memory.access import memory_access_allowed
+                pending = [item for item in pending if memory_access_allowed(item, context)]
+            pending = _relevant_evidence_items(question, pending, floor=0.0)
+            evidence = _merge_evidence(evidence, pending)
         all_evidence = list(evidence) + list(history_evidence)
+
+        structured_bundle = _build_evidence_bundle(all_evidence, [])
+        for item in structured_bundle.items:
+            if item.role == "current" and item.status in {"pending_review", "pending", "conflicted"}:
+                item.role = "conflict"
+            if item.role == "current" and item.status in {"superseded", "expired", "archived", "forgotten", "deleted"}:
+                item.role = "stale_history"
+            item.selected = True
+        structured_bundle.__post_init__()
+        restricted_denied = False
+        if not fetched_evidence and context and context.get("requester") not in {None, "owner"}:
+            unrestricted = _memory_search_compat(
+                space_id,
+                question,
+                min_score=0.0,
+                limit=3,
+                access_context={"requester": "owner", "owner_id": "owner", "allow_sensitive": True, "allow_restricted": True},
+            )
+            if unrestricted:
+                restricted_denied = True
+                structured_bundle.items.append(
+                    RetrievalEvidence(
+                        kind="access_denied",
+                        id="access_denied",
+                        selected=True,
+                        role="access_denied",
+                        metadata={"reason": "acl_filtered_all_evidence"},
+                    )
+                )
+                structured_bundle.__post_init__()
         answer, run_context = _run_answer_question_with_context(
             space_id,
             question,
@@ -2096,13 +2328,52 @@ def answer_question_result(
             task_id=task_id,
             access_context=context,
         )
-        answer_bundle = EvidenceBundle.from_dict(run_context.metadata.get("answer_evidence_bundle")) if isinstance(run_context.metadata.get("answer_evidence_bundle"), dict) else None
+        runtime_bundle = EvidenceBundle.from_dict(run_context.metadata.get("answer_evidence_bundle")) if isinstance(run_context.metadata.get("answer_evidence_bundle"), dict) else None
+        if runtime_bundle is not None:
+            runtime_selected = [
+                {"id": item.memory_id or item.version_id or item.id, "memory_id": item.memory_id, "memory_type": item.memory_type, "status": item.status, "task_status": item.task_status, "score": item.score, "content": item.metadata.get("content")}
+                for item in runtime_bundle.items
+                if item.selected
+            ]
+            if runtime_selected and not evidence and not history_evidence and not _answer_is_no_answer(answer):
+                evidence = runtime_selected
+            answer_bundle = structured_bundle if structured_bundle.items else runtime_bundle
+            if answer_bundle is not None:
+                if not answer_bundle.selected_tool_refs:
+                    answer_bundle.selected_tool_refs = list(runtime_bundle.selected_tool_refs)
+                if not answer_bundle.executed_tools:
+                    answer_bundle.executed_tools = list(runtime_bundle.executed_tools)
+        else:
+            answer_bundle = structured_bundle
+        decision = decide_answer(
+            question,
+            route,
+            answer_bundle,
+            current_evidence=evidence,
+            history_evidence=history_evidence,
+            restricted_denied=restricted_denied,
+        )
+
+        if decision.answer_type == "restricted":
+            answer = "这条记录受访问权限保护，当前请求无权查看具体内容。"
+        elif decision.answer_type == "conflict":
+            answer = _conflict_answer(evidence)
+        elif decision.answer_type == "clarification":
+            answer = _clarification_answer(evidence)
+        elif decision.answer_type == "qualified_history_only":
+            answer = "我没有找到当前有效记录；只找到历史记录：\n" + _history_fallback_answer(history_evidence)
+        elif decision.answer_type == "answered" and decision.reason_code == "history_query" and history_evidence:
+            answer = _history_fallback_answer(history_evidence)
+        elif decision.answer_type == "answered" and (not answer or _answer_is_no_answer(answer)) and evidence:
+            answer = _selected_evidence_answer(evidence[0])
+        elif decision.answer_type == "no_answer":
+            answer = "我没有在随心记里找到足够相关的记录。"
+            answer_bundle = EvidenceBundle(items=[])
+        if answer_bundle is not None and decision.answer_type in {"answered", "qualified_history_only", "conflict"}:
+            source_basis = history_evidence if decision.reason_code in {"history_query", "stale_history_only"} else evidence
+            answer = _with_sources(answer.split("来源（", 1)[0].rstrip(), source_basis)
+
         citations = re.findall(r"memory:([^｜\s]+)", answer or "")
-        if answer_bundle is None and all_evidence:
-            # Fallback only uses evidence that was actually fetched by this
-            # structured-answer call.  The normal production path stores the
-            # precise selected evidence bundle inside run_context metadata.
-            answer_bundle = _build_evidence_bundle(all_evidence, [])
         selected_memory_ids = list(answer_bundle.selected_memory_ids) if answer_bundle is not None else []
         selected_versions = list(answer_bundle.selected_version_ids) if answer_bundle is not None else []
         selected_source_ids = list(answer_bundle.selected_source_ids) if answer_bundle is not None else []
@@ -2110,38 +2381,11 @@ def answer_question_result(
         selected_tool_refs = list(answer_bundle.selected_tool_refs) if answer_bundle is not None else []
         executed_tools = list(answer_bundle.executed_tools) if answer_bundle is not None else []
         evidence_bundle = answer_bundle
-        if not all_evidence and context and context.get("requester") not in {None, "owner"}:
-            unrestricted = _memory_search_compat(space_id, question, min_score=0.0, limit=3, access_context={"requester": "owner", "owner_id": "owner", "allow_sensitive": True, "allow_restricted": True})
-            if unrestricted:
-                answer_type, reason = "restricted", "acl_filtered_all_evidence"
-            else:
-                answer_type, reason = "no_answer", "no_relevant_evidence"
-        elif _answer_is_no_answer(answer) and not (route and route.get("action") == "memory_history"):
-            answer_type, reason = "no_answer", "no_relevant_evidence"
-        elif route and route.get("action") == "memory_history" and history_evidence:
-            answer_type, reason = "answered", "history_query"
-        elif any(str(item.get("status") or "") == "conflicted" for item in all_evidence) or any(token in answer for token in ("冲突", "存在两种", "不一致")):
-            answer_type, reason = "conflict", "conflicting_evidence"
-        else:
-            polarities: dict[str, set[str]] = {}
-            for item in all_evidence:
-                key = str(item.get("memory_key") or item.get("predicate") or item.get("id") or "")
-                polarity = str(item.get("polarity") or "")
-                if key and polarity:
-                    polarities.setdefault(key, set()).add(polarity)
-            if any(len(values) > 1 for values in polarities.values()):
-                answer_type, reason = "conflict", "polarity_conflict"
-            elif len(evidence) >= 2 and any(marker in question for marker in ("哪个", "哪一个", "哪条", "哪种")):
-                answer_type, reason = "clarification", "ambiguous_candidates"
-                answer = "我找到多个可能候选，无法安全地替你选定；请指定主题或时间范围。"
-            elif not evidence and not answer:
-                answer_type, reason = "system_error", "empty_answer"
-            else:
-                answer_type, reason = "answered", "evidence_supported"
-        if answer_type == "restricted":
-            answer = "这条记录受访问权限保护，当前请求无权查看具体内容。"
+        answer_type, reason = decision.answer_type, decision.reason_code
         claim_text = answer.split("来源（", 1)[0].strip()
-        claims = [SupportedClaim(claim_text, memory_ids=selected_memory_ids, version_ids=selected_versions, source_ids=selected_source_ids)] if claim_text else []
+        claims = []
+        if claim_text and answer_type in {"answered", "qualified_history_only", "conflict"}:
+            claims = [SupportedClaim(claim_text, memory_ids=selected_memory_ids, version_ids=selected_versions, source_ids=selected_source_ids)]
         return AnswerResult(
             answer_type,
             answer,
@@ -2155,8 +2399,8 @@ def answer_question_result(
             selected_tool_refs=selected_tool_refs,
             executed_tools=executed_tools,
             evidence_bundle=evidence_bundle,
-            evidence_mode="history" if route and route.get("action") == "memory_history" else "current",
-            decision=AnswerDecision(answer_type, reason),
+            evidence_mode="history" if reason in {"history_query", "stale_history_only"} else "current",
+            decision=decision,
         )
     except Exception as exc:
         return AnswerResult("system_error", "", f"{type(exc).__name__}:{exc}", retryable=True, decision=AnswerDecision("system_error", "query_exception"))
