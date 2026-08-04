@@ -46,6 +46,8 @@ DATA_FILES = (
     "semantic_paraphrase_and_noise.jsonl",
 )
 
+NON_FACT_ANSWER_TYPES = {"no_answer", "conflict", "clarification", "restricted", "system_error"}
+
 
 def now_iso() -> str:
     from datetime import datetime, timezone
@@ -657,15 +659,13 @@ class CaseRunner:
             "retrieval": _safe_json(retrieval),
             "retrieved_refs": retrieved,
             # Stage 0 contract: do not infer selected context/tool evidence from
-            # answer text, Gold, route diagnostics, or extra lookups.  The current
-            # production entry has not exposed a unified selected-context/tool-ref
-            # contract yet, so these fields stay unavailable until Stage 1 wires
-            # EvidenceBundle through the production answer path.
-            "selected_context_refs": answer_selected_context_refs or None,
+            # answer text, Gold, route diagnostics, or extra lookups. Empty lists
+            # are valid exposed evidence for no_answer/restricted responses.
+            "selected_context_refs": answer_selected_context_refs if answer_contract_exposed else None,
             "selected_context_ref_status": "available" if answer_contract_exposed else "unavailable_until_stage1_evidence_bundle",
-            "selected_tool_refs": answer_selected_tool_refs or None,
+            "selected_tool_refs": answer_selected_tool_refs if answer_contract_exposed else None,
             "selected_tool_ref_status": "available" if answer_contract_exposed else "unavailable_until_stage1_evidence_bundle",
-            "executed_tools": answer_executed_tools or None,
+            "executed_tools": answer_executed_tools if answer_contract_exposed else None,
             "executed_tools_status": "available" if answer_contract_exposed else "unavailable_until_stage1_evidence_bundle",
             "raw_channel_hits": raw_hits,
             "executed_channels": sorted(executed_channels),
@@ -773,19 +773,25 @@ def _is_ambiguous_case(pred: dict[str, Any], expected: dict[str, Any]) -> bool:
 
 def score_case(pred: dict[str, Any]) -> dict[str, Any]:
     expected = pred.get("expected") or {}
+    answer_result = pred.get("answer_result") or {}
+    structured_type = str(answer_result.get("answer_type") or "")
+    expected_answer_type = str(expected.get("answer_type") or "")
     retrieved = pred.get("retrieved_refs") or []
+    selected_status = str(pred.get("selected_context_ref_status") or "")
+    selected_refs = pred.get("selected_context_refs")
+    judged_refs = set(selected_refs or []) if selected_status == "available" else set(retrieved)
     relevant_current = set(expected.get("relevant_current_refs") or [])
     relevant_history = set(expected.get("relevant_history_refs") or [])
     relevant = relevant_current | relevant_history
     must_not = set(expected.get("must_not_return_refs") or [])
     maps = _snapshot_maps(pred.get("memory_snapshot_input") or {})
     retrieved_set = set(retrieved)
-    must_not_hits = retrieved_set & must_not
+    must_not_hits = judged_refs & must_not
     ambiguous_case = _is_ambiguous_case(pred, expected)
-    stale_refs = {ref for ref in retrieved_set if _is_stale_ref(ref, maps, pred.get("query_time"))}
+    stale_refs = {ref for ref in judged_refs if _is_stale_ref(ref, maps, pred.get("query_time"))}
     sensitive_refs = {ref for ref in maps["memories"] if _is_sensitive_ref(ref, maps)}
-    ambiguous_refs = (retrieved_set - relevant) if ambiguous_case else set()
-    irrelevant_refs = retrieved_set - relevant - stale_refs - sensitive_refs - ambiguous_refs
+    ambiguous_refs = (judged_refs - relevant) if ambiguous_case else set()
+    irrelevant_refs = judged_refs - relevant - stale_refs - sensitive_refs - ambiguous_refs
     ranks = {ref: i + 1 for i, ref in enumerate(retrieved)}
     rank_metrics: dict[str, Any] = {}
     for k in (1, 3, 5, 10):
@@ -816,7 +822,9 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
     matched_claims = []
     structured_claims = [claim for claim in pred.get("answer_structured_claims") or [] if isinstance(claim, dict) and str(claim.get("text") or "")]
     group_score: dict[str, Any] | None = None
-    if expected_groups:
+    if expected_answer_type in NON_FACT_ANSWER_TYPES or structured_type in NON_FACT_ANSWER_TYPES:
+        answer_prf = _prf(0, len(structured_claims), len(claims))
+    elif expected_groups:
         produced_groups = [group for group in pred.get("answer_claim_groups") or [] if isinstance(group, dict)]
         matched_groups = 0
         order_correct = 0
@@ -884,16 +892,13 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
     )
     requester = (pred.get("access_context") or {}).get("requester")
     allow_sensitive = bool((pred.get("access_context") or {}).get("allow_sensitive"))
-    sensitive_returned = (set(retrieved) | cited) & sensitive_refs
+    sensitive_returned = (judged_refs | cited) & sensitive_refs
     sensitive_answer_leak = any(_match_text(content_by_ref.get(ref), answer) for ref in sensitive_refs if content_by_ref.get(ref))
     access_violation = bool(sensitive_returned and (requester != "owner" or not allow_sensitive)) or bool(sensitive_answer_leak and (requester != "owner" or not allow_sensitive))
-    expected_answer_type = str(expected.get("answer_type") or "")
-    expected_no = expected_answer_type == "no_answer" if expected_answer_type else bool(expected.get("no_answer"))
-    answer_result = pred.get("answer_result") or {}
-    structured_type = str(answer_result.get("answer_type") or "")
+    expected_no = expected_answer_type == "no_answer"
     restricted_predicted = structured_type == "restricted"
     restricted_expected = bool(sensitive_refs and (requester != "owner" or not allow_sensitive))
-    predicted_no = structured_type == "no_answer" or _answer_no(answer)
+    predicted_no = structured_type == "no_answer" or (not structured_type and _answer_no(answer))
     no_tp = int(expected_no and predicted_no)
     no_fp = int(not expected_no and predicted_no)
     no_fn = int(expected_no and not predicted_no)
@@ -908,7 +913,7 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
         "answer": {"claims": answer_prf, "claim_groups": group_score, "matched_claims": len(matched_claims), "expected_claims": len(claims), "forbidden_claim_hit": forbidden_hit, "stale_used": stale_answer, "stale_answer_usage": stale_answer, "answer_type": structured_type or ("no_answer" if predicted_no else "answered"), "reason_code": answer_result.get("reason_code"), "restricted_predicted": restricted_predicted, "restricted_expected": restricted_expected},
         "no_answer": {"expected": expected_no, "predicted": predicted_no, "tp": no_tp, "fp": no_fp, "fn": no_fn, "tn": no_tn, **_prf(no_tp, no_fp, no_fn)},
         "citation": {"required": sorted(required_sources), "actual": sorted(cited), "exact_set": cited == required_sources, **cite_prf},
-        "access": {"violation": access_violation, "sensitive_answer_leak": sensitive_answer_leak, "sensitive_refs": sorted(sensitive_refs), "retrieved_sensitive_refs": sorted(set(retrieved) & sensitive_refs), "must_not_return": bool(expected.get("must_not_return_refs")), "restricted_expected": restricted_expected, "restricted_predicted": restricted_predicted},
+        "access": {"violation": access_violation, "sensitive_answer_leak": sensitive_answer_leak, "sensitive_refs": sorted(sensitive_refs), "retrieved_sensitive_refs": sorted(judged_refs & sensitive_refs), "must_not_return": bool(expected.get("must_not_return_refs")), "restricted_expected": restricted_expected, "restricted_predicted": restricted_predicted},
         "stage0_contract": {
             "selected_context_refs_status": pred.get("selected_context_ref_status") or ("available" if pred.get("selected_context_refs") is not None else "unavailable"),
             "selected_tool_refs_status": pred.get("selected_tool_ref_status") or ("available" if pred.get("selected_tool_refs") is not None else "unavailable"),

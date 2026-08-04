@@ -89,6 +89,7 @@ def migrate_case(case: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     expected["answer_type"] = new_type
     expected["evidence_mode"] = mode
     expected["reason_code"] = reason
+    expected["no_answer"] = new_type == "no_answer"
     if new_type in {"no_answer", "restricted", "clarification", "conflict"}:
         expected["expected_claims"] = []
         expected["required_citation_refs"] = []

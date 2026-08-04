@@ -1462,6 +1462,8 @@ def _query_requested_attribute(question: str) -> str | None:
         value = match.group(1).strip(" 的是")
         value = re.sub(r"^(?:我|你|用户|使用者)(?:最)?(?:喜欢|喜歡|偏好|讨厌|討厭|不喜欢|不喜歡)(?:的)?", "", value)
         value = value.strip(" 的是")
+        if value in {"什么", "什麼", "哪个", "哪個", "哪些"}:
+            continue
         if value:
             return value
     return None
@@ -1995,6 +1997,7 @@ def _history_fallback_answer(result: Any, *, question: str | None = None) -> str
     ordered = sorted(items, key=lambda x: (int(x.get("version") or 0), str(x.get("created_at") or "")))
     statuses: list[str] = []
     topic = ""
+    contents: list[str] = []
     for item in ordered:
         key = f"{item.get('memory_id') or item.get('id')}:{item.get('version')}"
         if key in seen:
@@ -2002,6 +2005,8 @@ def _history_fallback_answer(result: Any, *, question: str | None = None) -> str
         seen.add(key)
         status = str(item.get("task_status") or "").strip()
         content = str(item.get("content") or "").strip()
+        if content:
+            contents.append(content)
         if status and status not in statuses:
             statuses.append(status)
         if not topic and content:
@@ -2016,6 +2021,40 @@ def _history_fallback_answer(result: Any, *, question: str | None = None) -> str
                 return f"{topic}先处于todo，随后进入blocked，最后转为done。"
             return f"{topic}依次经历了todo、blocked、done。"
         return f"{topic}依次经历了{'、'.join(statuses)}。"
+    preference_states: list[str] = []
+    preference_topics: list[str] = []
+    for content in contents:
+        text = content.strip(" ，,。；;：:")
+        if "不喜欢" in text:
+            preference_states.append("negative")
+            preference_topics.append(text.split("不喜欢", 1)[1].strip(" ，,。；;：:"))
+        elif "减少" in text:
+            preference_states.append("weakened")
+            preference_topics.append(text.split("减少", 1)[1].strip(" ，,。；;：:"))
+        elif "喜欢" in text:
+            preference_states.append("positive")
+            preference_topics.append(text.split("喜欢", 1)[1].strip(" ，,。；;：:"))
+    preference_topics = [value for value in preference_topics if value]
+    if preference_states and preference_topics:
+        preference_topic = preference_topics[-1]
+        if preference_states[0] == "positive" and preference_states[-1] == "negative":
+            if "weakened" in preference_states[1:-1]:
+                return f"你以前喜欢{preference_topic}，后来偏好减弱，现在不喜欢{preference_topic}。"
+            return f"你以前喜欢{preference_topic}，现在不喜欢{preference_topic}。"
+        if preference_states[0] == "negative" and preference_states[-1] == "positive":
+            return f"你以前不喜欢{preference_topic}，现在喜欢{preference_topic}。"
+    places: list[str] = []
+    for content in contents:
+        for marker in ("居住在", "居住于", "住在"):
+            if marker in content:
+                value = content.split(marker, 1)[1].strip(" ，,。；;：:")
+                if value:
+                    places.append(value)
+                break
+    places = list(dict.fromkeys(places))
+    normalized_question = _normalized_query(question or "")
+    if len(places) >= 2 and any(marker in normalized_question for marker in ("居住", "住在哪", "住哪里", "居住地")):
+        return f"你以前住在{places[0]}，现在住在{places[-1]}。"
     content = str(ordered[-1].get("content") or ordered[0].get("content") or "").strip()
     if "用户曾居住在" in content:
         return content.replace("用户曾居住在", "你以前居住于").rstrip("。") + "。"
@@ -2818,7 +2857,8 @@ def answer_question_result(
                 for item in runtime_bundle.items
                 if item.selected
             ]
-            runtime_selected = _relevant_evidence_items(question, runtime_selected)
+            if _query_requested_attribute(evidence_question):
+                runtime_selected = _relevant_evidence_items(evidence_question, runtime_selected)
             if runtime_selected and not evidence and not history_evidence and not _answer_is_no_answer(answer):
                 evidence = runtime_selected
             # The runtime path is authoritative: it contains the exact

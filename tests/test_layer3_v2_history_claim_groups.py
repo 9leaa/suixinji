@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from agent.answer_models import ClaimGroup, EvidenceBundle, RetrievalEvidence, SupportedClaim
-from agent.query_agent import _supported_claims_from_bundle, _timeline_claim_groups
+from agent.query_agent import _history_fallback_answer, _supported_claims_from_bundle, _timeline_claim_groups
 from eval.layer3.run_layer3_eval import score_case
 
 
@@ -48,3 +48,28 @@ def test_claim_group_rejects_non_timeline_group_type():
         assert "unsupported" in str(exc)
     else:
         raise AssertionError("unsupported group type must fail")
+
+
+def test_history_fallback_summarizes_preference_evolution():
+    answer = _history_fallback_answer(
+        [
+            {"id": "v1", "memory_id": "m1", "version": 1, "content": "用户喜欢绿茶"},
+            {"id": "v2", "memory_id": "m1", "version": 2, "content": "用户减少绿茶"},
+            {"id": "v3", "memory_id": "m1", "version": 3, "content": "用户不喜欢绿茶"},
+        ],
+        question="我对绿茶的偏好发生过什么变化？",
+    )
+
+    assert answer == "你以前喜欢绿茶，后来偏好减弱，现在不喜欢绿茶。"
+
+
+def test_history_fallback_summarizes_residence_evolution():
+    answer = _history_fallback_answer(
+        [
+            {"id": "v1", "memory_id": "m1", "version": 1, "content": "用户居住在上海"},
+            {"id": "v2", "memory_id": "m1", "version": 2, "content": "用户居住在新加坡"},
+        ],
+        question="我的居住地发生过什么变化？",
+    )
+
+    assert answer == "你以前住在上海，现在住在新加坡。"
