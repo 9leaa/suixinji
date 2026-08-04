@@ -1430,6 +1430,59 @@ def _item_query_overlap(question: str, item: dict[str, Any]) -> float:
     return len(q_terms & c_terms) / len(q_terms)
 
 
+def _query_requested_attribute(question: str) -> str | None:
+    """Extract a user-facing preference attribute without relying on case data."""
+    normalized = _normalized_query(question)
+    patterns = (
+        r"(?:最喜欢|最愛|偏好|喜欢|喜歡|讨厌|討厭|不喜欢|不喜歡)(?:的)?\s*([^？?，。吗呢是]+?)(?:是什么|是什麼|是什么呢|嗎|吗|呢|？|\?|$)",
+        r"(?:关于|關於)\s*([^？?，。]+?)(?:的)?(?:偏好|喜好|喜欢|喜歡)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, normalized, flags=re.IGNORECASE)
+        if not match:
+            continue
+        value = match.group(1).strip(" 的是")
+        value = re.sub(r"^(?:我|你|用户|使用者)(?:最)?(?:喜欢|喜歡|偏好|讨厌|討厭|不喜欢|不喜歡)(?:的)?", "", value)
+        value = value.strip(" 的是")
+        if value:
+            return value
+    return None
+
+
+def _candidate_topic_text(item: dict[str, Any]) -> str:
+    scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
+    return " ".join(
+        str(value or "")
+        for value in (
+            item.get("attribute"),
+            item.get("predicate"),
+            item.get("canonical_topic"),
+            scope.get("canonical_topic"),
+            item.get("object_value"),
+            item.get("content"),
+            item.get("memory_key"),
+        )
+    )
+
+
+def _topic_compatible(question: str, item: dict[str, Any]) -> bool:
+    """Require the requested attribute to be supported, not merely memory type."""
+    requested = _query_requested_attribute(question)
+    if not requested:
+        return True
+    candidate_text = _candidate_topic_text(item)
+    requested_norm = _normalized_query(requested).replace(" ", "")
+    candidate_norm = _normalized_query(candidate_text).replace(" ", "")
+    if requested_norm and requested_norm in candidate_norm:
+        return True
+    requested_terms = _lexical_terms(requested)
+    candidate_terms = _lexical_terms(candidate_text)
+    # For one-character Chinese attributes only literal containment is safe.
+    if len(requested_norm) <= 1:
+        return bool(requested_norm and requested_norm in candidate_norm)
+    return bool(requested_terms and len(requested_terms & candidate_terms) / len(requested_terms) >= 0.72)
+
+
 def _relevant_evidence_items(question: str, evidence: list[dict[str, Any]], *, floor: float = 0.70) -> list[dict[str, Any]]:
     """Keep high-confidence evidence. This avoids answering absent-topic asks from weak lexical overlap."""
     if not evidence:
@@ -1444,6 +1497,8 @@ def _relevant_evidence_items(question: str, evidence: list[dict[str, Any]], *, f
     top_score = float(ranked[0].get("score") or ranked[0].get("retrieval_fusion_score") or 0.0)
     kept: list[dict[str, Any]] = []
     for item in ranked:
+        if settings.QUERY_TOPIC_COMPATIBILITY_GATE_ENABLED and not _topic_compatible(question, item):
+            continue
         score = float(item.get("score") or item.get("retrieval_fusion_score") or 0.0)
         overlap = _item_query_overlap(question, item)
         content = str(item.get("content") or item.get("object_value") or "")

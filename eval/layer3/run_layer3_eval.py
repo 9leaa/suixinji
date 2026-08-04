@@ -344,11 +344,11 @@ class CaseRunner:
                 for source_ref in source_refs[1:]:
                     _add_source(session, db_id, f"layer3:{self.case['case_id']}:{source_ref}", "supported_by")
                 versions = [v for v in snapshot.get("versions", []) if str(v.get("memory_ref")) == logical_ref]
+                first = session.execute(
+                    select(MemoryVersion).where(MemoryVersion.memory_id == db_id, MemoryVersion.version == 1)
+                ).scalar_one_or_none()
                 if versions:
                     by_seq = {int(v.get("sequence") or 1): v for v in versions}
-                    first = session.execute(
-                        select(MemoryVersion).where(MemoryVersion.memory_id == db_id, MemoryVersion.version == 1)
-                    ).scalar_one_or_none()
                     for seq, version in sorted(by_seq.items()):
                         version_ref = str(version.get("version_ref") or f"{logical_ref}:v{seq}")
                         srcs = [str(x) for x in version.get("source_refs") or []]
