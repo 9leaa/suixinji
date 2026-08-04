@@ -307,7 +307,7 @@ class CaseRunner:
 
     def seed(self) -> None:
         from sqlalchemy import select
-        from infrastructure.schema import MemoryVersion, Space
+        from infrastructure.schema import MemoryDecision as MemoryDecisionRow, MemoryVersion, Space
         from repositories.postgres.common import ensure_tenant_space
         from repositories.postgres.memory import _add_source, _dt, _insert_memory, session_scope
 
@@ -374,6 +374,50 @@ class CaseRunner:
                         target.source_note_id = note
                         self.version_db_to_logical[str(target.id)] = version_ref
                     row.current_version = max(by_seq)
+            # A Layer3 pending review is seeded through the same persisted
+            # contract used in production: pending memory row plus a
+            # memory_decisions row that links the candidate/result to targets.
+            # `review_ref` remains evaluator metadata only; application code
+            # sees real database ids and decision fields.
+            for review in snapshot.get("pending_reviews", []) or []:
+                review_ref = str(review.get("review_ref") or "review")
+                refs = [str(ref) for ref in review.get("memory_refs") or []]
+                db_refs = [self.logical_to_db[ref] for ref in refs if ref in self.logical_to_db]
+                if not db_refs:
+                    continue
+                pending_ids = [
+                    memory_id
+                    for memory_id in db_refs
+                    if str(next((raw.get("status") for raw in snapshot.get("memories", []) if str(raw.get("memory_ref")) == self.db_to_logical.get(memory_id)), "")) == "pending_review"
+                ]
+                result_ids = pending_ids or [db_refs[-1]]
+                target_ids = [memory_id for memory_id in db_refs if memory_id not in result_ids]
+                session.add(
+                    MemoryDecisionRow(
+                        id=f"l3_{self.run_id}_{self.case['case_id']}_{review_ref}",
+                        space_id=self.space_id,
+                        note_id=f"layer3:{self.case['case_id']}:{review_ref}",
+                        candidate_id=f"layer3:{self.case['case_id']}:{review_ref}:candidate",
+                        relation="conflict",
+                        target_memory_ids_json=target_ids,
+                        confidence=0.8,
+                        reason=str(review.get("reason") or "pending_review"),
+                        evidence_json=[{"memory_id": memory_id} for memory_id in db_refs],
+                        recommended_action="pending_review",
+                        status="pending_review",
+                        result_memory_ids_json=result_ids,
+                        error=None,
+                        policy_version="layer3-eval-v1",
+                        adjudicator_version="layer3-eval-v1",
+                        model=None,
+                        prompt_hash=None,
+                        input_hash=None,
+                        target_snapshot_version=None,
+                        retry_of_decision_id=None,
+                        created_at=_dt(_iso_db(str(self.case["input"].get("query_time") or now_iso()))),
+                        applied_at=None,
+                    )
+                )
             session.flush()
         self.seed_vector_summary = _complete_seed_memory_vectors(vector_memory_ids)
 

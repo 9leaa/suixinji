@@ -24,7 +24,7 @@ from core.settings import MEMORY_QUERY_MIN_SCORE, QUERY_MIN_SCORE, QUERY_TOP_K, 
 from core.taxonomy import is_valid_tag, is_valid_type, normalize_tag, normalize_type
 from memory.service import memory_search
 from memory.access import AccessContext
-from memory.repository import get_memory, list_memories
+from memory.repository import get_memory, list_memory_decisions, list_memories
 from memory.consistency import wait_for_memory_barrier
 from memory.trace import add_step, finish_trace, start_trace
 from storage.note_storage import is_note_queryable, load_index
@@ -1467,13 +1467,12 @@ def _selected_evidence_answer(item: dict[str, Any], *, prefix: str = "根据记�
 
 
 def _conflict_answer(items: list[dict[str, Any]]) -> str:
-    lines = ["我找到相互冲突或尚待确认的记录，不能武断选择其中一个："]
-    for item in items[:5]:
-        status = str(item.get("status") or "")
-        label = "待复核" if status in {"pending_review", "pending", "conflicted"} else "当前记录"
-        content = str(item.get("content") or item.get("object_value") or item.get("id") or "")
-        lines.append(f"- {label}：{content}")
-    return "\n".join(lines)
+    # Conflict answers must not repeat either side as a fact.  Expose only a
+    # readable business topic and the need for confirmation.
+    first = next((item for item in items if isinstance(item, dict)), {})
+    scope = first.get("scope") if isinstance(first.get("scope"), dict) else {}
+    topic = str(first.get("predicate") or scope.get("canonical_topic") or first.get("memory_type") or "该事项")
+    return f"关于“{topic}”存在相互冲突或尚待确认的记录，暂不能确认当前结论。"
 
 
 def _clarification_answer(items: list[dict[str, Any]]) -> str:
@@ -1530,6 +1529,7 @@ def decide_answer(
     current_evidence: list[dict[str, Any]] | None = None,
     history_evidence: list[dict[str, Any]] | None = None,
     restricted_denied: bool = False,
+    pending_review_ids: list[str] | None = None,
 ) -> "AnswerDecision":
     """Evidence-first answer decision. LLM/string text must not decide availability."""
     from agent.answer_models import AnswerDecision, EvidenceBundle
@@ -1538,6 +1538,7 @@ def decide_answer(
     items = list(getattr(bundle, "items", []) or [])
     current_evidence = list(current_evidence or [])
     history_evidence = list(history_evidence or [])
+    pending_review_ids = list(dict.fromkeys(str(item) for item in (pending_review_ids or []) if item))
     if restricted_denied or any(getattr(item, "kind", "") == "access_denied" or getattr(item, "role", "") == "access_denied" for item in items):
         return AnswerDecision("restricted", "acl_filtered_all_evidence")
     if not items and not current_evidence and not history_evidence:
@@ -1545,7 +1546,12 @@ def decide_answer(
     if _query_history_intent(question, route) and (history_evidence or any(getattr(item, "role", "") in {"history", "stale_history"} for item in items)):
         return AnswerDecision("answered", "history_query")
     if _query_conflict_intent(question) and any(str(item.get("status") or "") in {"pending_review", "pending", "conflicted"} for item in current_evidence):
-        return AnswerDecision("conflict", "pending_review_conflict")
+        conflict_ids = pending_review_ids + [
+            str(item.get("id") or item.get("memory_id"))
+            for item in current_evidence
+            if str(item.get("status") or "") in {"pending_review", "pending", "conflicted"}
+        ]
+        return AnswerDecision("conflict", "pending_review_conflict", conflict_ids=list(dict.fromkeys(conflict_ids)))
     polarities: dict[str, set[str]] = {}
     for item in current_evidence:
         key = _evidence_identity_key(item)
@@ -2543,6 +2549,7 @@ def answer_question_result(
         stale_history = [] if history_evidence else _stale_history_fallback(space_id, question, limit=evidence_limit, access_context=context)
         if not evidence and stale_history:
             history_evidence = stale_history
+        pending_review_ids: list[str] = []
         if _query_conflict_intent(question):
             pending = [
                 memory.to_dict()
@@ -2553,6 +2560,18 @@ def answer_question_result(
                 pending = [item for item in pending if memory_access_allowed(item, context)]
             pending = _relevant_evidence_items(question, pending, floor=0.0)
             evidence = _merge_evidence(evidence, pending)
+            evidence_ids = {str(item.get("id") or item.get("memory_id") or "") for item in evidence}
+            for review in list_memory_decisions(space_id, status="pending_review", limit=evidence_limit):
+                review_refs = {
+                    str(ref)
+                    for ref in [
+                        *(review.get("target_memory_ids") or []),
+                        *(review.get("result_memory_ids") or []),
+                    ]
+                    if ref
+                }
+                if review_refs & evidence_ids:
+                    pending_review_ids.append(str(review.get("id") or ""))
         all_evidence = list(evidence) + list(history_evidence)
 
         structured_bundle = _build_evidence_bundle(all_evidence, [])
@@ -2618,6 +2637,7 @@ def answer_question_result(
             current_evidence=evidence,
             history_evidence=history_evidence,
             restricted_denied=restricted_denied,
+            pending_review_ids=pending_review_ids,
         )
 
         if decision.answer_type == "restricted":
