@@ -439,6 +439,24 @@ def _fuse_memory_results(groups: list[list[dict[str, Any]]], *, limit: int = 5) 
     return result
 
 
+def _mixed_language_query_rewrites(question: str) -> list[str]:
+    """Return generic intent-preserving rewrites alongside the original query."""
+    if not settings.QUERY_MIXED_LANGUAGE_REWRITE_ENABLED:
+        return []
+    normalized = _normalized_query(question)
+    latin_words = set(re.findall(r"[a-z]+", normalized))
+    rewrites: list[str] = []
+    current = bool(latin_words & {"current", "now", "currently", "recently"})
+    focus = bool(latin_words & {"focus", "mainly", "working", "work", "project"})
+    if current and focus:
+        rewrites.append("我现在主要在做什么？")
+    elif "focus" in latin_words:
+        rewrites.append("我当前的工作重点是什么？")
+    if "focus" in normalized and any(marker in normalized for marker in ("现在", "当前", "目前")):
+        rewrites.append("我当前的工作重点是什么？")
+    return list(dict.fromkeys(rewrite for rewrite in rewrites if _normalized_query(rewrite) != normalized))
+
+
 def _evidence_items(evidence: Any) -> list[dict[str, Any]]:
     """函数功能：`_evidence_items` 负责处理 evidence items，服务于本文件职责：问答主编排。
     传参：
@@ -2712,7 +2730,15 @@ def answer_question_result(
         route = _deterministic_route(question)
         evidence_limit = max(5, min(max_steps * 2, 20))
         fetched_evidence = _memory_search_compat(space_id, question, min_score=0.0, limit=evidence_limit, access_context=context)
-        evidence = _relevant_evidence_items(question, fetched_evidence)
+        rewrites = _mixed_language_query_rewrites(question)
+        rewritten_results = [
+            _memory_search_compat(space_id, rewrite, min_score=0.0, limit=evidence_limit, access_context=context)
+            for rewrite in rewrites
+        ]
+        if rewritten_results:
+            fetched_evidence = _fuse_memory_results([fetched_evidence, *rewritten_results], limit=evidence_limit)
+        evidence_question = rewrites[0] if rewrites else question
+        evidence = _relevant_evidence_items(evidence_question, fetched_evidence)
         history_evidence = memory_history(space_id, question, limit=evidence_limit, access_context=context) if route and route.get("action") == "memory_history" else []
         if route and route.get("action") == "memory_history" and history_evidence:
             evidence = []
