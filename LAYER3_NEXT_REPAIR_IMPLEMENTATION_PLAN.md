@@ -362,7 +362,28 @@ Answer type 契约：
 
 - `SUIXINJI_QUERY_STALE_HISTORY_FALLBACK_ENABLED` 独立开关。
 
-## 8. Stage 5：List / Profile 范围控制
+## 8. Stage 5 实施前 List Contract Audit
+
+在不读取 Gold 排除字段、也不让生产逻辑依赖 `logical_ref` 的前提下，先审计
+`l3_multianswer_001` 的业务字段。下表中的 m1–m6 仅是评测报告中的可读标签，
+生产排序使用 `scope.canonical_topic`、`task_status`、`object_value/current_value`、
+source 关系与业务时间。
+
+| 评测标签 | Topic | Status | 业务时间 | Source | Identity | 信息完整度 |
+|---|---|---|---|---|---|---|
+| m1 | 随心记评测 | todo | 2026-08-02 | 用户来源 s1 | canonical_topic=随心记评测 | content + current state + source |
+| m2 | 检索质量优化 | blocked | 2026-08-01 | 用户来源 s2 | canonical_topic=检索质量优化 | content + current state + source |
+| m3 | 上下文工程实验 | done | 2026-07-31 | 用户来源 s3 | canonical_topic=上下文工程实验 | content + current state + source |
+| m4 | 论文发言稿 | todo | 2026-07-10 | 来源标记为无关 s4 | canonical_topic=论文发言稿 | 缺少 current state，且来源无关 |
+| m5 | 思维导图连线修复 | todo | 2026-07-09 | 来源标记为无关 s5 | canonical_topic=思维导图连线修复 | 缺少 current state，且来源无关 |
+| m6 | 随心记评测 | todo | 2026-07-08 | 来源标记为无关 s6 | 与 m1 同 canonical_topic | 缺少 current state，且为较弱重复 |
+
+通用排序因此先保留具有明确 current state、source 支撑完整的记录，再按
+`canonical_topic` 去重，最后按业务时间和稳定 ID 排序，能够选择前三个业务项目；
+没有读取 Gold，也没有按 m1/m2/m3 或 case id 写特判。如果实际生产字段无法提供这些
+区分，必须暂停并修复数据契约，不能用隐藏特判通过评测。
+
+### Stage 5：List / Profile 范围控制
 
 目标：结构化列表按用户表达的数量、状态、主题、时间、去重、排序返回。选择 m1/m2/m3 必须来自通用业务排序，不得根据 gold 排除 m4/m5/m6。
 

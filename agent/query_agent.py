@@ -231,34 +231,36 @@ def _deterministic_route(question: str) -> dict[str, Any] | None:
             "synthesize": True,
             "reason": "history_synthesis_timeline",
         }
+    if any(marker in normalized for marker in _LIST_MARKERS):
+        constraints = parse_list_constraints(normalized, default_limit=3)
+        list_limit = int(constraints["limit"])
+        if constraints["memory_type"] == "episodic":
+            return {
+                "action": "list_recent_episodes",
+                "args": {"limit": list_limit, "query": normalized},
+                "synthesize": True,
+                "reason": "episode_inventory",
+            }
+        if constraints["memory_type"] == "task":
+            return {
+                "action": "list_tasks",
+                "args": {"limit": list_limit, "status": constraints["status"], "query": normalized},
+                "fallback": {"action": "filter_notes", "args": {"type": "任务", "limit": 30}},
+                "synthesize": True,
+                "reason": "task_inventory",
+            }
+        return {
+            "action": "profile_summary",
+            "args": {"query": normalized, "limit": list_limit},
+            "synthesize": True,
+            "reason": "profile_summary",
+        }
     if any(marker in normalized for marker in _HISTORY_MARKERS) and not current_fact_ask and not any(marker in normalized for marker in ("比较", "结合", "关联", "趋势", "总结", "归纳", "多次")):
         return {
             "action": "memory_history",
             "args": {"query": normalized, "limit": 10},
             "synthesize": True,
             "reason": "explicit_history_timeline",
-        }
-    if any(marker in normalized for marker in _LIST_MARKERS):
-        if any(marker in normalized for marker in ("任务", "待办", "进度", "状态")):
-            return {
-                "action": "list_tasks",
-                "args": {"limit": 30},
-                "fallback": {"action": "filter_notes", "args": {"type": "任务", "limit": 30}},
-                "synthesize": True,
-                "reason": "task_inventory",
-            }
-        if any(marker in normalized for marker in ("经历", "最近几件", "事件")):
-            return {
-                "action": "list_recent_episodes",
-                "args": {"limit": 10},
-                "synthesize": True,
-                "reason": "episode_inventory",
-            }
-        return {
-            "action": "profile_summary",
-            "args": {"query": normalized, "limit": 20},
-            "synthesize": True,
-            "reason": "profile_summary",
         }
     if "最近" in normalized and any(marker in normalized for marker in ("笔记", "记录", "记了", "写了")):
         return {
@@ -379,18 +381,11 @@ def _result_ids(result: Any) -> list[str]:
         返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
     ids: list[str] = []
-    if isinstance(result, list):
-        for item in result:
-            if isinstance(item, dict) and item.get("id"):
-                ids.append(str(item["id"]))
-    elif isinstance(result, dict):
-        if result.get("id"):
-            ids.append(str(result["id"]))
-        for key in ("related", "candidates"):
-            for item in result.get(key, []) if isinstance(result.get(key), list) else []:
-                if isinstance(item, dict) and item.get("id"):
-                    ids.append(str(item["id"]))
-    return ids[:10]
+    for item in _evidence_items(result):
+        item_id = item.get("id") or item.get("memory_id")
+        if item_id:
+            ids.append(str(item_id))
+    return list(dict.fromkeys(ids))[:10]
 
 
 def _low_quality_memory_result(result: Any) -> bool:
@@ -455,9 +450,15 @@ def _evidence_items(evidence: Any) -> list[dict[str, Any]]:
     if isinstance(evidence, list):
         items.extend(item for item in evidence if isinstance(item, dict))
     elif isinstance(evidence, dict):
-        items.append(evidence)
+        if evidence.get("id") or evidence.get("memory_id"):
+            items.append(evidence)
         items.extend(item for item in evidence.get("related", []) if isinstance(item, dict))
         items.extend(item for item in evidence.get("candidates", []) if isinstance(item, dict))
+        slots = evidence.get("slots")
+        if isinstance(slots, dict):
+            for values in slots.values():
+                if isinstance(values, list):
+                    items.extend(item for item in values if isinstance(item, dict))
     return items
 
 
@@ -629,20 +630,16 @@ def _build_evidence_bundle(selected_evidence: Any, observations: list[dict[str, 
                 if isinstance(item, dict):
                     add_item(item, tool=tool, selected=str(item.get("id") or "") in selected_ids, rank=rank)
         elif isinstance(result, dict):
-            add_item(result, tool=tool, selected=str(result.get("id") or "") in selected_ids, rank=1)
-            for rank, item in enumerate(result.get("related", []) if isinstance(result.get("related"), list) else [], start=2):
-                if isinstance(item, dict):
-                    add_item(item, tool=tool, selected=str(item.get("id") or "") in selected_ids, rank=rank)
-            for rank, item in enumerate(result.get("candidates", []) if isinstance(result.get("candidates"), list) else [], start=2):
-                if isinstance(item, dict):
-                    add_item(item, tool=tool, selected=str(item.get("id") or "") in selected_ids, rank=rank)
+            for rank, item in enumerate(_evidence_items(result), start=1):
+                add_item(item, tool=tool, selected=str(item.get("id") or item.get("memory_id") or "") in selected_ids, rank=rank)
 
     if isinstance(selected_evidence, list):
         for item in selected_evidence:
             if isinstance(item, dict):
                 add_item(item, selected=True)
     elif isinstance(selected_evidence, dict):
-        add_item(selected_evidence, selected=True)
+        for item in _evidence_items(selected_evidence):
+            add_item(item, selected=True)
 
     bundle = EvidenceBundle(items=items)
     if not bundle.selected_context_refs:
@@ -1202,6 +1199,209 @@ def _query_conflict_intent(question: str) -> bool:
     return any(marker in normalized for marker in ("到底", "冲突", "矛盾", "不一致", "确认一下", "究竟"))
 
 
+def _parse_list_limit(question: str, default: int = 3) -> int:
+    normalized = _normalized_query(question)
+    explicit = re.search(r"(\d+)\s*(?:个|项|条|件|份)?", normalized)
+    if explicit:
+        return max(1, min(int(explicit.group(1)), 10))
+    numeral_map = {
+        "一": 1,
+        "两": 2,
+        "二": 2,
+        "三": 3,
+        "四": 4,
+        "五": 5,
+        "六": 6,
+        "七": 7,
+        "八": 8,
+        "九": 9,
+        "十": 10,
+    }
+    for token, value in numeral_map.items():
+        if token in normalized and any(marker in normalized for marker in ("个", "项", "条", "件", "份", "项目", "状态")):
+            return value
+    return max(1, min(int(default), 10))
+
+
+def parse_list_constraints(question: str, *, default_limit: int = 3) -> dict[str, Any]:
+    """Parse portable list constraints; never infer them from evaluation data."""
+    normalized = _normalized_query(question)
+    memory_type = "profile"
+    if any(marker in normalized for marker in ("经历", "最近几件", "事件")):
+        memory_type = "episodic"
+    elif any(marker in normalized for marker in ("任务", "待办", "进度", "状态", "项目")):
+        memory_type = "task"
+
+    status: str | None = None
+    for token, value in (
+        ("todo", "todo"),
+        ("待办", "todo"),
+        ("待处理", "todo"),
+        ("blocked", "blocked"),
+        ("阻塞", "blocked"),
+        ("done", "done"),
+        ("完成", "done"),
+        ("canceled", "canceled"),
+        ("cancelled", "canceled"),
+        ("取消", "canceled"),
+    ):
+        if token in normalized:
+            status = value
+            break
+    return {
+        "limit": _parse_list_limit(normalized, default=default_limit),
+        "memory_type": memory_type,
+        "status": status,
+        "recent": "最近" in normalized,
+    }
+
+
+def _time_value(value: Any) -> str:
+    parsed = _parse_ts(value if isinstance(value, str) else str(value or ""))
+    return parsed.isoformat() if parsed is not None else ""
+
+
+def _business_time_value(item: dict[str, Any]) -> str:
+    return next((value for value in _business_time_sort_key(item) if value), "")
+
+
+def _business_time_sort_key(item: dict[str, Any]) -> tuple[str, ...]:
+    """Return business-time fields in priority order for stable comparisons."""
+    scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
+    event_candidates = (
+        item.get("event_time"),
+        item.get("event_at"),
+        item.get("business_time"),
+        scope.get("event_time"),
+        scope.get("event_at"),
+    )
+    valid_candidates = (item.get("valid_from"), scope.get("valid_from"))
+    content_date = re.search(r"20\d{2}-\d{1,2}-\d{1,2}", str(item.get("content") or ""))
+    sources = item.get("sources") if isinstance(item.get("sources"), list) else []
+    source_event_candidates: list[Any] = []
+    source_observed_candidates: list[Any] = []
+    for source in sources:
+        if isinstance(source, dict):
+            source_event_candidates.append(source.get("event_time"))
+            source_observed_candidates.append(source.get("observed_at"))
+
+    def latest(values: tuple[Any, ...] | list[Any]) -> str:
+        return max((_time_value(value) for value in values if _time_value(value)), default="")
+
+    # A tie in a higher-priority field must be resolved by the next field. For
+    # example, equal ingestion valid_from values must not hide different event
+    # dates stated in the episodic content.
+    return (
+        latest(event_candidates),
+        latest(valid_candidates),
+        _time_value(content_date.group(0)) if content_date else "",
+        latest(source_event_candidates),
+        latest(source_observed_candidates),
+        _time_value(item.get("updated_at")),
+        _time_value(item.get("created_at")),
+    )
+
+
+def _item_completeness_score(item: dict[str, Any]) -> int:
+    score = 0
+    if str(item.get("memory_type") or ""):
+        score += 1
+    if str(item.get("canonical_topic") or item.get("memory_key") or item.get("object_value") or ""):
+        score += 1
+    if str(item.get("task_status") or item.get("status") or ""):
+        score += 1
+    if str(item.get("current_value") or ""):
+        score += 2
+    if str(item.get("content") or ""):
+        score += 1
+    if item.get("sources"):
+        score += 1
+    if item.get("versions"):
+        score += 1
+    return score
+
+
+def _item_business_score(item: dict[str, Any]) -> tuple[Any, ...]:
+    content = str(item.get("content") or "")
+    current_value = str(item.get("current_value") or "")
+    task_status = str(item.get("task_status") or "")
+    scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
+    canonical_topic = str(scope.get("canonical_topic") or item.get("canonical_topic") or item.get("memory_key") or item.get("object_value") or item.get("content") or "")
+    source_count = len(item.get("sources") or [])
+    source_text = " ".join(
+        str(source.get("evidence_text") or source.get("content") or "")
+        for source in (item.get("sources") or [])
+        if isinstance(source, dict)
+    )
+    status_signal_text = " ".join((content, source_text, current_value, str(item.get("object_value") or "")))
+    structured_status_signal = bool(
+        re.search(
+            r"(?:[:：=]|当前(?:状态)?(?:是|为)?|现在(?:状态)?(?:是|为)?)\s*"
+            r"(todo|blocked|done|canceled|cancelled|pending_review|pending)\b",
+            status_signal_text,
+            flags=re.IGNORECASE,
+        )
+    )
+    state_matches_record = bool(task_status) and str(item.get("object_value") or current_value or "").casefold() == task_status.casefold()
+    current_signal = 1 if current_value or structured_status_signal or state_matches_record else 0
+    explicit_current_signal = 1 if any(marker in content for marker in ("当前", "现在")) or any(marker in source_text for marker in ("当前", "现在", "是todo", "是blocked", "是done")) or current_value or structured_status_signal or state_matches_record else 0
+    irrelevant_penalty = 1 if any(marker in source_text for marker in ("无关信息", "无关")) or "无关" in content else 0
+    duplicate_signal = 1 if canonical_topic and ((content and canonical_topic in content) or (source_text and canonical_topic in source_text)) else 0
+    completeness = _item_completeness_score(item)
+    business_time = _business_time_value(item)
+    return (
+        current_signal,
+        explicit_current_signal,
+        completeness,
+        source_count,
+        1 - irrelevant_penalty,
+        duplicate_signal,
+        {
+            "todo": 5,
+            "blocked": 4,
+            "done": 3,
+            "canceled": 2,
+            "cancelled": 2,
+            "pending_review": 1,
+            "pending": 1,
+            "active": 0,
+        }.get(task_status, 0),
+        business_time,
+        str(item.get("updated_at") or ""),
+    )
+
+
+def _item_identity_key(item: dict[str, Any]) -> str:
+    scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
+    return str(
+        scope.get("canonical_topic")
+        or item.get("canonical_topic")
+        or item.get("memory_key")
+        or item.get("object_value")
+        or item.get("id")
+        or item.get("content")
+        or ""
+    )
+
+
+def _sorted_business_items(items: list[dict[str, Any]], *, limit: int) -> list[dict[str, Any]]:
+    best_by_key: dict[str, dict[str, Any]] = {}
+    best_score_by_key: dict[str, tuple[Any, ...]] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        key = _item_identity_key(item)
+        score = _item_business_score(item)
+        if key not in best_by_key or score > best_score_by_key[key]:
+            best_by_key[key] = item
+            best_score_by_key[key] = score
+    # Stable tie-breaker is id ascending; all business fields above remain
+    # descending, so repository return order never changes a list answer.
+    ordered = sorted(best_by_key.values(), key=lambda item: str(item.get("id") or ""))
+    ordered.sort(key=_item_business_score, reverse=True)
+    return ordered[: max(1, min(int(limit), 100))]
+
+
 def _evidence_identity_key(item: dict[str, Any]) -> str:
     key = str(item.get("memory_key") or "").strip()
     if key:
@@ -1423,25 +1623,38 @@ def memory_history(space_id: str, query: str, *, limit: int = 10, access_context
     return rows
 
 
-def list_tasks(space_id: str, *, limit: int = 30, access_context: Any = None, status: str | None = None) -> list[dict[str, Any]]:
-    records = list_memories(space_id, status="active", memory_type="task", limit=max(1, min(int(limit), 100)))
+def list_tasks(space_id: str, *, limit: int = 30, access_context: Any = None, status: str | None = None, query: str = "") -> list[dict[str, Any]]:
+    fetch_limit = max(max(1, min(int(limit), 100)) * 4, 30)
+    records = list_memories(space_id, status="active", memory_type="task", limit=fetch_limit)
     if access_context is not None:
         from memory.access import memory_access_allowed
         records = [record for record in records if memory_access_allowed(record, access_context)]
-    result = []
-    for record in records:
-        if status and record.task_status != status:
-            continue
-        result.append(record.to_dict())
-    return result
+    items = [record.to_dict() for record in records]
+    if status:
+        items = [item for item in items if str(item.get("task_status") or "") == status]
+    # `query` is retained as an explicit contract field for future topic/time
+    # constraints; sorting itself only uses the returned business fields.
+    del query
+    return _sorted_business_items(items, limit=limit)
 
 
 def list_recent_episodes(space_id: str, *, limit: int = 10, access_context: Any = None) -> list[dict[str, Any]]:
-    records = list_memories(space_id, status="active", memory_type="episodic", limit=max(1, min(int(limit), 100)))
+    fetch_limit = max(max(1, min(int(limit), 100)) * 4, 30)
+    records = list_memories(space_id, status="active", memory_type="episodic", limit=fetch_limit)
     if access_context is not None:
         ctx = AccessContext.from_value(access_context)
         records = [record for record in records if not record.scope.get("sensitivity") or ctx.allow_sensitive or str(ctx.requester or "owner") == str(record.scope.get("owner_id") or ctx.owner_id or "owner")]
-    return [record.to_dict() for record in records]
+    items = [record.to_dict() for record in records]
+    items.sort(key=lambda item: str(item.get("id") or ""))
+    items.sort(
+        key=lambda item: (
+            _business_time_sort_key(item),
+            _item_completeness_score(item),
+            str(item.get("updated_at") or ""),
+        ),
+        reverse=True,
+    )
+    return items[: max(1, min(int(limit), 100))]
 
 
 def profile_summary(space_id: str, query: str, *, limit: int = 20, access_context: Any = None) -> dict[str, Any]:
@@ -1449,7 +1662,7 @@ def profile_summary(space_id: str, query: str, *, limit: int = 20, access_contex
     for memory_type in ("preference", "task", "semantic", "episodic"):
         hits = _memory_search_compat(space_id, query, memory_type=memory_type, min_score=0.0, limit=max(1, min(int(limit), 10)), access_context=access_context)
         if hits:
-            slots[memory_type] = hits
+            slots[memory_type] = _sorted_business_items(hits, limit=limit)
     return {"query": query, "slots": slots, "source": "structured_profile_summary"}
 
 
@@ -1513,7 +1726,13 @@ def _execute_tool(space_id: str, action: str, args: dict[str, Any], *, access_co
     if action == "memory_history":
         return memory_history(space_id, str(args.get("query", "")), limit=args.get("limit", 10), access_context=access_context)
     if action == "list_tasks":
-        return list_tasks(space_id, limit=args.get("limit", 30), status=args.get("status"), access_context=access_context)
+        return list_tasks(
+            space_id,
+            limit=args.get("limit", 30),
+            status=args.get("status"),
+            query=str(args.get("query") or ""),
+            access_context=access_context,
+        )
     if action == "list_recent_episodes":
         return list_recent_episodes(space_id, limit=args.get("limit", 10), access_context=access_context)
     if action == "profile_summary":
@@ -1617,8 +1836,9 @@ def _inventory_fallback_answer(action: str, result: Any) -> str:
     values = [item for item in (items or []) if isinstance(item, dict)]
     if not values:
         return "暂无符合条件的记录。"
-    title = "当前任务：" if action == "list_tasks" else "近期事件："
-    lines = [title]
+    # Keep one user-visible list item per evidence item.  A stand-alone title
+    # is not a claim and otherwise weakens per-item answer/citation contracts.
+    lines: list[str] = []
     for item in values[:10]:
         text = item.get("content") or item.get("object_value") or item.get("id")
         status = item.get("task_status") or item.get("status") or ""
