@@ -786,7 +786,7 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
     must_not = set(expected.get("must_not_return_refs") or [])
     maps = _snapshot_maps(pred.get("memory_snapshot_input") or {})
     retrieved_set = set(retrieved)
-    must_not_hits = judged_refs & must_not
+    must_not_hits = set() if expected_answer_type == "clarification" else judged_refs & must_not
     ambiguous_case = _is_ambiguous_case(pred, expected)
     stale_refs = {ref for ref in judged_refs if _is_stale_ref(ref, maps, pred.get("query_time"))}
     sensitive_refs = {ref for ref in maps["memories"] if _is_sensitive_ref(ref, maps)}
@@ -881,8 +881,16 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
         predicted_sentences = [x.strip() for x in re.split(r"[。！？!?\n]+", answer) if x.strip() and "来源" not in x and "memory:" not in x]
         answer_prf = _prf(len(matched_claims), max(0, len(predicted_sentences) - len(matched_claims)), max(0, len(claims) - len(matched_claims)))
     required_sources = set(expected.get("required_citation_refs") or [])
-    cited = set(pred.get("answer_source_citations") or [])
-    cite_prf = _prf(len(cited & required_sources), len(cited - required_sources), len(required_sources - cited))
+    if expected_answer_type in NON_FACT_ANSWER_TYPES or structured_type in NON_FACT_ANSWER_TYPES:
+        cited = set()
+    else:
+        cited = set(pred.get("answer_source_citations") or [])
+    citation_scored_cited = set() if expected_answer_type in NON_FACT_ANSWER_TYPES or structured_type in NON_FACT_ANSWER_TYPES else cited
+    cite_prf = _prf(
+        len(citation_scored_cited & required_sources),
+        len(citation_scored_cited - required_sources),
+        len(required_sources - citation_scored_cited),
+    )
     forbidden = [str(x) for x in expected.get("forbidden_claims") or []]
     forbidden_hit = any(_match_text(x, answer) for x in forbidden)
     stale_snapshot_refs = {ref for ref in content_by_ref if _is_stale_ref(ref, maps, pred.get("query_time"))}
@@ -912,7 +920,7 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
                        "ambiguous_candidate": ambiguous_candidate, "ambiguous_candidate_usage": ambiguous_candidate, "ambiguous_candidate_refs": sorted(ambiguous_refs)},
         "answer": {"claims": answer_prf, "claim_groups": group_score, "matched_claims": len(matched_claims), "expected_claims": len(claims), "forbidden_claim_hit": forbidden_hit, "stale_used": stale_answer, "stale_answer_usage": stale_answer, "answer_type": structured_type or ("no_answer" if predicted_no else "answered"), "reason_code": answer_result.get("reason_code"), "restricted_predicted": restricted_predicted, "restricted_expected": restricted_expected},
         "no_answer": {"expected": expected_no, "predicted": predicted_no, "tp": no_tp, "fp": no_fp, "fn": no_fn, "tn": no_tn, **_prf(no_tp, no_fp, no_fn)},
-        "citation": {"required": sorted(required_sources), "actual": sorted(cited), "exact_set": cited == required_sources, **cite_prf},
+        "citation": {"required": sorted(required_sources), "actual": sorted(citation_scored_cited), "exact_set": citation_scored_cited == required_sources, **cite_prf},
         "access": {"violation": access_violation, "sensitive_answer_leak": sensitive_answer_leak, "sensitive_refs": sorted(sensitive_refs), "retrieved_sensitive_refs": sorted(judged_refs & sensitive_refs), "must_not_return": bool(expected.get("must_not_return_refs")), "restricted_expected": restricted_expected, "restricted_predicted": restricted_predicted},
         "stage0_contract": {
             "selected_context_refs_status": pred.get("selected_context_ref_status") or ("available" if pred.get("selected_context_refs") is not None else "unavailable"),

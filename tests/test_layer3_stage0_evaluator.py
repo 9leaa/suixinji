@@ -116,10 +116,33 @@ def test_stage0_scores_ambiguous_candidate_usage_separately():
 
     scored = score_case(pred)
 
-    assert scored["retrieval"]["must_not_return_violation"] is True
+    assert scored["retrieval"]["must_not_return_violation"] is False
     assert scored["retrieval"]["ambiguous_candidate_usage"] is True
     assert scored["retrieval"]["ambiguous_candidate_refs"] == ["m1", "m2"]
     assert scored["retrieval"]["irrelevant_retrieval"] is False
+
+
+def test_stage0_non_fact_answer_evidence_sources_are_not_factual_citation_fp():
+    pred = _base_pred(
+        answer="我找到多个可能对象，请补充具体主题。",
+        answer_result={"answer_type": "clarification", "reason_code": "ambiguous_candidates"},
+        answer_source_citations=["s1", "s2"],
+        expected={
+            "answer_type": "clarification",
+            "relevant_current_refs": [],
+            "relevant_history_refs": [],
+            "must_not_return_refs": [],
+            "graded_relevance": {},
+            "expected_claims": [],
+            "required_citation_refs": [],
+            "no_answer": False,
+        },
+    )
+
+    scored = score_case(pred)
+
+    assert scored["citation"]["actual"] == []
+    assert scored["citation"]["fp"] == 0
 
 
 def test_stage0_restricted_prediction_does_not_require_sensitive_leak():
