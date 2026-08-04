@@ -589,6 +589,10 @@ class CaseRunner:
         answer_selected_tool_refs = [str(item) for item in (answer_result_payload.get("selected_tool_refs") or [])]
         answer_executed_tools = [str(item) for item in (answer_result_payload.get("executed_tools") or [])]
         answer_evidence_bundle = _safe_json(answer_result_payload.get("evidence_bundle"))
+        # Empty lists are legitimate production evidence (for example
+        # no_answer/restricted); only a missing structured AnswerResult is
+        # unavailable. Do not infer any values from answer text or Gold.
+        answer_contract_exposed = bool(answer_result_payload) and "evidence_bundle" in answer_result_payload
         # Evaluator adapter only: map production ids from the already exposed
         # structured claims. It never infers claims from answer text or Gold.
         answer_structured_claims = [
@@ -658,11 +662,11 @@ class CaseRunner:
             # contract yet, so these fields stay unavailable until Stage 1 wires
             # EvidenceBundle through the production answer path.
             "selected_context_refs": answer_selected_context_refs or None,
-            "selected_context_ref_status": "available" if answer_selected_context_refs else "unavailable_until_stage1_evidence_bundle",
+            "selected_context_ref_status": "available" if answer_contract_exposed else "unavailable_until_stage1_evidence_bundle",
             "selected_tool_refs": answer_selected_tool_refs or None,
-            "selected_tool_ref_status": "available" if answer_selected_tool_refs else "unavailable_until_stage1_evidence_bundle",
+            "selected_tool_ref_status": "available" if answer_contract_exposed else "unavailable_until_stage1_evidence_bundle",
             "executed_tools": answer_executed_tools or None,
-            "executed_tools_status": "available" if answer_executed_tools else "unavailable_until_stage1_evidence_bundle",
+            "executed_tools_status": "available" if answer_contract_exposed else "unavailable_until_stage1_evidence_bundle",
             "raw_channel_hits": raw_hits,
             "executed_channels": sorted(executed_channels),
             "answer": answer,
