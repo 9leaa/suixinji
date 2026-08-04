@@ -887,7 +887,8 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
     sensitive_returned = (set(retrieved) | cited) & sensitive_refs
     sensitive_answer_leak = any(_match_text(content_by_ref.get(ref), answer) for ref in sensitive_refs if content_by_ref.get(ref))
     access_violation = bool(sensitive_returned and (requester != "owner" or not allow_sensitive)) or bool(sensitive_answer_leak and (requester != "owner" or not allow_sensitive))
-    expected_no = bool(expected.get("no_answer"))
+    expected_answer_type = str(expected.get("answer_type") or "")
+    expected_no = expected_answer_type == "no_answer" if expected_answer_type else bool(expected.get("no_answer"))
     answer_result = pred.get("answer_result") or {}
     structured_type = str(answer_result.get("answer_type") or "")
     restricted_predicted = structured_type == "restricted"

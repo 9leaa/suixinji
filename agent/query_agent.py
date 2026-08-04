@@ -1526,12 +1526,14 @@ def _relevant_evidence_items(question: str, evidence: list[dict[str, Any]], *, f
             and score >= 0.45
             and any(marker in content for marker in ("当前", "现在", "重点", "主要", "focus"))
         )
+        ambiguous_reference_hit = _query_ambiguous_reference(question) and score >= 0.45 and overlap >= 0.08
         if (
             score >= floor
             or (floor <= 0.0 and overlap >= 0.12)
             or (top_score >= 0.90 and score >= max(0.45, top_score - 0.25))
             or (score >= 0.45 and overlap >= 0.20)
             or current_focus_hit
+            or ambiguous_reference_hit
         ):
             kept.append(item)
     return kept
@@ -2816,6 +2818,7 @@ def answer_question_result(
                 for item in runtime_bundle.items
                 if item.selected
             ]
+            runtime_selected = _relevant_evidence_items(question, runtime_selected)
             if runtime_selected and not evidence and not history_evidence and not _answer_is_no_answer(answer):
                 evidence = runtime_selected
             # The runtime path is authoritative: it contains the exact
