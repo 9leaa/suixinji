@@ -148,6 +148,10 @@ class SupportedClaim:
     memory_ids: list[str] = field(default_factory=list)
     version_ids: list[str] = field(default_factory=list)
     source_ids: list[str] = field(default_factory=list)
+    support_role: str = "current"
+    confidence: float | None = None
+    # Evaluator-only metadata. Production code must not make decisions from it.
+    logical_refs: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

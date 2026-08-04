@@ -583,6 +583,19 @@ class CaseRunner:
         answer_selected_tool_refs = [str(item) for item in (answer_result_payload.get("selected_tool_refs") or [])]
         answer_executed_tools = [str(item) for item in (answer_result_payload.get("executed_tools") or [])]
         answer_evidence_bundle = _safe_json(answer_result_payload.get("evidence_bundle"))
+        # Evaluator adapter only: map production ids from the already exposed
+        # structured claims. It never infers claims from answer text or Gold.
+        answer_structured_claims = [
+            {
+                "text": str(claim.get("text") or ""),
+                "memory_refs": [self._logical_ref(item) for item in claim.get("memory_ids") or []],
+                "version_refs": [self._logical_ref(item) for item in claim.get("version_ids") or []],
+                "source_refs": [self._logical_ref(item) for item in claim.get("source_ids") or []],
+                "support_role": claim.get("support_role"),
+            }
+            for claim in (answer_result_payload.get("claims") or [])
+            if isinstance(claim, dict)
+        ]
         source_refs_by_memory = {
             str(m.get("memory_ref")): [str(x) for x in (m.get("source_refs") or [])]
             for m in (inp.get("memory_snapshot") or {}).get("memories", [])
@@ -624,6 +637,7 @@ class CaseRunner:
             "answer_selected_context_refs": answer_selected_context_refs,
             "answer_selected_tool_refs": answer_selected_tool_refs,
             "answer_executed_tools": answer_executed_tools,
+            "answer_structured_claims": answer_structured_claims,
             "answer_evidence_bundle": answer_evidence_bundle,
             "answer_memory_citations": cited,
             "answer_source_citations": cited_source_refs,
@@ -758,19 +772,30 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
     answer = str(pred.get("answer") or "")
     claims = expected.get("expected_claims") or []
     matched_claims = []
-    for claim in claims:
-        if _match_text(claim.get("claim"), answer):
-            matched_claims.append(claim)
-            continue
-        # The answer generator may paraphrase the expected claim (for
-        # example, dropping "现在"), while still stating the exact memory
-        # content.  Count it as supported when one of the claim's referenced
-        # current memories/versions is present in the answer.
-        refs = set(claim.get("memory_refs") or []) | set(claim.get("version_refs") or [])
-        if any(_match_text(content_by_ref.get(ref), answer) for ref in refs if content_by_ref.get(ref)):
-            matched_claims.append(claim)
-    predicted_sentences = [x.strip() for x in re.split(r"[。！？!?\n]+", answer) if x.strip() and "来源" not in x and "memory:" not in x]
-    answer_prf = _prf(len(matched_claims), max(0, len(predicted_sentences) - len(matched_claims)), max(0, len(claims) - len(matched_claims)))
+    structured_claims = [claim for claim in pred.get("answer_structured_claims") or [] if isinstance(claim, dict) and str(claim.get("text") or "")]
+    if structured_claims:
+        for claim in claims:
+            expected_refs = set(claim.get("memory_refs") or []) | set(claim.get("version_refs") or [])
+            expected_sources = set(claim.get("source_refs") or [])
+            for produced in structured_claims:
+                produced_refs = set(produced.get("memory_refs") or []) | set(produced.get("version_refs") or [])
+                produced_sources = set(produced.get("source_refs") or [])
+                if _match_text(claim.get("claim"), produced.get("text")) or (
+                    expected_refs and expected_refs <= produced_refs and (not expected_sources or expected_sources <= produced_sources)
+                ):
+                    matched_claims.append(claim)
+                    break
+        answer_prf = _prf(len(matched_claims), max(0, len(structured_claims) - len(matched_claims)), max(0, len(claims) - len(matched_claims)))
+    else:
+        for claim in claims:
+            if _match_text(claim.get("claim"), answer):
+                matched_claims.append(claim)
+                continue
+            refs = set(claim.get("memory_refs") or []) | set(claim.get("version_refs") or [])
+            if any(_match_text(content_by_ref.get(ref), answer) for ref in refs if content_by_ref.get(ref)):
+                matched_claims.append(claim)
+        predicted_sentences = [x.strip() for x in re.split(r"[。！？!?\n]+", answer) if x.strip() and "来源" not in x and "memory:" not in x]
+        answer_prf = _prf(len(matched_claims), max(0, len(predicted_sentences) - len(matched_claims)), max(0, len(claims) - len(matched_claims)))
     required_sources = set(expected.get("required_citation_refs") or [])
     cited = set(pred.get("answer_source_citations") or [])
     cite_prf = _prf(len(cited & required_sources), len(cited - required_sources), len(required_sources - cited))

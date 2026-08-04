@@ -1466,6 +1466,42 @@ def _selected_evidence_answer(item: dict[str, Any], *, prefix: str = "根据记�
     return f"{prefix}，{content}。"
 
 
+def _supported_claims_from_bundle(bundle: Any, *, answer_type: str, reason_code: str) -> list[Any]:
+    """Produce one factual claim per selected production evidence item."""
+    from agent.answer_models import SupportedClaim
+
+    if answer_type not in {"answered", "qualified_history_only"} or bundle is None:
+        return []
+    claims: list[SupportedClaim] = []
+    seen: set[tuple[str, str, str]] = set()
+    for item in getattr(bundle, "items", []) or []:
+        if not getattr(item, "selected", False) or getattr(item, "kind", "") == "access_denied":
+            continue
+        metadata = getattr(item, "metadata", {}) or {}
+        text = str(metadata.get("content") or metadata.get("summary") or metadata.get("object_value") or "").strip()
+        if not text:
+            continue
+        memory_id = str(getattr(item, "memory_id", "") or "")
+        version_id = str(getattr(item, "version_id", "") or "")
+        key = (text, memory_id, version_id)
+        if key in seen:
+            continue
+        seen.add(key)
+        role = "history" if getattr(item, "role", "") in {"history", "stale_history"} or reason_code in {"history_query", "stale_history_only"} else "current"
+        claims.append(
+            SupportedClaim(
+                text=text,
+                claim_type="history_fact" if role == "history" else "fact",
+                memory_ids=[memory_id] if memory_id else [],
+                version_ids=[version_id] if version_id else [],
+                source_ids=list(getattr(item, "source_ids", []) or []),
+                support_role=role,
+                confidence=getattr(item, "score", None),
+            )
+        )
+    return claims
+
+
 def _conflict_answer(items: list[dict[str, Any]]) -> str:
     # Conflict answers must not repeat either side as a fact.  Expose only a
     # readable business topic and the need for confirmation.
@@ -2533,7 +2569,7 @@ def answer_question_result(
     access_context: dict[str, Any] | AccessContext | None = None,
 ) -> "AnswerResult":
     """Structured contract; the legacy answer_question API remains string-returning."""
-    from agent.answer_models import AnswerResult, AnswerDecision, EvidenceBundle, RetrievalEvidence, SupportedClaim
+    from agent.answer_models import AnswerResult, AnswerDecision, EvidenceBundle, RetrievalEvidence
     context = _memory_access_context(access_context, requester=user_id or "owner")
     try:
         if mentions_sensitive_topic(question):
@@ -2672,10 +2708,7 @@ def answer_question_result(
         executed_tools = list(answer_bundle.executed_tools) if answer_bundle is not None else []
         evidence_bundle = answer_bundle
         answer_type, reason = decision.answer_type, decision.reason_code
-        claim_text = answer.split("来源（", 1)[0].strip()
-        claims = []
-        if claim_text and answer_type in {"answered", "qualified_history_only", "conflict"}:
-            claims = [SupportedClaim(claim_text, memory_ids=selected_memory_ids, version_ids=selected_versions, source_ids=selected_source_ids)]
+        claims = _supported_claims_from_bundle(answer_bundle, answer_type=answer_type, reason_code=reason)
         return AnswerResult(
             answer_type,
             answer,
