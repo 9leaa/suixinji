@@ -24,7 +24,7 @@ from core.settings import MEMORY_QUERY_MIN_SCORE, QUERY_MIN_SCORE, QUERY_TOP_K, 
 from core.taxonomy import is_valid_tag, is_valid_type, normalize_tag, normalize_type
 from memory.service import memory_search
 from memory.access import AccessContext
-from memory.repository import get_memory, list_memory_decisions, list_memories
+from memory.repository import get_memory, get_memory_timeline, list_memory_decisions, list_memories
 from memory.consistency import wait_for_memory_barrier
 from memory.trace import add_step, finish_trace, start_trace
 from storage.note_storage import is_note_queryable, load_index
@@ -574,15 +574,20 @@ def _build_evidence_bundle(selected_evidence: Any, observations: list[dict[str, 
             return
         seen.add(item_id)
         source_ids: list[str] = []
-        for source in item.get("sources") or []:
-            if isinstance(source, dict):
-                note_id = str(source.get("note_id") or source.get("source_ref") or "")
-                if note_id:
-                    source_ids.append(note_id)
-            elif source:
-                source_ids.append(str(source))
-        if item.get("source_note_id"):
+        # A timeline version is supported by its own source, not every source
+        # on the parent memory. This preserves per-version provenance.
+        if item.get("history") and item.get("source_note_id"):
             source_ids.append(str(item.get("source_note_id")))
+        else:
+            for source in item.get("sources") or []:
+                if isinstance(source, dict):
+                    note_id = str(source.get("note_id") or source.get("source_ref") or "")
+                    if note_id:
+                        source_ids.append(note_id)
+                elif source:
+                    source_ids.append(str(source))
+            if item.get("source_note_id"):
+                source_ids.append(str(item.get("source_note_id")))
         if item.get("selected_source_ids"):
             source_ids.extend(str(source_id) for source_id in item.get("selected_source_ids") if source_id)
         kind = "memory"
@@ -1491,6 +1496,7 @@ def _supported_claims_from_bundle(bundle: Any, *, answer_type: str, reason_code:
         claims.append(
             SupportedClaim(
                 text=text,
+                claim_id=(f"version:{version_id}" if version_id else f"memory:{memory_id}"),
                 claim_type="history_fact" if role == "history" else "fact",
                 memory_ids=[memory_id] if memory_id else [],
                 version_ids=[version_id] if version_id else [],
@@ -1500,6 +1506,69 @@ def _supported_claims_from_bundle(bundle: Any, *, answer_type: str, reason_code:
             )
         )
     return claims
+
+
+def _timeline_claim_groups(
+    bundle: Any,
+    claims: list[Any],
+    *,
+    answer_type: str,
+    reason_code: str,
+    answer: str,
+) -> list[Any]:
+    """Expose a summary of a versioned timeline without discarding atomic claims."""
+    from agent.answer_models import ClaimGroup, SupportedClaim
+
+    if not settings.QUERY_TIMELINE_CLAIM_GROUP_ENABLED:
+        return []
+    if answer_type not in {"answered", "qualified_history_only"} or reason_code not in {"history_query", "stale_history_only"}:
+        return []
+    history_claims = [
+        claim for claim in claims
+        if getattr(claim, "support_role", "") == "history" and getattr(claim, "version_ids", None)
+    ]
+    if len(history_claims) < 2:
+        return []
+    order_by_version: dict[str, tuple[int, str]] = {}
+    for item in getattr(bundle, "items", []) or []:
+        version_id = str(getattr(item, "version_id", "") or "")
+        if not version_id:
+            continue
+        metadata = getattr(item, "metadata", {}) or {}
+        order_by_version[version_id] = (
+            int(metadata.get("version") or metadata.get("sequence") or 0),
+            str(metadata.get("valid_from") or metadata.get("created_at") or version_id),
+        )
+    history_claims.sort(
+        key=lambda claim: order_by_version.get(str(claim.version_ids[0]), (0, str(claim.version_ids[0])))
+    )
+    memory_ids = list(dict.fromkeys(memory_id for claim in history_claims for memory_id in claim.memory_ids))
+    version_ids = list(dict.fromkeys(version_id for claim in history_claims for version_id in claim.version_ids))
+    source_ids = list(dict.fromkeys(source_id for claim in history_claims for source_id in claim.source_ids))
+    summary_text = str(answer or "").split("来源（", 1)[0].strip()
+    if not summary_text:
+        return []
+    summary = SupportedClaim(
+        text=summary_text,
+        claim_id="timeline_summary:" + ":".join(version_ids),
+        claim_type="timeline_summary",
+        memory_ids=memory_ids,
+        version_ids=version_ids,
+        source_ids=source_ids,
+        support_role="history",
+    )
+    return [
+        ClaimGroup(
+            group_type="timeline",
+            summary_claim=summary,
+            ordered_member_claim_ids=[str(claim.claim_id) for claim in history_claims if claim.claim_id],
+            member_claims=history_claims,
+            memory_ids=memory_ids,
+            version_ids=version_ids,
+            source_ids=source_ids,
+            support_role="history",
+        )
+    ]
 
 
 def _conflict_answer(items: list[dict[str, Any]]) -> str:
@@ -1528,12 +1597,20 @@ def _stale_history_fallback(space_id: str, question: str, *, limit: int = 8, acc
     if access_context is not None:
         from memory.access import memory_access_allowed
         candidates = [memory for memory in candidates if memory_access_allowed(memory, access_context)]
+    # `MemoryRecord.to_dict()` deliberately does not hydrate versions. Fetch the
+    # first-class timeline once, otherwise stale-only answers lose their real
+    # version ID and per-version source provenance.
+    timelines = {
+        str(item.get("memory_id") or item.get("id") or ""): item
+        for item in get_memory_timeline(space_id, limit=max(1, min(int(limit), 100)), access_context=access_context)
+        if isinstance(item, dict)
+    }
     rows: list[dict[str, Any]] = []
     for memory in candidates:
         status = str(getattr(memory, "status", "") or "")
         if status not in {"superseded", "expired", "archived", "forgotten", "deleted"}:
             continue
-        data = memory.to_dict()
+        data = dict(timelines.get(str(getattr(memory, "id", ""))) or memory.to_dict())
         overlap = _item_query_overlap(question, data)
         if overlap < 0.08:
             continue
@@ -1547,6 +1624,8 @@ def _stale_history_fallback(space_id: str, question: str, *, limit: int = 8, acc
                 item["memory_key"] = data.get("memory_key")
                 item["history"] = True
                 item["status"] = status
+                # `_build_evidence_bundle` will use source_note_id for a
+                # version; retain parent sources only as a rendering fallback.
                 item["sources"] = data.get("sources") or []
                 item["score"] = max(0.45, overlap)
                 rows.append(item)
@@ -2709,11 +2788,19 @@ def answer_question_result(
         evidence_bundle = answer_bundle
         answer_type, reason = decision.answer_type, decision.reason_code
         claims = _supported_claims_from_bundle(answer_bundle, answer_type=answer_type, reason_code=reason)
+        claim_groups = _timeline_claim_groups(
+            answer_bundle,
+            claims,
+            answer_type=answer_type,
+            reason_code=reason,
+            answer=answer,
+        )
         return AnswerResult(
             answer_type,
             answer,
             reason,
             claims=claims,
+            claim_groups=claim_groups,
             citations=[{"memory_id": item} for item in citations],
             selected_memory_ids=selected_memory_ids,
             selected_version_ids=selected_versions,

@@ -374,6 +374,12 @@ class CaseRunner:
                         target.source_note_id = note
                         self.version_db_to_logical[str(target.id)] = version_ref
                     row.current_version = max(by_seq)
+                elif first is not None:
+                    # The v1 stale-only fixtures describe the initial persisted
+                    # version as v1 without repeating it in `versions`.  This is
+                    # a seed-side ID mapping (not an answer-text/Gold inference)
+                    # for the real MemoryVersion row created with the memory.
+                    self.version_db_to_logical[str(first.id)] = "v1"
             # A Layer3 pending review is seeded through the same persisted
             # contract used in production: pending memory row plus a
             # memory_decisions row that links the candidate/result to targets.
@@ -596,6 +602,31 @@ class CaseRunner:
             for claim in (answer_result_payload.get("claims") or [])
             if isinstance(claim, dict)
         ]
+        def map_claim(claim: dict[str, Any]) -> dict[str, Any]:
+            return {
+                "text": str(claim.get("text") or ""),
+                "claim_id": claim.get("claim_id"),
+                "memory_refs": [self._logical_ref(item) for item in claim.get("memory_ids") or []],
+                "version_refs": [self._logical_ref(item) for item in claim.get("version_ids") or []],
+                "source_refs": [self._logical_ref(item) for item in claim.get("source_ids") or []],
+                "support_role": claim.get("support_role"),
+            }
+        answer_claim_groups = []
+        for group in answer_result_payload.get("claim_groups") or []:
+            if not isinstance(group, dict):
+                continue
+            summary = group.get("summary_claim")
+            members = group.get("member_claims") or []
+            answer_claim_groups.append({
+                "group_type": group.get("group_type"),
+                "summary_claim": map_claim(summary) if isinstance(summary, dict) else {},
+                "ordered_member_claim_ids": [str(item) for item in group.get("ordered_member_claim_ids") or []],
+                "member_claims": [map_claim(item) for item in members if isinstance(item, dict)],
+                "memory_refs": [self._logical_ref(item) for item in group.get("memory_ids") or []],
+                "version_refs": [self._logical_ref(item) for item in group.get("version_ids") or []],
+                "source_refs": [self._logical_ref(item) for item in group.get("source_ids") or []],
+                "support_role": group.get("support_role"),
+            })
         source_refs_by_memory = {
             str(m.get("memory_ref")): [str(x) for x in (m.get("source_refs") or [])]
             for m in (inp.get("memory_snapshot") or {}).get("memories", [])
@@ -638,6 +669,7 @@ class CaseRunner:
             "answer_selected_tool_refs": answer_selected_tool_refs,
             "answer_executed_tools": answer_executed_tools,
             "answer_structured_claims": answer_structured_claims,
+            "answer_claim_groups": answer_claim_groups,
             "answer_evidence_bundle": answer_evidence_bundle,
             "answer_memory_citations": cited,
             "answer_source_citations": cited_source_refs,
@@ -771,9 +803,44 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
         content_by_ref[ref] = str(version.get("content") or "")
     answer = str(pred.get("answer") or "")
     claims = expected.get("expected_claims") or []
+    expected_groups = expected.get("expected_claim_groups") or []
     matched_claims = []
     structured_claims = [claim for claim in pred.get("answer_structured_claims") or [] if isinstance(claim, dict) and str(claim.get("text") or "")]
-    if structured_claims:
+    group_score: dict[str, Any] | None = None
+    if expected_groups:
+        produced_groups = [group for group in pred.get("answer_claim_groups") or [] if isinstance(group, dict)]
+        matched_groups = 0
+        order_correct = 0
+        version_source_correct = 0
+        for expected_group in expected_groups:
+            if not isinstance(expected_group, dict):
+                continue
+            target_versions = [str(item) for item in expected_group.get("version_refs") or []]
+            target_sources = set(str(item) for item in expected_group.get("source_refs") or [])
+            target_summary = (expected_group.get("summary_claim") or {}).get("claim")
+            for produced_group in produced_groups:
+                if produced_group.get("group_type") != expected_group.get("group_type"):
+                    continue
+                actual_versions = [str(item) for item in produced_group.get("version_refs") or []]
+                actual_sources = set(str(item) for item in produced_group.get("source_refs") or [])
+                actual_summary = (produced_group.get("summary_claim") or {}).get("text")
+                if target_versions != actual_versions or target_sources != actual_sources:
+                    continue
+                if target_summary and not _match_text(target_summary, actual_summary):
+                    continue
+                matched_groups += 1
+                order_correct += 1
+                version_source_correct += 1
+                break
+        answer_prf = _prf(matched_groups, max(0, len(produced_groups) - matched_groups), max(0, len(expected_groups) - matched_groups))
+        group_score = {
+            "groups": answer_prf,
+            "matched": matched_groups,
+            "expected": len(expected_groups),
+            "timeline_order_accuracy": round(order_correct / len(expected_groups), 6) if expected_groups else 0.0,
+            "version_source_exact": round(version_source_correct / len(expected_groups), 6) if expected_groups else 0.0,
+        }
+    elif structured_claims:
         for claim in claims:
             expected_refs = set(claim.get("memory_refs") or []) | set(claim.get("version_refs") or [])
             expected_sources = set(claim.get("source_refs") or [])
@@ -828,7 +895,7 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
                        "must_not_return_violation": must_not_return_violation, "must_not_return_refs": sorted(must_not_hits),
                        "irrelevant_retrieval": irrelevant_retrieved, "irrelevant_refs": sorted(irrelevant_refs),
                        "ambiguous_candidate": ambiguous_candidate, "ambiguous_candidate_usage": ambiguous_candidate, "ambiguous_candidate_refs": sorted(ambiguous_refs)},
-        "answer": {"claims": answer_prf, "matched_claims": len(matched_claims), "expected_claims": len(claims), "forbidden_claim_hit": forbidden_hit, "stale_used": stale_answer, "stale_answer_usage": stale_answer, "answer_type": structured_type or ("no_answer" if predicted_no else "answered"), "reason_code": answer_result.get("reason_code"), "restricted_predicted": restricted_predicted, "restricted_expected": restricted_expected},
+        "answer": {"claims": answer_prf, "claim_groups": group_score, "matched_claims": len(matched_claims), "expected_claims": len(claims), "forbidden_claim_hit": forbidden_hit, "stale_used": stale_answer, "stale_answer_usage": stale_answer, "answer_type": structured_type or ("no_answer" if predicted_no else "answered"), "reason_code": answer_result.get("reason_code"), "restricted_predicted": restricted_predicted, "restricted_expected": restricted_expected},
         "no_answer": {"expected": expected_no, "predicted": predicted_no, "tp": no_tp, "fp": no_fp, "fn": no_fn, "tn": no_tn, **_prf(no_tp, no_fp, no_fn)},
         "citation": {"required": sorted(required_sources), "actual": sorted(cited), "exact_set": cited == required_sources, **cite_prf},
         "access": {"violation": access_violation, "sensitive_answer_leak": sensitive_answer_leak, "sensitive_refs": sorted(sensitive_refs), "retrieved_sensitive_refs": sorted(set(retrieved) & sensitive_refs), "must_not_return": bool(expected.get("must_not_return_refs")), "restricted_expected": restricted_expected, "restricted_predicted": restricted_predicted},

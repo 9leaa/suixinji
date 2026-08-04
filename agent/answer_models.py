@@ -144,6 +144,7 @@ class EvidenceBundle:
 @dataclass
 class SupportedClaim:
     text: str
+    claim_id: str | None = None
     claim_type: str = "fact"
     memory_ids: list[str] = field(default_factory=list)
     version_ids: list[str] = field(default_factory=list)
@@ -155,6 +156,43 @@ class SupportedClaim:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass
+class ClaimGroup:
+    """A composite claim while retaining the independently verifiable members."""
+
+    group_type: str
+    summary_claim: SupportedClaim
+    ordered_member_claim_ids: list[str] = field(default_factory=list)
+    member_claims: list[SupportedClaim] = field(default_factory=list)
+    memory_ids: list[str] = field(default_factory=list)
+    version_ids: list[str] = field(default_factory=list)
+    source_ids: list[str] = field(default_factory=list)
+    support_role: str = "history"
+
+    def __post_init__(self) -> None:
+        if self.group_type != "timeline":
+            raise ValueError(f"unsupported claim group type: {self.group_type}")
+        self.member_claims = [
+            item if isinstance(item, SupportedClaim) else SupportedClaim(**item)
+            for item in self.member_claims
+            if isinstance(item, (SupportedClaim, dict))
+        ]
+        if not self.ordered_member_claim_ids:
+            self.ordered_member_claim_ids = [
+                str(item.claim_id) for item in self.member_claims if item.claim_id
+            ]
+        if not self.memory_ids:
+            self.memory_ids = list(dict.fromkeys(memory_id for item in self.member_claims for memory_id in item.memory_ids))
+        if not self.version_ids:
+            self.version_ids = list(dict.fromkeys(version_id for item in self.member_claims for version_id in item.version_ids))
+        if not self.source_ids:
+            self.source_ids = list(dict.fromkeys(source_id for item in self.member_claims for source_id in item.source_ids))
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
 
 @dataclass
 class AnswerDecision:
@@ -177,6 +215,7 @@ class AnswerResult:
     answer: str
     reason_code: str = "evidence_supported"
     claims: list[SupportedClaim] = field(default_factory=list)
+    claim_groups: list[ClaimGroup] = field(default_factory=list)
     citations: list[dict[str, Any]] = field(default_factory=list)
     selected_memory_ids: list[str] = field(default_factory=list)
     selected_version_ids: list[str] = field(default_factory=list)
@@ -192,6 +231,16 @@ class AnswerResult:
     def __post_init__(self) -> None:
         if self.answer_type not in ANSWER_TYPES:
             self.answer_type = "system_error"
+        self.claims = [
+            item if isinstance(item, SupportedClaim) else SupportedClaim(**item)
+            for item in self.claims
+            if isinstance(item, (SupportedClaim, dict))
+        ]
+        self.claim_groups = [
+            item if isinstance(item, ClaimGroup) else ClaimGroup(**item)
+            for item in self.claim_groups
+            if isinstance(item, (ClaimGroup, dict))
+        ]
         if isinstance(self.evidence_bundle, dict):
             self.evidence_bundle = EvidenceBundle.from_dict(self.evidence_bundle)
         if self.evidence_bundle is not None:
