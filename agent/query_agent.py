@@ -2818,7 +2818,11 @@ def answer_question_result(
             ]
             if runtime_selected and not evidence and not history_evidence and not _answer_is_no_answer(answer):
                 evidence = runtime_selected
-            answer_bundle = structured_bundle if structured_bundle.items else runtime_bundle
+            # The runtime path is authoritative: it contains the exact
+            # deterministic profile/list tool output selected for the answer.
+            # The prefetch bundle is only a fallback when the runtime path did
+            # not expose evidence at all.
+            answer_bundle = runtime_bundle if runtime_bundle.items else structured_bundle
             if answer_bundle is not None:
                 if not answer_bundle.selected_tool_refs:
                     answer_bundle.selected_tool_refs = list(runtime_bundle.selected_tool_refs)

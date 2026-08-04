@@ -631,7 +631,12 @@ class CaseRunner:
             str(m.get("memory_ref")): [str(x) for x in (m.get("source_refs") or [])]
             for m in (inp.get("memory_snapshot") or {}).get("memories", [])
         }
-        cited_source_refs = sorted({ref for logical in cited for ref in source_refs_by_memory.get(logical, [])})
+        # Structured selected sources are the production contract. Text source
+        # lines are presentation-only and may be truncated, so use them solely
+        # as a legacy fallback when the production result has no source IDs.
+        cited_source_refs = sorted(set(answer_selected_source_refs))
+        if not cited_source_refs:
+            cited_source_refs = sorted({ref for logical in cited for ref in source_refs_by_memory.get(logical, [])})
         return {
             "case_id": self.case["case_id"],
             "dataset": self.case.get("dataset"),
