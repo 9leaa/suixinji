@@ -18,10 +18,10 @@ def infer_task_status(text: str) -> str | None:
         返回 `str | None`；未命中或无需处理时可返回 `None`。
     """
     value = str(text or "")
-    if any(token in value for token in ("取消", "不用做", "不做了")):
-        return "cancelled"
-    if any(token in value for token in ("卡住", "阻塞", "等确认")):
-        return "blocked"
+    if any(token in value for token in ("取消", "不用做", "不做了", "放弃")):
+        return "done"
+    if any(token in value for token in ("卡住", "阻塞", "等确认", "等待权限", "暂停")):
+        return "todo"
     if any(token in value for token in ("正在", "进行中", "继续")):
         return "todo"
     if any(token in value for token in ("需要", "记得", "待办", "要做", "准备", "计划")):
@@ -45,6 +45,7 @@ def validate_task_status(value: str | None) -> str | None:
     if value is None:
         return None
     normalized = str(value).strip().lower()
+    normalized = {"in_progress": "todo", "blocked": "todo", "cancelled": "done", "canceled": "done"}.get(normalized, normalized)
     if normalized not in TASK_STATUSES:
         raise ValueError(f"invalid task_status: {value}")
     return normalized

@@ -23,6 +23,39 @@ from memory.relation_classifier import classify_relation
 from memory.service import process_note_memory
 
 
+def test_high_confidence_task_identity_llm_can_bridge_wording_but_local_rules_choose_transition(monkeypatch):
+    from core import settings
+    from memory import advisory
+    from memory.canonicalizer import canonicalize_candidate
+
+    old_candidate = canonicalize_candidate(MemoryCandidate(
+        "task", "记得完成随心记第三层评测", 0.8, 0.95, task_status="todo",
+        subject="随心记", predicate="第三层评测", object_value="第三层评测",
+        scope={"operation": "评测", "scope": "global"},
+    ))
+    old = insert_memory("identity-llm", old_candidate, source_note_id="old-note")
+    incoming = canonicalize_candidate(MemoryCandidate(
+        "task", "Layer 3 全量验证已经做完", 0.8, 0.96, task_status="done",
+        subject="随心记", predicate="Layer 3 全量验证", object_value="Layer 3 全量验证",
+        scope={"operation": "评测", "scope": "global"},
+    ))
+    monkeypatch.setattr(settings, "STRONG_ESCALATION_ENABLED", True)
+    monkeypatch.setattr(
+        advisory,
+        "maybe_memory_identity_adjudication",
+        lambda candidate, memories: {
+            "identity_relation": "same_instance", "target_memory_id": old.id, "confidence": 0.97,
+            "reason_code": "same_goal_paraphrase", "supporting_fields": ["project", "goal"], "conflicting_fields": [],
+        },
+    )
+
+    decision = adjudicate_memory(incoming, [old])
+
+    assert decision.relation == "update_task"
+    assert decision.recommended_action == "update_task"
+    assert decision.target_memory_ids == [old.id]
+
+
 def test_core_audit_schema_is_created():
     """函数功能：`test_core_audit_schema_is_created` 负责验证 core audit schema is created 场景，服务于本文件职责：裁决到确定性演化动作。
     传参：
@@ -96,25 +129,22 @@ def test_merge_updates_content_and_preserves_a_version():
     assert len(get_memory(semantics[0].id).versions) == 2
 
 
-def test_supersede_is_audited_with_bidirectional_relations():
-    """函数功能：`test_supersede_is_audited_with_bidirectional_relations` 负责验证 supersede is audited with bidirectional relations 场景，服务于本文件职责：裁决到确定性演化动作。
-    传参：
-        无。
-    返回结果说明：
-        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
-    """
+def test_preference_correction_updates_stable_identity_with_version_audit():
+    """偏好极性纠正沿用 stable identity，并记录版本审计。"""
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我喜欢喝牛奶"})
     report = process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我讨厌喝牛奶"})
 
     active = list_memories("space-1", status="active", memory_type="preference")
     old = list_memories("space-1", status="superseded", memory_type="preference")
-    assert len(active) == len(old) == 1
-    assert report["results"][0]["action"] == "supersede"
-    relation_names = {relation.relation for relation in list_memory_relations(active[0].id)}
-    assert {"supersedes", "superseded_by"}.issubset(relation_names)
+    assert len(active) == 1
+    assert old == []
+    assert report["results"][0]["action"] == "update"
+    assert active[0].polarity == "negative"
+    assert get_memory(active[0].id).current_version == 2
+    assert len(get_memory(active[0].id).versions) == 2
     decision = list_memory_decisions("space-1")[0]
-    assert decision["relation"] == "supersede"
-    assert decision["result_memory_ids"]
+    assert decision["relation"] == "update"
+    assert decision["result_memory_ids"] == [active[0].id]
 
 
 @pytest.mark.parametrize(
@@ -195,13 +225,11 @@ def test_preference_supersede_targets_only_the_same_topic():
     active = list_memories("space-1", status="active", memory_type="preference")
     superseded = list_memories("space-1", status="superseded", memory_type="preference")
 
-    assert report["results"][0]["action"] == "supersede"
+    assert report["results"][0]["action"] == "update"
     assert len(active) == 2
     assert any("燕麦拿铁" in memory.content for memory in active)
     assert any("不喜欢吃苹果" in memory.content for memory in active)
-    assert len(superseded) == 1
-    assert "苹果" in superseded[0].content
-    assert "燕麦拿铁" not in superseded[0].content
+    assert superseded == []
 
 
 def test_preference_scopes_do_not_overwrite_each_other():

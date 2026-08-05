@@ -19,6 +19,7 @@ from infrastructure.redis_lock import coordinated_lock
 from memory.service import process_note_memory
 from memory.extractor import may_contain_memory
 from repositories.postgres.dispatch import enqueue_task, load_inbox_record
+from repositories.postgres.inbox import load_previous_user_messages
 from repositories.postgres.notes import find_note_content
 from runtime.delivery_store import get_delivery, mark_failed, mark_sent, mark_unknown, reserve_delivery
 from runtime.streams.worker import RetryLater, TaskOutcome
@@ -213,6 +214,24 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
     if operation == "enrich":
         handle_enrichment(task)
         return None
+    current_inbox = load_inbox_record(str(payload.get("barrier_inbox_id") or "")) if payload.get("barrier_inbox_id") else None
+    if current_inbox is not None:
+        note["sequence_no"] = int(current_inbox.get("sequence_no") or 0)
+        note["user_id"] = next(
+            (
+                str(current_inbox.get("sender", {}).get(key) or "")
+                for key in ("user_id", "open_id", "union_id", "source_user_id", "id")
+                if current_inbox.get("sender", {}).get(key)
+            ),
+            "",
+        )
+        note["previous_messages"] = load_previous_user_messages(
+            str(task["space_id"]),
+            sequence_no=int(current_inbox.get("sequence_no") or 0),
+            sender=dict(current_inbox.get("sender") or {}),
+            tenant_id=_tenant_id(task),
+            limit=3,
+        )
     process_note_memory(
         note,
         classification={

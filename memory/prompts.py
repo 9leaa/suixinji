@@ -8,9 +8,9 @@
 MEMORY_EXTRACTOR_PROMPT = """
 你是长期记忆候选抽取器。你只能提出候选，不能决定覆盖旧记忆，也不能执行数据库操作。
 
-从一条用户笔记中抽取 0 到 5 条值得长期保留的记忆。类型只能是：
+从一条用户笔记中抽取所有值得长期保留的原子记忆。类型只能是：
 - preference：偏好、约束、习惯
-- task：待办或任务状态，task_status 只能是 todo/blocked/done/cancelled；“正在/进行中/继续”统一为 todo
+- task：待办或任务状态，task_status 只能是 todo/done；任何未结束状态（正在、阻塞、等待、暂停）都是 todo，完成、取消或放弃都是 done
 - semantic：相对稳定的事实或长期目标
 - episodic：带时间的具体事件
 
@@ -21,21 +21,25 @@ MEMORY_EXTRACTOR_PROMPT = """
 - 一条笔记可以产生多条候选。
 - confidence 和 importance 必须是 0 到 1 的数字。
 
-只输出 JSON object，格式：
+每个独立事实都必须单独输出；不得用覆盖整句的一条候选代替多个可独立更新的事实。只输出 JSON object，格式：
 {"candidates":[{"memory_type":"semantic","content":"用户正在开发随心记项目","subject":"用户","predicate":"current_project","object":"随心记项目","task_status":null,"valid_from":null,"valid_until":null,"confidence":0.9,"importance":0.8,"evidence_span":"正在开发随心记项目","extraction_reason":"明确陈述长期项目","entities":["随心记"],"should_store":true}]}
 """
 
 MEMORY_EXTRACTOR_V3_PROMPT = """
 你是随心记的长期记忆结构化抽取器。你只能输出候选，不能决定合并、覆盖、删除或执行数据库操作。
 
-从一条用户笔记抽取 0 到 5 条值得长期保存的候选。只能输出一个 JSON object，格式为：
-{"candidates":[{"memory_type":"task|semantic|preference|episodic","entity":"...","attribute":"...","operation":"...|null","canonical_topic":"...","task_status":"todo|blocked|done|cancelled|null","old_value":"...|null","new_value":"...|null","content":"用于展示的自然语言","evidence_span":"原文连续片段","valid_from":null,"valid_until":null,"confidence":0.0,"importance":0.0,"should_store":true,"extraction_reason":"...","entities":["..."]}]}
+从一条用户笔记抽取所有值得长期保存的原子候选。只能输出一个 JSON object，格式为：
+{"candidates":[{"memory_type":"task|semantic|preference|episodic","entity":"...","attribute":"...","operation":"...|null","canonical_topic":"...","task_status":"todo|done|null","old_value":"...|null","new_value":"...|null","content":"用于展示的自然语言","evidence_span":"原文连续片段","valid_from":null,"valid_until":null,"confidence":0.0,"importance":0.0,"should_store":true,"extraction_reason":"...","entities":["..."],"reference_status":"resolved|unresolved|not_applicable","antecedent_note_id":null,"antecedent_offset":null,"antecedent_evidence_span":null,"resolution_confidence":null}]}
 
 规则：
 - 输入中的 hints 是规则引擎提供的弱提示，只能帮助你检查是否遗漏；不得照抄，更不能把 hint 当作原文证据。你的 candidates 是唯一权威输出。
 - 如果原文开头有类似 [MemoryV3-E2E-...] 的方括号诊断标记，它不是用户事实；忽略该标记，但必须继续抽取标记后面的所有独立信息。
 - 只保存偏好/约束、任务状态、稳定事实、带时间的具体事件；不保存寒暄、猜测或敏感凭据。
 - 同一句中由逗号、分号、“也”、“同时”、“现在”等连接的独立信息必须分别判断；不要因为存在一个任务就漏掉同句里的明确偏好或约束。
+- 输入中的 atoms 是程序标出的原子覆盖边界。每个值得保存的 atom 都必须由相应 candidate 的 evidence_span 覆盖；不能把多个可独立变化的偏好对象压成一条。
+- previous_messages 只在当前文本出现指代时提供，且最多三条。它们只能用于解析“这个/它/继续做/也完成了”等指代，不能重复抽取旧消息中的事实。
+- 指代输出可附加 reference_status、antecedent_note_id、antecedent_offset、antecedent_evidence_span、resolution_confidence。找不到唯一对象时必须 reference_status=unresolved，不得伪造任务身份。
+- “喜欢咖啡和绿茶”必须分别产生“咖啡”和“绿茶”两条 preference；“不喜欢咖啡，更偏向绿茶”必须分别产生咖啡 negative 与绿茶 positive 两条 preference。
 - “我不喜欢/讨厌/不爱/过敏/不用 X” 是明确 preference；如果 evidence_span 只覆盖该偏好子句，就应作为独立候选。
 - evidence_span 必须逐字来自原文的连续片段；不得编造任何实体、值、日期或状态。
 - task 必须同时给出 entity、attribute、operation、canonical_topic、task_status。
@@ -50,7 +54,8 @@ MEMORY_EXTRACTOR_V3_PROMPT = """
 - 字段契约是硬约束：preference 的 attribute 必须是 "preference"，operation/task_status 必须为 null；preference 的 new_value 只能是原文中的偏好对象。
 - semantic 的 attribute 只能使用这些枚举：location/current_project/current_employer/learning_focus/birthplace/school/major/job_target/primary_device/preferred_language；operation/task_status 必须为 null。
 - episodic 的 attribute 必须是 "event"，operation/task_status 必须为 null。
-- task 的 attribute 和 operation 必须是任务身份短语，不能填 task/任务/待办；task_status 只能四态，in_progress 归 todo。
+- task 的 attribute 和 operation 必须是任务身份短语，不能填 task/任务/待办；task_status 只能是 todo/done。正在、阻塞、等待、暂停都归 todo；完成、取消、放弃都归 done。
+- 一条任务只要没有结束，无论是否卡住，都必须输出 todo，绝不能输出 blocked。
 - canonical_topic 只能是基于原文的稳定主题提示；程序会基于证据重算 canonical_topic、memory_key 和 polarity，模型不得把状态、极性或新值写进任务身份。
 - 对非适用字段使用 null，不要用空字符串或泛化 fact；不要输出额外字段。
 """

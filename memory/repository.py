@@ -42,6 +42,7 @@ from memory.models import (
     normalize_content,
     utc_now_iso,
 )
+from memory.field_contracts import normalize_task_status
 
 DB_PATH = Path("data/memory/memory.db")
 T = TypeVar("T")
@@ -427,8 +428,8 @@ def _memory_from_row(row: sqlite3.Row, *, sources: list[MemorySource] | None = N
         importance=float(row["importance"]),
         confidence=float(row["confidence"]),
         status=str(row["status"]),
-        # 旧数据库中的 in_progress 只在内存中归并，绝不在读取时回写用户数据。
-        task_status="todo" if row["task_status"] == "in_progress" else row["task_status"],
+        # 旧四态数据只在内存中投影，绝不在读取时回写用户数据。
+        task_status=normalize_task_status(row["task_status"]),
         valid_from=row["valid_from"],
         valid_until=row["valid_until"],
         created_at=str(row["created_at"]),
@@ -471,7 +472,7 @@ def _candidate_from_row(row: sqlite3.Row) -> MemoryCandidate:
         confidence=float(row["confidence"]),
         entities=list(entities) if isinstance(entities, list) else [],
         should_store=bool(row["should_store"]),
-        task_status="todo" if row["task_status"] == "in_progress" else row["task_status"],
+        task_status=normalize_task_status(row["task_status"]),
         candidate_id=str(row["candidate_id"]),
         note_id=str(row["note_id"]),
         space_id=str(row["space_id"]),
@@ -766,7 +767,7 @@ def _load_versions(conn: sqlite3.Connection, memory_id: str) -> list[MemoryVersi
             version=int(row["version"]),
             content=row["content"],
             status=row["status"],
-            task_status=row["task_status"],
+            task_status=normalize_task_status(row["task_status"]),
             confidence=float(row["confidence"]) if row["confidence"] is not None else None,
             importance=float(row["importance"]) if row["importance"] is not None else None,
             valid_from=row["valid_from"],
@@ -894,7 +895,7 @@ def _insert_memory_row(
         raise ValueError(f"invalid memory status: {status}")
     created_at = now or utc_now_iso()
     record_id = memory_id or new_id("mem")
-    valid_from = candidate.valid_from or created_at
+    valid_from = candidate.valid_from
     conn.execute(
         """
         INSERT INTO memories(
@@ -938,7 +939,7 @@ def _insert_memory_row(
         1,
         candidate.content,
         status,
-        task_status=candidate.task_status,
+        task_status=normalize_task_status(candidate.task_status),
         confidence=float(candidate.confidence),
         importance=float(candidate.importance),
         valid_from=valid_from,
@@ -1492,6 +1493,7 @@ def _versioned_update_row(
     scope: dict[str, Any] | None = None,
     memory_key: str | None = None,
     memory_key_version: str | None = None,
+    polarity: str | None = None,
     reason: str,
     source_note_id: str | None,
     now: str,
@@ -1533,11 +1535,12 @@ def _versioned_update_row(
     next_scope = scope if scope is not None else existing_scope
     next_memory_key = memory_key if memory_key is not None else row["memory_key"]
     next_memory_key_version = memory_key_version if memory_key_version is not None else row["memory_key_version"]
+    next_polarity = polarity if polarity is not None else row["polarity"]
     conn.execute(
         """
         UPDATE memories
         SET content = ?, normalized_content = ?, status = ?, task_status = ?, valid_until = ?,
-            object_value = ?, memory_key = ?, memory_key_version = ?, scope_json = ?,
+            object_value = ?, memory_key = ?, memory_key_version = ?, polarity = ?, scope_json = ?,
             confidence = ?, importance = ?, last_confirmed_at = ?, updated_at = ?, current_version = ?
         WHERE id = ?
         """,
@@ -1550,6 +1553,7 @@ def _versioned_update_row(
             next_object_value,
             next_memory_key,
             next_memory_key_version,
+            next_polarity,
             json.dumps(next_scope, ensure_ascii=False),
             next_confidence,
             next_importance,
@@ -1595,7 +1599,7 @@ def _archive_terminal_task_duplicates_row(
     返回结果说明：
         返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
-    if candidate.memory_type != "task" or candidate.task_status not in {"done", "cancelled"}:
+    if candidate.memory_type != "task" or candidate.task_status != "done":
         return []
     from memory.canonicalizer import task_identity_compatible
 
@@ -1682,8 +1686,9 @@ def apply_memory_decision(
                     prior_ids = json.loads(prior["result_memory_ids_json"] or "[]")
                 except (TypeError, json.JSONDecodeError):
                     prior_ids = []
-                replay_action = "pending_review" if prior["status"] == "pending_review" else "same"
-                replay = {"action": replay_action, "relation": prior["relation"], "decision_id": prior["id"], "candidate_id": candidate.candidate_id, "idempotent": True, "result_memory_ids": prior_ids}
+                replay_action = "pending_review" if prior["status"] == "pending_review" else "add_source"
+                replay_relation = "conflict" if prior["status"] == "pending_review" else "same"
+                replay = {"action": replay_action, "relation": replay_relation, "decision_id": prior["id"], "candidate_id": candidate.candidate_id, "idempotent": True, "source_added": False, "result_memory_ids": prior_ids}
                 if prior_ids:
                     replay["memory_id"] = prior_ids[0]
                 return replay
@@ -1704,20 +1709,35 @@ def apply_memory_decision(
                 if target_row is None:
                     raise ValueError(f"decision target memory not found: {target_id}")
             decision_to_write = decision
-            if action == "update_task" and target_row is not None and candidate.memory_type == "task" and candidate.task_status == "done":
-                current_status = "todo" if target_row["task_status"] == "in_progress" else target_row["task_status"]
-                if current_status == "done":
+            if target_row is not None and decision.target_snapshot_version is not None and int(target_row["current_version"] or 1) != int(decision.target_snapshot_version):
+                same_identity = candidate.effective_memory_key == str(target_row["memory_key"] or "")
+                same_state = same_identity and (
+                    (candidate.memory_type == "task" and candidate.task_status == target_row["task_status"])
+                    or (candidate.memory_type != "task" and candidate.object_value and candidate.object_value == target_row["object_value"])
+                )
+                if same_state:
+                    decision_to_write = replace(
+                        decision,
+                        relation="same",
+                        recommended_action="add_source",
+                        reason="concurrent_same_update_adds_source",
+                    )
                     action = "add_source"
-                    result.update({"action": "add_source", "relation": "same", "original_action": "update_task", "idempotent": True})
-                elif current_status == "cancelled":
+                    result.update({"action": action, "relation": "same", "original_action": decision.recommended_action})
+                else:
                     decision_to_write = replace(
                         decision,
                         relation="conflict",
                         recommended_action="pending_review",
-                        reason="stale_cancelled_task_completion_conflict",
+                        reason="stale_target_snapshot_requires_readjudication",
                     )
                     action = "pending_review"
-                    result.update({"action": action, "relation": "conflict", "original_action": "update_task"})
+                    result.update({"action": action, "relation": "conflict", "original_action": decision.recommended_action})
+            if action == "update_task" and target_row is not None and candidate.memory_type == "task" and candidate.task_status == "done":
+                current_status = normalize_task_status(target_row["task_status"])
+                if current_status == "done":
+                    action = "add_source"
+                    result.update({"action": "add_source", "relation": "same", "original_action": "update_task", "idempotent": True})
             for evidence in decision_to_write.evidence:
                 if not evidence.startswith("audit:"):
                     continue
@@ -1769,13 +1789,18 @@ def apply_memory_decision(
                     )
                     if archived:
                         result["archived_duplicate_ids"] = archived
-            elif action == "merge" and target_row is not None:
-                source_added = _add_source_row(conn, target_id, note_id, "supported_by", now=now)
+            elif action in {"merge", "update"} and target_row is not None:
+                source_added = _add_source_row(conn, target_id, note_id, "updated_by" if action == "update" else "supported_by", now=now)
                 if source_added:
                     _versioned_update_row(
                         conn,
                         target_row,
                         content=merged_content or candidate.content,
+                        object_value=candidate.object_value,
+                        scope=dict(candidate.scope),
+                        memory_key=candidate.effective_memory_key,
+                        memory_key_version=candidate.memory_key_version,
+                        polarity=candidate.polarity,
                         confidence=min(0.99, max(float(target_row["confidence"]), candidate.confidence)),
                         importance=max(float(target_row["importance"]), candidate.importance),
                         last_confirmed_at=now,
@@ -1792,7 +1817,7 @@ def apply_memory_decision(
                         conn,
                         target_row,
                         content=candidate.content,
-                        task_status=candidate.task_status,
+                        task_status=normalize_task_status(candidate.task_status),
                         object_value=candidate.object_value,
                         scope=dict(candidate.scope),
                         memory_key=candidate.effective_memory_key,
@@ -2007,7 +2032,7 @@ def correct_memory(
         resolved_status = resolved_status or infer_task_status(content) or existing.task_status
         if resolved_status != existing.task_status and not can_transition(existing.task_status, resolved_status):
             raise ValueError(f"invalid task status transition: {existing.task_status} -> {resolved_status}")
-        if existing.task_status in {"done", "cancelled"} and resolved_status == "todo":
+        if existing.task_status == "done" and resolved_status == "todo":
             reopen_markers = ("重新", "再次", "重做", "返工", "恢复", "再开始", "又开始")
             if not any(marker in content for marker in reopen_markers):
                 raise ValueError("reopening a terminal task requires explicit wording")
@@ -2324,7 +2349,7 @@ def edit_pending_memory(memory_id: str, content: str, db_path: str | Path | None
         memory_id,
         content=content,
         status="pending_review",
-        task_status=next_status if next_status is not None else pending.task_status if pending.memory_type == "task" else None,
+        task_status=normalize_task_status(next_status if next_status is not None else pending.task_status) if pending.memory_type == "task" else None,
         reason="user_edited_pending_memory",
         db_path=db_path,
     )
@@ -2976,6 +3001,7 @@ def search_memories(
     limit: int = 10,
     mark_access: bool = True,
     db_path: str | Path | None = None,
+    access_context: Any = None,
 ) -> list[tuple[MemoryRecord, float]]:
     """函数功能：`search_memories` 负责搜索 memories，服务于本文件职责：本地 SQLite Memory repository。
     传参：
@@ -2999,6 +3025,9 @@ def search_memories(
         limit=100,
         db_path=db_path,
     )
+    if access_context is not None:
+        from memory.access import memory_access_allowed
+        candidates = [memory for memory in candidates if memory_access_allowed(memory, access_context)]
     scored = [(memory, score_memory(query, memory)) for memory in candidates]
     scored = [(memory, score) for memory, score in scored if score >= min_score]
     scored.sort(key=lambda item: item[1], reverse=True)
@@ -3088,6 +3117,53 @@ def stats(space_id: str, db_path: str | Path | None = None) -> dict[str, Any]:
     }
 
 
+def get_memory_timeline(
+    space_id: str,
+    *,
+    memory_id: str | None = None,
+    query: str | None = None,
+    limit: int = 10,
+    access_context: Any = None,
+    db_path: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """SQLite-compatible history timeline API."""
+    init_db(db_path)
+    with _connect(db_path) as conn:
+        clauses = ["space_id = ?"]
+        params: list[Any] = [space_id]
+        if memory_id:
+            clauses.append("id = ?")
+            params.append(memory_id)
+        elif query:
+            clauses.append("(normalized_content = ? OR memory_key = ? OR content LIKE ?)")
+            params.extend([normalize_content(query), query.strip(), f"%{query.strip()[:160]}%"])
+        rows = conn.execute(
+            f"SELECT * FROM memories WHERE {' AND '.join(clauses)} ORDER BY updated_at DESC, id DESC LIMIT ?",
+            [*params, max(1, min(int(limit), 50))],
+        ).fetchall()
+        result = []
+        for row in rows:
+            scope = json.loads(row["scope_json"] or "{}")
+            from memory.access import memory_access_allowed
+            if access_context is not None and not memory_access_allowed({"scope": scope}, access_context):
+                continue
+            sources = conn.execute("SELECT * FROM memory_sources WHERE memory_id = ? ORDER BY created_at", (row["id"],)).fetchall()
+            result.append({
+                "id": row["id"],
+                "memory_id": row["id"],
+                "memory_type": row["memory_type"],
+                "memory_key": row["memory_key"],
+                "content": row["content"],
+                "status": row["status"],
+                "task_status": normalize_task_status(row["task_status"]),
+                "current_version": row["current_version"],
+                "updated_at": row["updated_at"],
+                "sources": [dict(x) for x in sources],
+                "versions": [version.__dict__ for version in _load_versions(conn, row["id"])],
+            })
+        return result
+
+
 def schema_tables(db_path: str | Path | None = None) -> set[str]:
     """函数功能：`schema_tables` 负责处理 schema tables，服务于本文件职责：本地 SQLite Memory repository。
     传参：
@@ -3151,6 +3227,7 @@ if _STORAGE_BACKEND == "postgres":
         "mark_consolidation_completed",
         "mark_consolidation_failed",
         "search_memories",
+        "get_memory_timeline",
         "stats",
         "schema_tables",
     )

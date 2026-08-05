@@ -488,7 +488,7 @@ class CaseRunner:
                 session.delete(row)
 
     def run(self) -> dict[str, Any]:
-        from agent.query_agent import _deterministic_route, answer_question_result
+        from agent.query_agent import _deterministic_route, answer_question_result, memory_history
         from memory.service import memory_search
         from repositories.postgres.memory import hybrid_search_memory_hits
 
@@ -496,6 +496,7 @@ class CaseRunner:
         pre: dict[str, Any] = {}
         retrieval: list[dict[str, Any]] = []
         raw_hits: list[dict[str, Any]] = []
+        history_retrieval: list[dict[str, Any]] = []
         executed_channels: set[str] = set()
         answer = ""
         errors: list[dict[str, Any]] = []
@@ -510,6 +511,11 @@ class CaseRunner:
         inp = self.case["input"]
         query = str(inp.get("query") or "")
         expected = self.case.get("expected") or {}
+        try:
+            route = _deterministic_route(query)
+        except Exception as exc:
+            route = None
+            errors.append({"stage": "route_diagnostic", "type": type(exc).__name__, "message": str(exc)})
         query_embedding, query_embedding_status = _embed_query_for_diagnostic(query)
         retrieval_started = time.perf_counter()
         access_context = inp.get("access_context") or {}
@@ -517,6 +523,20 @@ class CaseRunner:
             retrieval = memory_search(self.space_id, query, min_score=0.0, limit=self.top_k, access_context=access_context)
         except Exception as exc:
             errors.append({"stage": "retrieval", "type": type(exc).__name__, "message": str(exc)})
+        # History is a separate production retrieval contract: search locates
+        # the memory timeline, then memory_history returns version evidence.
+        # Record that exposed tool result directly instead of comparing current
+        # memory ids with Gold version ids in raw Recall@K.
+        if route and str(route.get("action")) == "memory_history":
+            try:
+                history_retrieval = memory_history(
+                    self.space_id,
+                    query,
+                    limit=self.top_k,
+                    access_context=access_context,
+                )
+            except Exception as exc:
+                errors.append({"stage": "history_retrieval", "type": type(exc).__name__, "message": str(exc)})
         retrieval_ms = (time.perf_counter() - retrieval_started) * 1000
         try:
             vector_raw_hits = {item["memory_id"]: item for item in _raw_vector_hits(self.space_id, query_embedding, limit=self.top_k, access_context=access_context)}
@@ -562,11 +582,6 @@ class CaseRunner:
             answer = ""
         answer_ms = (time.perf_counter() - answer_started) * 1000
         post = self.db_snapshot()
-        try:
-            route = _deterministic_route(query)
-        except Exception as exc:
-            route = None
-            errors.append({"stage": "route_diagnostic", "type": type(exc).__name__, "message": str(exc)})
         route_name = "complex"
         if route:
             action = str(route.get("action"))
@@ -583,6 +598,7 @@ class CaseRunner:
         for item in retrieval:
             db_id = str(item.get("id"))
             retrieved.append(self.db_to_logical.get(db_id, f"db:{db_id}"))
+        history_retrieved = [self._logical_ref(item.get("id") or item.get("version_id")) for item in history_retrieval]
         cited = [self.db_to_logical.get(x, x) for x in sources]
         answer_selected_memory_refs = [self._logical_ref(item) for item in (answer_result_payload.get("selected_memory_ids") or [])]
         answer_selected_version_refs = [self._logical_ref(item) for item in (answer_result_payload.get("selected_version_ids") or [])]
@@ -658,6 +674,8 @@ class CaseRunner:
             "observed_route_detail": _safe_json(route),
             "retrieval": _safe_json(retrieval),
             "retrieved_refs": retrieved,
+            "history_retrieval": _safe_json(history_retrieval),
+            "history_retrieved_refs": history_retrieved,
             # Stage 0 contract: do not infer selected context/tool evidence from
             # answer text, Gold, route diagnostics, or extra lookups. Empty lists
             # are valid exposed evidence for no_answer/restricted responses.
@@ -793,6 +811,8 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
     ambiguous_refs = (judged_refs - relevant) if ambiguous_case else set()
     irrelevant_refs = judged_refs - relevant - stale_refs - sensitive_refs - ambiguous_refs
     ranks = {ref: i + 1 for i, ref in enumerate(retrieved)}
+    history_retrieved = pred.get("history_retrieved_refs") or []
+    history_ranks = {ref: i + 1 for i, ref in enumerate(history_retrieved)}
     rank_metrics: dict[str, Any] = {}
     for k in (1, 3, 5, 10):
         hit_refs = set(retrieved[:k])
@@ -803,6 +823,28 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
             "current_hit": bool(hit_refs & relevant_current),
             "history_hit": bool(hit_refs & relevant_history),
         }
+    history_version_rank: dict[str, Any] = {}
+    for k in (1, 3, 5, 10):
+        hit_refs = set(history_retrieved[:k])
+        history_version_rank[str(k)] = {
+            "precision": round(len(hit_refs & relevant_history) / k, 6),
+            "recall": round(len(hit_refs & relevant_history) / len(relevant_history), 6) if relevant_history else None,
+            "hit": bool(hit_refs & relevant_history),
+        }
+    evidence_mode = str(expected.get("evidence_mode") or "")
+    ordinary_retrieval_eligible = (
+        expected_answer_type == "answered"
+        and evidence_mode in {"current", "mixed"}
+        and bool(relevant_current)
+    )
+    # qualified_history_only is a safety response to a *current* question
+    # whose only evidence is stale.  It must remain in stale/no-answer safety
+    # reporting, not be credited as a direct memory_history version lookup.
+    history_version_eligible = (
+        expected_answer_type == "answered"
+        and evidence_mode == "history"
+        and bool(relevant_history)
+    )
     first_rank = min((ranks[x] for x in relevant if x in ranks), default=None)
     graded = expected.get("graded_relevance") or {}
     dcg = sum(float(graded.get(ref, 0)) / math.log2(i + 2) for i, ref in enumerate(retrieved[:10]))
@@ -913,7 +955,10 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
     no_tn = int(not expected_no and not predicted_no)
     return {
         "case_id": pred.get("case_id"), "dataset": pred.get("dataset"), "tags": pred.get("coverage_tags") or [],
-        "retrieval": {"rank": rank_metrics, "mrr": round(1 / first_rank, 6) if first_rank else 0.0, "ndcg_at_10": round(dcg / idcg, 6) if idcg else None,
+        "retrieval": {"rank": rank_metrics, "history_version_rank": history_version_rank,
+                       "ordinary_retrieval_eligible": ordinary_retrieval_eligible,
+                       "history_version_eligible": history_version_eligible,
+                       "mrr": round(1 / first_rank, 6) if first_rank else 0.0, "ndcg_at_10": round(dcg / idcg, 6) if idcg else None,
                        "stale_retrieval": stale_retrieved, "stale_retrieval_violation": stale_retrieved, "stale_refs": sorted(stale_refs),
                        "must_not_return_violation": must_not_return_violation, "must_not_return_refs": sorted(must_not_hits),
                        "irrelevant_retrieval": irrelevant_retrieved, "irrelevant_refs": sorted(irrelevant_refs),
@@ -936,6 +981,23 @@ def aggregate(scored: list[dict[str, Any]], predictions: list[dict[str, Any]]) -
     by_dataset: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for item in scored:
         by_dataset[str(item.get("dataset"))].append(item)
+
+    def rank_summary(items: list[dict[str, Any]], *, rank_key: str, include: str | None = None) -> dict[str, Any]:
+        """Aggregate only a homogeneous retrieval contract.
+
+        Current factual recall, history-version recall, and negative safety
+        cases have different correct outcomes.  Never average them together.
+        """
+        if include is not None:
+            items = [item for item in items if bool(item["retrieval"].get(include))]
+        out: dict[str, Any] = {"cases": len(items)}
+        for k in (1, 3, 5, 10):
+            values = [item["retrieval"][rank_key][str(k)] for item in items]
+            recalls = [value["recall"] for value in values if value["recall"] is not None]
+            out[f"precision@{k}"] = round(statistics.mean(value["precision"] for value in values), 6) if values else None
+            out[f"recall@{k}"] = round(statistics.mean(recalls), 6) if recalls else None
+            out[f"hit@{k}"] = round(statistics.mean(1.0 if value["hit"] else 0.0 for value in values), 6) if values else None
+        return out
 
     def aggregate_group(items: list[dict[str, Any]]) -> dict[str, Any]:
         out: dict[str, Any] = {"cases": len(items)}
@@ -984,6 +1046,19 @@ def aggregate(scored: list[dict[str, Any]], predictions: list[dict[str, Any]]) -
         out["selected_tool_refs_unavailable_rate"] = round(statistics.mean(1.0 if x.get("stage0_contract", {}).get("selected_tool_refs_status") != "available" else 0.0 for x in items), 6) if items else 0.0
         out["executed_tools_unavailable_rate"] = round(statistics.mean(1.0 if x.get("stage0_contract", {}).get("executed_tools_status") != "available" else 0.0 for x in items), 6) if items else 0.0
         out["business_state_mutation_count"] = sum(1 for x in items if x["read_only"]["business_state_changed"])
+        # The original top-level rank metrics remain raw diagnostics for
+        # backwards comparison.  These two explicit metrics are the scoring
+        # contract for ordinary factual retrieval and timeline version lookup.
+        out["ordinary_current_retrieval"] = rank_summary(
+            items,
+            rank_key="rank",
+            include="ordinary_retrieval_eligible",
+        )
+        out["history_version_retrieval"] = rank_summary(
+            items,
+            rank_key="history_version_rank",
+            include="history_version_eligible",
+        )
         return out
 
     metrics = {"overall": aggregate_group(scored), "by_dataset": {name: aggregate_group(items) for name, items in sorted(by_dataset.items())}}

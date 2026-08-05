@@ -23,6 +23,8 @@ from memory.field_contracts import (
     preference_topic,
     semantic_topic,
     task_attribute,
+    task_closure_reason,
+    task_progress_metadata,
 )
 
 
@@ -413,6 +415,10 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
     memory_type = candidate.memory_type
 
     if memory_type == "task":
+        scope.update(task_progress_metadata(source_text))
+        closure_reason = task_closure_reason(source_text=source_text)
+        if normalize_task_status(candidate.task_status, source_text) == "done" and closure_reason:
+            scope["closure_reason"] = closure_reason
         entity, attribute, operation = _task_identity_from_text(source_text, candidate)
         entity = normalize_entity(entity, memory_type="task") or "用户"
         attribute = task_attribute(attribute, source_text) or attribute or "任务"
@@ -431,6 +437,7 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
                 "new_value": new_value,
                 "task_status": normalize_task_status(candidate.task_status, source_text) or "todo",
                 "memory_key_version": MEMORY_KEY_V3_VERSION,
+                "task_family_key": f"task-family:{normalize_identity(entity)}:{normalize_identity(attribute)}",
             }
         )
         return replace(
@@ -454,6 +461,10 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
                 "canonical_topic": topic,
                 "scope": canonical_scope,
                 "memory_key_version": MEMORY_KEY_V3_VERSION,
+                "preference_family_key": f"preference-family:{normalize_identity(entity)}:{normalize_identity(topic)}",
+                "preference_assertion_key": preference_key(entity, topic, canonical_scope),
+                "polarity": signature.polarity,
+                "qualifiers": list(signature.qualifiers),
             }
         )
         return replace(

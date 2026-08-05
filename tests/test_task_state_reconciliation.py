@@ -30,15 +30,18 @@ def _enable_task_identity(monkeypatch) -> None:
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "rules")
 
 
-def test_progress_wording_is_todo_and_old_status_is_rejected_for_new_writes() -> None:
+def test_all_unfinished_wording_is_todo_and_legacy_input_is_normalized() -> None:
     assert infer_task_status("我正在整理报告，继续处理") == "todo"
-    with pytest.raises(ValueError, match="invalid task_status"):
-        validate_task_status("in_progress")
+    assert infer_task_status("任务卡住了，正在等待权限") == "todo"
+    assert validate_task_status("in_progress") == "todo"
+    assert validate_task_status("blocked") == "todo"
+    assert validate_task_status("cancelled") == "done"
     with pytest.raises(ValueError, match="invalid task_status"):
         MemoryCandidate("task", "正在整理报告", 0.8, 0.9, task_status="in_progress")
 
 
-def test_legacy_in_progress_rows_are_read_as_todo_without_rewriting_data() -> None:
+@pytest.mark.parametrize(("legacy", "expected"), [("in_progress", "todo"), ("blocked", "todo"), ("cancelled", "done")])
+def test_legacy_task_rows_are_read_as_two_states_without_rewriting_data(legacy: str, expected: str) -> None:
     candidate = MemoryCandidate(
         "task", "整理报告", 0.8, 0.9, task_status="todo", note_id="legacy-candidate-note", space_id="legacy-status"
     )
@@ -46,11 +49,18 @@ def test_legacy_in_progress_rows_are_read_as_todo_without_rewriting_data() -> No
     memory = repository.insert_memory("legacy-status", candidate, source_note_id="legacy-memory-note")
 
     with repository._connect() as conn:
-        conn.execute("UPDATE memories SET task_status = 'in_progress' WHERE id = ?", (memory.id,))
-        conn.execute("UPDATE memory_candidates SET task_status = 'in_progress' WHERE candidate_id = ?", (candidate.candidate_id,))
+        conn.execute("UPDATE memories SET task_status = ? WHERE id = ?", (legacy, memory.id))
+        conn.execute("UPDATE memory_candidates SET task_status = ? WHERE candidate_id = ?", (legacy, candidate.candidate_id))
+        conn.execute("UPDATE memory_versions SET task_status = ? WHERE memory_id = ?", (legacy, memory.id))
 
-    assert repository.get_memory(memory.id).task_status == "todo"
-    assert repository.get_memory_candidate(candidate.candidate_id).task_status == "todo"
+    assert repository.get_memory(memory.id).task_status == expected
+    assert {version.task_status for version in repository.get_memory(memory.id).versions} == {expected}
+    assert repository.get_memory_candidate(candidate.candidate_id).task_status == expected
+
+    with repository._connect() as conn:
+        assert conn.execute("SELECT task_status FROM memories WHERE id = ?", (memory.id,)).fetchone()[0] == legacy
+        assert conn.execute("SELECT task_status FROM memory_candidates WHERE candidate_id = ?", (candidate.candidate_id,)).fetchone()[0] == legacy
+        assert conn.execute("SELECT task_status FROM memory_versions WHERE memory_id = ?", (memory.id,)).fetchone()[0] == legacy
 
 
 def test_task_lifecycle_merges_action_wording(monkeypatch) -> None:

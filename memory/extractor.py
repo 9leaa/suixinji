@@ -24,6 +24,7 @@ from memory.candidate_validator import contains_sensitive_data
 from memory.canonicalizer import is_task_lifecycle_statement, normalize_candidate_v3
 from memory.clause_splitter import split_clauses
 from memory.extraction_schema import parse_extracted_candidate
+from memory.field_contracts import task_closure_reason, task_progress_metadata
 from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for, candidate_id_for_evidence, memory_key_for
 from memory.policies.preference import preference_polarity, preference_signature
 from memory.prompts import MEMORY_EXTRACTOR_PROMPT, MEMORY_EXTRACTOR_V3_PROMPT
@@ -38,6 +39,7 @@ V3_PROMPT_HASH = hashlib.sha256(MEMORY_EXTRACTOR_V3_PROMPT.encode("utf-8")).hexd
 MEMORY_EXTRACTOR_MODE = settings.MEMORY_EXTRACTOR_MODE
 _ERROR_PREVIEW_RE = re.compile(r"\b(text_preview|output_preview)=('(?:\\'|[^'])*'|\"(?:\\\"|[^\"])*\")")
 _DIAGNOSTIC_PREFIX_RE = re.compile(r"^\[MemoryV3-E2E-[^\]\n]{1,80}\]\s*")
+_REFERENCE_SIGNAL_RE = re.compile(r"(?:这个|那个|它|这件事|上面那个|继续做|也(?:做完|完成)|取消它|就按这个)")
 
 LOW_VALUE_PATTERNS = {
     "你好",
@@ -269,6 +271,13 @@ def _candidate(
         object_value=object_value,
         content=content,
     )
+    resolved_scope = dict(scope or {})
+    if memory_type == "task":
+        source_text = evidence_span or content
+        resolved_scope.update(task_progress_metadata(source_text))
+        closure_reason = task_closure_reason(source_text=source_text)
+        if task_status == "done" and closure_reason:
+            resolved_scope["closure_reason"] = closure_reason
     candidate = MemoryCandidate(
         memory_type=memory_type,
         content=content,
@@ -308,7 +317,7 @@ def _candidate(
         prompt_hash=(V3_PROMPT_HASH if extractor_type == "llm" and extractor_version == V3_LLM_EXTRACTOR_VERSION else PROMPT_HASH)
         if extractor_type == "llm"
         else None,
-        scope=dict(scope or {}),
+        scope=resolved_scope,
     )
     return normalize_candidate_v3(candidate, evidence_span or content) if settings.MEMORY_CANONICAL_KEY_V3_ENABLED else candidate
 
@@ -336,6 +345,14 @@ def extract_rule_candidates(note_id: str, text: str, classification: dict[str, A
     return _extract_rule_candidates_for_clause(note_id, raw, None)
 
 
+def _extract_atomic_rule_candidates(note_id: str, text: str) -> list[MemoryCandidate]:
+    return _dedupe(
+        candidate
+        for clause in split_clauses(str(text or ""))
+        for candidate in _extract_rule_candidates_for_clause(note_id, clause.text, clause.index)
+    )
+
+
 def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: int | None) -> list[MemoryCandidate]:
     """函数功能：`_extract_rule_candidates_for_clause` 负责抽取 rule candidates for clause，服务于本文件职责：Memory 候选抽取。
     传参：
@@ -359,6 +376,7 @@ def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: in
         "厌恶",
         "不爱",
         "偏好",
+        "偏向",
         "习惯",
         "不想",
         "不打算",
@@ -371,19 +389,22 @@ def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: in
     semantic_markers = ("正在", "重点", "学习", "研究", "开发", "负责", "住在", "搬到", "使用", "采用")
 
     if any(marker in raw for marker in preference_markers):
-        candidates.append(
-            _candidate(
-                note_id,
-                "preference",
-                f"用户{_clean_subject(raw)}",
-                importance=0.75,
-                confidence=0.86,
-                entities=entities,
-                reason="preference_marker",
-                evidence_span=raw,
-                clause_index=clause_index,
+        preference_spans = _preference_evidence_spans(raw)
+        for preference_span in preference_spans:
+            candidates.append(
+                _candidate(
+                    note_id,
+                    "preference",
+                    f"用户{_clean_subject(preference_span)}",
+                    importance=0.75,
+                    confidence=0.86,
+                    entities=_entities(preference_span),
+                    reason="preference_marker",
+                    evidence_span=preference_span,
+                    clause_index=clause_index,
+                    scope={"atom_id": f"a{(clause_index or 0) + 1}"},
+                )
             )
-        )
 
     has_task_marker = any(marker in raw.casefold() for marker in task_markers)
     v3_lifecycle_task = settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED and is_task_lifecycle_statement(raw)
@@ -401,6 +422,7 @@ def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: in
                 reason="task_marker",
                 evidence_span=raw,
                 clause_index=clause_index,
+                scope={"atom_id": f"a{(clause_index or 0) + 1}"},
             )
         )
 
@@ -421,6 +443,7 @@ def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: in
                 reason="semantic_marker",
                 evidence_span=raw,
                 clause_index=clause_index,
+                scope={"atom_id": f"a{(clause_index or 0) + 1}"},
             )
         )
 
@@ -438,9 +461,31 @@ def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: in
                 reason="episodic_event",
                 evidence_span=raw,
                 clause_index=clause_index,
+                scope={"atom_id": f"a{(clause_index or 0) + 1}"},
             )
         )
     return _dedupe(candidates)
+
+
+def _preference_evidence_spans(text: str) -> list[str]:
+    """Split only clearly independent preference objects; keep scopes intact."""
+    raw = str(text or "").strip()
+    match = re.search(r"((?:不|更)?(?:喜欢|偏好|偏向|讨厌|不爱))\s*([^，,。；;]+)", raw)
+    if not match:
+        return [raw]
+    marker, objects = match.group(1), match.group(2).strip()
+    # Scope-bearing phrases are one assertion; do not split their qualifiers.
+    if any(scope_marker in objects for scope_marker in ("工作日", "早上", "晚上", "时候", "情况下")):
+        return [raw]
+    parts = [part.strip() for part in re.split(r"\s*(?:、|和|以及)\s*", objects) if part.strip()]
+    if len(parts) <= 1 or len(parts) > 6 or any(len(part) > 32 for part in parts):
+        return [raw]
+    spans: list[str] = []
+    for index, part in enumerate(parts):
+        evidence = f"{marker}{part}" if index == 0 else part
+        if evidence in raw:
+            spans.append(evidence)
+    return spans or [raw]
 
 
 def _float_value(value: Any, default: float) -> float:
@@ -539,6 +584,7 @@ def extract_llm_candidates(
     classification: dict[str, Any] | None = None,
     *,
     hints: list[dict[str, Any]] | None = None,
+    previous_messages: list[dict[str, Any]] | None = None,
 ) -> list[MemoryCandidate]:
     """函数功能：`extract_llm_candidates` 负责抽取 llm candidates，服务于本文件职责：Memory 候选抽取。
     传参：
@@ -558,6 +604,11 @@ def extract_llm_candidates(
         "text": model_text,
         "classification": classification or {},
         "hints": hints or [],
+        "atoms": [
+            {"atom_id": f"a{clause.index + 1}", "text": clause.text}
+            for clause in split_clauses(model_text)
+        ],
+        "previous_messages": list(previous_messages or [])[:3] if _REFERENCE_SIGNAL_RE.search(model_text) else [],
     }
     data = complete_json(
         system_prompt=MEMORY_EXTRACTOR_V3_PROMPT if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED else MEMORY_EXTRACTOR_PROMPT,
@@ -569,19 +620,33 @@ def extract_llm_candidates(
         raise ValueError("memory extractor candidates must be a list")
 
     candidates: list[MemoryCandidate] = []
-    for row in rows[:5]:
+    for row_index, row in enumerate(rows):
         if not isinstance(row, dict):
             continue
         if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED:
             structured = parse_extracted_candidate(row, raw)
             if structured is None:
+                log_event(
+                    "memory.extractor.schema_rejected",
+                    level="warning",
+                    status="discarded",
+                    record_id=note_id,
+                    extra={"row_index": row_index, "reason": "invalid_schema_or_ungrounded_evidence"},
+                )
                 continue
+            clause_index = _clause_index_for_evidence(model_text, structured.evidence_span)
             scope = {
                 "canonical_topic": structured.canonical_topic,
                 "operation": structured.operation,
                 "old_value": structured.old_value,
                 "new_value": structured.new_value,
                 "scope": "global",
+                "atom_id": f"a{clause_index + 1}" if clause_index is not None else None,
+                "reference_status": structured.reference_status,
+                "antecedent_note_id": structured.antecedent_note_id,
+                "antecedent_offset": structured.antecedent_offset,
+                "antecedent_evidence_span": structured.antecedent_evidence_span,
+                "resolution_confidence": structured.resolution_confidence,
             }
             candidates.append(
                 _candidate(
@@ -603,6 +668,7 @@ def extract_llm_candidates(
                     extractor_type="llm",
                     extractor_version=V3_LLM_EXTRACTOR_VERSION,
                     model=get_chat_config("fast").model,
+                    clause_index=clause_index,
                     scope=scope,
                 )
             )
@@ -612,9 +678,10 @@ def extract_llm_candidates(
         if memory_type not in MEMORY_TYPES or not content:
             continue
         task_status = str(row.get("task_status") or "").strip().lower() or None
-        # 兼容尚未跟随新 prompt 切换的模型输出；持久化只使用四状态模型。
-        if task_status == "in_progress":
-            task_status = "todo"
+        # 兼容尚未跟随新 prompt 切换的模型输出；新写入只使用 todo/done。
+        task_status = {
+            "in_progress": "todo", "blocked": "todo", "cancelled": "done", "canceled": "done"
+        }.get(task_status, task_status)
         if task_status not in TASK_STATUSES:
             task_status = None
         entities = row.get("entities") if isinstance(row.get("entities"), list) else []
@@ -662,7 +729,7 @@ def _rule_hints(note_id: str, text: str, classification: dict[str, Any] | None =
             "predicate": candidate.predicate,
             "evidence_span": candidate.evidence_span,
         }
-        for candidate in extract_rule_candidates(note_id, _strip_diagnostic_prefix(text), classification)[:5]
+        for candidate in _extract_atomic_rule_candidates(note_id, _strip_diagnostic_prefix(text))
     ]
 
 
@@ -689,7 +756,48 @@ def _dedupe(candidates: list[MemoryCandidate]) -> list[MemoryCandidate]:
     return deduped
 
 
-def extract_candidates(note_id: str, text: str, classification: dict[str, Any] | None = None) -> list[MemoryCandidate]:
+def _clause_index_for_evidence(text: str, evidence_span: str | None) -> int | None:
+    evidence = str(evidence_span or "").strip()
+    if not evidence:
+        return None
+    clauses = split_clauses(text)
+    if len(clauses) <= 1:
+        return None
+    for clause in clauses:
+        if evidence in clause.text or clause.text in evidence:
+            return clause.index
+    return None
+
+
+def _merge_uncovered_rule_candidates(
+    model_candidates: list[MemoryCandidate],
+    rule_candidates: list[MemoryCandidate],
+) -> list[MemoryCandidate]:
+    """Fill atom/type coverage gaps without blindly unioning both extractors."""
+    covered = {
+        (candidate.clause_index, candidate.memory_type)
+        for candidate in model_candidates
+        if candidate.should_store
+    }
+    additions = [
+        replace(
+            candidate,
+            reason="hybrid_atom_coverage_repair",
+            extraction_reason="hybrid_atom_coverage_repair",
+        )
+        for candidate in rule_candidates
+        if (candidate.clause_index, candidate.memory_type) not in covered
+    ]
+    return _dedupe([*model_candidates, *additions])
+
+
+def extract_candidates(
+    note_id: str,
+    text: str,
+    classification: dict[str, Any] | None = None,
+    *,
+    previous_messages: list[dict[str, Any]] | None = None,
+) -> list[MemoryCandidate]:
     """函数功能：`extract_candidates` 负责抽取 candidates，服务于本文件职责：Memory 候选抽取。
     传参：
         note_id: Note 标识，用于定位原始记录，类型为 `str`。
@@ -709,6 +817,7 @@ def extract_candidates(note_id: str, text: str, classification: dict[str, Any] |
             text,
             classification,
             hints=_rule_hints(note_id, text, classification) if mode == "hybrid" else None,
+            previous_messages=previous_messages,
         )
     except Exception as exc:
         _log_llm_failure(note_id, exc, mode=mode)
@@ -719,9 +828,13 @@ def extract_candidates(note_id: str, text: str, classification: dict[str, Any] |
 
     if mode == "llm":
         return model_candidates
-    # Hybrid 表示规则提示加一次权威结构化模型结果；返回 rules/LLM 并集会让一句话产生不兼容 memory 类型，是重复误合并的来源。
+    # Hybrid 只补 LLM 未覆盖的 atom/type，避免非空 LLM 吞掉规则已发现的独立事实，
+    # 同时避免无条件 rules/LLM 并集制造同一 atom 的冲突类型。
     if model_candidates:
-        return model_candidates
+        return _merge_uncovered_rule_candidates(
+            model_candidates,
+            _extract_atomic_rule_candidates(note_id, rule_text),
+        )
     # 空模型响应不是语义决策；保留确定性准入 fallback，但不要把它和非空模型结果做并集。
     return [
         replace(candidate, reason="llm_empty_rule_fallback", extraction_reason="llm_empty_rule_fallback")

@@ -29,18 +29,17 @@ def candidate(space: str, note: str, text: str, entity: str, attribute: str, ope
     )
 
 
-def test_todo_and_blocked_done_keep_identity_and_create_version(monkeypatch):
+def test_todo_to_done_keeps_identity_and_creates_version(monkeypatch):
     enable_stage2(monkeypatch)
-    for previous in ("todo", "blocked"):
-        space = f"stage2-{previous}"
-        old = repository.insert_memory(space, candidate(space, "old", "修复登录接口超时问题", "随心记", "登录接口超时问题", "修复", previous), source_note_id="old")
-        report = consolidate_candidate(space, "done", candidate(space, "done", "登录接口超时问题已经修复", "随心记", "登录接口超时问题", "修复", "done"))
-        current = repository.get_memory(old.id)
-        assert report["action"] == "update_task"
-        assert current is not None and current.id == old.id and current.memory_key == old.memory_key
-        assert current.task_status == "done" and current.current_version == 2
-        assert [version.task_status for version in current.versions] == [previous, "done"]
-        assert {source.note_id for source in current.sources} == {"old", "done"}
+    space = "stage2-todo"
+    old = repository.insert_memory(space, candidate(space, "old", "修复登录接口超时问题", "随心记", "登录接口超时问题", "修复", "todo"), source_note_id="old")
+    report = consolidate_candidate(space, "done", candidate(space, "done", "登录接口超时问题已经修复", "随心记", "登录接口超时问题", "修复", "done"))
+    current = repository.get_memory(old.id)
+    assert report["action"] == "update_task"
+    assert current is not None and current.id == old.id and current.memory_key == old.memory_key
+    assert current.task_status == "done" and current.current_version == 2
+    assert [version.task_status for version in current.versions] == ["todo", "done"]
+    assert {source.note_id for source in current.sources} == {"old", "done"}
 
 
 def test_done_done_is_same_and_idempotent(monkeypatch):
@@ -61,39 +60,35 @@ def test_done_done_is_same_and_idempotent(monkeypatch):
 def test_cancelled_done_is_pending_review(monkeypatch):
     enable_stage2(monkeypatch)
     space = "stage2-cancelled"
-    old = repository.insert_memory(space, candidate(space, "cancelled", "取消测试报告", "随心记", "测试报告", "完成", "cancelled"), source_note_id="cancelled")
+    cancelled = candidate(space, "cancelled", "取消测试报告", "随心记", "测试报告", "完成", "done")
+    cancelled = MemoryCandidate(**{**cancelled.__dict__, "scope": {**cancelled.scope, "closure_reason": "cancelled"}})
+    old = repository.insert_memory(space, cancelled, source_note_id="cancelled")
     report = consolidate_candidate(space, "done", candidate(space, "done", "测试报告已经完成", "随心记", "测试报告", "完成", "done"))
     assert report["action"] == "pending_review"
     assert report["relation"] == "conflict"
-    assert repository.get_memory(old.id).task_status == "cancelled"
+    assert repository.get_memory(old.id).task_status == "done"
     pending = repository.list_memories(space, status="pending_review", memory_type="task")
     assert len(pending) == 1 and pending[0].task_status == "done"
 
 
-def test_orphan_weak_completion_becomes_episodic(monkeypatch):
+def test_orphan_completion_stays_done_task(monkeypatch):
     enable_stage2(monkeypatch)
     space = "stage2-orphan-event"
     report = consolidate_candidate(space, "event", candidate(space, "event", "我昨天提交了论文", "用户", "论文", "提交", "done"))
-    assert report["relation"] == "orphan_completion" and report["action"] == "insert"
+    assert report["relation"] == "new" and report["action"] == "insert"
     memories = repository.list_memories(space, status="active")
-    assert len(memories) == 1 and memories[0].memory_type == "episodic"
-    assert memories[0].task_status is None
-    assert memories[0].predicate == "event"
-    assert memories[0].scope.get("scope") == "history"
-    assert "operation" not in memories[0].scope and "task_status" not in memories[0].scope
-    assert not repository.list_memories(space, status="active", memory_type="task")
+    assert len(memories) == 1 and memories[0].memory_type == "task"
+    assert memories[0].task_status == "done"
+    assert not repository.list_memories(space, status="active", memory_type="episodic")
 
 
-def test_orphan_strong_completion_is_pending_not_active_done(monkeypatch):
+def test_orphan_strong_completion_can_create_explicit_done_task(monkeypatch):
     enable_stage2(monkeypatch)
     space = "stage2-orphan-strong"
     report = consolidate_candidate(space, "strong", candidate(space, "strong", "随心记第一阶段评测已经完成", "随心记", "第一阶段评测", "完善", "done"))
-    assert report["relation"] == "orphan_completion" and report["action"] == "pending_review"
-    assert not repository.list_memories(space, status="active", memory_type="task")
-    pending = repository.list_memories(space, status="pending_review", memory_type="task")
-    assert len(pending) == 1 and pending[0].task_status == "done"
-    audit = report["audit"]
-    assert audit["reason"] == "strong_task_identity_without_history"
+    assert report["relation"] == "new" and report["action"] == "insert"
+    active = repository.list_memories(space, status="active", memory_type="task")
+    assert len(active) == 1 and active[0].task_status == "done"
 
 
 def test_multiple_history_matches_are_ambiguous(monkeypatch):

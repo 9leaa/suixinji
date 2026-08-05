@@ -31,7 +31,7 @@ class ExtractedMemoryCandidate(BaseModel):
     attribute: str | None = None
     operation: str | None = None
     canonical_topic: str = ""
-    task_status: Literal["todo", "blocked", "done", "cancelled"] | None = None
+    task_status: Literal["todo", "done"] | None = None
     old_value: str | None = None
     new_value: str | None = None
     evidence_span: str
@@ -43,6 +43,11 @@ class ExtractedMemoryCandidate(BaseModel):
     extraction_reason: str = ""
     content: str | None = None
     entities: list[str] = Field(default_factory=list)
+    reference_status: Literal["resolved", "unresolved", "not_applicable"] = "not_applicable"
+    antecedent_note_id: str | None = None
+    antecedent_offset: Literal[-1, -2, -3] | None = None
+    antecedent_evidence_span: str | None = None
+    resolution_confidence: float | None = Field(default=None, ge=0, le=1)
 
     @field_validator("entity", "attribute", "operation", "canonical_topic", "old_value", "new_value", "content")
     @classmethod
@@ -60,9 +65,14 @@ class ExtractedMemoryCandidate(BaseModel):
 
     @field_validator("task_status", mode="before")
     @classmethod
-    def _normalize_legacy_in_progress(cls, value: object) -> object:
-        """将滞后模型仍输出的旧状态无损归并为 todo。"""
-        return "todo" if str(value or "").strip().lower() == "in_progress" else value
+    def _normalize_legacy_task_status(cls, value: object) -> object:
+        """Accept stale model output while exposing only the two-state contract."""
+        legacy = str(value or "").strip().lower()
+        if legacy in {"in_progress", "blocked"}:
+            return "todo"
+        if legacy in {"cancelled", "canceled"}:
+            return "done"
+        return value
 
     @model_validator(mode="after")
     def _validate_task_identity(self) -> "ExtractedMemoryCandidate":
@@ -77,6 +87,8 @@ class ExtractedMemoryCandidate(BaseModel):
                 raise ValueError("task candidates require entity, attribute, operation, canonical_topic, and task_status")
         if self.task_status is not None and self.memory_type != "task":
             raise ValueError("task_status is only valid for task candidates")
+        if self.reference_status == "resolved" and not all((self.antecedent_note_id, self.antecedent_offset, self.antecedent_evidence_span)):
+            raise ValueError("resolved references require antecedent id, offset, and evidence")
         return self
 
     def evidence_is_grounded(self, source_text: str) -> bool:

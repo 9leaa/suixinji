@@ -20,7 +20,7 @@ from memory.policies import task as task_policy
 from memory.relation_guard import evaluate_relation, is_v3_candidate
 
 
-DESTRUCTIVE_ACTIONS = {"merge", "update_task", "supersede", "conflict"}
+DESTRUCTIVE_ACTIONS = {"merge", "update", "update_task", "supersede", "conflict"}
 
 
 def _combined_confidence(candidate: MemoryCandidate, relation_confidence: float) -> float:
@@ -86,6 +86,58 @@ def _decision(
         input_hash=input_hash,
         target_snapshot_version=target_memories[0].current_version if target_memories else None,
     )
+
+
+def _identity_adjudicated_decision(
+    candidate: MemoryCandidate,
+    memories: list[MemoryRecord],
+) -> MemoryDecision | None:
+    """Let the LLM compare identity while deterministic guards own mutation."""
+    if not settings.STRONG_ESCALATION_ENABLED or candidate.memory_type not in {"task", "preference"}:
+        return None
+    try:
+        from memory.advisory import maybe_memory_identity_adjudication
+
+        result = maybe_memory_identity_adjudication(candidate, memories)
+    except Exception:
+        return None
+    if not result or float(result.get("confidence") or 0.0) < 0.90:
+        return None
+    target_id = result.get("target_memory_id")
+    target = next((memory for memory in memories if memory.id == target_id), None)
+    relation = str(result.get("identity_relation") or "uncertain")
+    reason = f"llm_identity:{result.get('reason_code') or relation}"
+
+    if relation in {"different", "same_family"}:
+        # Family membership improves recall/profile grouping but never aliases assertions.
+        return _decision(candidate, "new", "insert", result["confidence"], reason)
+    if relation == "uncertain" or target is None:
+        return _decision(candidate, "ambiguous_match", "pending_review", result["confidence"], reason, [target] if target else [])
+
+    if candidate.memory_type == "task" and relation == "same_instance":
+        if not task_policy.identifiers_compatible(candidate.content, target.content):
+            return _decision(candidate, "conflict", "pending_review", result["confidence"], f"{reason}; identifier_conflict", [target])
+        candidate_scope = str(candidate.scope.get("scope") or "global")
+        target_scope = str(target.scope.get("scope") or "global")
+        if candidate_scope != target_scope:
+            return _decision(candidate, "conflict", "pending_review", result["confidence"], f"{reason}; scope_conflict", [target])
+        if candidate.task_status == target.task_status:
+            return _decision(candidate, "same", "add_source", result["confidence"], reason, [target])
+        if task_policy.can_transition(target.task_status, candidate.task_status):
+            return _decision(candidate, "update_task", "update_task", result["confidence"], reason, [target])
+        return _decision(candidate, "conflict", "pending_review", result["confidence"], f"{reason}; invalid_transition", [target])
+
+    if candidate.memory_type == "preference" and relation == "same_assertion":
+        left = preference_policy.preference_signature(candidate.content, candidate.object_value)
+        right = preference_policy.preference_signature(target.content, target.object_value)
+        if left.named_anchors != right.named_anchors or not preference_policy.scopes_compatible(candidate, target):
+            return _decision(candidate, "conflict", "pending_review", result["confidence"], f"{reason}; anchor_or_scope_conflict", [target])
+        if left.polarity == right.polarity:
+            return _decision(candidate, "same", "add_source", result["confidence"], reason, [target])
+        if preference_policy.explicitly_replaces(candidate.content, target.content):
+            return _decision(candidate, "supersede", "supersede", result["confidence"], reason, [target])
+        return _decision(candidate, "conflict", "pending_review", result["confidence"], f"{reason}; polarity_conflict", [target])
+    return None
 
 
 def _shares_topic(candidate: MemoryCandidate, memory: MemoryRecord, similarity: float) -> bool:
@@ -203,6 +255,15 @@ def _adjudicate_v3(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> 
         返回 `MemoryDecision` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     exact = [memory for memory in memories if candidate.effective_memory_key == memory.effective_memory_key]
+    if len(exact) > 1:
+        return _decision(
+            candidate,
+            "ambiguous_match",
+            "pending_review",
+            max(0.8, candidate.confidence),
+            "multiple_exact_identity_matches",
+            exact,
+        )
     if candidate.memory_type == "preference":
         conflicts = [
             memory for memory in memories
@@ -222,8 +283,18 @@ def _adjudicate_v3(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> 
         refinements = [
             memory
             for memory in memories
-            if (guarded := evaluate_relation(candidate, memory)).approved and guarded.action == "update_task"
+            if (guarded := evaluate_relation(candidate, memory)).approved
+            and guarded.action in {"update_task", "update"}
         ]
+        if candidate.memory_type == "task" and len(refinements) > 1:
+            return _decision(
+                candidate,
+                "ambiguous_match",
+                "pending_review",
+                max(0.8, candidate.confidence),
+                "multiple_task_instance_matches",
+                refinements,
+            )
         if not refinements:
             return _decision(candidate, "new", "insert", max(0.8, candidate.confidence), "v3_no_exact_canonical_identity")
         best = max(refinements, key=lambda memory: (candidate_similarity(candidate, memory), memory.updated_at, memory.current_version))
@@ -236,7 +307,7 @@ def _adjudicate_v3(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> 
     similarity = candidate_similarity(candidate, best)
     if guarded.action == "update_task":
         confidence = _combined_confidence(candidate, max(0.82, similarity))
-    elif guarded.action in {"supersede", "pending_review"}:
+    elif guarded.action in {"update", "supersede", "pending_review"}:
         confidence = _combined_confidence(candidate, max(0.8, similarity))
     else:
         confidence = max(candidate.confidence, 0.92 if guarded.action == "add_source" else 0.8)
@@ -255,6 +326,12 @@ def adjudicate_memory(candidate: MemoryCandidate, memories: list[MemoryRecord]) 
         return _decision(candidate, "new", "discard", candidate.confidence, candidate.effective_reason or "candidate_should_not_store")
     if not memories:
         return _decision(candidate, "new", "insert", max(0.8, candidate.confidence), "no_related_active_memory")
+
+    exact_identity = any(candidate.effective_memory_key == memory.effective_memory_key for memory in memories)
+    if not exact_identity:
+        identity_decision = _identity_adjudicated_decision(candidate, memories)
+        if identity_decision is not None:
+            return identity_decision
 
     if settings.MEMORY_RELATION_GUARD_V3_ENABLED and is_v3_candidate(candidate):
         return _adjudicate_v3(candidate, memories)

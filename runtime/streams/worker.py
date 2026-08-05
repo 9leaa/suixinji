@@ -65,6 +65,7 @@ class TaskOutcome:
 
 
 TaskHandler = Callable[[dict[str, Any]], TaskOutcome | None]
+_LOOP_ERROR_LOG_INTERVAL_SECONDS = 60.0
 
 
 def _elapsed_ms(start: datetime | None, end: datetime | None = None) -> int | None:
@@ -164,6 +165,7 @@ class StreamWorker:
         self.client = client or StreamClient()
         self.worker_id = worker_id or f"{socket.gethostname()}-{task_type}-{uuid.uuid4().hex[:8]}"
         self.running = True
+        self._last_loop_error_log_at = 0.0
         stagger = (hash(self.worker_id) & 0xFFFF) / 0xFFFF * max(0.1, STREAM_RECLAIM_INTERVAL_SECONDS)
         self._next_reclaim_at = time.monotonic() + stagger
 
@@ -232,7 +234,10 @@ class StreamWorker:
             try:
                 self.run_once()
             except Exception:
-                LOGGER.exception("stream worker loop failed: type=%s worker=%s", self.task_type, self.worker_id)
+                now = time.monotonic()
+                if now - self._last_loop_error_log_at >= _LOOP_ERROR_LOG_INTERVAL_SECONDS:
+                    LOGGER.exception("stream worker loop failed: type=%s worker=%s", self.task_type, self.worker_id)
+                    self._last_loop_error_log_at = now
                 time.sleep(1)
 
     def stop(self) -> None:
@@ -628,6 +633,7 @@ class AdaptiveStreamWorker:
             for task_type, handler in handlers.items()
         }
         self.running = True
+        self._last_loop_error_log_at = 0.0
         self.foreground_task_types = [
             task_type for task_type in self.task_types if task_type not in {"delivery", "enrichment"}
         ]
@@ -716,7 +722,10 @@ class AdaptiveStreamWorker:
                 else:
                     idle_sleep = 0.02
             except Exception:
-                LOGGER.exception("adaptive stream worker loop failed: worker=%s", self.worker_id)
+                now = time.monotonic()
+                if now - self._last_loop_error_log_at >= _LOOP_ERROR_LOG_INTERVAL_SECONDS:
+                    LOGGER.exception("adaptive stream worker loop failed: worker=%s", self.worker_id)
+                    self._last_loop_error_log_at = now
                 idle_sleep = 0.02
                 time.sleep(1)
 

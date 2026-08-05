@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from memory.canonicalizer import task_identity_compatible
 from memory.models import MEMORY_KEY_V3_VERSION, MemoryCandidate, MemoryRecord, normalize_content
@@ -86,32 +87,73 @@ def _task_values_changed(candidate: MemoryCandidate, memory: MemoryRecord) -> bo
 
 
 _EXPLICIT_REOPEN_MARKERS = ("重新", "再次", "重做", "返工", "恢复", "再开始", "又开始")
+_IMPLICIT_REOPEN_MARKERS = ("还需要", "仍需", "继续", "尚未", "未完成", "待完善", "没做完", "接下来要")
+_CORRECTION_MARKERS = ("不准确", "错误记录", "说错", "更正", "实际是", "正确的是")
+_UNCONFIRMED_MARKERS = ("另一条", "未确认", "没有说明", "据说", "听说")
+_DETAIL_MARKERS = ("并补充", "补充了", "详细", "详情", "会后记录", "负责人", "截止", "长期状态", "工作时", "工作日", "早上", "下午", "晚上")
 
 
-def _implicit_terminal_reactivation(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
-    """函数功能：`_implicit_terminal_reactivation` 负责处理 implicit terminal reactivation，服务于本文件职责：关系安全门。
-    传参：
-        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
-        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
-    返回结果说明：
-        返回 `bool`，表示判断、写入或处理是否成功。
-    """
-    if memory.task_status not in {"done", "cancelled"}:
-        return False
-    if candidate.task_status != "todo":
+def _terminal_reactivation_requires_review(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
+    if memory.task_status != "done" or candidate.task_status != "todo":
         return False
     text = f"{candidate.evidence_span or ''} {candidate.content}"
-    return not any(marker in text for marker in _EXPLICIT_REOPEN_MARKERS)
+    return not any(marker in text for marker in (*_EXPLICIT_REOPEN_MARKERS, *_IMPLICIT_REOPEN_MARKERS))
+
+
+def _candidate_scope(candidate: MemoryCandidate, key: str) -> str:
+    return str(candidate.scope.get(key) or "").strip()
+
+
+def _memory_scope(memory: MemoryRecord, key: str) -> str:
+    return str(memory.scope.get(key) or "").strip()
+
+
+def _same_structured_value(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
+    candidate_value = _candidate_scope(candidate, "new_value") or str(candidate.object_value or "")
+    memory_value = _memory_scope(memory, "new_value") or str(memory.object_value or "")
+    return _same(candidate_value, memory_value)
+
+
+def _has_detail_delta(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
+    if candidate.normalized_content == memory.normalized_content:
+        return False
+    text = f"{candidate.evidence_span or ''} {candidate.content}"
+    return any(marker in text for marker in _DETAIL_MARKERS)
+
+
+def _is_correction(candidate: MemoryCandidate) -> bool:
+    text = f"{candidate.evidence_span or ''} {candidate.content}"
+    return any(marker in text for marker in _CORRECTION_MARKERS)
+
+
+def _is_unconfirmed(candidate: MemoryCandidate) -> bool:
+    text = f"{candidate.evidence_span or ''} {candidate.content}"
+    return any(marker in text for marker in _UNCONFIRMED_MARKERS)
+
+
+def _is_stale_candidate(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
+    observed = _candidate_scope(candidate, "observed_at")
+    if not observed:
+        return False
+    # `updated_at` is persistence time and is not an evidence timestamp.  A
+    # pair of concurrent candidates can legitimately share the same
+    # `observed_at` while the first transaction has already changed
+    # `updated_at`.  Prefer the last evidence timestamp stored in the
+    # structured scope; fall back to `updated_at` only for legacy/seed rows
+    # that have no evidence timestamp yet.
+    previous_observed = _memory_scope(memory, "observed_at") or str(memory.updated_at or "").strip()
+    if not previous_observed:
+        return False
+    try:
+        candidate_time = datetime.fromisoformat(observed.replace("Z", "+00:00"))
+        previous_time = datetime.fromisoformat(previous_observed.replace("Z", "+00:00"))
+        return candidate_time < previous_time
+    except ValueError:
+        # A malformed timestamp must not silently trigger a state mutation.
+        return True
 
 
 def _task_refines_existing_identity(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
-    """函数功能：`_task_refines_existing_identity` 负责处理 task refines existing identity，服务于本文件职责：关系安全门。
-    传参：
-        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
-        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
-    返回结果说明：
-        返回 `bool`，表示判断、写入或处理是否成功。
-    """
     if not _same(candidate.subject, memory.subject):
         return False
     if not _same(str(candidate.scope.get("operation") or ""), _scope(memory, "operation")):
@@ -126,69 +168,78 @@ def _task_refines_existing_identity(candidate: MemoryCandidate, memory: MemoryRe
 
 
 def evaluate_relation(candidate: MemoryCandidate, memory: MemoryRecord) -> RelationGuardResult:
-    """函数功能：`evaluate_relation` 负责处理 evaluate relation，服务于本文件职责：关系安全门。
-    传参：
-        candidate: candidate 参数，由调用方传入，类型为 `MemoryCandidate`。
-        memory: memory 参数，由调用方传入，类型为 `MemoryRecord`。
-    返回结果说明：
-        返回 `RelationGuardResult` 类型结果；具体字段和语义由调用方按该对象约定使用。
-    """
     if candidate.memory_type != memory.memory_type:
         return RelationGuardResult("new", "insert", "memory_type_mismatch", False)
 
     exact_key = candidate.effective_memory_key == memory.effective_memory_key
+    if exact_key and _is_stale_candidate(candidate, memory):
+        return RelationGuardResult("conflict", "pending_review", "candidate_observed_before_current_memory", False)
     if candidate.memory_type == "task":
-        if not exact_key:
-            if task_identity_compatible(candidate, memory):
-                if _task_values_changed(candidate, memory):
-                    return RelationGuardResult("update_task", "update_task", "legacy_task_identity_value_update", True)
-                if candidate.task_status == memory.task_status:
-                    return RelationGuardResult("same", "add_source", "legacy_task_identity_and_status", True)
-                if _implicit_terminal_reactivation(candidate, memory):
-                    return RelationGuardResult("conflict", "pending_review", "terminal_task_reactivation_requires_explicit_wording", False)
-                if task_policy.can_transition(memory.task_status, candidate.task_status):
-                    return RelationGuardResult("update_task", "update_task", "legacy_task_identity_valid_state_transition", True)
-                return RelationGuardResult("conflict", "pending_review", "legacy_task_identity_invalid_state_transition", False)
-            if _task_refines_existing_identity(candidate, memory):
-                return RelationGuardResult("update_task", "update_task", "task_identity_refined_by_specific_suffix", True)
+        compatible = exact_key or task_identity_compatible(candidate, memory) or _task_refines_existing_identity(candidate, memory)
+        if not compatible:
             return RelationGuardResult("new", "insert", "task_requires_exact_canonical_key", False)
         if _task_values_changed(candidate, memory):
-            return RelationGuardResult("update_task", "update_task", "exact_task_key_explicit_value_update", True)
+            return RelationGuardResult("update_task", "update_task", "task_explicit_value_update", True)
         if candidate.task_status == memory.task_status:
+            candidate_closure = str(candidate.scope.get("closure_reason") or "")
+            memory_closure = str(memory.scope.get("closure_reason") or "")
+            if candidate.task_status == "done" and candidate_closure and memory_closure and candidate_closure != memory_closure:
+                return RelationGuardResult("conflict", "pending_review", "task_closure_reason_conflict", False)
+            if _has_detail_delta(candidate, memory):
+                return RelationGuardResult("merge", "merge", "task_detail_merge", True)
             return RelationGuardResult("same", "add_source", "same_task_identity_and_status", True)
-        if _implicit_terminal_reactivation(candidate, memory):
-            return RelationGuardResult("conflict", "pending_review", "terminal_task_reactivation_requires_explicit_wording", False)
+        if _terminal_reactivation_requires_review(candidate, memory):
+            return RelationGuardResult("conflict", "pending_review", "terminal_task_reactivation_requires_evidence", False)
         if task_policy.can_transition(memory.task_status, candidate.task_status):
-            return RelationGuardResult("update_task", "update_task", "exact_task_key_valid_state_transition", True)
-        return RelationGuardResult("conflict", "pending_review", "exact_task_key_invalid_state_transition", False)
+            return RelationGuardResult("update_task", "update_task", "valid_task_state_transition", True)
+        return RelationGuardResult("conflict", "pending_review", "invalid_task_state_transition", False)
 
     if candidate.memory_type == "semantic":
-        # 旧版泛化 `(用户, fact)` 表示只能作为检索语境，绝不能被解释为身份匹配。
         generic_fact = normalize_content(candidate.predicate or "") in {"fact", "事实"} or normalize_content(memory.predicate or "") in {"fact", "事实"}
         if generic_fact and not exact_key:
             return RelationGuardResult("new", "insert", "generic_semantic_fact_cannot_auto_merge", False)
         if not exact_key:
             return RelationGuardResult("new", "insert", "semantic_requires_exact_stable_slot_key", False)
-        if candidate.normalized_content == memory.normalized_content:
-            return RelationGuardResult("same", "add_source", "same_semantic_key_and_content", True)
+        if _is_unconfirmed(candidate):
+            return RelationGuardResult("conflict", "pending_review", "unconfirmed_semantic_change", False)
+        if _is_correction(candidate):
+            return RelationGuardResult("supersede", "update", "explicit_semantic_correction", True)
+        if _same_structured_value(candidate, memory):
+            if _has_detail_delta(candidate, memory):
+                return RelationGuardResult("merge", "update", "semantic_detail_merge", True)
+            return RelationGuardResult("same", "add_source", "same_semantic_value", True)
         if _same(candidate.subject, memory.subject) and _same(candidate.predicate, memory.predicate):
-            if normalize_content(candidate.predicate or "") in {"learningfocus", "learning_focus"}:
-                return RelationGuardResult("merge", "merge", "stable_semantic_slot_latest_evidence", True)
-            return RelationGuardResult("supersede", "supersede", "stable_semantic_slot_latest_evidence", True)
+            # Coordinating language adds a compatible fact; it is not a replacement.
+            if any(marker in candidate.content for marker in ("也在", "同时", "以及", "并且")):
+                return RelationGuardResult("merge", "merge", "semantic_compatible_extension", True)
+            return RelationGuardResult("update", "update", "semantic_slot_value_update", True)
         return RelationGuardResult("new", "insert", "semantic_identity_not_confirmed", False)
 
     if candidate.memory_type == "preference":
         same_scope = normalize_content(str(candidate.scope.get("scope") or "global")) == normalize_content(_scope(memory, "scope", "global"))
-        if same_scope and (preference_policy.is_ambiguous_conflict(candidate.content, memory.content) or preference_policy.is_comparative_alternative(candidate.content, memory.content)):
-            return RelationGuardResult("conflict", "pending_review", "ambiguous_preference_conflict", False)
-        if exact_key and _same(candidate.subject, memory.subject) and same_scope:
-            if preference_policy.is_ambiguous_conflict(candidate.content, memory.content):
-                return RelationGuardResult("conflict", "pending_review", "ambiguous_preference_conflict", False)
-            if preference_policy.explicitly_replaces(candidate.content, memory.content):
-                return RelationGuardResult("supersede", "supersede", "explicit_preference_change", True)
-            return RelationGuardResult("same", "add_source", "same_preference_identity", True)
-        return RelationGuardResult("new", "insert", "preference_identity_mismatch", False)
+        if not exact_key or not _same(candidate.subject, memory.subject) or not same_scope:
+            return RelationGuardResult("new", "insert", "preference_identity_mismatch", False)
+        if _is_unconfirmed(candidate) or preference_policy.is_ambiguous_conflict(candidate.content, memory.content):
+            return RelationGuardResult("conflict", "pending_review", "unconfirmed_preference_change", False)
+        if _is_correction(candidate):
+            return RelationGuardResult("supersede", "update", "explicit_preference_correction", True)
+        if candidate.polarity and memory.polarity and candidate.polarity != memory.polarity:
+            return RelationGuardResult("update", "update", "preference_polarity_update", True)
+        if _has_detail_delta(candidate, memory):
+            return RelationGuardResult("merge", "update", "preference_scope_or_detail_merge", True)
+        return RelationGuardResult("same", "add_source", "same_preference_identity", True)
 
-    if exact_key and candidate.normalized_content == memory.normalized_content:
-        return RelationGuardResult("same", "add_source", "same_episodic_key_and_content", True)
+    if not exact_key and _is_correction(candidate) and _same(candidate.subject, memory.subject) and _same(candidate.predicate, memory.predicate):
+        return RelationGuardResult("supersede", "update", "explicit_event_correction_across_topic", True)
+    if exact_key:
+        if _is_unconfirmed(candidate) or ("没有" in candidate.content and not _is_correction(candidate)):
+            return RelationGuardResult("conflict", "pending_review", "unconfirmed_or_negative_event_claim", False)
+        if _is_correction(candidate):
+            return RelationGuardResult("supersede", "update", "explicit_event_correction", True)
+        if _same_structured_value(candidate, memory):
+            if "改为" in candidate.content or "改成" in candidate.content or "时间" in candidate.content:
+                return RelationGuardResult("update", "update", "episodic_time_or_fact_update", True)
+            if _has_detail_delta(candidate, memory):
+                return RelationGuardResult("merge", "update", "episodic_detail_merge", True)
+            return RelationGuardResult("same", "add_source", "same_episodic_event", True)
     return RelationGuardResult("new", "insert", "episodic_requires_exact_duplicate", False)

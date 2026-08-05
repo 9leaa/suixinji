@@ -23,14 +23,15 @@ cd "$ROOT"
 "$PYTHON" scripts/check_config.py
 mkdir -p "$PID_DIR" "$LOG_DIR"
 
-read -r API_HOST API_PORT < <("$PYTHON" - <<'PY'
+read -r API_HOST API_PORT FEISHU_PROXY_URL < <("$PYTHON" - <<'PY'
 import os
 from dotenv import dotenv_values
 
 values = dotenv_values(".env")
 host = os.environ.get("SUIXINJI_API_HOST") or values.get("SUIXINJI_API_HOST") or "127.0.0.1"
 port = os.environ.get("SUIXINJI_API_PORT") or values.get("SUIXINJI_API_PORT") or "8000"
-print(str(host).strip() or "127.0.0.1", str(port).strip() or "8000")
+proxy = os.environ.get("FEISHU_PROXY_URL") or values.get("FEISHU_PROXY_URL") or ""
+print(str(host).strip() or "127.0.0.1", str(port).strip() or "8000", str(proxy).strip())
 PY
 )
 
@@ -38,11 +39,21 @@ start_role() {
   local role="$1"
   shift
   local pid_file="$PID_DIR/$role.pid"
+  local log_file="$LOG_DIR/$role.log"
   if [[ -f "$pid_file" ]] && kill -0 "$(<"$pid_file")" 2>/dev/null; then
     echo "$role already running, pid=$(<"$pid_file")"
     return
   fi
-  nohup "$@" >> "$LOG_DIR/$role.log" 2>&1 &
+  # Keep restart-generated logs bounded.  The currently running process keeps
+  # its existing descriptor; rotation happens only when a role is launched.
+  if [[ -f "$log_file" ]] && [[ "$(wc -c < "$log_file")" -gt 52428800 ]]; then
+    mv -f "$log_file" "$log_file.1"
+    : > "$log_file"
+  fi
+  if [[ -f "$log_file.1" ]] && [[ "$(wc -c < "$log_file.1")" -gt 104857600 ]]; then
+    : > "$log_file.1"
+  fi
+  nohup "$@" >> "$log_file" 2>&1 &
   echo $! > "$pid_file"
   echo "started $role, pid=$(<"$pid_file")"
 }
@@ -86,6 +97,10 @@ else
   echo "api not started; $API_HOST:$API_PORT is unavailable" >&2
   failed=1
 fi
-start_role receiver env SUIXINJI_PROCESS_ROLE=receiver "$PYTHON" -m bot.feishu_bot
+if [[ -n "$FEISHU_PROXY_URL" ]]; then
+  start_role receiver env HTTP_PROXY="$FEISHU_PROXY_URL" HTTPS_PROXY="$FEISHU_PROXY_URL" NO_PROXY=127.0.0.1,localhost,::1 SUIXINJI_PROCESS_ROLE=receiver "$PYTHON" -m bot.feishu_bot
+else
+  start_role receiver env SUIXINJI_PROCESS_ROLE=receiver "$PYTHON" -m bot.feishu_bot
+fi
 
 exit "$failed"

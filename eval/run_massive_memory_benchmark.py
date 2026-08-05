@@ -345,7 +345,7 @@ def _operation_matches(expected: dict[str, Any], candidate: MemoryCandidate) -> 
     if operation in {"completed", "done"}:
         return candidate.task_status == "done" or any(token in candidate.content for token in ("完成", "做完"))
     if operation in {"cancelled", "canceled"}:
-        return candidate.task_status == "cancelled"
+        return candidate.task_status == "done" and candidate.scope.get("closure_reason") == "cancelled"
     return True
 
 
@@ -1093,7 +1093,7 @@ class MassiveBenchmarkRunner:
         active_open_tasks = [
             memory
             for memory in active
-            if memory.memory_type == "task" and memory.task_status not in {"done", "cancelled"}
+            if memory.memory_type == "task" and memory.task_status == "todo"
         ]
         pending = [memory for memory in memories if memory.status == "pending_review"]
         destructive = [memory for memory in memories if memory.status in {"deleted", "superseded", "conflicted"}]
@@ -1404,7 +1404,7 @@ class MassiveBenchmarkRunner:
         elif operation in {"completed", "done"}:
             task_status = "done"
         elif operation in {"cancelled", "canceled"}:
-            task_status = "cancelled"
+            task_status = "done"
         return MemoryCandidate(
             memory_type=memory_type,
             content=str(item.get("content") or ""),

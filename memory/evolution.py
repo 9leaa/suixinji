@@ -20,6 +20,7 @@ TRACE_STEPS = {
     "insert": "memory_inserted",
     "add_source": "memory_source_added",
     "merge": "memory_merged",
+    "update": "memory_updated",
     "update_task": "memory_updated",
     "supersede": "memory_superseded",
     "conflict": "memory_conflicted",

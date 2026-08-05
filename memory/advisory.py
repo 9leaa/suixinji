@@ -21,7 +21,67 @@ ADVISORY_PROMPT = """
 {"recommended_relation":"conflict|supersede|merge|same|new|uncertain","confidence":0.0,"reason":"...","evidence_ids":[]}
 """
 
+IDENTITY_PROMPT = """
+你是随心记的记忆身份比较器。你只能比较当前候选与给出的真实 Memory，不能执行写库。
+Task 输出 identity_relation=same_instance|same_family|different|uncertain；
+Preference 输出 identity_relation=same_assertion|same_family|different|uncertain。
+必须输出 JSON object：
+{"identity_relation":"uncertain","target_memory_id":null,"confidence":0.0,"reason_code":"...","supporting_fields":[],"conflicting_fields":[]}
+不得根据状态词本身判断任务身份；型号、外部编号、scope、polarity 冲突必须列入 conflicting_fields。
+"""
+
 HIGH_RISK_ACTIONS = {"supersede", "conflict", "pending_review", "merge"}
+
+
+def maybe_memory_identity_adjudication(
+    candidate: MemoryCandidate,
+    memories: list[MemoryRecord],
+) -> dict[str, Any] | None:
+    """Run semantic identity comparison only after broad local family recall."""
+    if not settings.STRONG_ESCALATION_ENABLED or candidate.memory_type not in {"task", "preference"} or not memories:
+        return None
+    payload = {
+        "candidate": {
+            "type": candidate.memory_type,
+            "content": candidate.content,
+            "task_status": candidate.task_status,
+            "polarity": candidate.polarity,
+            "scope": candidate.scope,
+        },
+        "memories": [
+            {
+                "id": memory.id,
+                "type": memory.memory_type,
+                "content": memory.content,
+                "task_status": memory.task_status,
+                "polarity": memory.polarity,
+                "scope": memory.scope,
+            }
+            for memory in memories[:8]
+        ],
+    }
+    data = complete_json(
+        system_prompt=IDENTITY_PROMPT,
+        user_prompt=json.dumps(payload, ensure_ascii=False),
+        llm_task="memory_identity_adjudication",
+    )
+    allowed = {
+        "task": {"same_instance", "same_family", "different", "uncertain"},
+        "preference": {"same_assertion", "same_family", "different", "uncertain"},
+    }[candidate.memory_type]
+    relation = str(data.get("identity_relation") or "uncertain")
+    target_id = str(data.get("target_memory_id") or "") or None
+    valid_ids = {memory.id for memory in memories[:8]}
+    if relation not in allowed or (target_id is not None and target_id not in valid_ids):
+        relation, target_id = "uncertain", None
+    return {
+        "identity_relation": relation,
+        "target_memory_id": target_id,
+        "confidence": min(1.0, max(0.0, float(data.get("confidence") or 0.0))),
+        "reason_code": str(data.get("reason_code") or "")[:160],
+        "supporting_fields": [str(item) for item in data.get("supporting_fields") or []][:12],
+        "conflicting_fields": [str(item) for item in data.get("conflicting_fields") or []][:12],
+    }
 
 
 def maybe_memory_relation_advisory(

@@ -144,14 +144,21 @@ def _completion_event_topic(candidate: MemoryCandidate) -> str:
 
 def convert_orphan_done_task_to_episodic(candidate: MemoryCandidate) -> MemoryCandidate:
     """Convert a weak no-history completion claim into a historical event."""
-    topic = _completion_event_topic(candidate)
+    # The structured extractor already supplied the canonical event identity.
+    # Prefer it over a lossy re-parse of natural language (which can retain
+    # batch labels, owners, or completion boilerplate).
+    topic = str(candidate.scope.get("canonical_topic") or candidate.object_value or _completion_event_topic(candidate)).strip()
     scope = dict(candidate.scope)
-    for key in ("operation", "task_status", "old_value", "new_value"):
+    for key in ("operation", "task_status", "old_value"):
         scope.pop(key, None)
-    scope.update({"canonical_topic": topic, "scope": "history", "derived_from": "orphan_completion"})
+    scope.update({"canonical_topic": topic, "new_value": topic, "scope": "history", "derived_from": "orphan_completion"})
     converted = replace(
         candidate,
         memory_type="episodic",
+        # Canonicalization derives episodic identity from evidence text first.
+        # Give it the trusted structured topic, not the noisy task sentence.
+        content=topic,
+        evidence_span=topic,
         subject="用户",
         predicate="event",
         object_value=topic,
@@ -204,7 +211,12 @@ def add_source_or_noop(candidate: MemoryCandidate, existing: MemoryRecord, *, ma
 
 
 def consolidate_done_task(space_id: str, note_id: str, candidate: MemoryCandidate, *, trace: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Stage-2-only adjudication for task candidates claiming ``done``."""
+    """Legacy entry point retained for callers; all task states use one path."""
+    return _consolidate_candidate_standard(space_id, note_id, candidate, trace=trace)
+
+
+def _legacy_consolidate_done_task(space_id: str, note_id: str, candidate: MemoryCandidate, *, trace: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Previous specialized implementation, kept temporarily for audit history."""
     history = list_memories(space_id, status="active", memory_type="task", limit=200)
     matches = _matched_task_memories(candidate, history)
     add_step(
@@ -230,12 +242,10 @@ def consolidate_done_task(space_id: str, note_id: str, candidate: MemoryCandidat
         existing = match.memory
         if match.kind == "fuzzy_topic":
             decision = _done_decision(candidate, matches, relation="ambiguous_match", action="pending_review", reason="fuzzy_task_match_requires_review")
-        elif existing.task_status in {"todo", "blocked"}:
+        elif existing.task_status == "todo":
             decision = update_existing_task_to_done(candidate, existing, match=match)
         elif existing.task_status == "done":
             decision = add_source_or_noop(candidate, existing, match=match)
-        elif existing.task_status == "cancelled":
-            decision = _done_decision(candidate, matches, relation="conflict", action="pending_review", reason="cancelled_task_completion_conflict")
         else:
             decision = _done_decision(candidate, matches, relation="conflict", action="pending_review", reason="unsupported_previous_task_status")
     add_step(
@@ -252,7 +262,7 @@ def consolidate_done_task(space_id: str, note_id: str, candidate: MemoryCandidat
         reason=decision.reason,
     )
     # A completion changes lifecycle state, not task identity.  Keep the
-    # historical canonical key on a todo/blocked -> done transition even
+    # historical canonical key on a todo -> done transition even
     # when the extractor supplied a more specific wording in this note.
     if decision.recommended_action == "update_task" and len(matches) == 1:
         existing = matches[0].memory
@@ -261,13 +271,24 @@ def consolidate_done_task(space_id: str, note_id: str, candidate: MemoryCandidat
             memory_key=existing.memory_key,
             memory_key_version=existing.memory_key_version,
         )
-    return evolve_memory(
+    result = evolve_memory(
         space_id=space_id,
         note_id=note_id,
         candidate=candidate_for_evolution,
         decision=decision,
         trace=trace,
     )
+    antecedent_note_id = str(candidate.scope.get("antecedent_note_id") or "")
+    result_memory_id = str(result.get("memory_id") or "")
+    if candidate.scope.get("reference_status") == "resolved" and antecedent_note_id and result_memory_id:
+        add_source(result_memory_id, antecedent_note_id, "supported_by")
+        add_step(
+            trace,
+            "antecedent_source_linked",
+            output_summary={"memory_id": result_memory_id, "antecedent_note_id": antecedent_note_id},
+            reason="resolved_reference_identity_evidence",
+        )
+    return result
 
 
 def _is_processing_stale(updated_at: str | None) -> bool:
@@ -288,7 +309,7 @@ def _is_processing_stale(updated_at: str | None) -> bool:
     return (datetime.now().astimezone() - parsed).total_seconds() > MEMORY_EXTRACTION_LEASE_SECONDS
 
 
-def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidate, *, trace: dict[str, Any] | None = None) -> dict[str, Any]:
+def _consolidate_candidate_standard(space_id: str, note_id: str, candidate: MemoryCandidate, *, trace: dict[str, Any] | None = None) -> dict[str, Any]:
     """函数功能：`consolidate_candidate` 负责合并长期记忆 candidate，服务于本文件职责：单候选编排。
     传参：
         space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
@@ -298,8 +319,6 @@ def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidat
     返回结果说明：
         返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
-    if candidate.memory_type == "task" and candidate.task_status == "done":
-        return consolidate_done_task(space_id, note_id, candidate, trace=trace)
     add_step(
         trace,
         "retrieval_started",
@@ -344,13 +363,38 @@ def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidat
         duration_ms=int((time.perf_counter() - adjudication_started) * 1000),
         reason=decision.reason,
     )
-    return evolve_memory(
+    candidate_for_evolution = candidate
+    if decision.recommended_action == "update_task" and len(decision.target_memory_ids) == 1:
+        target = next((memory for memory in similar if memory.id == decision.target_memory_ids[0]), None)
+        if target is not None:
+            candidate_for_evolution = replace(
+                candidate,
+                memory_key=target.memory_key,
+                memory_key_version=target.memory_key_version,
+            )
+    result = evolve_memory(
         space_id=space_id,
         note_id=note_id,
-        candidate=candidate,
+        candidate=candidate_for_evolution,
         decision=decision,
         trace=trace,
     )
+    antecedent_note_id = str(candidate.scope.get("antecedent_note_id") or "")
+    result_memory_id = str(result.get("memory_id") or "")
+    if candidate.scope.get("reference_status") == "resolved" and antecedent_note_id and result_memory_id:
+        add_source(result_memory_id, antecedent_note_id, "supported_by")
+        add_step(
+            trace,
+            "antecedent_source_linked",
+            output_summary={"memory_id": result_memory_id, "antecedent_note_id": antecedent_note_id},
+            reason="resolved_reference_identity_evidence",
+        )
+    return result
+
+
+def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidate, *, trace: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Consolidate every candidate through the same retrieval/adjudication path."""
+    return _consolidate_candidate_standard(space_id, note_id, candidate, trace=trace)
 
 
 def process_unextracted_notes(space_id: str, *, limit: int = 100) -> dict[str, Any]:

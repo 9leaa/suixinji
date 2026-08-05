@@ -1,0 +1,124 @@
+{
+  "schema_version": "suixinji.layer2.consolidation.v1",
+  "total_cases": 564,
+  "all_passed": true,
+  "reports": {
+    "relation_and_action_core.jsonl": {
+      "file": "relation_and_action_core.jsonl",
+      "rows": 120,
+      "decisions": 120,
+      "relations": {
+        "new": 20,
+        "same": 20,
+        "merge": 20,
+        "update": 20,
+        "supersede": 20,
+        "conflict": 20
+      },
+      "actions": {
+        "insert": 40,
+        "add_source": 20,
+        "update": 40,
+        "pending_review": 20
+      },
+      "memory_types": {
+        "task": 120
+      },
+      "passed": true,
+      "errors": []
+    },
+    "task_state_transition.jsonl": {
+      "file": "task_state_transition.jsonl",
+      "rows": 144,
+      "decisions": 144,
+      "relations": {
+        "new": 24,
+        "same": 24,
+        "update": 84,
+        "conflict": 12
+      },
+      "actions": {
+        "insert": 24,
+        "add_source": 24,
+        "update": 84,
+        "pending_review": 12
+      },
+      "memory_types": {
+        "task": 144
+      },
+      "passed": true,
+      "errors": []
+    },
+    "orphan_done_resolution.jsonl": {
+      "file": "orphan_done_resolution.jsonl",
+      "rows": 100,
+      "decisions": 100,
+      "relations": {
+        "new": 25,
+        "conflict": 35,
+        "update": 30,
+        "same": 10
+      },
+      "actions": {
+        "insert": 25,
+        "pending_review": 35,
+        "update": 30,
+        "add_source": 10
+      },
+      "memory_types": {
+        "task": 100
+      },
+      "passed": true,
+      "errors": []
+    },
+    "version_source_idempotency.jsonl": {
+      "file": "version_source_idempotency.jsonl",
+      "rows": 80,
+      "decisions": 110,
+      "relations": {
+        "same": 40,
+        "update": 40,
+        "conflict": 20,
+        "new": 10
+      },
+      "actions": {
+        "add_source": 40,
+        "update": 40,
+        "pending_review": 20,
+        "insert": 10
+      },
+      "memory_types": {
+        "task": 110
+      },
+      "passed": true,
+      "errors": []
+    },
+    "non_task_consolidation.jsonl": {
+      "file": "non_task_consolidation.jsonl",
+      "rows": 120,
+      "decisions": 120,
+      "relations": {
+        "new": 21,
+        "same": 21,
+        "merge": 21,
+        "update": 21,
+        "supersede": 18,
+        "conflict": 18
+      },
+      "actions": {
+        "insert": 21,
+        "add_source": 21,
+        "update": 60,
+        "pending_review": 18
+      },
+      "memory_types": {
+        "preference": 40,
+        "semantic": 40,
+        "episodic": 40
+      },
+      "passed": true,
+      "errors": []
+    }
+  },
+  "critical_invariant": "No-history Task(done) must never insert a new Task(done)."
+}

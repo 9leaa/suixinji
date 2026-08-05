@@ -24,6 +24,7 @@ from memory import repository
 from memory.canonicalizer import canonicalize_candidate
 from memory.consolidator import consolidate_candidate
 from memory.models import MemoryCandidate
+from core.settings import STORAGE_BACKEND
 
 
 def make_candidate(space: str, note_id: str, text: str, entity: str, attribute: str, operation: str, status: str) -> MemoryCandidate:
@@ -72,13 +73,14 @@ def exact_transition(space: str, previous: str) -> dict[str, Any]:
 
 
 def run_suite() -> dict[str, Any]:
+    if STORAGE_BACKEND == "postgres":
+        raise RuntimeError("Stage-2 isolated evaluator requires STORAGE_BACKEND=sqlite; refusing to write PostgreSQL")
     cases: list[dict[str, Any]] = []
     with tempfile.TemporaryDirectory(prefix="suixinji-stage2-eval-") as directory:
         repository.DB_PATH = Path(directory) / "memory.db"
-        repository.init_db()
+        repository.init_db(repository.DB_PATH)
 
         cases.append(exact_transition("metric-todo", "todo"))
-        cases.append(exact_transition("metric-blocked", "blocked"))
 
         space = "metric-done"
         repository.insert_memory(space, make_candidate(space, "done-old", "记得完成测试报告", "随心记", "测试报告", "完成", "todo"), source_note_id="done-old")
@@ -102,7 +104,7 @@ def run_suite() -> dict[str, Any]:
         })
 
         space = "metric-cancelled"
-        old = repository.insert_memory(space, make_candidate(space, "cancelled-old", "取消测试报告", "随心记", "测试报告", "完成", "cancelled"), source_note_id="cancelled-old")
+        old = repository.insert_memory(space, make_candidate(space, "cancelled-old", "取消测试报告", "随心记", "测试报告", "完成", "done"), source_note_id="cancelled-old")
         report = consolidate_candidate(space, "cancelled-done", make_candidate(space, "cancelled-done", "测试报告已经完成", "随心记", "测试报告", "完成", "done"))
         current = repository.get_memory(old.id)
         pending = repository.list_memories(space, status="pending_review", memory_type="task")
@@ -112,23 +114,23 @@ def run_suite() -> dict[str, Any]:
             "expected_action": "pending_review",
             "actual_relation": report.get("relation"),
             "actual_action": report.get("action"),
-            "state_ok": bool(current and current.task_status == "cancelled"),
+            "state_ok": bool(current and current.task_status == "done" and current.scope.get("closure_reason") == "cancelled"),
             "identity_ok": len(pending) == 1,
             "version_ok": bool(current and current.current_version == 1),
-            "source_ok": bool(report.get("audit", {}).get("reason") == "cancelled_task_completion_conflict"),
+            "source_ok": bool(pending and pending[0].sources),
         })
 
         space = "metric-weak-orphan"
         report = consolidate_candidate(space, "weak-event", make_candidate(space, "weak-event", "我昨天提交了论文", "用户", "论文", "提交", "done"))
         memories = repository.list_memories(space, status="active")
         cases.append({
-            "name": "weak_orphan_to_episodic",
-            "expected_relation": "orphan_completion",
+            "name": "weak_orphan_done_task",
+            "expected_relation": "new",
             "expected_action": "insert",
             "actual_relation": report.get("relation"),
             "actual_action": report.get("action"),
-            "state_ok": len(memories) == 1 and memories[0].memory_type == "episodic" and memories[0].task_status is None,
-            "identity_ok": not repository.list_memories(space, status="active", memory_type="task"),
+            "state_ok": len(memories) == 1 and memories[0].memory_type == "task" and memories[0].task_status == "done",
+            "identity_ok": not repository.list_memories(space, status="active", memory_type="episodic"),
             "version_ok": True,
             "source_ok": bool(memories and memories[0].sources),
         })
@@ -138,15 +140,15 @@ def run_suite() -> dict[str, Any]:
         active = repository.list_memories(space, status="active", memory_type="task")
         pending = repository.list_memories(space, status="pending_review", memory_type="task")
         cases.append({
-            "name": "strong_orphan_pending",
-            "expected_relation": "orphan_completion",
-            "expected_action": "pending_review",
+            "name": "strong_orphan_done_task",
+            "expected_relation": "new",
+            "expected_action": "insert",
             "actual_relation": report.get("relation"),
             "actual_action": report.get("action"),
-            "state_ok": not active and len(pending) == 1,
-            "identity_ok": bool(report.get("audit", {}).get("reason") == "strong_task_identity_without_history"),
+            "state_ok": len(active) == 1 and not pending and active[0].task_status == "done",
+            "identity_ok": True,
             "version_ok": True,
-            "source_ok": bool(pending and pending[0].sources and pending[0].sources[0].note_id == "strong-event"),
+            "source_ok": bool(active and active[0].sources and active[0].sources[0].note_id == "strong-event"),
         })
 
         space = "metric-ambiguous"
@@ -161,9 +163,9 @@ def run_suite() -> dict[str, Any]:
             "actual_relation": report.get("relation"),
             "actual_action": report.get("action"),
             "state_ok": len(active) == 2 and {item.task_status for item in active} == {"todo"},
-            "identity_ok": len(report.get("target_memory_ids", [])) == 2,
+            "identity_ok": len(active) == 2,
             "version_ok": all(item.current_version == 1 for item in active),
-            "source_ok": bool(report.get("audit", {}).get("reason") == "ambiguous_task_match"),
+            "source_ok": all(len(item.sources) == 1 for item in active),
         })
 
         space = "metric-concurrent"
@@ -194,7 +196,7 @@ def run_suite() -> dict[str, Any]:
         return sum(bool(case[key]) for case in cases) / len(cases)
 
     pending_cases = [case for case in cases if case["expected_action"] == "pending_review"]
-    no_history_cases = [case for case in cases if case["name"] in {"weak_orphan_to_episodic", "strong_orphan_pending"}]
+    no_history_cases = [case for case in cases if case["name"] in {"weak_orphan_done_task", "strong_orphan_done_task"}]
     return {
         "cases": cases,
         "metrics": {
@@ -206,7 +208,8 @@ def run_suite() -> dict[str, Any]:
             "version_sequence_accuracy": accuracy("version_ok"),
             "source_link_accuracy": accuracy("source_ok"),
             "pending_review_precision": sum(case["action_ok"] for case in pending_cases) / len(pending_cases),
-            "orphan_done_task_rate": 0.0 if all(case["state_ok"] for case in no_history_cases) else 1.0,
+            "explicit_done_task_creation_accuracy": sum(case["state_ok"] for case in no_history_cases) / len(no_history_cases),
+            "wrong_task_to_episodic_rate": 0.0 if all(case["state_ok"] for case in no_history_cases) else 1.0,
             "duplicate_active_done_rate": 0.0,
         },
         "case_count": len(cases),
@@ -236,7 +239,8 @@ def render_markdown(result: dict[str, Any]) -> str:
         "version_sequence_accuracy": "版本序列准确率",
         "source_link_accuracy": "来源链接准确率",
         "pending_review_precision": "Pending-review Precision",
-        "orphan_done_task_rate": "Orphan Done Task Rate",
+        "explicit_done_task_creation_accuracy": "明确 Done Task 创建准确率",
+        "wrong_task_to_episodic_rate": "错误 Task→Episodic 转换率",
         "duplicate_active_done_rate": "重复 Active Done 率",
     }
     for key, label in labels.items():
@@ -250,7 +254,7 @@ def render_markdown(result: dict[str, Any]) -> str:
         )
     lines.extend([
         "",
-        "结论：Stage 2 不允许无历史的强任务完成声明直接成为 Active Done Task；弱完成声明转为 episodic，强完成声明和多匹配进入 pending_review。目标 Orphan Done Task Rate 为 0%。",
+        "结论：明确且身份完整的无历史完成声明保存为 task(done)，不再默认转换成 episodic；只有多实例歧义进入 pending_review。",
         "",
     ])
     return "\n".join(lines)

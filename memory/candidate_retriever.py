@@ -31,6 +31,42 @@ def _char_similarity(left: str, right: str) -> float:
     return len(left_set & right_set) / len(left_set | right_set)
 
 
+def task_family_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> float:
+    """Broad recall score; this score alone never authorizes a state mutation."""
+    if candidate.memory_type != "task" or memory.memory_type != "task":
+        return 0.0
+    if not task_policy.identifiers_compatible(candidate.content, memory.content):
+        return 0.0
+    candidate_scope = normalize_content(str(candidate.scope.get("scope") or "global"))
+    memory_scope = normalize_content(str(memory.scope.get("scope") or "global"))
+    if candidate_scope != memory_scope:
+        return 0.0
+    candidate_topic = str(candidate.predicate or candidate.scope.get("canonical_topic") or candidate.content)
+    memory_topic = str(memory.predicate or memory.scope.get("canonical_topic") or memory.content)
+    topic_score = _char_similarity(candidate_topic, memory_topic)
+    content_score = _char_similarity(candidate.content, memory.content)
+    entity_bonus = 0.18 if (
+        candidate.subject and memory.subject
+        and normalize_content(candidate.subject) == normalize_content(memory.subject)
+    ) else 0.0
+    score = 0.58 * topic_score + 0.24 * content_score + entity_bonus
+    return round(min(score, 0.84), 4) if score >= 0.28 else 0.0
+
+
+def preference_family_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> float:
+    """Family-level preference recall, with named anchors kept hard."""
+    if candidate.memory_type != "preference" or memory.memory_type != "preference":
+        return 0.0
+    left = preference_policy.preference_signature(candidate.content, candidate.object_value)
+    right = preference_policy.preference_signature(memory.content, memory.object_value)
+    if left.named_anchors or right.named_anchors:
+        return 0.0 if set(left.named_anchors) != set(right.named_anchors) else 0.82
+    if left.scopes and right.scopes and not set(left.scopes) & set(right.scopes):
+        return 0.0
+    score = _char_similarity(left.normalized_topic, right.normalized_topic)
+    return round(min(0.78, 0.45 + score * 0.33), 4) if score >= 0.22 else 0.0
+
+
 def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> float:
     """函数功能：`candidate_similarity` 负责处理 candidate similarity，服务于本文件职责：候选相关记忆召回。
     传参：
@@ -74,7 +110,7 @@ def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> fl
             )
             if is_strict_suffix_refinement:
                 return 0.86
-            return 0.0
+            return task_family_similarity(candidate, memory)
         if candidate.memory_type == "semantic":
             if normalize_content(candidate.predicate or "") in {"fact", "事实"}:
                 return 0.0
@@ -91,7 +127,7 @@ def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> fl
             comparative_alternative = preference_policy.is_comparative_alternative(candidate.content, memory.content)
             ambiguous_conflict = preference_policy.is_ambiguous_conflict(candidate.content, memory.content)
             if preference_policy.topic_compatibility(candidate, memory) < 0.75 and not comparative_alternative and not ambiguous_conflict:
-                return 0.0
+                return preference_family_similarity(candidate, memory)
 
     # 检索发生在裁决前，并被限制为较小 top-k；不能让共享句式模板或 A1/A10 这类子串关系把真正同主题 Memory 挤出列表。
     if candidate.memory_type == memory.memory_type == "preference":

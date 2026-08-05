@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import asdict, is_dataclass, replace
 from datetime import date
 from typing import Any
@@ -21,7 +22,7 @@ from memory.consolidator import consolidate_candidate
 from memory.candidate_validator import contains_sensitive_data, validate_candidates
 from memory.canonicalizer import task_identity_compatible
 from memory.extractor import extract_candidates, may_contain_memory
-from memory.models import candidate_id_for
+from memory.models import candidate_id_for, candidate_id_for_evidence
 from memory.shadow import build_shadow_report
 from memory.repository import (
     approve_pending_memory,
@@ -46,6 +47,7 @@ from memory.repository import (
     resolve_memory_conflict,
     save_memory_candidate,
     search_memories,
+    get_memory_timeline,
     soft_delete_memory,
     stats,
 )
@@ -55,6 +57,85 @@ from memory.trace import add_step, find_traces_by_memory, finish_trace, get_trac
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+_COVERAGE_QUERY_MARKERS = ("列出", "列举", "分别", "概括", "汇总", "有哪些", "哪几", "几件", "几个")
+
+
+def _coverage_identity(item: dict[str, Any]) -> str:
+    """Return a stable business identity for diversity, never an evaluator id."""
+    scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
+    return str(
+        scope.get("task_family_key")
+        or scope.get("preference_family_key")
+        or scope.get("canonical_topic")
+        or item.get("canonical_topic")
+        or item.get("memory_key")
+        or item.get("predicate")
+        or item.get("object_value")
+        or item.get("id")
+        or ""
+    )
+
+
+def _has_structured_task_state(item: dict[str, Any]) -> bool:
+    """Prefer a task record whose stored value explicitly represents its state."""
+    status = str(item.get("task_status") or "").casefold()
+    if not status:
+        return False
+    value = str(item.get("object_value") or item.get("current_value") or "").casefold()
+    if value == status:
+        return True
+    text = " ".join(str(item.get(key) or "") for key in ("content", "memory_key"))
+    return bool(re.search(r"(?:[:：=]|状态(?:是|为)?|当前(?:状态)?(?:是|为)?)\s*" + re.escape(status) + r"\b", text, re.IGNORECASE))
+
+
+def _coverage_rerank_memory_results(
+    results: list[dict[str, Any]],
+    *,
+    query: str,
+    limit: int,
+) -> list[dict[str, Any]]:
+    """Diversify inventory-style retrieval with business fields only.
+
+    Ordinary fact questions retain repository ranking.  For an explicit list or
+    summary request, a single high-scoring distractor must not crowd every
+    independently useful item out of a bounded result set.  ACL filtering has
+    already happened before this function; it only changes ordering.
+    """
+    if not results or not any(marker in str(query or "") for marker in _COVERAGE_QUERY_MARKERS):
+        return results[: max(1, int(limit))]
+
+    wants_tasks = any(marker in str(query or "") for marker in ("项目", "任务", "状态"))
+    wants_episodes = any(marker in str(query or "") for marker in ("经历", "事件", "最近记录", "几件"))
+    candidates = list(results)
+    selected: list[dict[str, Any]] = []
+    used_identities: set[str] = set()
+    used_types: set[str] = set()
+    target = max(1, int(limit))
+
+    while candidates and len(selected) < target:
+        def rank(item: dict[str, Any]) -> tuple[float, float, str]:
+            score = float(item.get("score") or item.get("retrieval_fusion_score") or 0.0)
+            identity = _coverage_identity(item)
+            memory_type = str(item.get("memory_type") or "")
+            coverage_bonus = 0.0 if identity in used_identities else 0.08
+            type_bonus = 0.05 if memory_type and memory_type not in used_types else 0.0
+            task_bonus = 0.16 if wants_tasks and memory_type == "task" and _has_structured_task_state(item) else 0.0
+            episode_bonus = 0.16 if wants_episodes and memory_type == "episodic" else 0.0
+            # Preserve repository score as the dominant signal; bonuses only
+            # resolve the bounded-list crowding failure mode.
+            return (score + coverage_bonus + type_bonus + task_bonus + episode_bonus, score, str(item.get("id") or ""))
+
+        best = max(candidates, key=rank)
+        candidates.remove(best)
+        selected.append(best)
+        identity = _coverage_identity(best)
+        if identity:
+            used_identities.add(identity)
+        if best.get("memory_type"):
+            used_types.add(str(best["memory_type"]))
+    return selected
 
 
 def _note_value(note: Any, key: str, default: Any = None) -> Any:
@@ -166,7 +247,11 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
             "extraction_state_processing",
             output_summary={"note_id": note_id, "attempt_count": state.attempt_count},
         )
-        extracted_candidates = extract_candidates(note_id, text, classification=classification)
+        previous_messages = list(_note_value(note, "previous_messages", []) or [])[:3]
+        extraction_kwargs: dict[str, Any] = {"classification": classification}
+        if previous_messages:
+            extraction_kwargs["previous_messages"] = previous_messages
+        extracted_candidates = extract_candidates(note_id, text, **extraction_kwargs)
         shadow_report = build_shadow_report(extracted_candidates)
         if shadow_report is not None:
             add_step(
@@ -180,7 +265,20 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
                 candidate,
                 note_id=note_id,
                 space_id=space_id,
-                candidate_id=candidate_id_for(note_id, candidate.memory_type, candidate.content),
+                candidate_id=(
+                    candidate.candidate_id
+                    if candidate.note_id == note_id
+                    else candidate_id_for_evidence(
+                        note_id,
+                        candidate.memory_type,
+                        candidate.content,
+                        memory_key=candidate.effective_memory_key,
+                        evidence_span=candidate.evidence_span,
+                        clause_index=candidate.clause_index,
+                    )
+                    if candidate.clause_index is not None
+                    else candidate_id_for(note_id, candidate.memory_type, candidate.content)
+                ),
             )
             for candidate in extracted_candidates
         ]
@@ -383,6 +481,7 @@ def memory_search(
     memory_type: str | None = None,
     min_score: float = MEMORY_QUERY_MIN_SCORE,
     limit: int = 8,
+    access_context: Any = None,
 ) -> list[dict[str, Any]]:
     """函数功能：`memory_search` 负责搜索 memory，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -396,11 +495,14 @@ def memory_search(
     """
     trace = start_trace("memory_query", space_id, query_len=len(query))
     add_step(trace, "query_received", input_summary={"query_len": len(query), "memory_type": memory_type, "min_score": min_score})
-    results = [
+    requested_limit = max(1, min(int(limit), 50))
+    fetch_limit = max(30, requested_limit * 4)
+    candidates = [
         {**memory.to_dict(), "score": score}
-        for memory, score in search_memories(space_id, query, memory_type=memory_type, min_score=min_score, limit=limit)
+        for memory, score in search_memories(space_id, query, memory_type=memory_type, min_score=min_score, limit=fetch_limit, access_context=access_context)
         if not contains_sensitive_data(memory.content)
     ]
+    results = _coverage_rerank_memory_results(candidates, query=query, limit=requested_limit)
     add_step(
         trace,
         "memory_search",
@@ -714,7 +816,7 @@ def format_memory_profile(space_id: str) -> str:
         # in the same second, terminal status must win the current-state view.
         key=lambda memory: (
             memory.updated_at or "",
-            1 if memory.task_status in {"done", "cancelled"} else 0,
+            1 if memory.task_status == "done" else 0,
             memory.current_version,
             memory.id,
         ),
@@ -744,7 +846,7 @@ def format_memory_profile(space_id: str) -> str:
             [{"memory_id": memory_id, "stored": stored, "inferred": inferred} for memory_id, stored, inferred in mismatches],
         )
     sections = [
-        ("当前任务", [memory for memory in profile_memories if memory.memory_type == "task" and memory.task_status not in {"done", "cancelled"}]),
+        ("当前任务", [memory for memory in profile_memories if memory.memory_type == "task" and memory.task_status == "todo"]),
         ("偏好与约束", [memory for memory in profile_memories if memory.memory_type == "preference"]),
         ("长期背景", [memory for memory in profile_memories if memory.memory_type == "semantic"]),
         ("近期事件", [memory for memory in profile_memories if memory.memory_type == "episodic"][:5]),

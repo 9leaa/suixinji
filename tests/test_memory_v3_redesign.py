@@ -114,7 +114,7 @@ def test_v3_generic_semantic_facts_do_not_auto_merge(monkeypatch):
     assert decision.target_memory_ids == []
 
 
-def test_hybrid_uses_model_candidates_without_union(monkeypatch):
+def test_hybrid_repairs_only_uncovered_atom_types(monkeypatch):
     """函数功能：`test_hybrid_uses_model_candidates_without_union` 负责验证 hybrid uses model candidates without union 场景，服务于本文件职责：V3 schema/key/relation guard/shadow 行为。
     传参：
         monkeypatch: monkeypatch 参数，由调用方传入。
@@ -156,8 +156,9 @@ def test_hybrid_uses_model_candidates_without_union(monkeypatch):
     candidates = extractor.extract_candidates("hybrid-1", "我喜欢乌龙茶，记得完善随心记 README")
 
     assert settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED is True
-    assert [candidate.memory_type for candidate in candidates] == ["task"]
-    assert candidates[0].memory_key_version == MEMORY_KEY_V3_VERSION
+    assert [candidate.memory_type for candidate in candidates] == ["task", "preference"]
+    assert all(candidate.memory_key_version == MEMORY_KEY_V3_VERSION for candidate in candidates)
+    assert candidates[1].extraction_reason == "hybrid_atom_coverage_repair"
 
 
 def test_learning_task_lifecycle_is_stable_when_model_labels_vary_or_is_empty(monkeypatch):

@@ -203,7 +203,7 @@
 | --- | --- | --- |
 | `memory/policies/__init__.py` | policy 分发与公共合并接口 | 根据 memory type 选择专用策略。 |
 | `memory/policies/preference.py` | 偏好策略 | 处理正/负偏好、显式否定、冲突和最新有效偏好，避免“我不喜欢 X”回答为喜欢 X。 |
-| `memory/policies/task.py` | 任务策略 | 使用 canonical task key 关联同一任务，按 todo/blocked/done/cancelled 状态进行状态机式更新；“正在进行”归入 todo。 |
+| `memory/policies/task.py` | 任务策略 | 使用 canonical task key 关联同一任务，按 todo/done 二态更新；阻塞、等待和进行中归入 todo，取消/放弃归入 done 并保留结束原因。 |
 | `memory/policies/semantic.py` | 稳定事实/语义策略 | 对可合并的背景事实处理去重、补充和 supersede。 |
 | `memory/policies/episodic.py` | 事件策略 | 保留时间相关的一次性经历，限制过度合并。 |
 | `memory/evolution.py` | 决策落库后的确定性演化 | 对 insert、add_source、merge、update_task、supersede、conflict 等动作调用 repository 原子写入，并写 Trace 时间与结果。 |

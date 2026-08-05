@@ -120,6 +120,50 @@ def load_records(space_id: str) -> list[dict[str, Any]]:
         return [_as_record(row) for row in rows]
 
 
+def load_previous_user_messages(
+    space_id: str,
+    *,
+    sequence_no: int,
+    sender: dict[str, Any],
+    tenant_id: str,
+    limit: int = 3,
+) -> list[dict[str, Any]]:
+    """Load at most three earlier messages from the same tenant/space/user."""
+    identity_keys = ("user_id", "open_id", "union_id", "source_user_id", "id")
+    sender_id = next((str(sender.get(key) or "") for key in identity_keys if sender.get(key)), "")
+    if not sender_id or sequence_no <= 0:
+        return []
+    bounded = max(1, min(int(limit), 3))
+    with session_scope() as session:
+        rows = list(
+            session.execute(
+                select(InboxMessage)
+                .where(
+                    InboxMessage.tenant_id == tenant_id,
+                    InboxMessage.space_id == space_id,
+                    InboxMessage.sequence_no < sequence_no,
+                    InboxMessage.sensitivity == "normal",
+                )
+                .order_by(InboxMessage.sequence_no.desc())
+                .limit(12)
+            ).scalars()
+        )
+    matched: list[dict[str, Any]] = []
+    for row in rows:
+        previous_sender = dict(row.sender_json or {})
+        previous_id = next((str(previous_sender.get(key) or "") for key in identity_keys if previous_sender.get(key)), "")
+        sender_type = str(previous_sender.get("sender_type") or previous_sender.get("type") or "user").casefold()
+        if previous_id != sender_id or sender_type in {"bot", "system", "assistant"}:
+            continue
+        matched.append({"note_id": row.id, "sequence_no": row.sequence_no, "text": row.text})
+        if len(matched) >= bounded:
+            break
+    return [
+        {**item, "offset": -(index + 1)}
+        for index, item in enumerate(matched)
+    ]
+
+
 def message_exists(space_id: str, message_id: str) -> bool:
     """函数功能：`message_exists` 负责处理 message exists，服务于本文件职责：Inbox 数据访问。
     传参：

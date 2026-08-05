@@ -4,7 +4,7 @@ import re
 from typing import Any
 
 MEMORY_TYPES = ("task", "semantic", "preference", "episodic")
-TASK_STATUSES = ("todo", "blocked", "done", "cancelled")
+TASK_STATUSES = ("todo", "done")
 SEMANTIC_ATTRIBUTE_ALIASES = {
     "location": "location", "居住地": "location", "住址": "location", "所在地": "location",
     "current_project": "current_project", "currentproject": "current_project", "当前项目": "current_project", "项目": "current_project",
@@ -31,10 +31,16 @@ TASK_OPERATION_ALIASES = {
 }
 TASK_STATUS_ALIASES = {
     "todo": "todo", "pending": "todo", "in_progress": "todo", "in progress": "todo", "进行中": "todo",
-    "正在": "todo", "继续": "todo", "blocked": "blocked", "阻塞": "blocked", "卡住": "blocked",
-    "等待权限": "blocked", "等待数据": "blocked", "done": "done", "completed": "done", "complete": "done",
-    "完成": "done", "已完成": "done", "做完": "done", "搞定": "done", "cancelled": "cancelled",
-    "canceled": "cancelled", "取消": "cancelled", "不做了": "cancelled", "不用做": "cancelled",
+    "正在": "todo", "继续": "todo", "blocked": "todo", "阻塞": "todo", "卡住": "todo",
+    "等待权限": "todo", "等待数据": "todo", "done": "done", "completed": "done", "complete": "done",
+    "完成": "done", "已完成": "done", "做完": "done", "搞定": "done", "cancelled": "done",
+    "canceled": "done", "取消": "done", "不做了": "done", "不用做": "done", "abandoned": "done", "放弃": "done",
+}
+
+TASK_CLOSURE_ALIASES = {
+    "cancelled": "cancelled", "canceled": "cancelled", "取消": "cancelled", "不做了": "cancelled", "不用做": "cancelled",
+    "abandoned": "abandoned", "放弃": "abandoned",
+    "completed": "completed", "complete": "completed", "done": "completed", "完成": "completed", "做完": "completed", "搞定": "completed",
 }
 
 def clean_text(value: Any) -> str | None:
@@ -57,14 +63,42 @@ def normalize_task_status(value: Any, source_text: str = "") -> str | None:
         return TASK_STATUS_ALIASES[value]
     text = str(source_text or "")
     for status, markers in (
-        ("cancelled", ("取消", "不做了", "不用做", "不再维护")),
-        ("blocked", ("阻塞", "卡住", "等待权限", "等待数据", "等确认")),
+        ("done", ("取消", "不做了", "不用做", "不再维护", "放弃")),
+        ("todo", ("阻塞", "卡住", "等待权限", "等待数据", "等确认")),
         ("done", ("已完成", "完成", "做完", "搞定", "弄好", "发布成功", "学完")),
         ("todo", ("正在", "进行中", "继续", "需要", "计划", "准备", "待办", "要做")),
     ):
         if any(marker in text for marker in markers):
             return status
     return None
+
+
+def task_closure_reason(value: Any = None, source_text: str = "") -> str | None:
+    """Return why a task ended without expanding the two-state status enum."""
+    cleaned = clean_text(value)
+    if cleaned:
+        direct = TASK_CLOSURE_ALIASES.get(cleaned.casefold()) or TASK_CLOSURE_ALIASES.get(cleaned)
+        if direct:
+            return direct
+    text = str(source_text or "")
+    if any(marker in text for marker in ("取消", "不做了", "不用做", "不再维护")):
+        return "cancelled"
+    if "放弃" in text:
+        return "abandoned"
+    if any(marker in text for marker in ("已完成", "完成", "做完", "搞定", "弄好", "发布成功", "学完")):
+        return "completed"
+    return None
+
+
+def task_progress_metadata(source_text: str) -> dict[str, str]:
+    """Preserve progress/blocking semantics as metadata, never as task state."""
+    text = str(source_text or "").strip()
+    metadata: dict[str, str] = {}
+    if any(marker in text for marker in ("阻塞", "卡住", "等待权限", "等待数据", "等确认")):
+        metadata["blocker"] = text
+    elif any(marker in text for marker in ("正在", "进行中", "继续", "暂停")):
+        metadata["progress_note"] = text
+    return metadata
 
 def normalize_operation(value: Any, source_text: str = "") -> str | None:
     value = clean_text(value)

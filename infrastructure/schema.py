@@ -516,6 +516,7 @@ class MemoryDecision(Base):
     retry_of_decision_id: Mapped[str | None] = mapped_column(String(255))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (UniqueConstraint("space_id", "candidate_id", name="uq_memory_decision_space_candidate"),)
 
 
 class MemoryRelation(Base):

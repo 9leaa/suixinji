@@ -39,7 +39,9 @@ def test_process_note_memory_supersedes_changed_preference():
 
     assert len(active) == 1
     assert "暂时不喝咖啡" in active[0].content
-    assert len(superseded) == 1
+    assert superseded == []
+    assert active[0].current_version == 2
+    assert {source.note_id for source in active[0].sources} == {"note-1", "note-2"}
 
 
 def test_process_note_memory_supersedes_repeated_dislike_preference():
@@ -59,8 +61,8 @@ def test_process_note_memory_supersedes_repeated_dislike_preference():
 
     assert len(active) == 1
     assert "讨厌喝牛奶" in active[0].content
-    assert len(active[0].sources) == 2
-    assert len(superseded) == 1
+    assert len(active[0].sources) == 3
+    assert superseded == []
     assert "讨厌喝牛奶" not in results
     assert "喜欢喝牛奶" not in results
 
@@ -80,7 +82,8 @@ def test_process_note_memory_supersedes_changed_city():
 
     assert len(active) == 1
     assert "上海" in active[0].content
-    assert len(superseded) == 1
+    assert superseded == []
+    assert active[0].current_version == 2
 
 
 def test_process_note_memory_preserves_ambiguous_preference_conflict():
@@ -179,11 +182,11 @@ def test_preference_retrieval_keeps_exact_numbered_topic_in_a_large_similar_set(
     report = process_note_memory({"id": "note-change", "space_id": "space-1", "text": "我现在不喜欢喝饮品A0了"})
     memories = list_memories("space-1", status=None, memory_type="preference")
 
-    original = next(memory for memory in memories if memory.content == "用户喜欢喝饮品A0")
     replacement = next(memory for memory in memories if memory.content == "用户现在不喜欢喝饮品A0了")
-    assert report["results"][0]["action"] == "supersede"
-    assert original.status == "superseded"
+    assert report["results"][0]["action"] == "update"
     assert replacement.status == "active"
+    assert replacement.current_version == 2
+    assert len([memory for memory in memories if memory.status == "active"]) == 12
 
 
 def test_task_retrieval_updates_exact_numbered_task_in_a_large_similar_set():

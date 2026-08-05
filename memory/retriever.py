@@ -222,7 +222,7 @@ def score_memory(query: str, memory: MemoryRecord) -> float:
         status_factor = 0.2
     if (
         memory.memory_type == "task"
-        and memory.task_status in {"done", "cancelled"}
+        and memory.task_status == "done"
         and any(marker in query for marker in ("待办", "要做", "未完成", "还要"))
         and not any(marker in query for marker in ("状态", "完成", "取消", "做完"))
     ):

@@ -162,6 +162,92 @@ def test_llm_extractor_returns_structured_candidates(monkeypatch):
     assert candidates[0].candidate_id == extractor.candidate_id_for("note-1", "task", "准备 Agent 实习")
 
 
+def test_rule_extractor_keeps_mixed_atoms_and_multiple_preferences(monkeypatch):
+    monkeypatch.setattr(extractor.settings, "MEMORY_CLAUSE_EXTRACTION_ENABLED", True)
+    mixed = extractor.extract_rule_candidates(
+        "mixed-atoms",
+        "我喜欢咖啡，主要使用MacBook Pro，这周要完成随心记评测。",
+    )
+    assert {candidate.memory_type for candidate in mixed} >= {"preference", "semantic", "task"}
+
+    preferences = extractor.extract_rule_candidates("multi-pref", "我喜欢咖啡和绿茶。")
+    preference_rows = [candidate for candidate in preferences if candidate.memory_type == "preference"]
+    assert len(preference_rows) == 2
+    assert {candidate.evidence_span for candidate in preference_rows} == {"喜欢咖啡", "绿茶"}
+
+
+def test_hybrid_only_repairs_uncovered_atom_types(monkeypatch):
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
+    monkeypatch.setattr(extractor.settings, "MEMORY_CLAUSE_EXTRACTION_ENABLED", True)
+    monkeypatch.setattr(
+        extractor,
+        "complete_json",
+        lambda **kwargs: {
+            "candidates": [{
+                "memory_type": "preference", "entity": "用户", "attribute": "preference", "operation": None,
+                "canonical_topic": "咖啡", "task_status": None, "old_value": None, "new_value": "咖啡",
+                "content": "用户喜欢咖啡", "evidence_span": "我喜欢咖啡", "confidence": 0.9,
+                "importance": 0.8, "should_store": True, "extraction_reason": "明确偏好", "entities": ["咖啡"],
+            }]
+        },
+    )
+    rows = extractor.extract_candidates(
+        "hybrid-atoms",
+        "我喜欢咖啡，主要使用MacBook Pro，这周要完成随心记评测。",
+    )
+    assert [row.memory_type for row in rows].count("preference") == 1
+    assert {row.memory_type for row in rows} >= {"preference", "semantic", "task"}
+    repaired = [row for row in rows if row.extraction_reason == "hybrid_atom_coverage_repair"]
+    assert {row.memory_type for row in repaired} >= {"semantic", "task"}
+
+
+def test_previous_messages_are_only_sent_for_reference_signals(monkeypatch):
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
+    payloads = []
+
+    def fake_complete_json(**kwargs):
+        import json
+
+        payloads.append(json.loads(kwargs["user_prompt"]))
+        return {"candidates": []}
+
+    monkeypatch.setattr(extractor, "complete_json", fake_complete_json)
+    previous = [
+        {"note_id": f"n{index}", "offset": -index, "text": f"历史消息{index}"}
+        for index in range(1, 5)
+    ]
+    extractor.extract_candidates("plain", "记得完成测试报告", previous_messages=previous)
+    extractor.extract_candidates("reference", "这个也做完了", previous_messages=previous)
+
+    assert payloads[0]["previous_messages"] == []
+    assert [row["offset"] for row in payloads[1]["previous_messages"]] == [-1, -2, -3]
+
+
+def test_resolved_reference_metadata_is_preserved_in_candidate_scope(monkeypatch):
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
+    monkeypatch.setattr(
+        extractor,
+        "complete_json",
+        lambda **kwargs: {"candidates": [{
+            "memory_type": "task", "entity": "随心记", "attribute": "测试报告", "operation": "完成",
+            "canonical_topic": "完成随心记测试报告", "task_status": "done", "old_value": None,
+            "new_value": None, "content": "测试报告已结束", "evidence_span": "这个也做完了",
+            "confidence": 0.96, "importance": 0.8, "should_store": True, "extraction_reason": "近三轮唯一指代",
+            "entities": ["随心记"], "reference_status": "resolved", "antecedent_note_id": "n1",
+            "antecedent_offset": -1, "antecedent_evidence_span": "记得完成随心记测试报告", "resolution_confidence": 0.96,
+        }]},
+    )
+    rows = extractor.extract_candidates(
+        "reference",
+        "这个也做完了",
+        previous_messages=[{"note_id": "n1", "offset": -1, "text": "记得完成随心记测试报告"}],
+    )
+    assert len(rows) == 1
+    assert rows[0].scope["reference_status"] == "resolved"
+    assert rows[0].scope["antecedent_note_id"] == "n1"
+    assert rows[0].evidence_span == "这个也做完了"
+
+
 def test_llm_extractor_falls_back_to_rules(monkeypatch):
     """函数功能：`test_llm_extractor_falls_back_to_rules` 负责验证 llm extractor falls back to rules 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
     传参：

@@ -162,7 +162,7 @@ def _generate_dataset() -> dict[str, Any]:
         memory_prefix = "用户"
         identity = f"记忆编号{atom['identifier']}"
         if atom["memory_type"] == "task":
-            status_text = {"todo": "需要处理", "blocked": "暂时阻塞", "done": "已经完成", "cancelled": "已经取消"}.get(atom["task_status"], "需要处理")
+            status_text = {"todo": "需要处理", "done": "已经结束"}.get(atom["task_status"], "需要处理")
             content = f"{memory_prefix}{status_text}{atom['label']}：{atom['object_value']}；{identity}"
         elif atom["memory_type"] == "preference":
             content = f"{memory_prefix}{'喜欢' if atom['polarity'] == 'positive' else '不喜欢'}{atom['label']}：{atom['object_value']}；{identity}"

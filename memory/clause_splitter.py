@@ -23,11 +23,14 @@ class Clause:
     end: int
 
 
-_BOUNDARY_RE = re.compile(r"[。！？!?；;]|(?:，|,)(?=(?:我|用户|本人|下周|明天|今天|昨天|刚才|需要|记得|还要|并且|而且|但是|不过|同时))")
+_BOUNDARY_RE = re.compile(
+    r"[。！？!?；;]|(?:，|,)(?=(?:我|用户|本人|下周|这周|本周|明天|今天|昨天|刚才|需要|记得|还要|"
+    r"并且|而且|但是|不过|同时|主要|目前|现在|更偏向|更喜欢|不再|另外))"
+)
 _LEADING_CONNECTOR_RE = re.compile(r"^(?:并且|而且|但是|不过|同时|然后|接着|另外|还|以及|，|,)\s*")
 
 
-def split_clauses(text: str, *, max_clauses: int = 8) -> list[Clause]:
+def split_clauses(text: str, *, max_clauses: int = 64) -> list[Clause]:
     """函数功能：`split_clauses` 负责切分 clauses，服务于本文件职责：消息子句切分。
     传参：
         text: 输入文本内容，类型为 `str`。

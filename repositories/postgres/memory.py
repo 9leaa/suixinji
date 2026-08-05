@@ -10,11 +10,12 @@ from __future__ import annotations
 import json
 import logging
 import re
+from dataclasses import replace
 from datetime import timedelta
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import case, delete, func, or_, select, update
+from sqlalchemy import case, delete, func, or_, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 
 from core.settings import (
@@ -67,7 +68,9 @@ from memory.models import (
     normalize_content,
     utc_now_iso,
 )
+from memory.field_contracts import normalize_task_status
 from memory.retrieval_models import MemoryRetrievalHit
+from memory.access import memory_access_allowed
 from memory.vector_lifecycle import (
     current_embedding_contract,
     memory_content_hash,
@@ -252,7 +255,7 @@ def _versions(session: Any, memory_id: str) -> list[MemoryVersion]:
             reason=row.reason,
             source_note_id=row.source_note_id,
             created_at=_iso(row.created_at) or "",
-            task_status=row.task_status,
+            task_status=normalize_task_status(row.task_status),
             confidence=row.confidence,
             importance=row.importance,
             valid_from=_iso(row.valid_from),
@@ -310,8 +313,8 @@ def _record(
         importance=float(row.importance),
         confidence=float(row.confidence),
         status=row.status,
-        # 旧数据库中的 in_progress 只在内存中归并，绝不在读取时回写用户数据。
-        task_status="todo" if row.task_status == "in_progress" else row.task_status,
+        # 旧四态数据只在内存中投影，绝不在读取时回写用户数据。
+        task_status=normalize_task_status(row.task_status),
         valid_from=_iso(row.valid_from),
         valid_until=_iso(row.valid_until),
         created_at=_iso(row.created_at) or "",
@@ -425,7 +428,7 @@ def _add_version(session: Any, row: Memory, *, reason: str | None, source_note_i
             version=row.current_version,
             content=row.content,
             status=row.status,
-            task_status=row.task_status,
+            task_status=normalize_task_status(row.task_status),
             confidence=row.confidence,
             importance=row.importance,
             valid_from=_dt(row.valid_from),
@@ -477,7 +480,7 @@ def _insert_memory(
         importance=float(candidate.importance),
         confidence=float(candidate.confidence),
         status=status,
-        task_status=candidate.task_status,
+        task_status=normalize_task_status(candidate.task_status),
         subject=candidate.subject,
         predicate=candidate.predicate,
         object_value=candidate.object_value,
@@ -485,7 +488,7 @@ def _insert_memory(
         memory_key_version=candidate.memory_key_version,
         polarity=candidate.polarity,
         scope_json=dict(candidate.scope),
-        valid_from=_dt(candidate.valid_from or timestamp),
+        valid_from=_dt(candidate.valid_from),
         valid_until=_dt(candidate.valid_until),
         last_confirmed_at=_dt(timestamp),
         created_at=_dt(timestamp),
@@ -515,6 +518,7 @@ def _versioned_update(
     scope: dict[str, Any] | None = None,
     memory_key: str | None = None,
     memory_key_version: str | None = None,
+    polarity: str | None = None,
     reason: str | None,
     source_note_id: str | None,
 ) -> None:
@@ -555,7 +559,7 @@ def _versioned_update(
     if status is not None:
         row.status = status
     if task_status is not None:
-        row.task_status = task_status
+        row.task_status = normalize_task_status(task_status)
     if valid_until is not None:
         row.valid_until = _dt(valid_until)
     if confidence is not None:
@@ -572,6 +576,8 @@ def _versioned_update(
         row.memory_key = memory_key
     if memory_key_version is not None:
         row.memory_key_version = memory_key_version
+    if polarity is not None:
+        row.polarity = polarity
     row.updated_at = _dt(utc_now_iso())
     row.current_version += 1
     session.flush()
@@ -600,7 +606,7 @@ def _archive_terminal_task_duplicates(
     返回结果说明：
         返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
-    if target.memory_type != "task" or target.task_status not in {"done", "cancelled"}:
+    if target.memory_type != "task" or target.task_status != "done":
         return []
     from memory.canonicalizer import task_identity_compatible
 
@@ -1546,7 +1552,7 @@ def _candidate_record(row: MemoryCandidateRow) -> MemoryCandidate:
         confidence=float(row.confidence),
         entities=list(row.entities_json or []),
         should_store=bool(row.should_store),
-        task_status="todo" if row.task_status == "in_progress" else row.task_status,
+        task_status=normalize_task_status(row.task_status),
         candidate_id=row.candidate_id,
         note_id=row.note_id,
         space_id=row.space_id,
@@ -1780,6 +1786,15 @@ def apply_memory_decision(
     del db_path
     try:
         with session_scope() as session:
+            identity = f"{space_id}:{candidate.effective_memory_key}"
+            session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:identity))"), {"identity": identity})
+            prior = session.execute(select(MemoryDecisionRow).where(MemoryDecisionRow.space_id == space_id, MemoryDecisionRow.candidate_id == candidate.candidate_id, MemoryDecisionRow.status.in_(("applied", "pending_review"))).order_by(MemoryDecisionRow.created_at.desc()).limit(1)).scalar_one_or_none()
+            if prior is not None:
+                ids = list(prior.result_memory_ids_json or [])
+                replay = {"action": "pending_review" if prior.status == "pending_review" else "add_source", "relation": "conflict" if prior.status == "pending_review" else "same", "decision_id": prior.id, "candidate_id": candidate.candidate_id, "idempotent": True, "source_added": False, "result_memory_ids": ids}
+                if ids:
+                    replay["memory_id"] = ids[0]
+                return replay
             action = decision.recommended_action
             now = utc_now_iso()
             target_id = decision.target_memory_ids[0] if decision.target_memory_ids else None
@@ -1788,6 +1803,27 @@ def apply_memory_decision(
                 target = session.execute(select(Memory).where(Memory.id == target_id).with_for_update()).scalar_one_or_none()
                 if target is None:
                     raise ValueError(f"decision target memory not found: {target_id}")
+                if decision.target_snapshot_version is not None and target.current_version != decision.target_snapshot_version:
+                    same_identity = candidate.effective_memory_key == str(target.memory_key or "")
+                    same_state = same_identity and (
+                        (candidate.memory_type == "task" and candidate.task_status == target.task_status)
+                        or (candidate.memory_type != "task" and candidate.object_value and candidate.object_value == target.object_value)
+                    )
+                    if same_state:
+                        decision = replace(
+                            decision,
+                            relation="same",
+                            recommended_action="add_source",
+                            reason="concurrent_same_update_adds_source",
+                        )
+                    else:
+                        decision = replace(
+                            decision,
+                            relation="conflict",
+                            recommended_action="pending_review",
+                            reason="stale_target_snapshot_requires_readjudication",
+                        )
+                    action = decision.recommended_action
             result_ids: list[str] = []
             result: dict[str, Any] = {
                 "action": action, "relation": decision.relation, "decision_id": decision.decision_id,
@@ -1816,21 +1852,23 @@ def apply_memory_decision(
                     )
                     if archived:
                         result["archived_duplicate_ids"] = archived
-            elif action in {"merge", "update_task"} and target is not None:
-                relation = "updated_by" if action == "update_task" else "supported_by"
+            elif action in {"merge", "update", "update_task"} and target is not None:
+                relation = "updated_by" if action in {"update", "update_task"} else "supported_by"
                 added = _add_source(session, target.id, note_id, relation, now=now)
                 if added:
+                    is_task_update = action == "update_task"
                     _versioned_update(
                         session,
                         target,
-                        content=candidate.content if action == "update_task" else (merged_content or candidate.content),
-                        task_status=candidate.task_status if action == "update_task" else None,
-                        object_value=candidate.object_value if action == "update_task" else None,
-                        scope=dict(candidate.scope) if action == "update_task" else None,
-                        memory_key=candidate.effective_memory_key if action == "update_task" else None,
-                        memory_key_version=candidate.memory_key_version if action == "update_task" else None,
+                        content=candidate.content if action != "merge" else (merged_content or candidate.content),
+                        task_status=normalize_task_status(candidate.task_status) if is_task_update else None,
+                        object_value=candidate.object_value,
+                        scope=dict(candidate.scope),
+                        memory_key=candidate.effective_memory_key,
+                        memory_key_version=candidate.memory_key_version,
+                        polarity=candidate.polarity,
                         confidence=min(0.99, max(float(target.confidence), candidate.confidence)),
-                        importance=max(float(target.importance), candidate.importance) if action == "merge" else None,
+                        importance=max(float(target.importance), candidate.importance),
                         last_confirmed_at=now,
                         reason=decision.reason,
                         source_note_id=note_id,
@@ -2000,7 +2038,7 @@ def correct_memory(
             resolved_status = resolved_status or infer_task_status(content) or row.task_status
             if resolved_status != row.task_status and not can_transition(row.task_status, resolved_status):
                 raise ValueError(f"invalid task status transition: {row.task_status} -> {resolved_status}")
-            if row.task_status in {"done", "cancelled"} and resolved_status == "todo":
+            if row.task_status == "done" and resolved_status == "todo":
                 reopen_markers = ("重新", "再次", "重做", "返工", "恢复", "再开始", "又开始")
                 if not any(marker in content for marker in reopen_markers):
                     raise ValueError("reopening a terminal task requires explicit wording")
@@ -2171,7 +2209,7 @@ def edit_pending_memory(memory_id: str, content: str, db_path: Any = None) -> Me
             row,
             content=content,
             status="pending_review",
-            task_status=next_status if next_status is not None else row.task_status if row.memory_type == "task" else None,
+            task_status=normalize_task_status(next_status if next_status is not None else row.task_status) if row.memory_type == "task" else None,
             reason="user_edited_pending_memory",
             source_note_id=None,
         )
@@ -2183,7 +2221,7 @@ def edit_pending_memory(memory_id: str, content: str, db_path: Any = None) -> Me
         ))).scalar_one_or_none()
         if candidate is not None and row.memory_type == "task" and next_status is not None:
             candidate.content = content
-            candidate.task_status = next_status
+            candidate.task_status = normalize_task_status(next_status)
             candidate.updated_at = datetime.now().astimezone()
         decision = session.execute(
             select(MemoryDecisionRow)
@@ -2659,6 +2697,7 @@ def hybrid_search_memory_hits(
     query_embedding: list[float] | None = None,
     limit: int = 40,
     db_path: Any = None,
+    access_context: Any = None,
 ) -> list[MemoryRetrievalHit]:
     """函数功能：`hybrid_search_memory_hits` 负责搜索 memory hits，服务于本文件职责：Memory 数据访问。
     传参：
@@ -2810,6 +2849,9 @@ def hybrid_search_memory_hits(
                 )
             ))
 
+        # Apply ACL to every channel before RRF fusion.
+        if access_context is not None:
+            channels = [(name, [row for row in rows if memory_access_allowed(row, access_context)]) for name, rows in channels]
         hits = _rrf_hits(channels, limit=top)
         ids = [hit.memory.id for hit in hits]
         if not ids:
@@ -2837,6 +2879,7 @@ def hybrid_search_memories(
     query_embedding: list[float] | None = None,
     limit: int = 40,
     db_path: Any = None,
+    access_context: Any = None,
 ) -> list[MemoryRecord]:
     """函数功能：`hybrid_search_memories` 负责搜索 memories，服务于本文件职责：Memory 数据访问。
     传参：
@@ -2860,6 +2903,7 @@ def hybrid_search_memories(
             query_embedding=query_embedding,
             limit=limit,
             db_path=db_path,
+            access_context=access_context,
         )
     ]
 
@@ -2874,6 +2918,7 @@ def search_memories(
     limit: int = 10,
     mark_access: bool = True,
     db_path: Any = None,
+    access_context: Any = None,
 ) -> list[tuple[MemoryRecord, float]]:
     """函数功能：`search_memories` 负责搜索 memories，服务于本文件职责：Memory 数据访问。
     传参：
@@ -2898,6 +2943,8 @@ def search_memories(
             limit=100,
             db_path=db_path,
         )
+        if access_context is not None:
+            candidates = [item for item in candidates if memory_access_allowed(item, access_context)]
         scored = sorted(
             ((item, score_memory(query, item)) for item in candidates),
             key=lambda item: (item[1], item[0].updated_at, item[0].id),
@@ -2912,6 +2959,7 @@ def search_memories(
             query_embedding=_safe_embedding(space_id, query, memory_type=memory_type),
             limit=max(limit * 4, 30),
             db_path=db_path,
+            access_context=access_context,
         )
         maximum_rrf = max((hit.final_score for hit in hits), default=0.0)
         ranked: list[tuple[MemoryRecord, float, MemoryRetrievalHit]] = []
@@ -2950,6 +2998,52 @@ def search_memories(
     if mark_access:
         mark_accessed([item.id for item, _ in limited])
     return limited
+
+
+def get_memory_timeline(
+    space_id: str,
+    *,
+    memory_id: str | None = None,
+    query: str | None = None,
+    limit: int = 10,
+    access_context: Any = None,
+    db_path: Any = None,
+) -> list[dict[str, Any]]:
+    """Return version timelines as a first-class history retrieval primitive."""
+    del db_path
+    limit = max(1, min(int(limit), 50))
+    with session_scope() as session:
+        statement = select(Memory).where(Memory.space_id == space_id)
+        if memory_id:
+            statement = statement.where(Memory.id == memory_id)
+        elif query:
+            normalized = normalize_content(query)
+            terms = [term for term in re.findall(r"[A-Za-z0-9_㐀-鿿]+", query) if term]
+            predicates = [Memory.normalized_content == normalized, Memory.memory_key == query.strip()]
+            if query.strip():
+                predicates.append(Memory.content.ilike(f"%{query.strip()[:160]}%"))
+            predicates.extend(Memory.content.ilike(f"%{term[:80]}%") for term in terms[:8])
+            statement = statement.where(or_(*predicates))
+        rows = list(session.execute(statement.order_by(Memory.updated_at.desc(), Memory.id.desc()).limit(limit)).scalars())
+        result: list[dict[str, Any]] = []
+        for row in rows:
+            if access_context is not None and not memory_access_allowed(row, access_context):
+                continue
+            versions = _versions(session, row.id)
+            result.append({
+                "id": row.id,
+                "memory_id": row.id,
+                "memory_type": row.memory_type,
+                "memory_key": row.memory_key,
+                "content": row.content,
+                "status": row.status,
+                "task_status": normalize_task_status(row.task_status),
+                "current_version": row.current_version,
+                "updated_at": _iso(row.updated_at),
+                "sources": [source.__dict__ for source in _sources(session, row.id)],
+                "versions": [version.__dict__ for version in versions],
+            })
+        return result
 
 
 def stats(space_id: str, db_path: Any = None) -> dict[str, Any]:

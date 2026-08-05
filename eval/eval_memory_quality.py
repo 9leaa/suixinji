@@ -123,7 +123,7 @@ def _task_status(text: str, *, old: bool = False) -> str | None:
     if "完成" in text or "已解决" in text:
         return "done"
     if "阻塞" in text:
-        return "blocked"
+        return "todo"
     if "进行" in text or "开始" in text or "继续" in text:
         return "todo"
     return "todo"
