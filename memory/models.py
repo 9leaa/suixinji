@@ -480,7 +480,3 @@ class MemoryRecord:
             "sources": [source.__dict__ for source in self.sources],
             "versions": [version.__dict__ for version in self.versions],
         }
-
-
-# Public structured query contract (kept here for domain-model discoverability).
-from agent.answer_models import AnswerDecision, AnswerResult, SupportedClaim

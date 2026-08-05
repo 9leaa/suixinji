@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import re
 from datetime import datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from agent.hooks import AgentRunContext, get_default_hook_manager
 from agent.query_intent import classify_query_intent, is_task_inventory_question, route_for_intent
@@ -29,6 +29,9 @@ from memory.consistency import wait_for_memory_barrier
 from memory.trace import add_step, finish_trace, start_trace
 from storage.note_storage import is_note_queryable, load_index
 from storage.vector_store import search_related
+
+if TYPE_CHECKING:
+    from agent.answer_models import AnswerDecision, AnswerResult
 
 if STORAGE_BACKEND == "postgres":
     from repositories.postgres.notes import (
@@ -222,7 +225,11 @@ def _deterministic_route(question: str) -> dict[str, Any] | None:
             "synthesize": False,
             "reason": "structured_tag_filter",
         }
-    history_synthesis = any(marker in normalized for marker in ("状态变化", "经历了哪些", "从开始到完成", "开始到完成", "过程", "总结", "归纳"))
+    # Generic words such as “总结” describe the requested answer format, not
+    # necessarily a version/timeline query.  Only explicit lifecycle or
+    # process wording selects the history timeline fast path; otherwise a
+    # normal semantic search can still find the relevant note.
+    history_synthesis = any(marker in normalized for marker in ("状态变化", "经历了哪些", "从开始到完成", "开始到完成", "过程"))
     current_fact_ask = any(marker in normalized for marker in ("现在", "当前", "目前", "focus", "重点是什么", "当前重点"))
     if history_synthesis:
         return {

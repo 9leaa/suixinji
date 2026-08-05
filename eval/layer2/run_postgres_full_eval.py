@@ -11,7 +11,6 @@ import argparse
 import dataclasses
 import hashlib
 import json
-import platform
 import sys
 import time
 import zipfile

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
-import hashlib
 import json
 import math
 import os
@@ -21,7 +20,6 @@ import tempfile
 import threading
 import time
 import traceback
-import uuid
 import zipfile
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -309,7 +307,7 @@ class CaseRunner:
 
     def seed(self) -> None:
         from sqlalchemy import select
-        from infrastructure.schema import MemoryDecision as MemoryDecisionRow, MemoryVersion, Space
+        from infrastructure.schema import MemoryDecision as MemoryDecisionRow, MemoryVersion
         from repositories.postgres.common import ensure_tenant_space
         from repositories.postgres.memory import _add_source, _dt, _insert_memory, session_scope
 
@@ -803,7 +801,6 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
     relevant = relevant_current | relevant_history
     must_not = set(expected.get("must_not_return_refs") or [])
     maps = _snapshot_maps(pred.get("memory_snapshot_input") or {})
-    retrieved_set = set(retrieved)
     must_not_hits = set() if expected_answer_type == "clarification" else judged_refs & must_not
     ambiguous_case = _is_ambiguous_case(pred, expected)
     stale_refs = {ref for ref in judged_refs if _is_stale_ref(ref, maps, pred.get("query_time"))}
@@ -812,7 +809,6 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
     irrelevant_refs = judged_refs - relevant - stale_refs - sensitive_refs - ambiguous_refs
     ranks = {ref: i + 1 for i, ref in enumerate(retrieved)}
     history_retrieved = pred.get("history_retrieved_refs") or []
-    history_ranks = {ref: i + 1 for i, ref in enumerate(history_retrieved)}
     rank_metrics: dict[str, Any] = {}
     for k in (1, 3, 5, 10):
         hit_refs = set(retrieved[:k])
@@ -1168,7 +1164,7 @@ def write_reports(out_dir: Path, predictions: list[dict[str, Any]], scored: list
     with (out_dir / "layer3_failed_cases.jsonl").open("w", encoding="utf-8") as fh:
         for p in failures:
             fh.write(json.dumps(p, ensure_ascii=False) + "\n")
-    lines = ["# Layer 3 检索与回答评测报告", "", f"- Run ID: `{args.run_id}`", f"- Cases: **{len(predictions)}**", f"- Backend: `{os.getenv('STORAGE_BACKEND')}`", f"- Retrieval mode: `{os.getenv('SUIXINJI_MEMORY_RETRIEVAL_MODE')}`", f"- Production entry: `memory_search` + `answer_question`", f"- Answer calls with errors: **{len(answer_errors)}**", f"- Execution/seed errors: **{len(execution_errors)}**", f"- Answer error types: `{dict(Counter(str(e.get('type')) for e in answer_errors))}`", "", "## 总体指标", "", "```json", json.dumps(metrics["overall"], ensure_ascii=False, indent=2), "```", "", "## 按数据集", ""]
+    lines = ["# Layer 3 检索与回答评测报告", "", f"- Run ID: `{args.run_id}`", f"- Cases: **{len(predictions)}**", f"- Backend: `{os.getenv('STORAGE_BACKEND')}`", f"- Retrieval mode: `{os.getenv('SUIXINJI_MEMORY_RETRIEVAL_MODE')}`", "- Production entry: `memory_search` + `answer_question`", f"- Answer calls with errors: **{len(answer_errors)}**", f"- Execution/seed errors: **{len(execution_errors)}**", f"- Answer error types: `{dict(Counter(str(e.get('type')) for e in answer_errors))}`", "", "## 总体指标", "", "```json", json.dumps(metrics["overall"], ensure_ascii=False, indent=2), "```", "", "## 按数据集", ""]
     for ds, data in metrics["by_dataset"].items():
         lines += [f"### {ds}", "", "```json", json.dumps(data, ensure_ascii=False, indent=2), "```", ""]
     lines += ["## Stage 2 Semantic Retrieval 诊断", "", "```json", json.dumps(metrics.get("stage2_semantic_retrieval", {}), ensure_ascii=False, indent=2), "```", ""]

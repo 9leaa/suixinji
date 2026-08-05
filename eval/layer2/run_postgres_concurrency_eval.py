@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -21,7 +20,6 @@ from infrastructure.database import session_scope  # noqa: E402
 from infrastructure.schema import Memory, MemorySource, MemoryVersion, Space  # noqa: E402
 from memory import repository  # noqa: E402
 from memory.consolidator import consolidate_candidate  # noqa: E402
-from memory.models import utc_now_iso  # noqa: E402
 from repositories.postgres.common import parse_datetime  # noqa: E402
 from repositories.postgres.memory import _add_version  # noqa: E402
 
