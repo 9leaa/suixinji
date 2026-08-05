@@ -16,7 +16,10 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
-FROZEN_SCHEMA_FINGERPRINT = "346fac3151d262ba6ed3de7d10180dace448e8b5f5907d094f1f08c4abd7ad0c"
+# Explicitly re-frozen after revision 20260802_0010 added the idempotency
+# constraint on memory_decisions.  Fresh installs create the complete current
+# metadata; existing databases advance through the incremental migration.
+FROZEN_SCHEMA_FINGERPRINT = "ed370b51b2433c43ced97b603904d03d26e9f5d944c444e1577cb580e8f327fa"
 
 
 def _metadata_fingerprint() -> str:
