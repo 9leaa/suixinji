@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from memory.models import normalize_content
+
 MEMORY_TYPES = ("task", "semantic", "preference", "episodic")
 TASK_STATUSES = ("todo", "done")
 SEMANTIC_ATTRIBUTE_ALIASES = {
@@ -198,15 +200,60 @@ def task_attribute(value: Any, source_text: str = "") -> str | None:
     text = re.sub(r"(?:正在|已经|开始|继续|需要|计划|准备|记得|完成|完成了|做完|已做完|了)$", "", text)
     return text.strip(" ：:，,。！？!?") or None
 
-def preference_topic(source_text: str, topic_hint: Any = None, value_hint: Any = None) -> str | None:
+_GENERIC_PREFERENCE_TOPICS = {
+    "偏好",
+    "用户偏好",
+    "未指定偏好主题",
+    "东西",
+    "这个",
+    "它",
+}
+
+
+def preference_topic_with_source(
+    source_text: str,
+    topic_hint: Any = None,
+    value_hint: Any = None,
+) -> tuple[str | None, str | None]:
+    """Choose a preference topic and identify whether it came from LLM/rules."""
+    llm_topic = clean_text(value_hint) or clean_text(topic_hint)
+    normalized_source = normalize_content(source_text)
+    llm_supported = bool(
+        llm_topic
+        and llm_topic not in _GENERIC_PREFERENCE_TOPICS
+        and normalize_content(llm_topic) in normalized_source
+    )
+    if llm_supported:
+        return llm_topic, "llm"
+
     try:
         from memory.policies.preference import preference_signature
         topic = preference_signature(source_text).topic
         if topic:
-            return clean_text(topic)
+            return clean_text(topic), "rules"
     except Exception:
         pass
-    return clean_text(value_hint) or clean_text(topic_hint)
+    return llm_topic, None
+
+
+def preference_topic(source_text: str, topic_hint: Any = None, value_hint: Any = None) -> str | None:
+    return preference_topic_with_source(source_text, topic_hint, value_hint)[0]
+
+
+def preference_scope_with_source(source_text: str, scope_hint: Any = None) -> tuple[str | None, str | None]:
+    """Resolve an explicit preference scope and retain its provenance."""
+    hint = clean_text(scope_hint)
+    normalized_source = normalize_content(source_text)
+    if hint and hint.casefold() not in {"global", "当前", "current"} and normalize_content(hint) in normalized_source:
+        return hint, "llm"
+    try:
+        from memory.policies.preference import preference_signature
+        scopes = preference_signature(source_text).scopes
+        if scopes:
+            return clean_text(scopes[0]), "rules"
+    except Exception:
+        pass
+    return None, None
 
 def episodic_topic(source_text: str, topic_hint: Any = None, value_hint: Any = None) -> str | None:
     text = str(source_text or "").strip()

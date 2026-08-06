@@ -25,7 +25,7 @@ from memory.candidate_validator import contains_sensitive_data
 from memory.canonicalizer import is_task_lifecycle_statement, normalize_candidate_v3
 from memory.clause_splitter import split_clauses
 from memory.extraction_schema import parse_extracted_candidate
-from memory.field_contracts import task_closure_reason, task_progress_metadata
+from memory.field_contracts import preference_scope_with_source, task_closure_reason, task_progress_metadata
 from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for, candidate_id_for_evidence, memory_key_for
 from memory.policies.preference import preference_polarity, preference_signature
 from memory.prompts import MEMORY_EXTRACTOR_PROMPT, MEMORY_EXTRACTOR_V3_PROMPT
@@ -280,6 +280,14 @@ def _candidate(
         content=content,
     )
     resolved_scope = dict(scope or {})
+    if memory_type == "preference":
+        scope_value, scope_source = preference_scope_with_source(
+            evidence_span or content,
+            resolved_scope.get("scope"),
+        )
+        resolved_scope["scope"] = scope_value or "global"
+        resolved_scope["scope_explicit"] = bool(scope_value)
+        resolved_scope["scope_source"] = scope_source or "default"
     if memory_type == "task":
         source_text = evidence_span or content
         resolved_scope.update(task_progress_metadata(source_text))
@@ -700,7 +708,7 @@ def extract_llm_candidates(
                 "operation": structured.operation,
                 "old_value": structured.old_value,
                 "new_value": structured.new_value,
-                "scope": "global",
+                "scope": structured.scope,
                 "atom_id": f"a{clause_index + 1}" if clause_index is not None else None,
                 "reference_status": structured.reference_status,
                 "antecedent_note_id": structured.antecedent_note_id,
@@ -771,6 +779,7 @@ def extract_llm_candidates(
                 model=get_chat_config("fast").model,
                 clause_index=int(row["clause_index"]) if str(row.get("clause_index") or "").isdigit() else None,
                 polarity=str(row.get("polarity") or "").strip().casefold() or None,
+                scope={"scope": str(row.get("scope") or "").strip() or None},
             )
         )
         LAST_EXTRACTION_DIAGNOSTICS["llm_candidate_count"] = int(LAST_EXTRACTION_DIAGNOSTICS.get("llm_candidate_count") or 0) + 1
@@ -1059,6 +1068,10 @@ def _merge_uncovered_rule_candidates(
             if model_candidate.polarity in {None, "unknown"}
             else model_candidate.polarity
         )
+        if not bool((model_candidate.scope or {}).get("scope_explicit")) and bool((matching_rule.scope or {}).get("scope_explicit")):
+            merged_scope["scope"] = matching_rule.scope.get("scope")
+            merged_scope["scope_explicit"] = True
+            merged_scope["scope_source"] = matching_rule.scope.get("scope_source") or "rules"
         enriched_models.append(
             replace(
                 model_candidate,

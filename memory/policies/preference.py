@@ -303,8 +303,14 @@ def scopes_compatible(left: Any, right: Any) -> bool:
     返回结果说明：
         返回 `bool`，表示判断、写入或处理是否成功。
     """
-    left_scopes = set(preference_signature(str(getattr(left, "content", "") or "")).scopes)
-    right_scopes = set(preference_signature(str(getattr(right, "content", "") or "")).scopes)
+    def scopes(value: Any) -> set[str]:
+        metadata = dict(getattr(value, "scope", {}) or {})
+        if metadata.get("scope_explicit") and metadata.get("scope"):
+            return {str(metadata["scope"])}
+        return set(preference_signature(str(getattr(value, "content", "") or "")).scopes)
+
+    left_scopes = scopes(left)
+    right_scopes = scopes(right)
     if not left_scopes or not right_scopes:
         return True
     return bool(left_scopes & right_scopes)

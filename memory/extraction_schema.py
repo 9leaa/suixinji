@@ -33,6 +33,7 @@ class ExtractedMemoryCandidate(BaseModel):
     canonical_topic: str = ""
     task_status: Literal["todo", "done"] | None = None
     polarity: Literal["positive", "negative", "unknown"] | None = None
+    scope: str | None = None
     old_value: str | None = None
     new_value: str | None = None
     evidence_span: str
@@ -50,7 +51,7 @@ class ExtractedMemoryCandidate(BaseModel):
     antecedent_evidence_span: str | None = None
     resolution_confidence: float | None = Field(default=None, ge=0, le=1)
 
-    @field_validator("entity", "attribute", "operation", "canonical_topic", "old_value", "new_value", "content")
+    @field_validator("entity", "attribute", "operation", "canonical_topic", "scope", "old_value", "new_value", "content")
     @classmethod
     def _strip_optional_text(cls, value: str | None) -> str | None:
         """函数功能：`ExtractedMemoryCandidate._strip_optional_text` 在类 `ExtractedMemoryCandidate` 中负责处理 strip optional text，服务于本文件职责：抽取结果 schema。
@@ -118,6 +119,7 @@ def normalize_extracted_row(row: dict[str, object], source_text: str) -> dict[st
         "负向": "negative",
         "未知": "unknown",
     }.get(raw_polarity)
+    normalized["scope"] = str(normalized.get("scope") or "").strip() or None
     normalized["entity"] = normalize_entity(normalized.get("entity"), memory_type=memory_type)
     normalized["task_status"] = normalize_task_status(normalized.get("task_status"), source_text)
     if memory_type == "task":
@@ -167,6 +169,7 @@ def normalize_extracted_row(row: dict[str, object], source_text: str) -> dict[st
         normalized["new_value"] = normalized["canonical_topic"]
     if memory_type != "preference":
         normalized["polarity"] = None
+        normalized["scope"] = None
     return normalized
 
 

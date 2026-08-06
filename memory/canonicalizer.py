@@ -476,7 +476,14 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
         polarity = candidate.polarity if candidate.polarity in {"positive", "negative", "unknown"} else signature.polarity
         entity = normalize_entity(candidate.subject, memory_type="preference") or "用户"
         topic = preference_topic(source_text, scope.get("canonical_topic"), candidate.object_value) or signature.topic or source_text
-        canonical_scope = str(scope.get("scope") or (signature.scopes[0] if signature.scopes else "global"))
+        explicit_scope = bool(scope.get("scope_explicit"))
+        canonical_scope = str(scope.get("scope") or "").strip()
+        if not explicit_scope:
+            canonical_scope = canonical_scope if canonical_scope and canonical_scope != "global" else (signature.scopes[0] if signature.scopes else "global")
+        canonical_scope = normalize_scope(canonical_scope)
+        scope["scope"] = canonical_scope
+        scope["scope_explicit"] = canonical_scope != "global"
+        scope["scope_source"] = scope.get("scope_source") or ("rules" if canonical_scope != "global" else "default")
         qualifiers = list(dict.fromkeys([*signature.scopes, *signature.qualifiers]))
         if any(marker in source_text for marker in ("更喜欢", "更偏好", "更偏向")) and "更偏向" not in qualifiers:
             qualifiers.append("更偏向")

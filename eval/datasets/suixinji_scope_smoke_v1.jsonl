@@ -1,0 +1,4 @@
+{"case_id":"scope_smoke_001","text":"早上喜欢咖啡","expected":{"memory_type":"preference","topic":"咖啡","scope":"早上","scope_source":"llm","polarity":"positive"}}
+{"case_id":"scope_smoke_002","text":"工作时不喝咖啡","expected":{"memory_type":"preference","topic":"咖啡","scope":"工作时","scope_source":"rules","polarity":"negative"}}
+{"case_id":"scope_smoke_003","text":"我喜欢咖啡","expected":{"memory_type":"preference","topic":"咖啡","scope":"global","scope_explicit":false,"polarity":"positive"}}
+{"case_id":"scope_smoke_004","text":"早上喜欢咖啡，晚上不喜欢咖啡","expected":{"memory_type":"preference","topics":["咖啡","咖啡"],"scopes":["早上","晚上"],"polarities":["positive","negative"]}}
