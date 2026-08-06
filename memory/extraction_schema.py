@@ -32,6 +32,7 @@ class ExtractedMemoryCandidate(BaseModel):
     operation: str | None = None
     canonical_topic: str = ""
     task_status: Literal["todo", "done"] | None = None
+    polarity: Literal["positive", "negative", "unknown"] | None = None
     old_value: str | None = None
     new_value: str | None = None
     evidence_span: str
@@ -106,6 +107,17 @@ def normalize_extracted_row(row: dict[str, object], source_text: str) -> dict[st
     normalized = dict(row)
     memory_type = str(normalized.get("memory_type") or "").strip().lower()
     normalized["memory_type"] = memory_type
+    raw_polarity = str(normalized.get("polarity") or "").strip().casefold()
+    normalized["polarity"] = {
+        "positive": "positive",
+        "negative": "negative",
+        "unknown": "unknown",
+        "正": "positive",
+        "正向": "positive",
+        "负": "negative",
+        "负向": "negative",
+        "未知": "unknown",
+    }.get(raw_polarity)
     normalized["entity"] = normalize_entity(normalized.get("entity"), memory_type=memory_type)
     normalized["task_status"] = normalize_task_status(normalized.get("task_status"), source_text)
     if memory_type == "task":
@@ -139,6 +151,10 @@ def normalize_extracted_row(row: dict[str, object], source_text: str) -> dict[st
             topic_hint=normalized.get("canonical_topic"), new_value=normalized.get("new_value"),
         ) or "未指定偏好主题"
         normalized["new_value"] = normalized["canonical_topic"]
+        # Compatibility with a model that has not yet picked up the prompt:
+        # preserve the explicit absence as unknown, rather than silently
+        # deriving a polarity from rules at schema-validation time.
+        normalized["polarity"] = normalized["polarity"] or "unknown"
     elif memory_type == "episodic":
         normalized["entity"] = normalized.get("entity") or "用户"
         normalized["attribute"] = "event"
@@ -149,6 +165,8 @@ def normalize_extracted_row(row: dict[str, object], source_text: str) -> dict[st
             topic_hint=normalized.get("canonical_topic"), new_value=normalized.get("new_value"),
         ) or "事件"
         normalized["new_value"] = normalized["canonical_topic"]
+    if memory_type != "preference":
+        normalized["polarity"] = None
     return normalized
 
 

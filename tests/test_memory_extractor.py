@@ -202,14 +202,59 @@ def test_hybrid_only_repairs_uncovered_atom_types(monkeypatch):
     assert {row.memory_type for row in repaired} >= {"semantic", "task"}
 
 
+def test_hybrid_repairs_a_second_preference_in_the_same_clause(monkeypatch):
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
+    monkeypatch.setattr(
+        extractor,
+        "complete_json",
+        lambda **kwargs: {
+            "candidates": [{
+                "memory_type": "preference", "entity": "用户", "attribute": "preference", "operation": None,
+                "canonical_topic": "咖啡", "task_status": None, "polarity": "positive", "old_value": None,
+                "new_value": "咖啡", "content": "用户喜欢咖啡", "evidence_span": "喜欢咖啡",
+                "confidence": 0.9, "importance": 0.8, "should_store": True, "extraction_reason": "明确偏好", "entities": ["咖啡"],
+            }]
+        },
+    )
+
+    rows = extractor.extract_candidates("hybrid-two-preferences", "我喜欢咖啡和绿茶。")
+
+    preferences = [row for row in rows if row.memory_type == "preference"]
+    assert {row.object_value for row in preferences} == {"咖啡", "绿茶"}
+    assert len(preferences) == 2
+    assert any(row.extraction_reason == "hybrid_atom_coverage_repair" and row.object_value == "绿茶" for row in preferences)
+
+
+def test_hybrid_prefers_known_llm_polarity_and_backfills_unknown(monkeypatch):
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
+
+    def extract_with(polarity: str):
+        monkeypatch.setattr(
+            extractor,
+            "complete_json",
+            lambda **kwargs: {
+                "candidates": [{
+                    "memory_type": "preference", "entity": "用户", "attribute": "preference", "operation": None,
+                    "canonical_topic": "咖啡", "task_status": None, "polarity": polarity, "old_value": None,
+                    "new_value": "咖啡", "content": "用户喜欢咖啡", "evidence_span": "喜欢咖啡",
+                    "confidence": 0.9, "importance": 0.8, "should_store": True, "extraction_reason": "明确偏好", "entities": ["咖啡"],
+                }]
+            },
+        )
+        return [row for row in extractor.extract_candidates(f"hybrid-polarity-{polarity}", "我喜欢咖啡。") if row.memory_type == "preference"]
+
+    assert extract_with("negative")[0].polarity == "negative"
+    assert extract_with("unknown")[0].polarity == "positive"
+
+
 def test_hybrid_does_not_duplicate_single_clause_llm_candidate(monkeypatch):
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
     monkeypatch.setattr(
         extractor,
         "complete_json",
         lambda **kwargs: {"candidates": [{
-            "memory_type": "task", "entity": "用户", "attribute": "任务",
-            "operation": "完成", "canonical_topic": "数据库迁移",
+            "memory_type": "task", "entity": "用户", "attribute": "数据库",
+            "operation": "迁移", "canonical_topic": "迁移数据库",
             "task_status": "done", "content": "数据库迁移已经完成",
             "evidence_span": "数据库迁移已经完成", "confidence": 0.9,
             "importance": 0.8, "should_store": True, "extraction_reason": "task",

@@ -473,6 +473,7 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
 
     if memory_type == "preference":
         signature = preference_signature(source_text)
+        polarity = candidate.polarity if candidate.polarity in {"positive", "negative", "unknown"} else signature.polarity
         entity = normalize_entity(candidate.subject, memory_type="preference") or "用户"
         topic = preference_topic(source_text, scope.get("canonical_topic"), candidate.object_value) or signature.topic or source_text
         canonical_scope = str(scope.get("scope") or (signature.scopes[0] if signature.scopes else "global"))
@@ -486,7 +487,7 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
                 "memory_key_version": MEMORY_KEY_V3_VERSION,
                 "preference_family_key": f"preference-family:{normalize_identity(entity)}:{normalize_identity(topic)}",
                 "preference_assertion_key": preference_key(entity, topic, canonical_scope, qualifiers=signature.qualifiers),
-                "polarity": signature.polarity,
+                "polarity": polarity,
                 "qualifiers": qualifiers,
             }
         )
@@ -495,6 +496,7 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
             subject=entity,
             predicate="preference",
             object_value=topic,
+            polarity=polarity,
             memory_key=preference_key(entity, topic, canonical_scope, qualifiers=signature.qualifiers),
             scope=scope,
             memory_key_version=MEMORY_KEY_V3_VERSION,

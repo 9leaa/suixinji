@@ -72,8 +72,23 @@ def test_schema_rejects_ungrounded_evidence_and_normalizes_cross_type_fields():
     assert parsed.attribute == "preference"
     assert parsed.task_status is None
     assert parsed.new_value == "咖啡"
+    assert parsed.polarity == "unknown"
     row["evidence_span"] = "原文不存在"
     assert parse_extracted_candidate(row, "我喜欢喝咖啡") is None
+
+
+def test_schema_accepts_llm_preference_polarity_in_chinese_or_contract_form():
+    row = {
+        "memory_type": "preference",
+        "new_value": "咖啡",
+        "polarity": "负向",
+        "evidence_span": "我不喜欢咖啡",
+        "confidence": 0.9,
+        "importance": 0.8,
+    }
+    parsed = parse_extracted_candidate(row, "我不喜欢咖啡")
+    assert parsed is not None
+    assert parsed.polarity == "negative"
 
 
 def test_normalization_is_idempotent():
@@ -91,7 +106,7 @@ def test_llm_structured_output_cannot_override_preference_contract(monkeypatch):
         lambda **_: {"candidates": [{
             "memory_type": "preference", "entity": "用户", "attribute": "drink",
             "operation": "喜欢", "task_status": "todo", "canonical_topic": "饮品偏好",
-            "new_value": "饮品偏好", "content": "我喜欢喝咖啡", "evidence_span": "我喜欢喝咖啡",
+            "new_value": "饮品偏好", "polarity": "positive", "content": "我喜欢喝咖啡", "evidence_span": "我喜欢喝咖啡",
             "confidence": 0.9, "importance": 0.8, "should_store": True,
         }]},
     )

@@ -19,17 +19,18 @@ MEMORY_EXTRACTOR_PROMPT = """
 - 不保存密码、Token、API Key、身份证号、银行卡号或其他凭据。
 - 不编造原文没有的信息；evidence_span 必须是原文中的连续片段。
 - 一条笔记可以产生多条候选。
+- preference 必须输出 polarity：positive、negative 或 unknown；非 preference 必须输出 null。
 - confidence 和 importance 必须是 0 到 1 的数字。
 
 每个独立事实都必须单独输出；不得用覆盖整句的一条候选代替多个可独立更新的事实。只输出 JSON object，格式：
-{"candidates":[{"memory_type":"semantic","content":"用户正在开发随心记项目","subject":"用户","predicate":"current_project","object":"随心记项目","task_status":null,"valid_from":null,"valid_until":null,"confidence":0.9,"importance":0.8,"evidence_span":"正在开发随心记项目","extraction_reason":"明确陈述长期项目","entities":["随心记"],"should_store":true}]}
+{"candidates":[{"memory_type":"semantic","content":"用户正在开发随心记项目","subject":"用户","predicate":"current_project","object":"随心记项目","task_status":null,"polarity":null,"valid_from":null,"valid_until":null,"confidence":0.9,"importance":0.8,"evidence_span":"正在开发随心记项目","extraction_reason":"明确陈述长期项目","entities":["随心记"],"should_store":true}]}
 """
 
 MEMORY_EXTRACTOR_V3_PROMPT = """
 你是随心记的长期记忆结构化抽取器。你只能输出候选，不能决定合并、覆盖、删除或执行数据库操作。
 
 从一条用户笔记抽取所有值得长期保存的原子候选。只能输出一个 JSON object，格式为：
-{"candidates":[{"memory_type":"task|semantic|preference|episodic","entity":"...","attribute":"...","operation":"...|null","canonical_topic":"...","task_status":"todo|done|null","old_value":"...|null","new_value":"...|null","content":"用于展示的自然语言","evidence_span":"原文连续片段","valid_from":null,"valid_until":null,"confidence":0.0,"importance":0.0,"should_store":true,"extraction_reason":"...","entities":["..."],"reference_status":"resolved|unresolved|not_applicable","antecedent_note_id":null,"antecedent_offset":null,"antecedent_evidence_span":null,"resolution_confidence":null}]}
+{"candidates":[{"memory_type":"task|semantic|preference|episodic","entity":"...","attribute":"...","operation":"...|null","canonical_topic":"...","task_status":"todo|done|null","polarity":"positive|negative|unknown|null","old_value":"...|null","new_value":"...|null","content":"用于展示的自然语言","evidence_span":"原文连续片段","valid_from":null,"valid_until":null,"confidence":0.0,"importance":0.0,"should_store":true,"extraction_reason":"...","entities":["..."],"reference_status":"resolved|unresolved|not_applicable","antecedent_note_id":null,"antecedent_offset":null,"antecedent_evidence_span":null,"resolution_confidence":null}]}
 
 规则：
 - 输入中的 hints 是规则引擎提供的弱提示，只能帮助你检查是否遗漏；不得照抄，更不能把 hint 当作原文证据。你的 candidates 是唯一权威输出。
@@ -40,7 +41,8 @@ MEMORY_EXTRACTOR_V3_PROMPT = """
 - previous_messages 只在当前文本出现指代时提供，且最多三条。它们只能用于解析“这个/它/继续做/也完成了”等指代，不能重复抽取旧消息中的事实。
 - 指代输出可附加 reference_status、antecedent_note_id、antecedent_offset、antecedent_evidence_span、resolution_confidence。找不到唯一对象时必须 reference_status=unresolved，不得伪造任务身份。
 - 如果当前消息只包含“这个/它/这件事/继续做/也做完了”等指代，且最近三条 user previous_messages 中存在唯一可识别的任务：必须继承该任务的 entity、attribute、operation、canonical_topic 和 task identity，输出一条以当前消息为 evidence_span 的 Candidate，并填写 reference_status=resolved、antecedent_note_id、antecedent_offset、antecedent_evidence_span、resolution_confidence；不能因为当前消息短而输出空 candidates。
-- “喜欢咖啡和绿茶”必须分别产生“咖啡”和“绿茶”两条 preference；“不喜欢咖啡，更偏向绿茶”必须分别产生咖啡 negative 与绿茶 positive 两条 preference。
+- "喜欢咖啡和绿茶"必须分别产生“咖啡”和“绿茶”两条 preference；“不喜欢咖啡，更偏向绿茶”必须分别产生咖啡 negative 与绿茶 positive 两条 preference。
+- 每条 preference 必须输出 polarity：positive（正向偏好）、negative（负向偏好）或 unknown（原文无法判断）；非 preference 必须输出 null。polarity 必须根据当前 candidate 的证据判断，不能省略。
 - “我不喜欢/讨厌/不爱/过敏/不用 X” 是明确 preference；如果 evidence_span 只覆盖该偏好子句，就应作为独立候选。
 - evidence_span 必须逐字来自原文的连续片段；不得编造任何实体、值、日期或状态。
 - task 必须同时给出 entity、attribute、operation、canonical_topic、task_status。

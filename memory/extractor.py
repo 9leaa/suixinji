@@ -235,6 +235,7 @@ def _candidate(
     extractor_version: str = EXTRACTOR_VERSION,
     model: str | None = None,
     clause_index: int | None = None,
+    polarity: str | None = None,
     scope: dict[str, Any] | None = None,
 ) -> MemoryCandidate:
     """函数功能：`_candidate` 负责处理 candidate，服务于本文件职责：Memory 候选抽取。
@@ -264,8 +265,12 @@ def _candidate(
     """
     if subject is None and predicate is None and object_value is None:
         subject, predicate, object_value = _structured_fields(memory_type, evidence_span or content, entities)
-    #看一下 偏好的积极还是消极，还是未知
-    polarity = preference_polarity(evidence_span or content) if memory_type == "preference" else None
+    # Rules infer polarity from evidence. LLM candidates carry their explicit
+    # structured value; only an absent/invalid value falls back to inference.
+    if memory_type == "preference":
+        polarity = polarity if polarity in {"positive", "negative", "unknown"} else preference_polarity(evidence_span or content)
+    else:
+        polarity = None
     #看一下这个candidate属于哪个稳定槽位或任务身份
     resolved_memory_key = memory_key_for(
         memory_type,
@@ -724,6 +729,7 @@ def extract_llm_candidates(
                     extractor_version=V3_LLM_EXTRACTOR_VERSION,
                     model=get_chat_config("fast").model,
                     clause_index=clause_index,
+                    polarity=structured.polarity,
                     scope=scope,
                 )
             )
@@ -764,6 +770,7 @@ def extract_llm_candidates(
                 extractor_version=LLM_EXTRACTOR_VERSION,
                 model=get_chat_config("fast").model,
                 clause_index=int(row["clause_index"]) if str(row.get("clause_index") or "").isdigit() else None,
+                polarity=str(row.get("polarity") or "").strip().casefold() or None,
             )
         )
         LAST_EXTRACTION_DIAGNOSTICS["llm_candidate_count"] = int(LAST_EXTRACTION_DIAGNOSTICS.get("llm_candidate_count") or 0) + 1
@@ -987,7 +994,7 @@ def _assign_evidence_atom_ids(candidates: list[MemoryCandidate], text: str) -> l
         atom_id = atom_by_span.get(evidence)
         scope = dict(candidate.scope or {})
         polarity = candidate.polarity
-        if candidate.memory_type == "preference" and polarity in {None, "unknown"} and evidence:
+        if candidate.memory_type == "preference" and candidate.extractor_type != "llm" and polarity in {None, "unknown"} and evidence:
             start = text.find(evidence)
             prefix = text[:start] if start >= 0 else ""
             markers = [(prefix.rfind(marker), "negative") for marker in negative_markers]
@@ -1010,24 +1017,34 @@ def _merge_uncovered_rule_candidates(
     rule_candidates: list[MemoryCandidate],
 ) -> list[MemoryCandidate]:
     """Fill atom/type coverage gaps without blindly unioning both extractors."""
+    def is_same_fact(model_candidate: MemoryCandidate, rule_candidate: MemoryCandidate) -> bool:
+        """A model candidate covers a rule only with identical identity and evidence.
+
+        A clause may contain multiple preferences (for example coffee and tea),
+        so clause/type is deliberately not a coverage key.
+        """
+        if model_candidate.memory_type != rule_candidate.memory_type:
+            return False
+        if model_candidate.effective_memory_key != rule_candidate.effective_memory_key:
+            return False
+        model_evidence = re.sub(r"\s+", " ", str(model_candidate.evidence_span or "").strip())
+        rule_evidence = re.sub(r"\s+", " ", str(rule_candidate.evidence_span or "").strip())
+        return bool(
+            model_evidence
+            and rule_evidence
+            and (model_evidence in rule_evidence or rule_evidence in model_evidence)
+        )
+
     # When both extractors describe the same evidence, keep the LLM's richer
     # wording/key but backfill deterministic fields that the model omitted
     # (notably task blocker/progress/closure and polarity).
     enriched_models: list[MemoryCandidate] = []
     for model_candidate in model_candidates:
-        model_evidence = re.sub(r"\s+", " ", str(model_candidate.evidence_span or "").strip())
         matching_rule = next(
             (
                 rule_candidate
                 for rule_candidate in rule_candidates
-                if rule_candidate.memory_type == model_candidate.memory_type
-                and model_evidence
-                and (
-                    model_evidence
-                    in re.sub(r"\s+", " ", str(rule_candidate.evidence_span or "").strip())
-                    or re.sub(r"\s+", " ", str(rule_candidate.evidence_span or "").strip())
-                    in model_evidence
-                )
+                if is_same_fact(model_candidate, rule_candidate)
             ),
             None,
         )
@@ -1037,7 +1054,11 @@ def _merge_uncovered_rule_candidates(
         merged_scope = dict(matching_rule.scope or {})
         merged_scope.update(model_candidate.scope or {})
         task_status = model_candidate.task_status or matching_rule.task_status
-        polarity = model_candidate.polarity or matching_rule.polarity
+        polarity = (
+            matching_rule.polarity
+            if model_candidate.polarity in {None, "unknown"}
+            else model_candidate.polarity
+        )
         enriched_models.append(
             replace(
                 model_candidate,
@@ -1047,30 +1068,6 @@ def _merge_uncovered_rule_candidates(
             )
         )
     model_candidates = enriched_models
-    covered = {
-        (candidate.clause_index, candidate.memory_type)
-        for candidate in model_candidates
-        if candidate.should_store
-    }
-    covered_evidence = {
-        (candidate.memory_type, str(candidate.evidence_span or "").strip())
-        for candidate in model_candidates
-        if candidate.should_store and str(candidate.evidence_span or "").strip()
-    }
-    # LLM 往往返回去掉寒暄/诊断前缀的短证据，而规则抽取保留完整句子。
-    # 这两者代表同一条事实时不能因为证据字符串不完全相等而重复产出。
-    model_evidence_by_type = {}
-    for candidate in model_candidates:
-        if not candidate.should_store:
-            continue
-        evidence = re.sub(r"\s+", " ", str(candidate.evidence_span or "").strip())
-        if evidence:
-            model_evidence_by_type.setdefault(candidate.memory_type, []).append(evidence)
-    covered_keys = {
-        (candidate.memory_type, candidate.effective_memory_key)
-        for candidate in model_candidates
-        if candidate.should_store and candidate.effective_memory_key
-    }
     additions = [
         replace(
             candidate,
@@ -1078,20 +1075,7 @@ def _merge_uncovered_rule_candidates(
             extraction_reason="hybrid_atom_coverage_repair",
         )
         for candidate in rule_candidates
-        if (
-            (candidate.clause_index, candidate.memory_type) not in covered
-            and (candidate.memory_type, str(candidate.evidence_span or "").strip()) not in covered_evidence
-            and (candidate.memory_type, candidate.effective_memory_key) not in covered_keys
-            and not any(
-                rule_evidence
-                and (
-                    model_evidence in rule_evidence
-                    or rule_evidence in model_evidence
-                )
-                for model_evidence in model_evidence_by_type.get(candidate.memory_type, ())
-                for rule_evidence in [re.sub(r"\s+", " ", str(candidate.evidence_span or "").strip())]
-            )
-        )
+        if not any(is_same_fact(model_candidate, candidate) for model_candidate in model_candidates)
     ]
     return _dedupe([*model_candidates, *additions])
 
