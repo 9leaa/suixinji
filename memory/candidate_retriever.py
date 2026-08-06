@@ -83,6 +83,28 @@ def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> fl
     if candidate.normalized_content == memory.normalized_content:
         return 1.0
 
+    # Family/assertion keys are structured extractor output, not logical test
+    # references.  They provide bounded recall for incomplete legacy keys;
+    # the adjudicator still decides whether a mutation is allowed.
+    if candidate.memory_type == memory.memory_type == "preference":
+        candidate_assertion = str(candidate.scope.get("preference_assertion_key") or "")
+        memory_assertion = str(memory.scope.get("preference_assertion_key") or "")
+        if candidate_assertion and candidate_assertion == memory_assertion:
+            return 0.96
+        candidate_family = str(candidate.scope.get("preference_family_key") or "")
+        memory_family = str(memory.scope.get("preference_family_key") or "")
+        if candidate_family and candidate_family == memory_family:
+            return 0.84
+    if candidate.memory_type == memory.memory_type == "task":
+        candidate_family = str(candidate.scope.get("task_family_key") or "")
+        memory_family = str(memory.scope.get("task_family_key") or "")
+        if candidate_family and candidate_family == memory_family:
+            # Family recall is deliberately broader than identity mutation.
+            # A concrete instance key (round1 vs round2) must not hide the
+            # related task from adjudication; RelationGuard decides whether it
+            # is a new instance, merge, or pending review.
+            return 0.84
+
     if is_v3_candidate(candidate):
         # V3 检索仍可能返回宽泛 semantic 候选，但是否有用由 identity 槽位决定，而不是共享用户/模板决定。
         if candidate.memory_type != memory.memory_type:

@@ -23,10 +23,11 @@ class Clause:
     end: int
 
 
-_BOUNDARY_RE = re.compile(
-    r"[。！？!?；;]|(?:，|,)(?=(?:我|用户|本人|下周|这周|本周|明天|今天|昨天|刚才|需要|记得|还要|"
-    r"并且|而且|但是|不过|同时|主要|目前|现在|更偏向|更喜欢|不再|另外))"
-)
+# In memory extraction a comma frequently separates independently writable
+# facts (preference, device, task state, ...).  Restricting comma boundaries
+# to a small hand-written set silently collapsed long mixed messages into one
+# candidate and lost facts.  Sentence-final punctuation still works as before.
+_BOUNDARY_RE = re.compile(r"[。！？!?；;，,](?!(?:(?:嗯|呃)[，,]\s*)?(?:还在|还没|仍在|仍然))")
 _LEADING_CONNECTOR_RE = re.compile(r"^(?:并且|而且|但是|不过|同时|然后|接着|另外|还|以及|，|,)\s*")
 
 

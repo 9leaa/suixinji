@@ -339,6 +339,7 @@ class MemoryVersion:
     reason: str | None
     source_note_id: str | None
     created_at: str
+    source_note_ids: list[str] = field(default_factory=list)
     task_status: str | None = None
     confidence: float | None = None
     importance: float | None = None

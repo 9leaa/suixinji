@@ -121,6 +121,32 @@ def _has_detail_delta(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
     return any(marker in text for marker in _DETAIL_MARKERS)
 
 
+def _task_metadata_changed(candidate: MemoryCandidate, memory: MemoryRecord) -> bool:
+    """Return whether task lifecycle metadata changed while identity/status did not.
+
+    A blocker or closure update is still a new task version even when the
+    binary task status remains ``todo``. Progress paraphrases may remain a
+    supporting source, while blocker/closure deltas must not be lost.
+    """
+    # A concise, separately extracted progress assertion is a lifecycle
+    # refinement and must be versioned.  The ordinary extractor often stores
+    # the entire task sentence as ``progress_note``; treating that wording as
+    # a new version would turn a harmless paraphrase into duplicate versions.
+    candidate_progress = normalize_content(str(candidate.scope.get("progress_note") or ""))
+    candidate_content = normalize_content(candidate.content)
+    memory_progress = normalize_content(str(memory.scope.get("progress_note") or ""))
+    if candidate_progress and candidate_progress != memory_progress and candidate_progress not in candidate_content:
+        return True
+    # Blocker/closure changes alter the operational state and must create a
+    # new version.
+    for key in ("blocker", "closure_reason"):
+        left = normalize_content(str(candidate.scope.get(key) or ""))
+        right = normalize_content(str(memory.scope.get(key) or ""))
+        if left != right and (left or right):
+            return True
+    return False
+
+
 def _is_correction(candidate: MemoryCandidate) -> bool:
     text = f"{candidate.evidence_span or ''} {candidate.content}"
     return any(marker in text for marker in _CORRECTION_MARKERS)
@@ -183,8 +209,10 @@ def evaluate_relation(candidate: MemoryCandidate, memory: MemoryRecord) -> Relat
         if candidate.task_status == memory.task_status:
             candidate_closure = str(candidate.scope.get("closure_reason") or "")
             memory_closure = str(memory.scope.get("closure_reason") or "")
-            if candidate.task_status == "done" and candidate_closure and memory_closure and candidate_closure != memory_closure:
+            if candidate.task_status == "done" and (candidate_closure or memory_closure) and candidate_closure != memory_closure:
                 return RelationGuardResult("conflict", "pending_review", "task_closure_reason_conflict", False)
+            if _task_metadata_changed(candidate, memory):
+                return RelationGuardResult("update_task", "update_task", "task_lifecycle_metadata_update", True)
             if _has_detail_delta(candidate, memory):
                 return RelationGuardResult("merge", "merge", "task_detail_merge", True)
             return RelationGuardResult("same", "add_source", "same_task_identity_and_status", True)

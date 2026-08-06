@@ -63,6 +63,19 @@ def test_add_source_is_idempotent():
     assert len(loaded.sources) == 2
 
 
+def test_new_version_keeps_complete_source_provenance():
+    """A version retains both prior context and the newly asserted source."""
+    memory = insert_memory("space-1", MemoryCandidate("task", "完成评测", 0.7, 0.9, task_status="todo"), source_note_id="note-1")
+    assert add_source(memory.id, "note-2", "updated_by") is True
+
+    updated = correct_memory(memory.id, "评测已完成", task_status="done")
+
+    assert updated is not None
+    version = get_memory(memory.id).versions[-1]
+    assert version.source_note_id is None
+    assert set(version.source_note_ids) == {"note-1", "note-2"}
+
+
 def test_correct_and_soft_delete_create_versions_and_hide_from_active_search():
     """函数功能：`test_correct_and_soft_delete_create_versions_and_hide_from_active_search` 负责验证 correct and soft delete create versions and hide from active search 场景，服务于本文件职责：SQLite repository CRUD、版本和来源。
     传参：

@@ -47,6 +47,7 @@ from infrastructure.schema import (
     MemoryTrace,
     MemoryVector,
     MemoryVersion as MemoryVersionRow,
+    MemoryVersionSource as MemoryVersionSourceRow,
     Space,
 )
 from memory.models import (
@@ -68,7 +69,7 @@ from memory.models import (
     normalize_content,
     utc_now_iso,
 )
-from memory.field_contracts import normalize_task_status
+from memory.field_contracts import normalize_task_status, project_legacy_task_scope
 from memory.retrieval_models import MemoryRetrievalHit
 from memory.access import memory_access_allowed
 from memory.vector_lifecycle import (
@@ -245,6 +246,13 @@ def _versions(session: Any, memory_id: str) -> list[MemoryVersion]:
     rows = session.execute(
         select(MemoryVersionRow).where(MemoryVersionRow.memory_id == memory_id).order_by(MemoryVersionRow.version)
     ).scalars()
+    rows = list(rows)
+    source_rows = session.execute(
+        select(MemoryVersionSourceRow).where(MemoryVersionSourceRow.version_id.in_([row.id for row in rows]))
+    ).scalars() if rows else []
+    source_map: dict[str, list[str]] = {}
+    for source in source_rows:
+        source_map.setdefault(source.version_id, []).append(source.note_id)
     return [
         MemoryVersion(
             id=row.id,
@@ -255,6 +263,7 @@ def _versions(session: Any, memory_id: str) -> list[MemoryVersion]:
             reason=row.reason,
             source_note_id=row.source_note_id,
             created_at=_iso(row.created_at) or "",
+            source_note_ids=source_map.get(row.id) or ([row.source_note_id] if row.source_note_id else []),
             task_status=normalize_task_status(row.task_status),
             confidence=row.confidence,
             importance=row.importance,
@@ -329,7 +338,7 @@ def _record(
         memory_key=row.memory_key,
         memory_key_version=row.memory_key_version or MEMORY_KEY_VERSION,
         polarity=row.polarity,
-        scope=dict(row.scope_json or {}),
+        scope=project_legacy_task_scope(row.task_status, dict(row.scope_json or {})),
         sources=_sources(session, row.id) if sources is None else sources,
         versions=(_versions(session, row.id) if versions is None else versions) if include_versions else [],
     )
@@ -411,7 +420,14 @@ def _add_source(session: Any, memory_id: str, note_id: str, relation: str, *, no
     return created is not None
 
 
-def _add_version(session: Any, row: Memory, *, reason: str | None, source_note_id: str | None) -> None:
+def _add_version(
+    session: Any,
+    row: Memory,
+    *,
+    reason: str | None,
+    source_note_id: str | None,
+    source_note_ids: list[str] | None = None,
+) -> None:
     """函数功能：`_add_version` 负责处理 add version，服务于本文件职责：Memory 数据访问。
     传参：
         session: 数据库会话或运行会话对象，由调用方管理生命周期，类型为 `Any`。
@@ -421,23 +437,34 @@ def _add_version(session: Any, row: Memory, *, reason: str | None, source_note_i
     返回结果说明：
         无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
-    session.add(
-        MemoryVersionRow(
-            id=new_id("ver"),
-            memory_id=row.id,
-            version=row.current_version,
-            content=row.content,
-            status=row.status,
-            task_status=normalize_task_status(row.task_status),
-            confidence=row.confidence,
-            importance=row.importance,
-            valid_from=_dt(row.valid_from),
-            valid_until=_dt(row.valid_until),
-            reason=reason,
-            source_note_id=source_note_id,
-            created_at=_dt(utc_now_iso()),
-        )
+    version = MemoryVersionRow(
+        id=new_id("ver"),
+        memory_id=row.id,
+        version=row.current_version,
+        content=row.content,
+        status=row.status,
+        task_status=normalize_task_status(row.task_status),
+        confidence=row.confidence,
+        importance=row.importance,
+        valid_from=_dt(row.valid_from),
+        valid_until=_dt(row.valid_until),
+        reason=reason,
+        source_note_id=source_note_id,
+        created_at=_dt(utc_now_iso()),
     )
+    session.add(version)
+    # The historical scalar remains the primary/newest assertion source for
+    # backward-compatible readers.  The edge table preserves every source
+    # that was available when this immutable version was written.
+    source_ids = list(source_note_ids or session.execute(
+        select(MemorySourceRow.note_id)
+        .where(MemorySourceRow.memory_id == row.id)
+        .order_by(MemorySourceRow.created_at)
+    ).scalars())
+    if source_note_id and source_note_id not in source_ids:
+        source_ids.append(source_note_id)
+    for note_id in dict.fromkeys(source_ids):
+        session.add(MemoryVersionSourceRow(version_id=version.id, note_id=note_id, created_at=_dt(utc_now_iso())))
 
 
 def _insert_memory(
@@ -521,6 +548,7 @@ def _versioned_update(
     polarity: str | None = None,
     reason: str | None,
     source_note_id: str | None,
+    source_note_ids: list[str] | None = None,
 ) -> None:
     """函数功能：`_versioned_update` 负责更新 versioned，服务于本文件职责：Memory 数据访问。
     传参：
@@ -581,7 +609,7 @@ def _versioned_update(
     row.updated_at = _dt(utc_now_iso())
     row.current_version += 1
     session.flush()
-    _add_version(session, row, reason=reason, source_note_id=source_note_id)
+    _add_version(session, row, reason=reason, source_note_id=source_note_id, source_note_ids=source_note_ids)
     if content_changed:
         _schedule_memory_embedding_if_enabled(session, row)
 
@@ -1855,24 +1883,40 @@ def apply_memory_decision(
             elif action in {"merge", "update", "update_task"} and target is not None:
                 relation = "updated_by" if action in {"update", "update_task"} else "supported_by"
                 added = _add_source(session, target.id, note_id, relation, now=now)
-                if added:
-                    is_task_update = action == "update_task"
-                    _versioned_update(
-                        session,
-                        target,
-                        content=candidate.content if action != "merge" else (merged_content or candidate.content),
-                        task_status=normalize_task_status(candidate.task_status) if is_task_update else None,
-                        object_value=candidate.object_value,
-                        scope=dict(candidate.scope),
-                        memory_key=candidate.effective_memory_key,
-                        memory_key_version=candidate.memory_key_version,
-                        polarity=candidate.polarity,
-                        confidence=min(0.99, max(float(target.confidence), candidate.confidence)),
-                        importance=max(float(target.importance), candidate.importance),
-                        last_confirmed_at=now,
-                        reason=decision.reason,
-                        source_note_id=note_id,
-                    )
+                # Source de-duplication is per (Memory, Note, relation), but
+                # one note can legitimately contain several candidates.  A
+                # second candidate from that note must still create its own
+                # versioned semantic/task mutation. Idempotency is enforced
+                # by the decision's candidate id above, not by source_added.
+                is_task_update = action == "update_task"
+                _versioned_update(
+                    session,
+                    target,
+                    content=candidate.content if action != "merge" else (merged_content or candidate.content),
+                    task_status=normalize_task_status(candidate.task_status) if is_task_update else None,
+                    object_value=candidate.object_value,
+                    scope=dict(candidate.scope),
+                    memory_key=candidate.effective_memory_key,
+                    memory_key_version=candidate.memory_key_version,
+                    polarity=candidate.polarity,
+                    confidence=min(0.99, max(float(target.confidence), candidate.confidence)),
+                    importance=max(float(target.importance), candidate.importance),
+                    last_confirmed_at=now,
+                    reason=decision.reason,
+                    source_note_id=note_id,
+                    source_note_ids=(
+                        [
+                            *list(session.execute(
+                                select(MemorySourceRow.note_id)
+                                .where(MemorySourceRow.memory_id == target.id)
+                                .order_by(MemorySourceRow.created_at)
+                            ).scalars()),
+                            note_id,
+                        ]
+                        if str(candidate.scope.get("reference_status") or "") == "resolved"
+                        else [note_id]
+                    ),
+                )
                 result_ids.append(target.id)
                 result.update({"memory_id": target.id, "source_added": added})
                 if action == "update_task":

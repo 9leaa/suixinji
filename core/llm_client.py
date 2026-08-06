@@ -101,6 +101,22 @@ def _timeout_retries_for_route(route: Any) -> int:
     return min(1, max(0, int(settings.MEMORY_EXTRACTION_LLM_MAX_RETRIES)))
 
 
+def _structured_json_completion_options(config: ChatConfig) -> dict[str, Any]:
+    """Return safe provider-specific options for object-only completions.
+
+    DeepSeek v4 may consume the whole completion budget in reasoning before
+    emitting ``message.content``. Disable that mode only for known DeepSeek
+    configurations; other OpenAI-compatible providers keep their old shape.
+    """
+    provider_hint = f"{config.base_url or ''} {config.model or ''}".casefold()
+    if "deepseek" not in provider_hint or not settings.DEEPSEEK_STRUCTURED_JSON_DISABLE_THINKING:
+        return {}
+    return {
+        "response_format": {"type": "json_object"},
+        "extra_body": {"thinking": {"type": "disabled"}},
+    }
+
+
 def classify_llm_error(exc: BaseException | None = None, *, response: Any = None, phase: str | None = None) -> str:
     """Return a stable, low-cardinality reason for LLM failures."""
     name = type(exc).__name__.lower() if exc is not None else ""
@@ -243,6 +259,7 @@ def _chat_completion_with_key_pool(
                     {"role": "user", "content": user_prompt},
                 ],
                 temperature=0,
+                **_structured_json_completion_options(config),
             )
             pool.report_success(current_key)
             return response, attempt

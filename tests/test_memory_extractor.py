@@ -174,6 +174,7 @@ def test_rule_extractor_keeps_mixed_atoms_and_multiple_preferences(monkeypatch):
     preference_rows = [candidate for candidate in preferences if candidate.memory_type == "preference"]
     assert len(preference_rows) == 2
     assert {candidate.evidence_span for candidate in preference_rows} == {"喜欢咖啡", "绿茶"}
+    assert {candidate.polarity for candidate in preference_rows} == {"positive"}
 
 
 def test_hybrid_only_repairs_uncovered_atom_types(monkeypatch):
@@ -199,6 +200,53 @@ def test_hybrid_only_repairs_uncovered_atom_types(monkeypatch):
     assert {row.memory_type for row in rows} >= {"preference", "semantic", "task"}
     repaired = [row for row in rows if row.extraction_reason == "hybrid_atom_coverage_repair"]
     assert {row.memory_type for row in repaired} >= {"semantic", "task"}
+
+
+def test_hybrid_does_not_duplicate_single_clause_llm_candidate(monkeypatch):
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
+    monkeypatch.setattr(
+        extractor,
+        "complete_json",
+        lambda **kwargs: {"candidates": [{
+            "memory_type": "task", "entity": "用户", "attribute": "任务",
+            "operation": "完成", "canonical_topic": "数据库迁移",
+            "task_status": "done", "content": "数据库迁移已经完成",
+            "evidence_span": "数据库迁移已经完成", "confidence": 0.9,
+            "importance": 0.8, "should_store": True, "extraction_reason": "task",
+            "entities": ["数据库迁移"],
+        }]},
+    )
+    rows = extractor.extract_candidates("single-clause", "数据库迁移已经完成。")
+    assert len(rows) == 1
+    assert rows[0].extractor_type == "llm"
+
+
+def test_rule_evidence_excludes_terminal_sentence_punctuation():
+    rows = extractor.extract_rule_candidates("punctuation", "数据库迁移已经完成。")
+    assert rows
+    assert all(row.evidence_span == "数据库迁移已经完成" for row in rows)
+
+
+def test_rule_reference_fallback_inherits_recent_task_identity():
+    previous = [{
+        "note_id": "n-prev",
+        "sequence_no": 9,
+        "role": "user",
+        "text": "随心记第三阶段评测还在继续处理。",
+        "sensitive": False,
+    }]
+    rows = extractor.extract_candidates(
+        "reference-fallback",
+        "这个也做完了。",
+        previous_messages=previous,
+    )
+    assert len(rows) == 1
+    assert rows[0].memory_type == "task"
+    assert rows[0].task_status == "done"
+    assert rows[0].scope["reference_status"] == "resolved"
+    assert rows[0].scope["antecedent_note_id"] == "n-prev"
+    assert rows[0].scope["antecedent_offset"] == -1
+    assert "第三阶段评测" in str(rows[0].scope["canonical_topic"])
 
 
 def test_previous_messages_are_only_sent_for_reference_signals(monkeypatch):

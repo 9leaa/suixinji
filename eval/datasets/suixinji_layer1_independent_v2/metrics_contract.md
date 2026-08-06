@@ -1,0 +1,24 @@
+# Layer 1 v2 指标建议
+
+- Should-store Precision / Recall / F1
+- Candidate Precision / Recall / F1
+- Atomic Assertion Recall
+- Multi-candidate Recall
+- Multi-preference Split Exact
+- Evidence Span Precision / Recall / F1
+- Memory Type Macro-F1
+- Task Binary Status Accuracy
+- Blocker Accuracy
+- Progress Note Accuracy
+- Closure Reason Accuracy
+- Polarity Accuracy
+- Canonical Instance Key Accuracy
+- Task Family Key Accuracy
+- Preference Family Key Accuracy
+- Preference Assertion Key Accuracy
+- Qualifier Exact / F1
+- Reference Resolution Accuracy
+- Antecedent Note Accuracy
+- Antecedent Evidence Span F1
+- Schema Rejected Accuracy
+- Rules Recovery Recall

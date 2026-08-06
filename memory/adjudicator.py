@@ -112,6 +112,19 @@ def _identity_adjudicated_decision(
         # Family membership improves recall/profile grouping but never aliases assertions.
         return _decision(candidate, "new", "insert", result["confidence"], reason)
     if relation == "uncertain" or target is None:
+        if candidate.memory_type == "task" and not candidate.memory_key:
+            family_key = str(candidate.scope.get("task_family_key") or "")
+            family_matches = [
+                memory
+                for memory in memories
+                if family_key and str(memory.scope.get("task_family_key") or "") == family_key
+            ]
+            if len(family_matches) == 1:
+                # An optional advisory saying “uncertain” cannot override
+                # the deterministic single-family continuation rule.  This
+                # covers a shorter continuation of an existing round without
+                # treating multiple instances as interchangeable.
+                return None
         return _decision(candidate, "ambiguous_match", "pending_review", result["confidence"], reason, [target] if target else [])
 
     if candidate.memory_type == "task" and relation == "same_instance":
@@ -122,6 +135,11 @@ def _identity_adjudicated_decision(
         if candidate_scope != target_scope:
             return _decision(candidate, "conflict", "pending_review", result["confidence"], f"{reason}; scope_conflict", [target])
         if candidate.task_status == target.task_status:
+            # Same task identity with a new lifecycle detail (for example a
+            # progress note or a refined wording) is a versioned merge, not
+            # merely another supporting source.
+            if candidate.normalized_content != target.normalized_content or candidate.scope.get("progress_note"):
+                return _decision(candidate, "merge", "update", result["confidence"], reason, [target])
             return _decision(candidate, "same", "add_source", result["confidence"], reason, [target])
         if task_policy.can_transition(target.task_status, candidate.task_status):
             return _decision(candidate, "update_task", "update_task", result["confidence"], reason, [target])
@@ -278,6 +296,51 @@ def _adjudicate_v3(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> 
             return _decision(candidate, "conflict", "pending_review", _combined_confidence(candidate, 0.82), "ambiguous_preference_conflict", [best])
 
     if not exact:
+        if candidate.memory_type == "preference":
+            assertion_key = str(candidate.scope.get("preference_assertion_key") or "")
+            assertion_matches = [
+                memory for memory in memories
+                if assertion_key and str(memory.scope.get("preference_assertion_key") or "") == assertion_key
+            ]
+            if assertion_matches:
+                best = max(assertion_matches, key=lambda memory: (memory.updated_at, memory.current_version))
+                if candidate.polarity == best.polarity:
+                    return _decision(candidate, "same", "add_source", max(candidate.confidence, 0.92), "same_preference_assertion_key", [best])
+                return _decision(candidate, "conflict", "pending_review", max(candidate.confidence, 0.82), "preference_assertion_polarity_conflict", [best])
+            family_key = str(candidate.scope.get("preference_family_key") or "")
+            family_matches = [
+                memory for memory in memories
+                if family_key and str(memory.scope.get("preference_family_key") or "") == family_key
+            ]
+            if family_matches and any(
+                candidate.polarity
+                and memory.polarity
+                and candidate.polarity != memory.polarity
+                and preference_policy.scopes_compatible(candidate, memory)
+                for memory in family_matches
+            ):
+                best = max(family_matches, key=lambda memory: (memory.updated_at, memory.current_version))
+                return _decision(candidate, "conflict", "pending_review", max(candidate.confidence, 0.82), "preference_family_polarity_conflict", [best])
+        if candidate.memory_type == "task" and not candidate.memory_key:
+            family_key = str(candidate.scope.get("task_family_key") or "")
+            family_matches = [
+                memory for memory in memories
+                if family_key and str(memory.scope.get("task_family_key") or "") == family_key
+            ]
+            if len(family_matches) > 1:
+                return _decision(candidate, "conflict", "pending_review", max(candidate.confidence, 0.82), "multiple_task_instance_matches", family_matches)
+            if settings.STRONG_ESCALATION_ENABLED and len(family_matches) == 1:
+                # A single family candidate with no explicit instance key is
+                # the safe advisory fallback when the optional LLM route is
+                # unavailable.  It follows the same rule as the advisory
+                # prompt: a shorter wording does not become a new instance
+                # merely because the stored task has extra round detail.
+                target = family_matches[0]
+                if candidate.task_status == target.task_status:
+                    return _decision(candidate, "merge", "update", max(candidate.confidence, 0.82), "identity_fallback:same_family_single_candidate", [target])
+                if task_policy.can_transition(target.task_status, candidate.task_status):
+                    return _decision(candidate, "update_task", "update_task", max(candidate.confidence, 0.82), "identity_fallback:same_family_single_candidate", [target])
+                return _decision(candidate, "conflict", "pending_review", max(candidate.confidence, 0.82), "identity_fallback:invalid_transition", [target])
         # 默认要求精确身份匹配；guard 只允许一个窄例外：active 短任务名可被后续更具体标题细化。
         # 检索只负责提供候选，是否允许该变更仍以 Relation Guard 为准。
         refinements = [

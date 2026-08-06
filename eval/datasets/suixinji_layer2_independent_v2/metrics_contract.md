@@ -1,0 +1,28 @@
+# Layer 2 v2 指标建议
+
+- Task Same-instance Precision / Recall / F1
+- Task Family Recall
+- Same-family Over-merge Rate
+- Preference Assertion Identity F1
+- Preference Family Recall
+- Relation Macro-F1
+- Action Accuracy
+- Current State Field Accuracy
+- Task Binary Transition Accuracy
+- Blocker Accuracy
+- Progress Note Accuracy
+- Closure Reason Accuracy
+- Reopen Accuracy
+- Done Task Resolution Accuracy
+- Done-vs-Episodic F1
+- Duplicate Active Rate
+- Stale Active Rate
+- Version Sequence Accuracy
+- Source Link Precision / Recall / F1
+- Antecedent Source Exact-set Accuracy
+- Pending-review Precision / Recall / F1
+- Idempotence
+- Legacy Status Projection Accuracy
+- Persistence Old-status Write Rate（目标0）
+- Optional LLM Advisory Acceptance Precision
+- Local Guard Veto Accuracy

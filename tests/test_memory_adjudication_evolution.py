@@ -123,7 +123,9 @@ def test_merge_updates_content_and_preserves_a_version():
 
     semantics = list_memories("space-1", memory_type="semantic")
     assert len(semantics) == 1
-    assert report["results"][0]["action"] == "merge"
+    # The extractor now preserves both atomic assertions in one sentence:
+    # the repeated Agent claim is a source addition and the RAG claim merges.
+    assert any(result["action"] == "merge" for result in report["results"])
     assert "Agent" in semantics[0].content and "RAG" in semantics[0].content
     assert semantics[0].current_version == 2
     assert len(get_memory(semantics[0].id).versions) == 2

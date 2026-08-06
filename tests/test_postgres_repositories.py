@@ -16,7 +16,7 @@ from sqlalchemy import delete, inspect, select
 
 from core.wal import WalRecord
 from infrastructure.database import get_engine, session_scope
-from infrastructure.schema import Delivery, InboxMessage, MemoryVersion, Space
+from infrastructure.schema import Delivery, InboxMessage, MemoryVersion, MemoryVersionSource, Space
 from memory.models import MemoryCandidate
 from repositories.postgres import delivery, inbox, memory, notes, summary, tasks, vectors
 from storage.note_storage import NoteMetadata
@@ -374,6 +374,24 @@ def test_postgres_memory_versions_are_serialized_under_concurrency(pg_space):
             select(MemoryVersion.version).where(MemoryVersion.memory_id == created.id).order_by(MemoryVersion.version)
         ).scalars())
     assert versions == list(range(1, 8))
+
+
+def test_postgres_version_retains_all_available_sources(pg_space):
+    """New immutable versions preserve prior context and fresh evidence."""
+    created = memory.insert_memory(pg_space, MemoryCandidate("task", "完成评测", 0.8, 0.9, task_status="todo"), source_note_id="note-0")
+    assert memory.add_source(created.id, "note-1", "updated_by") is True
+
+    updated = memory.update_memory(created.id, content="评测已完成", task_status="done", reason="test-source-continuity")
+
+    assert updated is not None
+    loaded = memory.get_memory(created.id)
+    assert loaded is not None
+    assert set(loaded.versions[-1].source_note_ids) == {"note-0", "note-1"}
+    with session_scope() as session:
+        persisted = session.execute(
+            select(MemoryVersionSource.note_id).where(MemoryVersionSource.version_id == loaded.versions[-1].id)
+        ).scalars()
+        assert set(persisted) == {"note-0", "note-1"}
 
 
 def test_postgres_delivery_reservation_is_single_winner(pg_space):

@@ -364,7 +364,7 @@ def _consolidate_candidate_standard(space_id: str, note_id: str, candidate: Memo
         reason=decision.reason,
     )
     candidate_for_evolution = candidate
-    if decision.recommended_action == "update_task" and len(decision.target_memory_ids) == 1:
+    if decision.recommended_action in {"update_task", "update", "merge"} and len(decision.target_memory_ids) == 1:
         target = next((memory for memory in similar if memory.id == decision.target_memory_ids[0]), None)
         if target is not None:
             candidate_for_evolution = replace(

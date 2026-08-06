@@ -68,6 +68,8 @@ _STABLE_SEMANTIC_ATTRIBUTES = {
     "learning_focus": "学习重点",
     "learningfocus": "学习重点",
     "birthplace": "籍贯",
+    "primary_device": "常用设备",
+    "preferred_language": "偏好交流语言",
 }
 
 
@@ -206,6 +208,12 @@ def _task_action_and_material(text: str) -> tuple[str | None, str | None]:
     material = re.sub(r"^(?:了|好|一下|去|将|给|把)+", "", material)
     material = re.sub(r"(?:呢|啊|呀|了|哦|啦)+$", "", material)
     material = material.strip(" ：:，。！？!?；;、")
+    # Do not read an action embedded in a task title as a new imperative.
+    # “数据库迁移已经做完” describes the task “数据库迁移”; treating
+    # “迁移” as the leading action would leave only “已经做完” as material
+    # and make a second task identity.
+    if re.fullmatch(r"(?:已经|已|正在|进行中|做完|完成|完成了|提交|上线|取消|不做了|不用做|放弃)+", material):
+        return None, None
     if len(normalize_identity(material, fallback="")) < 2:
         return None, None
     operation = "执行" if surface_operation == "完成" else _TASK_OPERATION_ALIASES.get(surface_operation, surface_operation)
@@ -220,13 +228,11 @@ def _task_entity(value: str | None, *, extractor_type: str) -> str:
     返回结果说明：
         返回 `str`，通常是格式化后的文本、标识或路径。
     """
-    raw = str(value or "").strip()
-    if raw in {"", "我", "本人", "用户", "user", "me"}:
-        return "用户"
-    if extractor_type != "llm":
-        # 规则抽取可能把第一个 ASCII 实体（例如 RAG）放入 subject；它是任务材料，不是任务所有者。
-        return "用户"
-    return raw
+    del value, extractor_type
+    # A task memory belongs to the current user/space.  Model-provided
+    # "entity" is frequently a task noun (for example “评测”), not an owner;
+    # using it in the key causes equivalent updates to split into new tasks.
+    return "用户"
 
 
 def _attribute_from_canonical_topic(topic: str, *, entity: str, operation: str) -> str:
@@ -279,7 +285,17 @@ def _task_identity_from_text(text: str, candidate: MemoryCandidate) -> tuple[str
     operation = str(candidate.scope.get("operation") or "").strip()
     resolved_operation = _first_operation(text, operation)
     canonical_topic = str(candidate.scope.get("canonical_topic") or "").strip()
+    if candidate.scope.get("reference_status") == "resolved" and canonical_topic:
+        # A resolved demonstrative (“这个也做完了”) inherits the antecedent
+        # identity; its surface wording must not create a topic called “这个也”.
+        inherited = _attribute_from_canonical_topic(canonical_topic, entity=entity, operation=resolved_operation)
+        if inherited:
+            return entity, inherited, str(candidate.scope.get("operation") or resolved_operation or "维护")
     text_operation, text_attribute = _task_action_and_material(text)
+    progress_match = re.match(r"^(.*?)(?:正在(?:修复失败用例|补充测试|处理)|继续处理)(?:[^，。！？!?；;]*)$", text)
+    if progress_match and progress_match.group(1).strip():
+        text_attribute = progress_match.group(1).strip(" ：:，。！？!?；;")
+        text_operation = "执行"
 
     # 第一人称任务陈述拥有明确所有者；不要让 LLM 在一次输出中把任务材料本身当作 entity，又在下一次输出中只取更短后缀。
     if re.match(r"\s*(?:我|本人|用户)", str(text or "")):
@@ -373,7 +389,7 @@ def semantic_key(entity: str, attribute: str, canonical_topic: str, scope: str =
     return f"semantic:{entity_key}:{digest}"
 
 
-def preference_key(entity: str, topic: str, scope: str = "global") -> str:
+def preference_key(entity: str, topic: str, scope: str = "global", *, qualifiers: tuple[str, ...] | list[str] = ()) -> str:
     """函数功能：`preference_key` 负责处理 preference key，服务于本文件职责：稳定身份和 canonical key。
     传参：
         entity: entity 参数，由调用方传入，类型为 `str`。
@@ -383,7 +399,9 @@ def preference_key(entity: str, topic: str, scope: str = "global") -> str:
         返回 `str`，通常是格式化后的文本、标识或路径。
     """
     entity_key = "用户" if str(entity or "").strip() in {"", "我", "本人", "用户", "user", "me"} else normalize_identity(entity)
-    return f"preference:{entity_key}:{normalize_identity(topic)}:{normalize_scope(scope)}"
+    key_parts = ["preference", entity_key, normalize_identity(topic), normalize_scope(scope)]
+    key_parts.extend(normalize_identity(item) for item in qualifiers if normalize_identity(item))
+    return ":".join(key_parts)
 
 
 def is_task_lifecycle_statement(text: str) -> bool:
@@ -437,7 +455,9 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
                 "new_value": new_value,
                 "task_status": normalize_task_status(candidate.task_status, source_text) or "todo",
                 "memory_key_version": MEMORY_KEY_V3_VERSION,
-                "task_family_key": f"task-family:{normalize_identity(entity)}:{normalize_identity(attribute)}",
+                "task_family_key": scope.get("task_family_key")
+                if scope.get("reference_status") == "resolved" and scope.get("task_family_key")
+                else f"task-family:{normalize_identity(entity)}:{normalize_identity(attribute)}",
             }
         )
         return replace(
@@ -456,15 +476,18 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
         entity = normalize_entity(candidate.subject, memory_type="preference") or "用户"
         topic = preference_topic(source_text, scope.get("canonical_topic"), candidate.object_value) or signature.topic or source_text
         canonical_scope = str(scope.get("scope") or (signature.scopes[0] if signature.scopes else "global"))
+        qualifiers = list(dict.fromkeys([*signature.scopes, *signature.qualifiers]))
+        if any(marker in source_text for marker in ("更喜欢", "更偏好", "更偏向")) and "更偏向" not in qualifiers:
+            qualifiers.append("更偏向")
         scope.update(
             {
                 "canonical_topic": topic,
                 "scope": canonical_scope,
                 "memory_key_version": MEMORY_KEY_V3_VERSION,
                 "preference_family_key": f"preference-family:{normalize_identity(entity)}:{normalize_identity(topic)}",
-                "preference_assertion_key": preference_key(entity, topic, canonical_scope),
+                "preference_assertion_key": preference_key(entity, topic, canonical_scope, qualifiers=signature.qualifiers),
                 "polarity": signature.polarity,
-                "qualifiers": list(signature.qualifiers),
+                "qualifiers": qualifiers,
             }
         )
         return replace(
@@ -472,7 +495,7 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
             subject=entity,
             predicate="preference",
             object_value=topic,
-            memory_key=preference_key(entity, topic, canonical_scope),
+            memory_key=preference_key(entity, topic, canonical_scope, qualifiers=signature.qualifiers),
             scope=scope,
             memory_key_version=MEMORY_KEY_V3_VERSION,
         )

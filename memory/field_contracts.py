@@ -25,7 +25,7 @@ SEMANTIC_CANONICAL_TOPICS = {
 TASK_OPERATION_ALIASES = {
     "学习": "学习", "学": "学习", "学完": "学习", "换": "更换", "换成": "更换", "更换": "更换",
     "更换为": "更换", "替换": "更换", "替换成": "更换", "改成": "修改", "修改": "修改",
-    "制作": "制作", "做": "制作", "做完": "制作", "开发": "开发", "实现": "实现", "修复": "修复",
+    "制作": "制作", "做": "制作", "做完": "制作", "开发": "开发", "实现": "实现", "修复": "修复", "提交": "提交", "上线": "上线",
     "完善": "完善", "部署": "部署", "发布": "发布", "迁移": "迁移", "整理": "整理", "测试": "测试",
     "审查": "审查", "评测": "评测", "执行": "执行", "完成": "执行",
 }
@@ -65,12 +65,33 @@ def normalize_task_status(value: Any, source_text: str = "") -> str | None:
     for status, markers in (
         ("done", ("取消", "不做了", "不用做", "不再维护", "放弃")),
         ("todo", ("阻塞", "卡住", "等待权限", "等待数据", "等确认")),
-        ("done", ("已完成", "完成", "做完", "搞定", "弄好", "发布成功", "学完")),
+        ("done", ("已完成", "完成", "做完", "搞定", "弄好", "发布成功", "已提交", "提交", "上线", "学完")),
         ("todo", ("正在", "进行中", "继续", "需要", "计划", "准备", "待办", "要做")),
     ):
         if any(marker in text for marker in markers):
             return status
     return None
+
+
+def project_legacy_task_scope(raw_status: Any, scope: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Project legacy task status at read time without writing it back.
+
+    New writes remain restricted to ``todo``/``done``.  For old rows, callers
+    get a normalized status plus a non-sensitive diagnostic/semantic marker so
+    downstream code can distinguish a blocker, in-progress note, or closure.
+    """
+    projected = dict(scope or {})
+    raw = str(raw_status or "").strip().casefold()
+    if raw not in {"blocked", "in_progress", "cancelled", "canceled"}:
+        return projected
+    projected["legacy_task_status"] = raw
+    if raw == "blocked":
+        projected.setdefault("blocker", "legacy_blocked")
+    elif raw == "in_progress":
+        projected.setdefault("progress_note", "legacy_in_progress")
+    else:
+        projected.setdefault("closure_reason", "cancelled")
+    return projected
 
 
 def task_closure_reason(value: Any = None, source_text: str = "") -> str | None:
@@ -85,19 +106,41 @@ def task_closure_reason(value: Any = None, source_text: str = "") -> str | None:
         return "cancelled"
     if "放弃" in text:
         return "abandoned"
-    if any(marker in text for marker in ("已完成", "完成", "做完", "搞定", "弄好", "发布成功", "学完")):
+    if any(marker in text for marker in ("已完成", "完成", "做完", "搞定", "弄好", "发布成功", "已提交", "已经提交", "提交", "上线", "学完")):
         return "completed"
     return None
 
 
 def task_progress_metadata(source_text: str) -> dict[str, str]:
     """Preserve progress/blocking semantics as metadata, never as task state."""
-    text = str(source_text or "").strip()
+    text = str(source_text or "").strip().strip("。！？!?；;")
     metadata: dict[str, str] = {}
-    if any(marker in text for marker in ("阻塞", "卡住", "等待权限", "等待数据", "等确认")):
-        metadata["blocker"] = text
-    elif any(marker in text for marker in ("正在", "进行中", "继续", "暂停")):
-        metadata["progress_note"] = text
+    # Store the semantic detail, not the whole sentence containing the task
+    # identity.  This keeps blocker/progress fields useful to consolidation
+    # and makes them stable across equivalent wording.
+    blocker = re.search(r"(?:被|因|由于|卡在)\s*([^，,。！？!?；;]+?)\s*(?:卡住|阻塞|拦住|挡住)(?:了)?$", text)
+    if blocker:
+        value = blocker.group(1).strip(" ：:，,。！？!?；;")
+        # “被权限阻塞” is conventionally surfaced as waiting for permission;
+        # an explicit resource problem (“被接口文档不完整卡住”) remains the
+        # resource text itself.
+        metadata["blocker"] = f"等待{value}" if value in {"权限", "数据", "管理员权限"} else value
+    elif "暂停" in text:
+        metadata["blocker"] = "暂停"
+    elif re.search(r"(?:等待|等)\s*[^，,。！？!?；;]+", text):
+        waiting = re.search(r"((?:等待|等)\s*[^，,。！？!?；;]+)", text)
+        if waiting:
+            phrase = waiting.group(1).strip(" ：:，,。！？!?；;")
+            metadata["blocker"] = phrase if phrase.startswith("等待") else f"等待{phrase[1:]}"
+    elif any(marker in text for marker in ("阻塞", "卡住", "等待权限", "等待数据", "等确认")):
+        # A bare blocker still has a bounded phrase after the task status
+        # marker; avoid leaking unrelated task text into the field.
+        tail = re.split(r"(?:现在|目前|当前|正在|已经|已)", text, maxsplit=1)[-1]
+        metadata["blocker"] = tail.replace("卡住", "").replace("阻塞", "").strip(" ：:，,。！？!?；;") or text
+    else:
+        progress = re.search(r"((?:继续处理|正在修复失败用例|正在补充测试|正在处理|进行中|暂停))", text)
+        if progress:
+            metadata["progress_note"] = progress.group(1).strip(" ：:，,。！？!?；;")
     return metadata
 
 def normalize_operation(value: Any, source_text: str = "") -> str | None:
@@ -152,7 +195,7 @@ def task_attribute(value: Any, source_text: str = "") -> str | None:
             return value
     text = re.sub(r"\s+", "", str(source_text or ""))
     text = re.sub(r"^(?:我|本人|用户)(?:需要|准备|计划|正在|继续|记得|请)", "", text)
-    text = re.sub(r"(?:正在|已经|开始|继续|需要|计划|准备|记得|完成|做完|了)$", "", text)
+    text = re.sub(r"(?:正在|已经|开始|继续|需要|计划|准备|记得|完成|完成了|做完|已做完|了)$", "", text)
     return text.strip(" ：:，,。！？!?") or None
 
 def preference_topic(source_text: str, topic_hint: Any = None, value_hint: Any = None) -> str | None:

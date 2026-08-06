@@ -428,6 +428,15 @@ class MemoryVersion(Base):
     __table_args__ = (UniqueConstraint("memory_id", "version", name="uq_memory_version"),)
 
 
+class MemoryVersionSource(Base):
+    """Provenance edges retained by an individual memory version."""
+
+    __tablename__ = "memory_version_sources"
+    version_id: Mapped[str] = mapped_column(ForeignKey("memory_versions.id", ondelete="CASCADE"), primary_key=True)
+    note_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class MemoryVector(Base):
     """类功能：`MemoryVector` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
     继承关系：继承 `Base`，复用其接口或生命周期约定。

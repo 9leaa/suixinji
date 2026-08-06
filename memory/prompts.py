@@ -39,6 +39,7 @@ MEMORY_EXTRACTOR_V3_PROMPT = """
 - 输入中的 atoms 是程序标出的原子覆盖边界。每个值得保存的 atom 都必须由相应 candidate 的 evidence_span 覆盖；不能把多个可独立变化的偏好对象压成一条。
 - previous_messages 只在当前文本出现指代时提供，且最多三条。它们只能用于解析“这个/它/继续做/也完成了”等指代，不能重复抽取旧消息中的事实。
 - 指代输出可附加 reference_status、antecedent_note_id、antecedent_offset、antecedent_evidence_span、resolution_confidence。找不到唯一对象时必须 reference_status=unresolved，不得伪造任务身份。
+- 如果当前消息只包含“这个/它/这件事/继续做/也做完了”等指代，且最近三条 user previous_messages 中存在唯一可识别的任务：必须继承该任务的 entity、attribute、operation、canonical_topic 和 task identity，输出一条以当前消息为 evidence_span 的 Candidate，并填写 reference_status=resolved、antecedent_note_id、antecedent_offset、antecedent_evidence_span、resolution_confidence；不能因为当前消息短而输出空 candidates。
 - “喜欢咖啡和绿茶”必须分别产生“咖啡”和“绿茶”两条 preference；“不喜欢咖啡，更偏向绿茶”必须分别产生咖啡 negative 与绿茶 positive 两条 preference。
 - “我不喜欢/讨厌/不爱/过敏/不用 X” 是明确 preference；如果 evidence_span 只覆盖该偏好子句，就应作为独立候选。
 - evidence_span 必须逐字来自原文的连续片段；不得编造任何实体、值、日期或状态。

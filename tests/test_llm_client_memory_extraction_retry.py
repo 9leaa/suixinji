@@ -196,3 +196,45 @@ def test_timeout_retry_does_not_apply_to_other_llm_tasks(monkeypatch):
     assert configs[0].timeout_seconds == 15
     assert configs[0].max_retries == 2
     assert not [event for event in events if event[1]["status"] == "retry"]
+
+
+def test_deepseek_structured_json_disables_thinking(monkeypatch):
+    _install_fake_config(monkeypatch)
+    monkeypatch.setattr(
+        llm_client,
+        "get_chat_config",
+        lambda _role: ChatConfig(
+            api_key="sk-test", base_url="https://api.deepseek.com",
+            model="deepseek-v4-flash", timeout_seconds=15, max_retries=0,
+        ),
+    )
+    calls = []
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            calls.append(kwargs)
+            return _response()
+
+    fake_client = SimpleNamespace(chat=SimpleNamespace(completions=FakeCompletions()))
+    monkeypatch.setattr(llm_client, "build_openai_client", lambda _config: fake_client)
+    monkeypatch.setattr(llm_client, "log_event", lambda *_args, **_kwargs: None)
+    assert llm_client.complete_json("Return JSON.", "{}", llm_task="memory_extraction") == {"ok": True}
+    assert calls[0]["response_format"] == {"type": "json_object"}
+    assert calls[0]["extra_body"] == {"thinking": {"type": "disabled"}}
+
+
+def test_non_deepseek_structured_json_keeps_existing_request_shape(monkeypatch):
+    _install_fake_config(monkeypatch)
+    calls = []
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            calls.append(kwargs)
+            return _response()
+
+    fake_client = SimpleNamespace(chat=SimpleNamespace(completions=FakeCompletions()))
+    monkeypatch.setattr(llm_client, "build_openai_client", lambda _config: fake_client)
+    monkeypatch.setattr(llm_client, "log_event", lambda *_args, **_kwargs: None)
+    assert llm_client.complete_json("Return JSON.", "{}", llm_task="memory_extraction") == {"ok": True}
+    assert "response_format" not in calls[0]
+    assert "extra_body" not in calls[0]

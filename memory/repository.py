@@ -42,7 +42,7 @@ from memory.models import (
     normalize_content,
     utc_now_iso,
 )
-from memory.field_contracts import normalize_task_status
+from memory.field_contracts import normalize_task_status, project_legacy_task_scope
 
 DB_PATH = Path("data/memory/memory.db")
 T = TypeVar("T")
@@ -266,6 +266,16 @@ def _init_db(db_path: str | Path | None = None) -> None:
             CREATE INDEX IF NOT EXISTS idx_memory_versions_memory
             ON memory_versions(memory_id, version);
 
+            CREATE TABLE IF NOT EXISTS memory_version_sources (
+                version_id TEXT NOT NULL,
+                note_id TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                UNIQUE(version_id, note_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_memory_version_sources_version
+            ON memory_version_sources(version_id);
+
             CREATE TABLE IF NOT EXISTS memory_vectors (
                 memory_id TEXT PRIMARY KEY,
                 embedding_json TEXT,
@@ -444,7 +454,7 @@ def _memory_from_row(row: sqlite3.Row, *, sources: list[MemorySource] | None = N
         memory_key=row["memory_key"] or None,
         memory_key_version=row["memory_key_version"] if "memory_key_version" in row.keys() else MEMORY_KEY_VERSION,
         polarity=row["polarity"] or None,
-        scope=scope if isinstance(scope, dict) else {},
+        scope=project_legacy_task_scope(row["task_status"], scope if isinstance(scope, dict) else {}),
         sources=sources or [],
         versions=versions or [],
     )
@@ -760,6 +770,16 @@ def _load_versions(conn: sqlite3.Connection, memory_id: str) -> list[MemoryVersi
         """,
         (memory_id,),
     ).fetchall()
+    version_ids = [str(row["id"]) for row in rows]
+    source_map: dict[str, list[str]] = {}
+    if version_ids:
+        placeholders = ",".join("?" for _ in version_ids)
+        source_rows = conn.execute(
+            f"SELECT version_id, note_id FROM memory_version_sources WHERE version_id IN ({placeholders}) ORDER BY note_id",
+            version_ids,
+        ).fetchall()
+        for source in source_rows:
+            source_map.setdefault(str(source["version_id"]), []).append(str(source["note_id"]))
     return [
         MemoryVersion(
             id=row["id"],
@@ -775,6 +795,7 @@ def _load_versions(conn: sqlite3.Connection, memory_id: str) -> list[MemoryVersi
             reason=row["reason"],
             source_note_id=row["source_note_id"],
             created_at=row["created_at"],
+            source_note_ids=source_map.get(str(row["id"])) or ([row["source_note_id"]] if row["source_note_id"] else []),
         )
         for row in rows
     ]
@@ -812,6 +833,7 @@ def _add_version(
     返回结果说明：
         无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
+    version_id = new_id("ver")
     conn.execute(
         """
         INSERT INTO memory_versions(
@@ -821,7 +843,7 @@ def _add_version(
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
-            new_id("ver"),
+            version_id,
             memory_id,
             version,
             content,
@@ -835,6 +857,16 @@ def _add_version(
             source_note_id,
             utc_now_iso(),
         ),
+    )
+    source_ids = [str(row["note_id"]) for row in conn.execute(
+        "SELECT note_id FROM memory_sources WHERE memory_id = ? ORDER BY created_at", (memory_id,)
+    ).fetchall()]
+    if source_note_id and source_note_id not in source_ids:
+        source_ids.append(source_note_id)
+    now = utc_now_iso()
+    conn.executemany(
+        "INSERT OR IGNORE INTO memory_version_sources(version_id, note_id, created_at) VALUES (?, ?, ?)",
+        [(version_id, note_id, now) for note_id in dict.fromkeys(source_ids)],
     )
 
 
@@ -1791,52 +1823,49 @@ def apply_memory_decision(
                         result["archived_duplicate_ids"] = archived
             elif action in {"merge", "update"} and target_row is not None:
                 source_added = _add_source_row(conn, target_id, note_id, "updated_by" if action == "update" else "supported_by", now=now)
-                if source_added:
-                    _versioned_update_row(
-                        conn,
-                        target_row,
-                        content=merged_content or candidate.content,
-                        object_value=candidate.object_value,
-                        scope=dict(candidate.scope),
-                        memory_key=candidate.effective_memory_key,
-                        memory_key_version=candidate.memory_key_version,
-                        polarity=candidate.polarity,
-                        confidence=min(0.99, max(float(target_row["confidence"]), candidate.confidence)),
-                        importance=max(float(target_row["importance"]), candidate.importance),
-                        last_confirmed_at=now,
-                        reason=decision.reason,
-                        source_note_id=note_id,
-                        now=now,
-                    )
+                _versioned_update_row(
+                    conn,
+                    target_row,
+                    content=merged_content or candidate.content,
+                    object_value=candidate.object_value,
+                    scope=dict(candidate.scope),
+                    memory_key=candidate.effective_memory_key,
+                    memory_key_version=candidate.memory_key_version,
+                    polarity=candidate.polarity,
+                    confidence=min(0.99, max(float(target_row["confidence"]), candidate.confidence)),
+                    importance=max(float(target_row["importance"]), candidate.importance),
+                    last_confirmed_at=now,
+                    reason=decision.reason,
+                    source_note_id=note_id,
+                    now=now,
+                )
                 result_memory_ids.append(target_id)
                 result.update({"memory_id": target_id, "source_added": source_added})
             elif action == "update_task" and target_row is not None:
                 source_added = _add_source_row(conn, target_id, note_id, "updated_by", now=now)
-                if source_added:
-                    _versioned_update_row(
-                        conn,
-                        target_row,
-                        content=candidate.content,
-                        task_status=normalize_task_status(candidate.task_status),
-                        object_value=candidate.object_value,
-                        scope=dict(candidate.scope),
-                        memory_key=candidate.effective_memory_key,
-                        memory_key_version=candidate.memory_key_version,
-                        confidence=min(0.99, max(float(target_row["confidence"]), candidate.confidence)),
-                        last_confirmed_at=now,
-                        reason=decision.reason,
-                        source_note_id=note_id,
-                        now=now,
-                    )
+                _versioned_update_row(
+                    conn,
+                    target_row,
+                    content=candidate.content,
+                    task_status=normalize_task_status(candidate.task_status),
+                    object_value=candidate.object_value,
+                    scope=dict(candidate.scope),
+                    memory_key=candidate.effective_memory_key,
+                    memory_key_version=candidate.memory_key_version,
+                    confidence=min(0.99, max(float(target_row["confidence"]), candidate.confidence)),
+                    last_confirmed_at=now,
+                    reason=decision.reason,
+                    source_note_id=note_id,
+                    now=now,
+                )
                 result_memory_ids.append(target_id)
                 result.update({"memory_id": target_id, "task_status": candidate.task_status, "source_added": source_added})
-                if source_added:
-                    archived = _archive_terminal_task_duplicates_row(
-                        conn, target_row, candidate, decision_id=decision.decision_id,
-                        source_note_id=note_id, now=now,
-                    )
-                    if archived:
-                        result["archived_duplicate_ids"] = archived
+                archived = _archive_terminal_task_duplicates_row(
+                    conn, target_row, candidate, decision_id=decision.decision_id,
+                    source_note_id=note_id, now=now,
+                )
+                if archived:
+                    result["archived_duplicate_ids"] = archived
             elif action == "supersede" and target_row is not None:
                 _add_source_row(conn, target_id, note_id, "contradicted_by", now=now)
                 _versioned_update_row(

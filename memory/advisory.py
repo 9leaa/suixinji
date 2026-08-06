@@ -28,6 +28,9 @@ Preference 输出 identity_relation=same_assertion|same_family|different|uncerta
 必须输出 JSON object：
 {"identity_relation":"uncertain","target_memory_id":null,"confidence":0.0,"reason_code":"...","supporting_fields":[],"conflicting_fields":[]}
 不得根据状态词本身判断任务身份；型号、外部编号、scope、polarity 冲突必须列入 conflicting_fields。
+Task身份规则：候选只是对已有任务的更短/更口语化说法时，不能仅因已有Memory包含“第一轮/第二轮”等更详细措辞就判为same_family；
+如果候选没有明确提出另一个实例，且只有一个同family候选，应判为same_instance。
+只有候选明确给出不同实例标识、或同family存在多个无法区分的实例时，才使用same_family或uncertain。
 """
 
 HIGH_RISK_ACTIONS = {"supersede", "conflict", "pending_review", "merge"}

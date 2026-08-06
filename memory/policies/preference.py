@@ -40,6 +40,8 @@ POSITIVE_MARKERS = (
     "习惯",
     "想要",
     "倾向于",
+    "偏向",
+    "更偏向",
     "优先选择",
     "优先",
 )
@@ -207,7 +209,17 @@ def _extract_topic(text: str) -> tuple[str, tuple[str, ...]]:
     main = re.sub(r"^(?:对|对于)", "", main).strip()
     main = re.sub(r"(?:而不是|而非|胜过|多于).*$", "", main).strip()
     main = _TRAILING_PARTICLE_RE.sub("", main).strip()
-    return main[:160], qualifiers
+    qualifier_values = list(qualifiers)
+    if main.startswith("无糖") and len(main) > 2:
+        main = main[2:].strip()
+        qualifier_values.append("sugar_free")
+    elif main.startswith("太甜的") and len(main) > 3:
+        main = main[3:].strip()
+        qualifier_values.append("sweet")
+    # Collapse descriptive sugar wording to the stable preference topic;
+    # qualifiers such as scope and polarity remain separate fields.
+    main = {"太甜": "sweetness", "太甜的饮料": "甜味饮料", "甜的饮料": "甜味饮料"}.get(main, main)
+    return main[:160], tuple(dict.fromkeys(qualifier_values))
 
 
 def preference_signature(text: str, topic_hint: str | None = None) -> PreferenceSignature:
