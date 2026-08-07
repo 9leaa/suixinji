@@ -1099,6 +1099,7 @@ def extract_candidates(
     classification: dict[str, Any] | None = None,
     *,
     previous_messages: list[dict[str, Any]] | None = None,
+    allow_llm_failure_fallback: bool = True,
 ) -> list[MemoryCandidate]:
     """函数功能：`extract_candidates` 负责抽取 candidates，服务于本文件职责：Memory 候选抽取。
     传参：
@@ -1129,6 +1130,11 @@ def extract_candidates(
             previous_messages=previous_messages,
         )
     except Exception as exc:
+        # Production keeps the deterministic Rules degradation path.  The
+        # independent evaluator can opt out to measure actual LLM
+        # availability/quality instead of silently scoring a fallback.
+        if not allow_llm_failure_fallback:
+            raise
         if "connection_error" in str(exc).casefold():
             # One unavailable provider must not make every inbox message wait
             # for the transport timeout.  Rules remain the deterministic
@@ -1158,6 +1164,11 @@ def extract_candidates(
             _resolve_reference_fallback(note_id, rule_text, merged, previous_messages),
             rule_text,
         )
+    if not allow_llm_failure_fallback:
+        # An empty response is an LLM decision in strict evaluation mode; do
+        # not turn it into a Rules-only answer.  Non-empty LLM results still
+        # receive normal Hybrid atom-coverage repair above.
+        return []
     # 空模型响应不是语义决策；保留确定性准入 fallback，但不要把它和非空模型结果做并集。
     rows = [
         replace(candidate, reason="llm_empty_rule_fallback", extraction_reason="llm_empty_rule_fallback")

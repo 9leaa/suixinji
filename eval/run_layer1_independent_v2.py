@@ -234,7 +234,7 @@ def _classification_metrics(gold_labels: list[str], pred_labels: list[str], labe
     return {"macro_f1": sum(f1s) / len(f1s) if f1s else 0.0, "per_class": per_class, "confusion_matrix": matrix}
 
 
-def run_case(row: dict[str, Any], mode: str, ordinal: int) -> dict[str, Any]:
+def run_case(row: dict[str, Any], mode: str, ordinal: int, *, require_llm: bool = False) -> dict[str, Any]:
     text = str(row["input"].get("current_message") or "")
     # Do not pass case_id to production.  It is an evaluator-only logical ref.
     note_id = f"layer1-v2-eval-note-{ordinal}"
@@ -251,6 +251,7 @@ def run_case(row: dict[str, Any], mode: str, ordinal: int) -> dict[str, Any]:
             note_id,
             text,
             previous_messages=_previous_messages(row),
+            allow_llm_failure_fallback=not require_llm,
         )
     except Exception as exc:  # evaluator records, production remains untouched
         error = f"{type(exc).__name__}: {str(exc)[:240]}"
@@ -441,11 +442,18 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--mode", choices=("rules", "llm", "hybrid"), default="hybrid")
+    parser.add_argument(
+        "--require-llm",
+        action="store_true",
+        help="Evaluation-only: fail an LLM transport/schema path instead of scoring a Rules-only fallback.",
+    )
     parser.add_argument("--output", required=True)
     args = parser.parse_args()
+    if args.require_llm and args.mode != "hybrid":
+        parser.error("--require-llm is only supported with --mode hybrid")
     source_rows = [json.loads(line) for line in Path(args.dataset).read_text().splitlines() if line.strip()]
-    predicted_rows = [run_case(row, args.mode, index) for index, row in enumerate(source_rows)]
-    report = {"schema": "suixinji.layer1.independent.v2", "mode": args.mode, "dataset": args.dataset, "metrics": score(predicted_rows, source_rows), "predictions": predicted_rows}
+    predicted_rows = [run_case(row, args.mode, index, require_llm=args.require_llm) for index, row in enumerate(source_rows)]
+    report = {"schema": "suixinji.layer1.independent.v2", "mode": args.mode, "require_llm": args.require_llm, "dataset": args.dataset, "metrics": score(predicted_rows, source_rows), "predictions": predicted_rows}
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
     (output / "predictions.json").write_text(json.dumps(predicted_rows, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -453,7 +461,7 @@ def main() -> None:
     metrics = report["metrics"]
     (output / "metrics.json").write_text(json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
     (output / "run_manifest.json").write_text(json.dumps({
-        "schema": report["schema"], "dataset": args.dataset, "mode": args.mode,
+        "schema": report["schema"], "dataset": args.dataset, "mode": args.mode, "require_llm": args.require_llm,
         "case_count": len(source_rows), "production_entrypoint": "memory.extractor.extract_candidates",
         "logical_refs_in_production": False,
     }, ensure_ascii=False, indent=2), encoding="utf-8")

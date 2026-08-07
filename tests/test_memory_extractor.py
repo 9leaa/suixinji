@@ -358,6 +358,15 @@ def test_llm_extractor_falls_back_to_rules(monkeypatch):
     assert candidates[0].reason == "llm_failed_rule_fallback"
 
 
+def test_strict_llm_evaluation_does_not_score_rules_fallback(monkeypatch):
+    """Strict evaluation propagates LLM failures; production fallback stays default."""
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
+    monkeypatch.setattr(extractor, "complete_json", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("model down")))
+
+    with pytest.raises(RuntimeError, match="model down"):
+        extractor.extract_candidates("note-strict", "我讨厌喝牛奶", allow_llm_failure_fallback=False)
+
+
 def test_llm_fallback_logs_safe_degradation_without_raw_text_or_keys(monkeypatch):
     """函数功能：`test_llm_fallback_logs_safe_degradation_without_raw_text_or_keys` 负责验证 llm fallback logs safe degradation without raw text or keys 场景，服务于本文件职责：rules/LLM/hybrid 抽取与回退。
     传参：
