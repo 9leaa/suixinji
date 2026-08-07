@@ -41,7 +41,8 @@ MEMORY_EXTRACTOR_V3_PROMPT = """
 - 输入中的 atoms 是程序标出的原子覆盖边界。每个值得保存的 atom 都必须由相应 candidate 的 evidence_span 覆盖；不能把多个可独立变化的偏好对象压成一条。
 - previous_messages 只在当前文本出现指代时提供，且最多三条。它们只能用于解析“这个/它/继续做/也完成了”等指代，不能重复抽取旧消息中的事实。
 - 指代输出可附加 reference_status、antecedent_note_id、antecedent_offset、antecedent_evidence_span、resolution_confidence。找不到唯一对象时必须 reference_status=unresolved，不得伪造任务身份。
-- 如果当前消息只包含“这个/它/这件事/继续做/也做完了”等指代，且最近三条 user previous_messages 中存在唯一可识别的任务：必须继承该任务的 entity、attribute、operation、canonical_topic 和 task identity，输出一条以当前消息为 evidence_span 的 Candidate，并填写 reference_status=resolved、antecedent_note_id、antecedent_offset、antecedent_evidence_span、resolution_confidence；不能因为当前消息短而输出空 candidates。
+- previous_messages 的 offset 已固定：最近一条 user 消息为 -1，第二条为 -2，第三条为 -3。reference_status=resolved 时必须照抄匹配消息的 note_id 和 offset；不得输出 null。
+- 如果当前消息只包含“这个/它/这件事/继续做/也做完了”等指代，且最近三条 user previous_messages 中存在可识别任务：必须继承最近一条可识别任务的 entity、attribute、operation、canonical_topic 和 task identity，输出一条以当前消息为 evidence_span 的 Candidate，并填写 reference_status=resolved、antecedent_note_id、antecedent_offset、antecedent_evidence_span、resolution_confidence；不能因为当前消息短而输出空 candidates。
 - "喜欢咖啡和绿茶"必须分别产生“咖啡”和“绿茶”两条 preference；“不喜欢咖啡，更偏向绿茶”必须分别产生咖啡 negative 与绿茶 positive 两条 preference。
 - 每条 preference 必须输出 polarity：positive（正向偏好）、negative（负向偏好）或 unknown（原文无法判断）；非 preference 必须输出 null。polarity 必须根据当前 candidate 的证据判断，不能省略。
 - preference 必须识别明确的适用场景并输出 scope：例如“早上喜欢咖啡”输出 scope="早上”，“工作时不喝咖啡”输出 scope="工作时”；没有明确场景时 scope=null，不能默认输出 global。非 preference 的 scope 输出 null。

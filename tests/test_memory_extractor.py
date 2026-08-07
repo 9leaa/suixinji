@@ -294,6 +294,31 @@ def test_rule_reference_fallback_inherits_recent_task_identity():
     assert "第三阶段评测" in str(rows[0].scope["canonical_topic"])
 
 
+def test_rule_reference_fallback_uses_nearest_identifiable_task_offset():
+    previous = [
+        {"note_id": "n-old-task", "sequence_no": 7, "role": "user", "text": "数据库迁移还在继续处理。", "sensitive": False},
+        {"note_id": "n-chat", "sequence_no": 8, "role": "user", "text": "今天心情不错。", "sensitive": False},
+        {"note_id": "n-near-task", "sequence_no": 9, "role": "user", "text": "随心记第三阶段评测还在继续处理。", "sensitive": False},
+    ]
+    rows = extractor.extract_candidates("reference-near", "这个也做完了。", previous_messages=previous)
+
+    assert len(rows) == 1
+    assert rows[0].scope["antecedent_note_id"] == "n-near-task"
+    assert rows[0].scope["antecedent_offset"] == -1
+
+
+def test_rule_reference_fallback_derives_second_user_message_offset():
+    previous = [
+        {"note_id": "n-task", "sequence_no": 8, "role": "user", "text": "数据库迁移还在继续处理。", "sensitive": False},
+        {"note_id": "n-chat", "sequence_no": 9, "role": "user", "text": "今天心情不错。", "sensitive": False},
+    ]
+    rows = extractor.extract_candidates("reference-second", "这个也做完了。", previous_messages=previous)
+
+    assert len(rows) == 1
+    assert rows[0].scope["antecedent_note_id"] == "n-task"
+    assert rows[0].scope["antecedent_offset"] == -2
+
+
 def test_previous_messages_are_only_sent_for_reference_signals(monkeypatch):
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
     payloads = []
@@ -339,6 +364,55 @@ def test_resolved_reference_metadata_is_preserved_in_candidate_scope(monkeypatch
     assert rows[0].scope["reference_status"] == "resolved"
     assert rows[0].scope["antecedent_note_id"] == "n1"
     assert rows[0].evidence_span == "这个也做完了"
+
+
+def test_llm_reference_validation_derives_contextual_offset(monkeypatch):
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
+    monkeypatch.setattr(
+        extractor,
+        "complete_json",
+        lambda **kwargs: {"candidates": [{
+            "memory_type": "task", "entity": "随心记", "attribute": "测试报告", "operation": "完成",
+            "canonical_topic": "完成随心记测试报告", "task_status": "done", "old_value": None,
+            "new_value": None, "content": "这个也做完了", "evidence_span": "这个也做完了",
+            "confidence": 0.96, "importance": 0.8, "should_store": True, "extraction_reason": "近三轮唯一指代",
+            "entities": ["随心记"], "reference_status": "resolved", "antecedent_note_id": "n1",
+            "antecedent_offset": None, "antecedent_evidence_span": "记得完成随心记测试报告", "resolution_confidence": 0.96,
+        }]},
+    )
+    rows = extractor.extract_candidates(
+        "reference-validation",
+        "这个也做完了",
+        previous_messages=[{"note_id": "n1", "sequence_no": 9, "role": "user", "text": "记得完成随心记测试报告", "sensitive": False}],
+    )
+
+    assert len(rows) == 1
+    assert rows[0].scope["reference_status"] == "resolved"
+    assert rows[0].scope["antecedent_offset"] == -1
+
+
+def test_hybrid_reference_resolution_does_not_duplicate_rule_coverage(monkeypatch):
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
+    monkeypatch.setattr(
+        extractor,
+        "complete_json",
+        lambda **kwargs: {"candidates": [{
+            "memory_type": "task", "entity": "随心记", "attribute": "测试报告", "operation": "完成",
+            "canonical_topic": "完成随心记测试报告", "task_status": "done", "old_value": None,
+            "new_value": None, "content": "这个也做完了", "evidence_span": "这个也做完了",
+            "confidence": 0.96, "importance": 0.8, "should_store": True, "extraction_reason": "近三轮任务指代",
+            "entities": ["随心记"], "reference_status": "resolved", "antecedent_note_id": "n1",
+            "antecedent_offset": None, "antecedent_evidence_span": "记得完成随心记测试报告", "resolution_confidence": 0.96,
+        }]},
+    )
+    rows = extractor.extract_candidates(
+        "reference-hybrid-dedupe",
+        "这个也做完了",
+        previous_messages=[{"note_id": "n1", "sequence_no": 9, "role": "user", "text": "记得完成随心记测试报告", "sensitive": False}],
+    )
+
+    assert len(rows) == 1
+    assert rows[0].scope["reference_status"] == "resolved"
 
 
 def test_llm_extractor_falls_back_to_rules(monkeypatch):

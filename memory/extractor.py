@@ -662,6 +662,7 @@ def extract_llm_candidates(
     model_text = _strip_diagnostic_prefix(raw)
     if _should_skip_text(model_text):
         return []
+    reference_messages = _recent_reference_messages(previous_messages) if _REFERENCE_SIGNAL_RE.search(model_text) else []
     payload = {
         "note_id": note_id,
         "text": model_text,
@@ -671,7 +672,7 @@ def extract_llm_candidates(
             {"atom_id": f"a{clause.index + 1}", "text": clause.text}
             for clause in split_clauses(model_text)
         ],
-        "previous_messages": list(previous_messages or [])[:3] if _REFERENCE_SIGNAL_RE.search(model_text) else [],
+        "previous_messages": [item for item, _offset in reference_messages],
     }
     data = complete_json(
         system_prompt=MEMORY_EXTRACTOR_V3_PROMPT if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED else MEMORY_EXTRACTOR_PROMPT,
@@ -687,7 +688,7 @@ def extract_llm_candidates(
         if not isinstance(row, dict):
             continue
         if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED:
-            structured = parse_extracted_candidate(row, raw)
+            structured = parse_extracted_candidate(_validate_llm_reference_row(row, previous_messages), raw)
             if structured is None:
                 LAST_EXTRACTION_DIAGNOSTICS["llm_schema_rejected_count"] = int(LAST_EXTRACTION_DIAGNOSTICS.get("llm_schema_rejected_count") or 0) + 1
                 log_event(
@@ -807,16 +808,8 @@ def _rule_hints(note_id: str, text: str, classification: dict[str, Any] | None =
     ]
 
 
-def _reference_antecedent_task(
-    note_id: str,
-    previous_messages: list[dict[str, Any]] | None,
-) -> MemoryCandidate | None:
-    """Resolve one recent user task for a short current reference.
-
-    This is an identity-only fallback: the antecedent text is never emitted
-    as a second candidate or persisted as a new fact. It only supplies the
-    task identity that the current utterance updates.
-    """
+def _recent_reference_messages(previous_messages: list[dict[str, Any]] | None) -> list[tuple[dict[str, Any], int]]:
+    """Return at most three eligible prior user messages with -1/-2/-3 offsets."""
     usable = [
         item for item in (previous_messages or [])
         if isinstance(item, dict)
@@ -824,14 +817,94 @@ def _reference_antecedent_task(
         and not bool(item.get("sensitive"))
         and str(item.get("text") or "").strip()
     ]
-    if not usable:
-        return None
     usable.sort(key=lambda item: int(item.get("sequence_no") or 0), reverse=True)
+    resolved: list[tuple[dict[str, Any], int]] = []
+    for index, raw_item in enumerate(usable[:3], start=1):
+        item = dict(raw_item)
+        item["offset"] = -index
+        resolved.append((item, -index))
+    return resolved
+
+
+def _validate_llm_reference_row(
+    row: dict[str, Any],
+    previous_messages: list[dict[str, Any]] | None,
+) -> dict[str, Any]:
+    """Validate resolved-reference metadata against the supplied three-turn context.
+
+    The LLM identifies the antecedent; this helper verifies it is an allowed
+    prior user message and derives the auditable offset from that message.
+    The offset is contextual metadata, not a fact the model should need to
+    calculate itself.
+    """
+    normalized = dict(row)
+    if str(normalized.get("reference_status") or "not_applicable") != "resolved":
+        return normalized
+    context = _recent_reference_messages(previous_messages)
+    note_id = str(normalized.get("antecedent_note_id") or "").strip()
+    matched = next(
+        ((item, offset) for item, offset in context if note_id and str(item.get("note_id") or "") == note_id),
+        None,
+    )
+    if matched is None:
+        # Without a trusted note id, accept an evidence-only resolution only
+        # when exactly one eligible prior message contains it.
+        evidence = str(normalized.get("antecedent_evidence_span") or "").strip()
+        evidence_matches = [
+            (item, offset)
+            for item, offset in context
+            if evidence and evidence in str(item.get("text") or "")
+        ]
+        if len(evidence_matches) == 1:
+            matched = evidence_matches[0]
+    if matched is None:
+        normalized.update(
+            {
+                "reference_status": "unresolved",
+                "antecedent_note_id": None,
+                "antecedent_offset": None,
+                "antecedent_evidence_span": None,
+                "resolution_confidence": None,
+            }
+        )
+        return normalized
+    item, offset = matched
+    source = str(item.get("text") or "").strip()
+    supplied_evidence = str(normalized.get("antecedent_evidence_span") or "").strip()
+    if supplied_evidence and supplied_evidence not in source:
+        normalized.update(
+            {
+                "reference_status": "unresolved",
+                "antecedent_note_id": None,
+                "antecedent_offset": None,
+                "antecedent_evidence_span": None,
+                "resolution_confidence": None,
+            }
+        )
+        return normalized
+    normalized["antecedent_note_id"] = str(item.get("note_id") or "") or None
+    normalized["antecedent_offset"] = offset
+    normalized["antecedent_evidence_span"] = supplied_evidence or source
+    return normalized
+
+
+def _reference_antecedent_task(
+    note_id: str,
+    previous_messages: list[dict[str, Any]] | None,
+) -> tuple[MemoryCandidate, dict[str, Any], int] | None:
+    """Resolve one recent user task for a short current reference.
+
+    This is an identity-only fallback: the antecedent text is never emitted
+    as a second candidate or persisted as a new fact. It only supplies the
+    task identity that the current utterance updates.
+    """
+    context = _recent_reference_messages(previous_messages)
+    if not context:
+        return None
     lifecycle_markers = (
         "任务", "待办", "完成", "做完", "继续", "处理", "评测", "开发", "修改", "修复", "实现", "准备", "计划",
     )
-    antecedents: list[MemoryCandidate] = []
-    for item in usable[:3]:
+    for item, offset in context:
         source = str(item.get("text") or "").strip()
         if re.search(r"(?:整理学习计划|讨论了其他任务)", source):
             continue
@@ -861,11 +934,11 @@ def _reference_antecedent_task(
             object_value=topic,
             scope={"scope": "global", "canonical_topic": topic, "operation": "维护"},
         )
-        antecedents.append(antecedent)
-    # A bare demonstrative must not choose one of several recent tasks based
-    # solely on recency.  It is safer to leave this ambiguous update out than
-    # to mutate an arbitrary task identity.
-    return antecedents[0] if len(antecedents) == 1 else None
+        # The nearest identifiable task is the only deterministic candidate
+        # used for a bare demonstrative.  Its offset is derived from the
+        # filtered recent-user-message context, never hard-coded.
+        return antecedent, item, offset
+    return None
 
 
 def _is_reference_only_task_text(text: str) -> bool:
@@ -896,11 +969,12 @@ def _resolve_reference_fallback(
         return normalized
     if not _REFERENCE_SIGNAL_RE.search(current_text):
         return candidates
-    antecedent = _reference_antecedent_task(note_id, previous_messages)
-    if antecedent is None:
+    resolved_antecedent = _reference_antecedent_task(note_id, previous_messages)
+    if resolved_antecedent is None:
         if _is_reference_only_task_text(current_text):
             return [candidate for candidate in candidates if candidate.memory_type != "task"]
         return candidates
+    antecedent, antecedent_item, antecedent_offset = resolved_antecedent
     current_tasks = [candidate for candidate in candidates if candidate.memory_type == "task"]
     if current_tasks:
         resolved: list[MemoryCandidate] = []
@@ -915,11 +989,8 @@ def _resolve_reference_fallback(
                     "operation": antecedent.scope.get("operation"),
                     "task_family_key": antecedent.scope.get("task_family_key"),
                     "reference_status": "resolved",
-                    "antecedent_note_id": next(
-                        (str(item.get("note_id")) for item in (previous_messages or []) if str(item.get("text") or "") == str(antecedent.evidence_span or "")),
-                        None,
-                    ),
-                    "antecedent_offset": -1,
+                    "antecedent_note_id": str(antecedent_item.get("note_id") or "") or None,
+                    "antecedent_offset": antecedent_offset,
                     "antecedent_evidence_span": antecedent.evidence_span,
                     "resolution_confidence": 0.82,
                 }
@@ -1034,15 +1105,22 @@ def _merge_uncovered_rule_candidates(
         """
         if model_candidate.memory_type != rule_candidate.memory_type:
             return False
-        if model_candidate.effective_memory_key != rule_candidate.effective_memory_key:
-            return False
         model_evidence = re.sub(r"\s+", " ", str(model_candidate.evidence_span or "").strip())
         rule_evidence = re.sub(r"\s+", " ", str(rule_candidate.evidence_span or "").strip())
-        return bool(
+        same_evidence = bool(
             model_evidence
             and rule_evidence
             and (model_evidence in rule_evidence or rule_evidence in model_evidence)
         )
+        if not same_evidence:
+            return False
+        # A context-validated LLM reference carries an exact antecedent note
+        # id.  Rule candidates have not received that identity until after
+        # Hybrid coverage merging, so their provisional keys can differ even
+        # though both candidates describe the same current utterance.
+        if str((model_candidate.scope or {}).get("reference_status") or "") == "resolved":
+            return True
+        return model_candidate.effective_memory_key == rule_candidate.effective_memory_key
 
     # When both extractors describe the same evidence, keep the LLM's richer
     # wording/key but backfill deterministic fields that the model omitted
