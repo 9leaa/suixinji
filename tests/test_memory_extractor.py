@@ -8,6 +8,32 @@ import pytest
 
 from memory import extractor
 from memory.extractor import extract_candidates
+from memory.models import MemoryCandidate
+
+
+def _preference_candidate(
+    *,
+    content: str,
+    evidence_span: str,
+    topic: str,
+    memory_key: str,
+    polarity: str = "positive",
+    qualifiers: list[str] | None = None,
+) -> MemoryCandidate:
+    return MemoryCandidate(
+        memory_type="preference",
+        content=content,
+        importance=0.8,
+        confidence=0.9,
+        note_id="preference-hybrid",
+        subject="用户",
+        predicate="preference",
+        object_value=topic,
+        evidence_span=evidence_span,
+        memory_key=memory_key,
+        polarity=polarity,
+        scope={"scope": "global", "qualifiers": qualifiers or []},
+    )
 
 
 def test_extractor_filters_low_value_text():
@@ -162,6 +188,45 @@ def test_llm_extractor_returns_structured_candidates(monkeypatch):
     assert candidates[0].candidate_id == extractor.candidate_id_for("note-1", "task", "准备 Agent 实习")
 
 
+def test_llm_preference_qualifiers_are_grounded_and_separate_from_topic(monkeypatch):
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
+    monkeypatch.setattr(
+        extractor,
+        "complete_json",
+        lambda **kwargs: {
+            "candidates": [
+                {
+                    "memory_type": "preference",
+                    "entity": "用户",
+                    "attribute": "preference",
+                    "operation": None,
+                    "canonical_topic": "无糖浓咖啡",
+                    "task_status": None,
+                    "polarity": "positive",
+                    "scope": None,
+                    "qualifiers": ["sugar_free", "strong", "invented"],
+                    "old_value": None,
+                    "new_value": "无糖浓咖啡",
+                    "content": "用户喜欢无糖浓咖啡",
+                    "evidence_span": "喜欢无糖浓咖啡",
+                    "confidence": 0.91,
+                    "importance": 0.8,
+                    "should_store": True,
+                    "extraction_reason": "明确偏好",
+                    "entities": ["咖啡"],
+                }
+            ]
+        },
+    )
+
+    candidates = extractor.extract_candidates("llm-pref-qualifiers", "我喜欢无糖浓咖啡")
+
+    assert len(candidates) == 1
+    assert candidates[0].object_value == "咖啡"
+    assert candidates[0].polarity == "positive"
+    assert candidates[0].scope["qualifiers"] == ["sugar_free", "strong"]
+
+
 def test_rule_extractor_keeps_mixed_atoms_and_multiple_preferences(monkeypatch):
     monkeypatch.setattr(extractor.settings, "MEMORY_CLAUSE_EXTRACTION_ENABLED", True)
     mixed = extractor.extract_rule_candidates(
@@ -247,6 +312,77 @@ def test_hybrid_prefers_known_llm_polarity_and_backfills_unknown(monkeypatch):
     assert extract_with("unknown")[0].polarity == "positive"
 
 
+def test_hybrid_merges_one_preference_when_only_the_qualifier_key_drifts():
+    model = _preference_candidate(
+        content="用户喜欢无糖咖啡",
+        evidence_span="喜欢无糖咖啡",
+        topic="咖啡",
+        memory_key="preference:用户:咖啡:global",
+    )
+    rule = _preference_candidate(
+        content="用户喜欢无糖咖啡",
+        evidence_span="喜欢无糖咖啡",
+        topic="咖啡",
+        memory_key="preference:用户:咖啡:global:sugarfree",
+        qualifiers=["sugar_free"],
+    )
+
+    rows = extractor._merge_uncovered_rule_candidates([model], [rule])
+
+    assert len(rows) == 1
+    assert rows[0].scope["qualifiers"] == ["sugar_free"]
+
+
+def test_hybrid_preference_merge_keeps_distinct_same_sentence_topics():
+    model = _preference_candidate(
+        content="用户喜欢咖啡",
+        evidence_span="喜欢咖啡和绿茶",
+        topic="咖啡",
+        memory_key="preference:用户:咖啡:global",
+    )
+    coffee_rule = _preference_candidate(
+        content="用户喜欢咖啡",
+        evidence_span="喜欢咖啡",
+        topic="咖啡",
+        memory_key="preference:用户:咖啡:global:sugarfree",
+        qualifiers=["sugar_free"],
+    )
+    tea_rule = _preference_candidate(
+        content="用户喜欢绿茶",
+        evidence_span="绿茶",
+        topic="绿茶",
+        memory_key="preference:用户:绿茶:global",
+    )
+
+    rows = extractor._merge_uncovered_rule_candidates([model], [coffee_rule, tea_rule])
+
+    assert len(rows) == 2
+    assert {row.object_value for row in rows} == {"咖啡", "绿茶"}
+    assert any(row.extraction_reason == "hybrid_atom_coverage_repair" and row.object_value == "绿茶" for row in rows)
+
+
+def test_hybrid_preference_merge_never_combines_opposite_polarities():
+    model = _preference_candidate(
+        content="用户不喜欢咖啡",
+        evidence_span="不喜欢咖啡",
+        topic="咖啡",
+        memory_key="preference:用户:咖啡:global",
+        polarity="negative",
+    )
+    rule = _preference_candidate(
+        content="用户喜欢咖啡",
+        evidence_span="不喜欢咖啡",
+        topic="咖啡",
+        memory_key="preference:用户:咖啡:global:sugarfree",
+        polarity="positive",
+        qualifiers=["sugar_free"],
+    )
+
+    rows = extractor._merge_uncovered_rule_candidates([model], [rule])
+
+    assert len(rows) == 2
+
+
 def test_hybrid_does_not_duplicate_single_clause_llm_candidate(monkeypatch):
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
     monkeypatch.setattr(
@@ -262,6 +398,161 @@ def test_hybrid_does_not_duplicate_single_clause_llm_candidate(monkeypatch):
         }]},
     )
     rows = extractor.extract_candidates("single-clause", "数据库迁移已经完成。")
+    assert len(rows) == 1
+    assert rows[0].extractor_type == "llm"
+
+
+def test_hybrid_task_coverage_uses_stable_goal_not_exact_surface_key():
+    model = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="task", content="继续处理检索质量优化", importance=0.9, confidence=0.9,
+            evidence_span="继续处理检索质量优化", subject="用户", predicate="检索质量优化",
+            object_value="检索质量优化", task_status="todo", extractor_type="llm",
+            scope={"operation": "处理", "scope": "global"},
+        )
+    )
+    rule = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="task", content="继续处理检索质量优化第一轮", importance=0.8, confidence=0.8,
+            evidence_span="继续处理检索质量优化第一轮", subject="用户", predicate="检索质量优化第一轮",
+            object_value="检索质量优化第一轮", task_status="todo", extractor_type="rules",
+            scope={"operation": "维护", "scope": "global"},
+        )
+    )
+
+    rows = extractor._merge_uncovered_rule_candidates([model], [rule])
+
+    assert len(rows) == 1
+    assert rows[0].extractor_type == "llm"
+
+
+def test_hybrid_task_coverage_merges_a_self_contained_project_reference():
+    model = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="task", content="这个项目还要继续做", importance=0.9, confidence=0.9,
+            evidence_span="这个项目还要继续做", subject="用户", predicate="这个项目项目",
+            object_value="项目", task_status="todo", extractor_type="llm", scope={"operation": "制作", "scope": "global"},
+        )
+    )
+    rule = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="task", content="这个项目还要继续做", importance=0.8, confidence=0.8,
+            evidence_span="这个项目还要继续做", subject="用户", predicate="这个项目还要继续",
+            object_value="这个项目还要继续做", task_status="todo", extractor_type="rules", scope={"operation": "制作", "scope": "global"},
+        )
+    )
+
+    assert len(extractor._merge_uncovered_rule_candidates([model], [rule])) == 1
+
+
+def test_hybrid_task_coverage_merges_a_shared_blocker_with_title_noise():
+    model = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="task", content="飞书接入改造其实还在等测试数据", importance=0.9, confidence=0.9,
+            evidence_span="飞书接入改造其实还在等测试数据", subject="用户", predicate="飞书接入改造状态",
+            object_value="状态", task_status="todo", extractor_type="llm",
+            scope={"operation": "等待", "scope": "global", "blocker": "等待测试数据"},
+        )
+    )
+    rule = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="task", content="飞书接入改造其实还在等测试数据", importance=0.8, confidence=0.8,
+            evidence_span="飞书接入改造其实还在等测试数据", subject="用户", predicate="飞书接入改造其实还在等测试数据",
+            object_value="飞书接入改造其实还在等测试数据", task_status="todo", extractor_type="rules",
+            scope={"operation": "维护", "scope": "global", "blocker": "等待测试数据"},
+        )
+    )
+
+    assert len(extractor._merge_uncovered_rule_candidates([model], [rule])) == 1
+
+
+def test_hybrid_semantic_coverage_keeps_llm_stable_slot_over_generic_rule_fact():
+    model = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="semantic", content="用户主要使用MacBook Pro", importance=0.9, confidence=0.9,
+            evidence_span="主要使用MacBook Pro", subject="用户", predicate="primary_device",
+            object_value="MacBook Pro", extractor_type="llm", scope={"scope": "current"},
+        )
+    )
+    rule = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="semantic", content="用户主要使用MacBook Pro", importance=0.8, confidence=0.8,
+            evidence_span="主要使用MacBook Pro", subject="用户", predicate="fact",
+            object_value="主要使用MacBook Pro", extractor_type="rules", scope={"scope": "current"},
+        )
+    )
+
+    rows = extractor._merge_uncovered_rule_candidates([model], [rule])
+
+    assert len(rows) == 1
+    assert rows[0].extractor_type == "llm"
+    assert rows[0].predicate == "primary_device"
+
+
+def test_hybrid_semantic_coverage_keeps_ambiguous_generic_rule_fact():
+    evidence = "我家在北京且主要使用MacBook Pro"
+    location = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="semantic", content="用户家在北京", importance=0.9, confidence=0.9,
+            evidence_span=evidence, subject="用户", predicate="location", object_value="北京",
+            extractor_type="llm", scope={"scope": "current"},
+        )
+    )
+    device = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="semantic", content="用户主要使用MacBook Pro", importance=0.9, confidence=0.9,
+            evidence_span=evidence, subject="用户", predicate="primary_device", object_value="MacBook Pro",
+            extractor_type="llm", scope={"scope": "current"},
+        )
+    )
+    rule = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="semantic", content=evidence, importance=0.8, confidence=0.8,
+            evidence_span=evidence, subject="用户", predicate="fact", object_value=evidence,
+            extractor_type="rules", scope={"scope": "current"},
+        )
+    )
+
+    rows = extractor._merge_uncovered_rule_candidates([location, device], [rule])
+
+    assert len(rows) == 3
+    assert {row.predicate for row in rows} == {"location", "primary_device", "fact"}
+
+
+def test_hybrid_semantic_coverage_keeps_rule_when_llm_has_no_semantic_candidate():
+    rule = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="semantic", content="用户主要使用MacBook Pro", importance=0.8, confidence=0.8,
+            evidence_span="主要使用MacBook Pro", subject="用户", predicate="fact",
+            object_value="主要使用MacBook Pro", extractor_type="rules", scope={"scope": "current"},
+        )
+    )
+
+    rows = extractor._merge_uncovered_rule_candidates([], [rule])
+
+    assert len(rows) == 1
+    assert rows[0].predicate == "fact"
+    assert rows[0].extractor_type == "rules"
+
+
+def test_hybrid_episodic_coverage_accepts_a_concise_event_title():
+    model = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="episodic", content="昨天在学校参加了项目评审", importance=0.9, confidence=0.9,
+            evidence_span="昨天在学校参加了项目评审", subject="用户", predicate="event",
+            object_value="参加项目评审", extractor_type="llm", scope={"scope": "history"},
+        )
+    )
+    rule = extractor.normalize_candidate_v3(
+        MemoryCandidate(
+            memory_type="episodic", content="昨天在学校参加了项目评审", importance=0.8, confidence=0.8,
+            evidence_span="昨天在学校参加了项目评审", subject="用户", predicate="event",
+            object_value="昨天在学校参加了项目评审", extractor_type="rules", scope={"scope": "history"},
+        )
+    )
+
+    rows = extractor._merge_uncovered_rule_candidates([model], [rule])
+
     assert len(rows) == 1
     assert rows[0].extractor_type == "llm"
 
@@ -294,7 +585,7 @@ def test_rule_reference_fallback_inherits_recent_task_identity():
     assert "第三阶段评测" in str(rows[0].scope["canonical_topic"])
 
 
-def test_rule_reference_fallback_uses_nearest_identifiable_task_offset():
+def test_rule_reference_fallback_rejects_multiple_identifiable_task_offsets():
     previous = [
         {"note_id": "n-old-task", "sequence_no": 7, "role": "user", "text": "数据库迁移还在继续处理。", "sensitive": False},
         {"note_id": "n-chat", "sequence_no": 8, "role": "user", "text": "今天心情不错。", "sensitive": False},
@@ -302,9 +593,18 @@ def test_rule_reference_fallback_uses_nearest_identifiable_task_offset():
     ]
     rows = extractor.extract_candidates("reference-near", "这个也做完了。", previous_messages=previous)
 
-    assert len(rows) == 1
-    assert rows[0].scope["antecedent_note_id"] == "n-near-task"
-    assert rows[0].scope["antecedent_offset"] == -1
+    assert rows == []
+
+
+def test_rule_reference_fallback_rejects_ambiguous_recent_tasks():
+    previous = [
+        {"note_id": "n-old-task", "sequence_no": 8, "role": "user", "text": "数据库迁移还在继续处理。", "sensitive": False},
+        {"note_id": "n-near-task", "sequence_no": 9, "role": "user", "text": "随心记第三阶段评测还没做完。", "sensitive": False},
+    ]
+
+    rows = extractor.extract_candidates("reference-ambiguous", "这个继续做吧。", previous_messages=previous)
+
+    assert rows == []
 
 
 def test_rule_reference_fallback_derives_second_user_message_offset():

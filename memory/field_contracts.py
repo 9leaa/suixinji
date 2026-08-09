@@ -30,6 +30,7 @@ TASK_OPERATION_ALIASES = {
     "制作": "制作", "做": "制作", "做完": "制作", "开发": "开发", "实现": "实现", "修复": "修复", "提交": "提交", "上线": "上线",
     "完善": "完善", "部署": "部署", "发布": "发布", "迁移": "迁移", "整理": "整理", "测试": "测试",
     "审查": "审查", "评测": "评测", "执行": "执行", "完成": "执行",
+    "处理": "处理", "维护": "维护",
 }
 TASK_STATUS_ALIASES = {
     "todo": "todo", "pending": "todo", "in_progress": "todo", "in progress": "todo", "进行中": "todo",
@@ -218,22 +219,35 @@ def preference_topic_with_source(
     """Choose a preference topic and identify whether it came from LLM/rules."""
     llm_topic = clean_text(value_hint) or clean_text(topic_hint)
     normalized_source = normalize_content(source_text)
+    rule_topic = None
+    try:
+        from memory.policies.preference import preference_signature
+
+        rule_topic = clean_text(preference_signature(source_text).topic)
+    except Exception:
+        pass
+    llm_canonical_topic = None
+    try:
+        from memory.policies.preference import preference_signature
+
+        llm_canonical_topic = clean_text(preference_signature(llm_topic or "").topic)
+    except Exception:
+        pass
     llm_supported = bool(
         llm_topic
         and llm_topic not in _GENERIC_PREFERENCE_TOPICS
         and normalize_content(llm_topic) in normalized_source
     )
-    if llm_supported:
-        return llm_topic, "llm"
-
-    try:
-        from memory.policies.preference import preference_signature
-        topic = preference_signature(source_text).topic
-        if topic:
-            return clean_text(topic), "rules"
-    except Exception:
-        pass
-    return llm_topic, None
+    # A rule-derived specific topic is the stable identity.  The LLM may
+    # phrase it with modifiers ("无糖咖啡"), which are represented separately
+    # as qualifiers rather than making a second Topic/key.
+    if rule_topic:
+        if llm_supported and llm_canonical_topic and normalize_content(llm_canonical_topic) == normalize_content(rule_topic):
+            return rule_topic, "llm_validated"
+        return rule_topic, "rules"
+    if llm_supported and llm_canonical_topic:
+        return llm_canonical_topic, "llm"
+    return llm_canonical_topic or llm_topic, None
 
 
 def preference_topic(source_text: str, topic_hint: Any = None, value_hint: Any = None) -> str | None:

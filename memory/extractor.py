@@ -22,12 +22,17 @@ from core.model_router import route_model
 from core.observability import log_event
 from core.sensitive import redact_sensitive_text
 from memory.candidate_validator import contains_sensitive_data
-from memory.canonicalizer import is_task_lifecycle_statement, normalize_candidate_v3
+from memory.canonicalizer import is_task_lifecycle_statement, normalize_candidate_v3, task_identity_compatible
 from memory.clause_splitter import split_clauses
 from memory.extraction_schema import parse_extracted_candidate
-from memory.field_contracts import preference_scope_with_source, task_closure_reason, task_progress_metadata
-from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for, candidate_id_for_evidence, memory_key_for
-from memory.policies.preference import preference_polarity, preference_signature
+from memory.field_contracts import (
+    normalize_semantic_attribute,
+    preference_scope_with_source,
+    task_closure_reason,
+    task_progress_metadata,
+)
+from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for, candidate_id_for_evidence, memory_key_for, normalize_content
+from memory.policies.preference import preference_polarity, preference_signature, scopes_compatible, topic_compatibility
 from memory.prompts import MEMORY_EXTRACTOR_PROMPT, MEMORY_EXTRACTOR_V3_PROMPT
 from memory.task_state import infer_task_status
 
@@ -710,6 +715,7 @@ def extract_llm_candidates(
                 "old_value": structured.old_value,
                 "new_value": structured.new_value,
                 "scope": structured.scope,
+                "qualifiers": structured.qualifiers,
                 "atom_id": f"a{clause_index + 1}" if clause_index is not None else None,
                 "reference_status": structured.reference_status,
                 "antecedent_note_id": structured.antecedent_note_id,
@@ -904,6 +910,7 @@ def _reference_antecedent_task(
     lifecycle_markers = (
         "任务", "待办", "完成", "做完", "继续", "处理", "评测", "开发", "修改", "修复", "实现", "准备", "计划",
     )
+    matches: list[tuple[MemoryCandidate, dict[str, Any], int]] = []
     for item, offset in context:
         source = str(item.get("text") or "").strip()
         if re.search(r"(?:整理学习计划|讨论了其他任务)", source):
@@ -932,19 +939,24 @@ def _reference_antecedent_task(
             subject=entity,
             predicate=attribute,
             object_value=topic,
-            scope={"scope": "global", "canonical_topic": topic, "operation": "维护"},
+            # This internal identity-only candidate already has a grounded
+            # antecedent topic.  Mark it resolved so canonicalization does
+            # not re-parse an action embedded inside that title (for example
+            # the “迁移” in “数据库迁移还在继续处理”).
+            scope={"scope": "global", "canonical_topic": topic, "operation": "维护", "reference_status": "resolved"},
         )
-        # The nearest identifiable task is the only deterministic candidate
-        # used for a bare demonstrative.  Its offset is derived from the
-        # filtered recent-user-message context, never hard-coded.
-        return antecedent, item, offset
-    return None
+        matches.append((antecedent, item, offset))
+    # A bare demonstrative may only inherit when one task is identifiable in
+    # the admissible three-message window.  “这个继续做吧” with two recent
+    # unfinished tasks has no safe identity; dropping it is preferable to
+    # silently updating whichever task happened to be nearest.
+    return matches[0] if len(matches) == 1 else None
 
 
 def _is_reference_only_task_text(text: str) -> bool:
     """Whether text is an ambiguous demonstrative rather than a task title."""
     compact = re.sub(r"[\s。！？!?；;，,]+", "", str(text or ""))
-    return bool(re.fullmatch(r"(?:这个|那个|它|这件事|上面那个)(?:继续做?|继续|做下去|完成它|取消它|就按这个)(?:吧)?", compact))
+    return bool(re.fullmatch(r"(?:这个|那个|它|这件事|上面那个)(?:继续做?|继续|做下去|完成它|也(?:做完|完成)了?|取消它|就按这个)(?:吧)?", compact))
 
 
 def _resolve_reference_fallback(
@@ -1019,7 +1031,6 @@ def _dedupe(candidates: list[MemoryCandidate]) -> list[MemoryCandidate]:
     for candidate in candidates:
         key = (
             candidate.note_id,
-            candidate.clause_index,
             candidate.memory_type,
             candidate.effective_memory_key,
             candidate.evidence_span or candidate.normalized_content,
@@ -1097,23 +1108,107 @@ def _merge_uncovered_rule_candidates(
     rule_candidates: list[MemoryCandidate],
 ) -> list[MemoryCandidate]:
     """Fill atom/type coverage gaps without blindly unioning both extractors."""
-    def is_same_fact(model_candidate: MemoryCandidate, rule_candidate: MemoryCandidate) -> bool:
-        """A model candidate covers a rule only with identical identity and evidence.
 
-        A clause may contain multiple preferences (for example coffee and tea),
-        so clause/type is deliberately not a coverage key.
-        """
-        if model_candidate.memory_type != rule_candidate.memory_type:
-            return False
+    def same_evidence(model_candidate: MemoryCandidate, rule_candidate: MemoryCandidate) -> bool:
         model_evidence = re.sub(r"\s+", " ", str(model_candidate.evidence_span or "").strip())
         rule_evidence = re.sub(r"\s+", " ", str(rule_candidate.evidence_span or "").strip())
-        same_evidence = bool(
+        return bool(
             model_evidence
             and rule_evidence
             and (model_evidence in rule_evidence or rule_evidence in model_evidence)
         )
-        if not same_evidence:
+
+    def preference_identity_compatible(model_candidate: MemoryCandidate, rule_candidate: MemoryCandidate) -> bool:
+        """Allow wording drift within one grounded preference assertion only."""
+        if topic_compatibility(model_candidate, rule_candidate) < 0.75:
             return False
+        if not scopes_compatible(model_candidate, rule_candidate):
+            return False
+        model_polarity = model_candidate.polarity
+        rule_polarity = rule_candidate.polarity
+        return not (
+            model_polarity in {"positive", "negative"}
+            and rule_polarity in {"positive", "negative"}
+            and model_polarity != rule_polarity
+        )
+
+    def episodic_identity_compatible(model_candidate: MemoryCandidate, rule_candidate: MemoryCandidate) -> bool:
+        """Match one grounded event despite concise versus full event titles."""
+        model_scope = model_candidate.scope or {}
+        rule_scope = rule_candidate.scope or {}
+        if str(model_scope.get("scope") or "history") != str(rule_scope.get("scope") or "history"):
+            return False
+        model_topic = normalize_content(str(model_scope.get("canonical_topic") or model_candidate.object_value or ""))
+        rule_topic = normalize_content(str(rule_scope.get("canonical_topic") or rule_candidate.object_value or ""))
+        if not model_topic or not rule_topic:
+            return False
+        shorter, longer = sorted((model_topic, rule_topic), key=len)
+        return model_topic == rule_topic or (len(shorter) >= 4 and shorter in longer)
+
+    def task_identity_compatible_for_same_evidence(model_candidate: MemoryCandidate, rule_candidate: MemoryCandidate) -> bool:
+        """Allow two tightly bounded Task title drifts in one source atom."""
+        if task_identity_compatible(model_candidate, rule_candidate):
+            return True
+        model_scope = model_candidate.scope or {}
+        rule_scope = rule_candidate.scope or {}
+        model_blocker = str(model_scope.get("blocker") or "").strip()
+        rule_blocker = str(rule_scope.get("blocker") or "").strip()
+        # A shared explicit blocker is mutable task detail, not an independent
+        # task, even if one extractor retained conversational filler words in
+        # its title.
+        if model_blocker and model_blocker == rule_blocker and model_candidate.task_status == rule_candidate.task_status:
+            return True
+        compact = re.sub(r"[\s。！？!?；;，,]+", "", str(model_candidate.evidence_span or ""))
+        # “这个项目还要继续做” is self-contained rather than a cross-turn
+        # reference.  Both extractors are describing its sole task atom.
+        return compact.startswith(("这个项目", "该项目"))
+
+    def semantic_identity_compatible_for_same_evidence(
+        model_candidate: MemoryCandidate,
+        rule_candidate: MemoryCandidate,
+    ) -> bool:
+        """Allow a stable LLM Semantic slot to cover one generic Rules copy.
+
+        Rules intentionally keep an unknown assertion as ``fact`` instead of
+        guessing a stable slot.  When the LLM has already provided a valid
+        stable slot for the *same evidence*, that generic copy is not a second
+        assertion and should only serve as deterministic field backfill.  Do
+        not use this to equate two different explicit Semantic slots.
+        """
+        if model_candidate.effective_memory_key == rule_candidate.effective_memory_key:
+            return True
+        rule_attribute = normalize_content(str(rule_candidate.predicate or ""))
+        if rule_attribute not in {"fact", "事实"}:
+            return False
+        # The model itself must expose the stable slot.  Do not infer one from
+        # the evidence here: otherwise a generic model ``fact`` could hide a
+        # Rules assertion merely because its wording resembles a known slot.
+        model_attribute = normalize_semantic_attribute(model_candidate.predicate)
+        return bool(model_attribute)
+
+    def is_same_fact(model_candidate: MemoryCandidate, rule_candidate: MemoryCandidate) -> bool:
+        """Decide whether an LLM candidate covers one rule candidate.
+
+        A clause may contain multiple preferences (for example coffee and tea),
+        so type/evidence alone is deliberately not a coverage key.
+        """
+        if model_candidate.memory_type != rule_candidate.memory_type:
+            return False
+        if not same_evidence(model_candidate, rule_candidate):
+            return False
+        if model_candidate.memory_type == "preference":
+            if model_candidate.effective_memory_key == rule_candidate.effective_memory_key:
+                return True
+            return preference_identity_compatible(model_candidate, rule_candidate)
+        if model_candidate.memory_type == "task":
+            # Task state, blockers, progress markers and surface operations
+            # are mutable detail.  For one grounded evidence assertion, use
+            # the shared Task-goal contract rather than exact canonical keys.
+            return task_identity_compatible_for_same_evidence(model_candidate, rule_candidate)
+        if model_candidate.memory_type == "episodic":
+            return episodic_identity_compatible(model_candidate, rule_candidate)
+        if model_candidate.memory_type == "semantic":
+            return semantic_identity_compatible_for_same_evidence(model_candidate, rule_candidate)
         # A context-validated LLM reference carries an exact antecedent note
         # id.  Rule candidates have not received that identity until after
         # Hybrid coverage merging, so their provisional keys can differ even
@@ -1122,24 +1217,92 @@ def _merge_uncovered_rule_candidates(
             return True
         return model_candidate.effective_memory_key == rule_candidate.effective_memory_key
 
+    def preference_pair_is_unambiguous(model_candidate: MemoryCandidate, rule_candidate: MemoryCandidate) -> bool:
+        """Do not let one broad preference candidate hide multiple rule atoms."""
+        if model_candidate.effective_memory_key == rule_candidate.effective_memory_key:
+            return True
+        model_matches = [
+            candidate
+            for candidate in model_candidates
+            if candidate.memory_type == "preference" and is_same_fact(candidate, rule_candidate)
+        ]
+        rule_matches = [
+            candidate
+            for candidate in rule_candidates
+            if candidate.memory_type == "preference" and is_same_fact(model_candidate, candidate)
+        ]
+        return len(model_matches) == 1 and len(rule_matches) == 1
+
+    def semantic_pair_is_unambiguous(model_candidate: MemoryCandidate, rule_candidate: MemoryCandidate) -> bool:
+        """Keep a generic Rules fact when one evidence span has several slots.
+
+        A broad model evidence span can legitimately contain, for example,
+        both ``location`` and ``primary_device``.  A generic Rules ``fact``
+        cannot tell which slot it represents, so only suppress it when the
+        evidence produces exactly one Semantic pairing on each side.
+        """
+        if model_candidate.effective_memory_key == rule_candidate.effective_memory_key:
+            return True
+        model_matches = [
+            candidate
+            for candidate in model_candidates
+            if candidate.memory_type == "semantic" and is_same_fact(candidate, rule_candidate)
+        ]
+        rule_matches = [
+            candidate
+            for candidate in rule_candidates
+            if candidate.memory_type == "semantic" and is_same_fact(model_candidate, candidate)
+        ]
+        return len(model_matches) == 1 and len(rule_matches) == 1
+
     # When both extractors describe the same evidence, keep the LLM's richer
     # wording/key but backfill deterministic fields that the model omitted
     # (notably task blocker/progress/closure and polarity).
     enriched_models: list[MemoryCandidate] = []
+    matched_preference_rule_indexes: set[int] = set()
     for model_candidate in model_candidates:
-        matching_rule = next(
+        matching_rule_index = next(
             (
-                rule_candidate
-                for rule_candidate in rule_candidates
+                index
+                for index, rule_candidate in enumerate(rule_candidates)
                 if is_same_fact(model_candidate, rule_candidate)
+                and (
+                    model_candidate.memory_type not in {"preference", "semantic"}
+                    or (
+                        model_candidate.memory_type == "preference"
+                        and
+                        index not in matched_preference_rule_indexes
+                        and preference_pair_is_unambiguous(model_candidate, rule_candidate)
+                    )
+                    or (
+                        model_candidate.memory_type == "semantic"
+                        and semantic_pair_is_unambiguous(model_candidate, rule_candidate)
+                    )
+                )
             ),
             None,
+        )
+        matching_rule = (
+            rule_candidates[matching_rule_index]
+            if matching_rule_index is not None
+            else None
         )
         if matching_rule is None:
             enriched_models.append(model_candidate)
             continue
+        if model_candidate.memory_type == "preference":
+            matched_preference_rule_indexes.add(matching_rule_index)
         merged_scope = dict(matching_rule.scope or {})
         merged_scope.update(model_candidate.scope or {})
+        if model_candidate.memory_type == "preference":
+            merged_scope["qualifiers"] = list(
+                dict.fromkeys(
+                    [
+                        *list((matching_rule.scope or {}).get("qualifiers") or []),
+                        *list((model_candidate.scope or {}).get("qualifiers") or []),
+                    ]
+                )
+            )
         task_status = model_candidate.task_status or matching_rule.task_status
         polarity = (
             matching_rule.polarity
@@ -1159,15 +1322,26 @@ def _merge_uncovered_rule_candidates(
             )
         )
     model_candidates = enriched_models
-    additions = [
-        replace(
-            candidate,
-            reason="hybrid_atom_coverage_repair",
-            extraction_reason="hybrid_atom_coverage_repair",
-        )
-        for candidate in rule_candidates
-        if not any(is_same_fact(model_candidate, candidate) for model_candidate in model_candidates)
-    ]
+    additions = []
+    for index, candidate in enumerate(rule_candidates):
+        if candidate.memory_type == "preference":
+            covered = index in matched_preference_rule_indexes
+        elif candidate.memory_type == "semantic":
+            covered = any(
+                is_same_fact(model_candidate, candidate)
+                and semantic_pair_is_unambiguous(model_candidate, candidate)
+                for model_candidate in model_candidates
+            )
+        else:
+            covered = any(is_same_fact(model_candidate, candidate) for model_candidate in model_candidates)
+        if not covered:
+            additions.append(
+                replace(
+                    candidate,
+                    reason="hybrid_atom_coverage_repair",
+                    extraction_reason="hybrid_atom_coverage_repair",
+                )
+            )
     return _dedupe([*model_candidates, *additions])
 
 
@@ -1196,7 +1370,7 @@ def extract_candidates(
             extract_rule_candidates(note_id, rule_text, classification),
             previous_messages,
         )
-        return _assign_evidence_atom_ids(rows, rule_text)
+        return _assign_evidence_atom_ids(_dedupe(rows), rule_text)
 
     global _LLM_CONNECTION_CIRCUIT_OPEN_UNTIL
     try:
@@ -1224,11 +1398,11 @@ def extract_candidates(
             replace(candidate, reason="llm_failed_rule_fallback", extraction_reason="llm_failed_rule_fallback")
             for candidate in extract_rule_candidates(note_id, rule_text, classification)
         ]
-        return _assign_evidence_atom_ids(_resolve_reference_fallback(note_id, rule_text, rows, previous_messages), rule_text)
+        return _assign_evidence_atom_ids(_dedupe(_resolve_reference_fallback(note_id, rule_text, rows, previous_messages)), rule_text)
 
     if mode == "llm":
         return _assign_evidence_atom_ids(
-            _resolve_reference_fallback(note_id, rule_text, model_candidates, previous_messages),
+            _dedupe(_resolve_reference_fallback(note_id, rule_text, model_candidates, previous_messages)),
             rule_text,
         )
     # Hybrid 只补 LLM 未覆盖的 atom/type，避免非空 LLM 吞掉规则已发现的独立事实，
@@ -1239,7 +1413,7 @@ def extract_candidates(
             _extract_atomic_rule_candidates(note_id, rule_text),
         )
         return _assign_evidence_atom_ids(
-            _resolve_reference_fallback(note_id, rule_text, merged, previous_messages),
+            _dedupe(_resolve_reference_fallback(note_id, rule_text, merged, previous_messages)),
             rule_text,
         )
     if not allow_llm_failure_fallback:
@@ -1252,4 +1426,4 @@ def extract_candidates(
         replace(candidate, reason="llm_empty_rule_fallback", extraction_reason="llm_empty_rule_fallback")
         for candidate in extract_rule_candidates(note_id, rule_text, classification)
     ]
-    return _assign_evidence_atom_ids(_resolve_reference_fallback(note_id, rule_text, rows, previous_messages), rule_text)
+    return _assign_evidence_atom_ids(_dedupe(_resolve_reference_fallback(note_id, rule_text, rows, previous_messages)), rule_text)

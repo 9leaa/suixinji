@@ -112,19 +112,6 @@ def _identity_adjudicated_decision(
         # Family membership improves recall/profile grouping but never aliases assertions.
         return _decision(candidate, "new", "insert", result["confidence"], reason)
     if relation == "uncertain" or target is None:
-        if candidate.memory_type == "task" and not candidate.memory_key:
-            family_key = str(candidate.scope.get("task_family_key") or "")
-            family_matches = [
-                memory
-                for memory in memories
-                if family_key and str(memory.scope.get("task_family_key") or "") == family_key
-            ]
-            if len(family_matches) == 1:
-                # An optional advisory saying “uncertain” cannot override
-                # the deterministic single-family continuation rule.  This
-                # covers a shorter continuation of an existing round without
-                # treating multiple instances as interchangeable.
-                return None
         return _decision(candidate, "ambiguous_match", "pending_review", result["confidence"], reason, [target] if target else [])
 
     if candidate.memory_type == "task" and relation == "same_instance":
@@ -317,30 +304,11 @@ def _adjudicate_v3(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> 
                 and memory.polarity
                 and candidate.polarity != memory.polarity
                 and preference_policy.scopes_compatible(candidate, memory)
+                and preference_policy.topic_compatibility(candidate, memory) >= 0.75
                 for memory in family_matches
             ):
                 best = max(family_matches, key=lambda memory: (memory.updated_at, memory.current_version))
                 return _decision(candidate, "conflict", "pending_review", max(candidate.confidence, 0.82), "preference_family_polarity_conflict", [best])
-        if candidate.memory_type == "task" and not candidate.memory_key:
-            family_key = str(candidate.scope.get("task_family_key") or "")
-            family_matches = [
-                memory for memory in memories
-                if family_key and str(memory.scope.get("task_family_key") or "") == family_key
-            ]
-            if len(family_matches) > 1:
-                return _decision(candidate, "conflict", "pending_review", max(candidate.confidence, 0.82), "multiple_task_instance_matches", family_matches)
-            if settings.STRONG_ESCALATION_ENABLED and len(family_matches) == 1:
-                # A single family candidate with no explicit instance key is
-                # the safe advisory fallback when the optional LLM route is
-                # unavailable.  It follows the same rule as the advisory
-                # prompt: a shorter wording does not become a new instance
-                # merely because the stored task has extra round detail.
-                target = family_matches[0]
-                if candidate.task_status == target.task_status:
-                    return _decision(candidate, "merge", "update", max(candidate.confidence, 0.82), "identity_fallback:same_family_single_candidate", [target])
-                if task_policy.can_transition(target.task_status, candidate.task_status):
-                    return _decision(candidate, "update_task", "update_task", max(candidate.confidence, 0.82), "identity_fallback:same_family_single_candidate", [target])
-                return _decision(candidate, "conflict", "pending_review", max(candidate.confidence, 0.82), "identity_fallback:invalid_transition", [target])
         # 默认要求精确身份匹配；guard 只允许一个窄例外：active 短任务名可被后续更具体标题细化。
         # 检索只负责提供候选，是否允许该变更仍以 Relation Guard 为准。
         refinements = [

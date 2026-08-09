@@ -20,7 +20,7 @@ from memory.field_contracts import (
     normalize_operation,
     normalize_semantic_attribute,
     normalize_task_status,
-    preference_topic,
+    preference_topic_with_source,
     semantic_topic,
     task_attribute,
     task_closure_reason,
@@ -45,6 +45,9 @@ _TASK_OPERATION_ALIASES = {
     "修复": "修复",
     "完善": "完善",
     "修改": "修改",
+    "处理": "处理",
+    "维护": "维护",
+    "执行": "执行",
     "部署": "部署",
     "发布": "发布",
 }
@@ -59,6 +62,16 @@ _TASK_IDENTITY_NOISE = (
     "开发", "实现", "修复", "完善", "修改", "部署", "发布", "继续", "准备", "计划",
     "的", "也", "了", "一下", "呢", "啊", "呀", "哦", "啦",
 )
+_TASK_IDENTITY_PREFIX_RE = re.compile(
+    r"^(?:继续(?:处理|做)?|正在(?:处理|做)?|开始(?:处理|做)?|处理|维护|执行|完成|做完|修复|完善|测试|评测|部署|发布|开发|实现|迁移|更换|替换|修改|整理|审查)+"
+)
+_TASK_IDENTITY_PROGRESS_SUFFIX_RE = re.compile(
+    r"(?:第[一二三四五六七八九十\d]+(?:轮|阶段|次)|[一二三四五六七八九十\d]+(?:轮|阶段|次))$"
+)
+_TASK_IDENTITY_DETAIL_BOUNDARY_RE = re.compile(
+    r"(?:现在|目前|当前)?(?:被|因|由于|卡在|阻塞|等待).*$"
+)
+_TASK_IDENTITY_ACTION_WORDS = frozenset(_TASK_OPERATION_ALIASES)
 _STABLE_SEMANTIC_ATTRIBUTES = {
     "location": "居住地",
     "current_project": "当前项目",
@@ -104,18 +117,39 @@ def _task_identity_topic(value: str | None) -> str:
         返回 `str`，通常是格式化后的文本、标识或路径。
     """
     normalized = normalize_content(value or "")
+    # Blockers and progress describe the lifecycle of a task, not the task
+    # itself.  Keep the business goal stable when a user says the same work
+    # is blocked, resumed, or in a numbered pass.
+    normalized = _TASK_IDENTITY_DETAIL_BOUNDARY_RE.sub("", normalized)
+    normalized = _TASK_IDENTITY_PREFIX_RE.sub("", normalized)
+    normalized = _TASK_IDENTITY_PROGRESS_SUFFIX_RE.sub("", normalized)
     for marker in sorted(_TASK_IDENTITY_NOISE, key=len, reverse=True):
+        # Action words have already been removed only when they are a leading
+        # surface verb.  Removing them everywhere turns the noun phrase
+        # “数据库迁移” into “数据库”, which is an unsafe family identity.
+        if marker in _TASK_IDENTITY_ACTION_WORDS:
+            continue
         normalized = normalized.replace(normalize_content(marker), "")
     return normalized
 
 
-def task_identity_compatible(candidate: Any, memory: Any) -> bool:
-    """函数功能：`task_identity_compatible` 负责处理 task identity compatible，服务于本文件职责：稳定身份和 canonical key。
-    传参：
-        candidate: candidate 参数，由调用方传入，类型为 `Any`。
-        memory: memory 参数，由调用方传入，类型为 `Any`。
-    返回结果说明：
-        返回 `bool`，表示判断、写入或处理是否成功。
+def _task_identity_topics(value: Any) -> list[str]:
+    """Return grounded, stable Task-goal projections for compatibility checks."""
+    scope = getattr(value, "scope", {}) or {}
+    raw_topics = (
+        getattr(value, "predicate", None),
+        scope.get("canonical_topic"),
+        getattr(value, "object_value", None),
+    )
+    topics = [_task_identity_topic(str(item or "")) for item in raw_topics]
+    return list(dict.fromkeys(topic for topic in topics if topic and topic not in _GENERIC_TASK_ATTRIBUTES))
+
+
+def task_family_compatible(candidate: Any, memory: Any) -> bool:
+    """Whether two Task records are related enough for bounded recall.
+
+    Family compatibility is deliberately broader than an instance identity.
+    It may be used for retrieval, but never authorizes a task mutation.
     """
     if getattr(candidate, "memory_type", None) != "task" or getattr(memory, "memory_type", None) != "task":
         return False
@@ -124,30 +158,81 @@ def task_identity_compatible(candidate: Any, memory: Any) -> bool:
     if candidate_scope != memory_scope:
         return False
 
-    def topic(value: Any) -> str:
-        """函数功能：`topic` 负责处理 topic，服务于本文件职责：稳定身份和 canonical key。
-        传参：
-            value: 待转换、校验或计算的值，类型为 `Any`。
-        返回结果说明：
-            返回 `str`，通常是格式化后的文本、标识或路径。
-        """
-        predicate = str(getattr(value, "predicate", None) or "")
-        if normalize_content(predicate) not in {normalize_content(item) for item in _GENERIC_TASK_ATTRIBUTES} and predicate:
-            return _task_identity_topic(predicate)
-        subject = str(getattr(value, "subject", None) or "")
-        object_value = str(getattr(value, "object_value", None) or "")
-        content = str(getattr(value, "content", None) or "")
-        parts = [_task_identity_topic(item) for item in (subject, object_value, content) if item]
-        parts = list(dict.fromkeys(item for item in parts if item))
-        return max(parts, key=len, default="")
-
-    left, right = topic(candidate), topic(memory)
-    if not left or not right:
-        return False
-    if left == right:
+    candidate_family = str((getattr(candidate, "scope", {}) or {}).get("task_family_key") or "")
+    memory_family = str((getattr(memory, "scope", {}) or {}).get("task_family_key") or "")
+    if candidate_family and candidate_family == memory_family:
         return True
-    shorter, longer = sorted((left, right), key=len)
-    return len(shorter) >= 4 and longer.endswith(shorter)
+
+    candidate_topics = _task_identity_topics(candidate)
+    memory_topics = _task_identity_topics(memory)
+    for left in candidate_topics:
+        for right in memory_topics:
+            if left == right:
+                return True
+            shorter, longer = sorted((left, right), key=len)
+            # A short two-character Chinese fragment (for example “测试”) is
+            # too broad to bridge identities.  Three characters is enough for
+            # useful titles such as “数据库” while avoiding that false merge.
+            if len(shorter) >= 3 and shorter in longer:
+                return True
+    return False
+
+
+def task_instance_authorized(candidate: Any, memory: Any) -> bool:
+    """Return whether deterministic Task mutation may target ``memory``.
+
+    Lifecycle verbs differ between a reminder and its completion (for example
+    ``完善 README`` / ``完成 README``), so operation is not an instance
+    boundary. Explicit round/version identifiers are boundaries, however:
+    ``第一轮`` and ``第二轮`` may share a Family but are never interchangeable.
+    """
+    if getattr(candidate, "memory_type", None) != "task" or getattr(memory, "memory_type", None) != "task":
+        return False
+    candidate_scope = normalize_scope(str((getattr(candidate, "scope", {}) or {}).get("scope") or "global"))
+    memory_scope = normalize_scope(str((getattr(memory, "scope", {}) or {}).get("scope") or "global"))
+    if candidate_scope != memory_scope:
+        return False
+    candidate_key = getattr(candidate, "effective_memory_key", "")
+    memory_key = getattr(memory, "effective_memory_key", "")
+    if candidate_key and candidate_key == memory_key:
+        return True
+
+    def instance_markers(value: Any) -> set[str]:
+        raw = " ".join(
+            str(item or "")
+            for item in (
+                getattr(value, "content", None),
+                getattr(value, "predicate", None),
+                getattr(value, "object_value", None),
+            )
+        )
+        markers = set(re.findall(r"第[一二三四五六七八九十\d]+(?:轮|阶段|次)", raw))
+        markers.update(match.casefold() for match in re.findall(r"\b[A-Za-z]+[-_]?\d+(?:\.\d+)?\b", raw))
+        return markers
+
+    candidate_markers = instance_markers(candidate)
+    memory_markers = instance_markers(memory)
+    if candidate_markers != memory_markers and (candidate_markers or memory_markers):
+        return False
+    candidate_topics = set(_task_identity_topics(candidate))
+    memory_topics = set(_task_identity_topics(memory))
+    if candidate_topics & memory_topics:
+        return True
+    if normalize_content(str(getattr(candidate, "subject", "") or "")) != normalize_content(str(getattr(memory, "subject", "") or "")):
+        return False
+    # A later, strictly longer title ending in the earlier title is a narrow
+    # deterministic refinement ("简历" -> "Agent 开发的简历"), not a Family
+    # match. The inverse direction and arbitrary fuzzy overlap remain denied.
+    for candidate_topic in candidate_topics:
+        for memory_topic in memory_topics:
+            if len(memory_topic) >= 2 and len(candidate_topic) > len(memory_topic) and candidate_topic.endswith(memory_topic):
+                return True
+    return False
+
+
+# Compatibility name retained for external callers. Internal mutation paths
+# use ``task_instance_authorized`` explicitly.
+task_identity_compatible = task_family_compatible
 
 
 def _first_operation(text: str, supplied: str | None = None) -> str:
@@ -323,6 +408,16 @@ def _task_identity_from_text(text: str, candidate: MemoryCandidate) -> tuple[str
             cleaned = cleaned.replace(marker, "")
         attribute = cleaned.strip(" ，。！？!?；;：:")[:48] or "任务"
 
+    # “发布思维导图版本这个任务已经完成” has one stable task goal
+    # (“发布思维导图版本”) and a trailing lifecycle assertion.  The latter
+    # belongs to task_status / closure_reason and must not pollute identity.
+    attribute = re.sub(
+        r"(?:这个|该)?(?:任务|事项)(?:已经|已)?(?:完成|做完|搞定|取消|不做了|不用做|放弃)+$",
+        "",
+        attribute,
+    ).strip(" ：:，。！？!?；;") or attribute
+    attribute = re.sub(r"(?:这个|该)?(?:任务|事项)$", "", attribute).strip(" ：:，。！？!?；;") or attribute
+
     return entity, attribute, resolved_operation
 
 
@@ -404,6 +499,14 @@ def preference_key(entity: str, topic: str, scope: str = "global", *, qualifiers
     return ":".join(key_parts)
 
 
+def preference_family_key(entity: str, topic: str, source_text: str | None = None) -> str:
+    """Build a retrieval-only Preference family key from a business class."""
+    from memory.policies.preference import preference_family
+
+    entity_key = "用户" if str(entity or "").strip() in {"", "我", "本人", "用户", "user", "me"} else normalize_identity(entity)
+    return f"preference-family:{entity_key}:{normalize_identity(preference_family(topic, source_text))}"
+
+
 def is_task_lifecycle_statement(text: str) -> bool:
     """函数功能：`is_task_lifecycle_statement` 负责判断是否为 task lifecycle statement，服务于本文件职责：稳定身份和 canonical key。
     传参：
@@ -457,7 +560,7 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
                 "memory_key_version": MEMORY_KEY_V3_VERSION,
                 "task_family_key": scope.get("task_family_key")
                 if scope.get("reference_status") == "resolved" and scope.get("task_family_key")
-                else f"task-family:{normalize_identity(entity)}:{normalize_identity(attribute)}",
+                else f"task-family:{_task_identity_topic(f'{topic_entity}{attribute}') or _task_identity_topic(attribute) or normalize_identity(attribute)}",
             }
         )
         return replace(
@@ -475,7 +578,13 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
         signature = preference_signature(source_text)
         polarity = candidate.polarity if candidate.polarity in {"positive", "negative", "unknown"} else signature.polarity
         entity = normalize_entity(candidate.subject, memory_type="preference") or "用户"
-        topic = preference_topic(source_text, scope.get("canonical_topic"), candidate.object_value) or signature.topic or source_text
+        topic, derived_topic_source = preference_topic_with_source(
+            source_text,
+            scope.get("canonical_topic"),
+            candidate.object_value,
+        )
+        topic = topic or signature.topic or source_text
+        topic_source = str(scope.get("topic_source") or "").strip() or derived_topic_source
         explicit_scope = bool(scope.get("scope_explicit"))
         canonical_scope = str(scope.get("scope") or "").strip()
         if not explicit_scope:
@@ -484,16 +593,20 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
         scope["scope"] = canonical_scope
         scope["scope_explicit"] = canonical_scope != "global"
         scope["scope_source"] = scope.get("scope_source") or ("rules" if canonical_scope != "global" else "default")
-        qualifiers = list(dict.fromkeys([*signature.scopes, *signature.qualifiers]))
+        from memory.policies.preference import preference_qualifiers
+
+        assertion_qualifiers = list(preference_qualifiers(source_text, scope.get("qualifiers")))
+        qualifiers = list(dict.fromkeys([*signature.scopes, *assertion_qualifiers]))
         if any(marker in source_text for marker in ("更喜欢", "更偏好", "更偏向")) and "更偏向" not in qualifiers:
             qualifiers.append("更偏向")
         scope.update(
             {
                 "canonical_topic": topic,
+                "topic_source": topic_source or "rules",
                 "scope": canonical_scope,
                 "memory_key_version": MEMORY_KEY_V3_VERSION,
-                "preference_family_key": f"preference-family:{normalize_identity(entity)}:{normalize_identity(topic)}",
-                "preference_assertion_key": preference_key(entity, topic, canonical_scope, qualifiers=signature.qualifiers),
+                "preference_family_key": preference_family_key(entity, topic, source_text),
+                "preference_assertion_key": preference_key(entity, topic, canonical_scope, qualifiers=assertion_qualifiers),
                 "polarity": polarity,
                 "qualifiers": qualifiers,
             }
@@ -504,7 +617,7 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
             predicate="preference",
             object_value=topic,
             polarity=polarity,
-            memory_key=preference_key(entity, topic, canonical_scope, qualifiers=signature.qualifiers),
+            memory_key=preference_key(entity, topic, canonical_scope, qualifiers=assertion_qualifiers),
             scope=scope,
             memory_key_version=MEMORY_KEY_V3_VERSION,
         )

@@ -1,6 +1,6 @@
 """Layer-1 field contract and deterministic normalization regression tests."""
 
-from memory.canonicalizer import normalize_candidate_v3
+from memory.canonicalizer import normalize_candidate_v3, task_family_compatible, task_instance_authorized
 from memory.extraction_schema import parse_extracted_candidate
 from memory import extractor
 from memory.extractor import extract_candidates
@@ -39,6 +39,55 @@ def test_task_identity_key_is_stable_across_status():
     assert done.task_status == "done"
     assert todo.effective_memory_key == done.effective_memory_key
     assert todo.scope["canonical_topic"] == done.scope["canonical_topic"]
+
+
+def test_task_identity_ignores_progress_and_blocker_detail_but_respects_scope():
+    base = normalize_candidate_v3(
+        _candidate("task", "继续处理检索质量优化", predicate="检索质量优化", task_status="todo", scope={"operation": "处理"})
+    )
+    blocked = normalize_candidate_v3(
+        _candidate(
+            "task",
+            "继续处理检索质量优化第一轮，现在被接口文档不完整卡住",
+            predicate="检索质量优化第一轮被接口文档不完整卡住",
+            task_status="todo",
+            scope={"operation": "维护"},
+        )
+    )
+    other_scope = normalize_candidate_v3(
+        _candidate("task", "继续处理检索质量优化", predicate="检索质量优化", task_status="todo", scope={"operation": "处理", "scope": "工作"})
+    )
+
+    assert base.scope["task_family_key"] == blocked.scope["task_family_key"] == "task-family:检索质量优化"
+    assert task_family_compatible(base, blocked)
+    assert not task_instance_authorized(base, blocked)
+    assert not task_family_compatible(base, other_scope)
+
+
+def test_task_identity_does_not_merge_distinct_explicit_goals():
+    report = normalize_candidate_v3(_candidate("task", "完成测试报告", predicate="测试报告", task_status="todo", scope={"operation": "执行"}))
+    environment = normalize_candidate_v3(_candidate("task", "完成测试环境", predicate="测试环境", task_status="todo", scope={"operation": "执行"}))
+
+    assert not task_family_compatible(report, environment)
+
+
+def test_preference_topic_strips_leading_coordination_without_changing_evidence():
+    candidate = normalize_candidate_v3(
+        _candidate("preference", "和咖啡", predicate="preference", object_value="和咖啡")
+    )
+
+    assert candidate.evidence_span == "和咖啡"
+    assert candidate.object_value == "咖啡"
+    assert candidate.scope["canonical_topic"] == "咖啡"
+    assert candidate.scope["preference_family_key"] == "preference-family:用户:饮品"
+
+
+def test_preference_family_is_business_class_not_topic_or_carrier_word():
+    drink = normalize_candidate_v3(_candidate("preference", "我喜欢咖啡", predicate="preference", object_value="咖啡"))
+    taste = normalize_candidate_v3(_candidate("preference", "我不喜欢太甜的饮料", predicate="preference", object_value="甜味饮料"))
+
+    assert drink.scope["preference_family_key"] == "preference-family:用户:饮品"
+    assert taste.scope["preference_family_key"] == "preference-family:用户:口味"
 
 
 def test_semantic_attribute_is_enum_and_key_is_stable_for_value_updates():
@@ -89,6 +138,38 @@ def test_schema_accepts_llm_preference_polarity_in_chinese_or_contract_form():
     parsed = parse_extracted_candidate(row, "我不喜欢咖啡")
     assert parsed is not None
     assert parsed.polarity == "negative"
+
+
+def test_schema_separates_llm_preference_qualifiers_from_the_topic():
+    row = {
+        "memory_type": "preference",
+        "canonical_topic": "无糖浓咖啡",
+        "new_value": "无糖浓咖啡",
+        "qualifiers": ["无糖", "strength=strong", "invented"],
+        "polarity": "positive",
+        "evidence_span": "我喜欢无糖浓咖啡",
+        "confidence": 0.9,
+        "importance": 0.8,
+    }
+    parsed = parse_extracted_candidate(row, "我喜欢无糖浓咖啡")
+    assert parsed is not None
+    assert parsed.canonical_topic == parsed.new_value == "咖啡"
+    assert parsed.qualifiers == ["sugar_free", "strong"]
+
+
+def test_canonicalizer_keeps_llm_qualifiers_in_key_and_records_topic_provenance():
+    candidate = _candidate(
+        "preference",
+        "我喜欢无糖浓咖啡",
+        predicate="preference",
+        object_value="无糖浓咖啡",
+        scope={"canonical_topic": "无糖浓咖啡", "qualifiers": ["sugar_free", "strong"]},
+    )
+    normalized = normalize_candidate_v3(candidate)
+    assert normalized.object_value == "咖啡"
+    assert normalized.scope["qualifiers"] == ["sugar_free", "strong"]
+    assert normalized.scope["topic_source"] in {"llm_validated", "rules"}
+    assert normalized.effective_memory_key == "preference:用户:咖啡:global:sugarfree:strong"
 
 
 def test_normalization_is_idempotent():

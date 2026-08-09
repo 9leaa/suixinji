@@ -54,6 +54,7 @@ _NEGATIVE_ACTION_RE = re.compile(
 )
 _LEADING_OWNER_RE = re.compile(r"^(?:用户|本人|我)+")
 _LEADING_CHANGE_RE = re.compile(r"^(?:现在|以后|目前|最近|从现在起|已经|改为|改成)+")
+_LEADING_COORDINATION_RE = re.compile(r"^(?:和|及|以及|与|跟|还有)(?=\S)")
 _TRAILING_PARTICLE_RE = re.compile(r"(?:了|啦|呢|吧|呀|啊)+$")
 _CLAUSE_SPLIT_RE = re.compile(r"[，,；;。\n]|(?:但是|不过|同时|而且)")
 # 保留型号编码和独立版本号作为锚点；它们比周围中文语境更具体（如 X1/X10、iPhone 15/iPhone 16），不能被模糊子串匹配抹平。
@@ -207,19 +208,128 @@ def _extract_topic(text: str) -> tuple[str, tuple[str, ...]]:
     main = _LEADING_CHANGE_RE.sub("", main).strip()
     main = _LIGHT_VERB_RE.sub("", main).strip(" ：:，,。；;")
     main = re.sub(r"^(?:对|对于)", "", main).strip()
+    # The conjunction belongs to the source clause, not the preference topic.
+    # Keep the original evidence span untouched; only canonical topic changes.
+    main = _LEADING_COORDINATION_RE.sub("", main).strip()
     main = re.sub(r"(?:而不是|而非|胜过|多于).*$", "", main).strip()
     main = _TRAILING_PARTICLE_RE.sub("", main).strip()
     qualifier_values = list(qualifiers)
-    if main.startswith("无糖") and len(main) > 2:
-        main = main[2:].strip()
-        qualifier_values.append("sugar_free")
-    elif main.startswith("太甜的") and len(main) > 3:
-        main = main[3:].strip()
-        qualifier_values.append("sweet")
+    # Strip a sequence of known preference modifiers.  A model may provide
+    # "无糖浓咖啡" as its value, but the stable topic is still "咖啡" and
+    # both modifiers belong in qualifiers.
+    modifier_prefixes = (
+        ("无糖", "sugar_free"),
+        ("低糖", "low_sugar"),
+        ("少糖", "low_sugar"),
+        ("太甜的", "sweet"),
+        ("很甜的", "sweet"),
+        ("浓郁的", "strong"),
+        ("浓的", "strong"),
+        ("浓", "strong"),
+        ("清淡的", "light"),
+        ("淡的", "light"),
+        ("淡", "light"),
+    )
+    while main:
+        matched = next(
+            (
+                (prefix, qualifier)
+                for prefix, qualifier in modifier_prefixes
+                if main.startswith(prefix) and len(main) > len(prefix)
+            ),
+            None,
+        )
+        if matched is None:
+            break
+        prefix, qualifier = matched
+        main = main[len(prefix):].strip()
+        qualifier_values.append(qualifier)
     # Collapse descriptive sugar wording to the stable preference topic;
     # qualifiers such as scope and polarity remain separate fields.
     main = {"太甜": "sweetness", "太甜的饮料": "甜味饮料", "甜的饮料": "甜味饮料"}.get(main, main)
     return main[:160], tuple(dict.fromkeys(qualifier_values))
+
+
+_PREFERENCE_FAMILY_MARKERS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    # Taste descriptors take priority over their carrier (for example
+    # ``甜味饮料`` is a taste assertion, not a generic beverage preference).
+    ("口味", ("甜", "咸", "辣", "酸", "苦", "口味", "味道", "甜度", "清淡", "sweetness", "sweet")),
+    ("饮品", ("咖啡", "茶", "水", "饮料", "拿铁", "可乐", "果汁", "气泡", "酒", "啤酒", "奶", "大窑")),
+    ("设备", ("电脑", "手机", "键盘", "鼠标", "macbook", "iphone", "耳机", "设备")),
+    ("工作方式", ("工作", "会议", "沟通", "远程", "办公", "日程", "效率")),
+    ("内容", ("电影", "音乐", "书", "阅读", "游戏", "播客", "视频")),
+    ("饮食", ("苹果", "米饭", "面", "菜", "食物", "零食", "餐")),
+)
+
+
+def preference_family(topic: str | None, source_text: str | None = None) -> str:
+    """Return the coarse business class used only for Preference recall."""
+    normalized = normalize_content(topic or "")
+    source = normalize_content(source_text or "")
+    taste_markers = _PREFERENCE_FAMILY_MARKERS[0][1]
+    if normalized in {"饮料", "饮品"} and any(normalize_content(marker) in source for marker in taste_markers):
+        return "口味"
+    for family, markers in _PREFERENCE_FAMILY_MARKERS:
+        if any(normalize_content(marker) in normalized for marker in markers):
+            return family
+    return "其他"
+
+
+_LLM_QUALIFIER_ALIASES = {
+    "无糖": "sugar_free",
+    "sugarfree": "sugar_free",
+    "sugar_free": "sugar_free",
+    "低糖": "low_sugar",
+    "少糖": "low_sugar",
+    "lowsugar": "low_sugar",
+    "low_sugar": "low_sugar",
+    "太甜": "sweet",
+    "很甜": "sweet",
+    "甜": "sweet",
+    "sweet": "sweet",
+    "浓": "strong",
+    "浓郁": "strong",
+    "strong": "strong",
+    "淡": "light",
+    "清淡": "light",
+    "light": "light",
+}
+
+_QUALIFIER_SOURCE_MARKERS = {
+    "sugar_free": ("无糖", "零糖", "不加糖"),
+    "low_sugar": ("低糖", "少糖"),
+    "sweet": ("太甜", "很甜", "甜度高"),
+    "strong": ("浓", "浓郁"),
+    "light": ("淡", "清淡"),
+}
+
+
+def _normalize_llm_qualifier(value: object) -> str | None:
+    raw = normalize_content(str(value or "")).replace("-", "_")
+    if not raw:
+        return None
+    raw = raw.removeprefix("qualifier:").removeprefix("preference:")
+    if "=" in raw:
+        _name, raw = raw.split("=", 1)
+    elif ":" in raw:
+        _name, raw = raw.split(":", 1)
+    return _LLM_QUALIFIER_ALIASES.get(raw)
+
+
+def preference_qualifiers(source_text: str, hints: object = None) -> tuple[str, ...]:
+    """Combine rule-derived qualifiers with grounded, controlled LLM hints."""
+    signature = preference_signature(source_text)
+    result = list(signature.qualifiers)
+    evidence = normalize_content(source_text)
+    raw_hints = hints if isinstance(hints, list) else []
+    for hint in raw_hints:
+        qualifier = _normalize_llm_qualifier(hint)
+        if qualifier is None:
+            continue
+        markers = _QUALIFIER_SOURCE_MARKERS[qualifier]
+        if any(normalize_content(marker) in evidence for marker in markers):
+            result.append(qualifier)
+    return tuple(dict.fromkeys(result))
 
 
 def preference_signature(text: str, topic_hint: str | None = None) -> PreferenceSignature:

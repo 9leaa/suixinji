@@ -20,6 +20,7 @@ from memory.repository import (
     schema_tables,
 )
 from memory.relation_classifier import classify_relation
+from memory.relation_guard import evaluate_relation
 from memory.service import process_note_memory
 
 
@@ -54,6 +55,27 @@ def test_high_confidence_task_identity_llm_can_bridge_wording_but_local_rules_ch
     assert decision.relation == "update_task"
     assert decision.recommended_action == "update_task"
     assert decision.target_memory_ids == [old.id]
+
+
+def test_task_family_match_cannot_authorize_a_different_instance_update():
+    from memory.canonicalizer import canonicalize_candidate
+
+    first = canonicalize_candidate(MemoryCandidate(
+        "task", "完成检索质量优化第一轮", 0.8, 0.95, task_status="todo",
+        subject="用户", predicate="检索质量优化第一轮", scope={"operation": "执行"},
+    ))
+    second = canonicalize_candidate(MemoryCandidate(
+        "task", "完成检索质量优化第二轮", 0.8, 0.95, task_status="done",
+        subject="用户", predicate="检索质量优化第二轮", scope={"operation": "执行"},
+    ))
+    stored = insert_memory("task-family-only", first, source_note_id="first")
+
+    guarded = evaluate_relation(second, stored)
+
+    assert first.scope["task_family_key"] == second.scope["task_family_key"]
+    assert first.effective_memory_key != second.effective_memory_key
+    assert guarded.relation == "new"
+    assert guarded.action == "insert"
 
 
 def test_core_audit_schema_is_created():

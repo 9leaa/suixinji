@@ -1273,7 +1273,7 @@ def hybrid_adjudication_candidates(
         返回 `list[MemoryRecord]`，表示按条件筛选、构造或查询得到的列表。
     """
     del query_embedding
-    from memory.canonicalizer import task_identity_compatible
+    from memory.canonicalizer import task_family_compatible
     init_db(db_path)
     now = utc_now_iso()
     with _connect(db_path) as conn:
@@ -1336,7 +1336,7 @@ def hybrid_adjudication_candidates(
         """
         if memory.effective_memory_key == candidate.effective_memory_key:
             return True
-        if candidate.memory_type == "task" and task_identity_compatible(candidate, memory):
+        if candidate.memory_type == "task" and task_family_compatible(candidate, memory):
             return True
         if candidate.subject and memory.subject and normalize_content(candidate.subject) == normalize_content(memory.subject):
             return True
@@ -1633,7 +1633,7 @@ def _archive_terminal_task_duplicates_row(
     """
     if candidate.memory_type != "task" or candidate.task_status != "done":
         return []
-    from memory.canonicalizer import task_identity_compatible
+    from memory.canonicalizer import task_instance_authorized
 
     rows = conn.execute(
         """
@@ -1645,7 +1645,7 @@ def _archive_terminal_task_duplicates_row(
     ).fetchall()
     archived: list[str] = []
     for row in rows:
-        if not task_identity_compatible(candidate, _memory_from_row(row)):
+        if not task_instance_authorized(candidate, _memory_from_row(row)):
             continue
         _versioned_update_row(
             conn,

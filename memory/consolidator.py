@@ -21,7 +21,7 @@ from memory.adjudicator import adjudicate_memory
 from memory.advisory import maybe_memory_relation_advisory
 from memory.candidate_retriever import retrieval_signals, retrieve_candidates
 from memory.evolution import evolve_memory
-from memory.canonicalizer import canonicalize_candidate, task_identity_compatible
+from memory.canonicalizer import canonicalize_candidate, task_family_compatible
 from memory.models import MemoryCandidate, MemoryDecision, MemoryRecord, normalize_content, utc_now_iso
 from memory.repository import add_memory_relation, add_source, get_extraction_state, list_memories, mark_extraction_failed, update_memory
 from memory.shadow import build_relation_shadow_report
@@ -78,7 +78,7 @@ def _task_match_kind(candidate: MemoryCandidate, memory: MemoryRecord) -> tuple[
     )
     if structured and candidate.subject and candidate.predicate:
         return "structured_identity", 0.98
-    if task_identity_compatible(candidate, memory):
+    if task_family_compatible(candidate, memory):
         return "identity_compatible", 0.92
     if normalize_content(candidate.subject or "") == normalize_content(memory.subject or ""):
         candidate_attribute = normalize_content(candidate.predicate or "").replace("的", "")

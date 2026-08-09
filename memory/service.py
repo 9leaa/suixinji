@@ -20,7 +20,7 @@ from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock
 from memory.consolidator import consolidate_candidate
 from memory.candidate_validator import contains_sensitive_data, validate_candidates
-from memory.canonicalizer import task_identity_compatible
+from memory.canonicalizer import task_instance_authorized
 from memory.extractor import extract_candidates, may_contain_memory
 from memory.models import candidate_id_for, candidate_id_for_evidence
 from memory.shadow import build_shadow_report
@@ -825,7 +825,7 @@ def format_memory_profile(space_id: str) -> str:
     for memory in task_memories:
         matched = False
         for existing in latest_tasks:
-            if memory.effective_memory_key == existing.effective_memory_key or task_identity_compatible(memory, existing):
+            if memory.effective_memory_key == existing.effective_memory_key or task_instance_authorized(memory, existing):
                 matched = True
                 break
         if not matched:

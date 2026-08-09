@@ -34,6 +34,7 @@ class ExtractedMemoryCandidate(BaseModel):
     task_status: Literal["todo", "done"] | None = None
     polarity: Literal["positive", "negative", "unknown"] | None = None
     scope: str | None = None
+    qualifiers: list[str] = Field(default_factory=list)
     old_value: str | None = None
     new_value: str | None = None
     evidence_span: str
@@ -144,6 +145,8 @@ def normalize_extracted_row(row: dict[str, object], source_text: str) -> dict[st
             topic_hint=normalized.get("canonical_topic"),
         ) or "用户当前事实"
     elif memory_type == "preference":
+        from memory.policies.preference import preference_qualifiers
+
         normalized["entity"] = normalized.get("entity") or "用户"
         normalized["attribute"] = "preference"
         normalized["operation"] = None
@@ -153,6 +156,9 @@ def normalize_extracted_row(row: dict[str, object], source_text: str) -> dict[st
             topic_hint=normalized.get("canonical_topic"), new_value=normalized.get("new_value"),
         ) or "未指定偏好主题"
         normalized["new_value"] = normalized["canonical_topic"]
+        normalized["qualifiers"] = list(
+            preference_qualifiers(source_text, normalized.get("qualifiers"))
+        )
         # Compatibility with a model that has not yet picked up the prompt:
         # preserve the explicit absence as unknown, rather than silently
         # deriving a polarity from rules at schema-validation time.
@@ -170,6 +176,7 @@ def normalize_extracted_row(row: dict[str, object], source_text: str) -> dict[st
     if memory_type != "preference":
         normalized["polarity"] = None
         normalized["scope"] = None
+        normalized["qualifiers"] = []
     return normalized
 
 

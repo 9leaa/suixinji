@@ -31,7 +31,7 @@ MEMORY_EXTRACTOR_V3_PROMPT = """
 你是随心记的长期记忆结构化抽取器。你只能输出候选，不能决定合并、覆盖、删除或执行数据库操作。
 
 从一条用户笔记抽取所有值得长期保存的原子候选。只能输出一个 JSON object，格式为：
-{"candidates":[{"memory_type":"task|semantic|preference|episodic","entity":"...","attribute":"...","operation":"...|null","canonical_topic":"...","task_status":"todo|done|null","polarity":"positive|negative|unknown|null","scope":"...|null","old_value":"...|null","new_value":"...|null","content":"用于展示的自然语言","evidence_span":"原文连续片段","valid_from":null,"valid_until":null,"confidence":0.0,"importance":0.0,"should_store":true,"extraction_reason":"...","entities":["..."],"reference_status":"resolved|unresolved|not_applicable","antecedent_note_id":null,"antecedent_offset":null,"antecedent_evidence_span":null,"resolution_confidence":null}]}
+{"candidates":[{"memory_type":"task|semantic|preference|episodic","entity":"...","attribute":"...","operation":"...|null","canonical_topic":"...","task_status":"todo|done|null","polarity":"positive|negative|unknown|null","scope":"...|null","qualifiers":["..."],"old_value":"...|null","new_value":"...|null","content":"用于展示的自然语言","evidence_span":"原文连续片段","valid_from":null,"valid_until":null,"confidence":0.0,"importance":0.0,"should_store":true,"extraction_reason":"...","entities":["..."],"reference_status":"resolved|unresolved|not_applicable","antecedent_note_id":null,"antecedent_offset":null,"antecedent_evidence_span":null,"resolution_confidence":null}]}
 
 规则：
 - 输入中的 hints 是规则引擎提供的弱提示，只能帮助你检查是否遗漏；不得照抄，更不能把 hint 当作原文证据。你的 candidates 是唯一权威输出。
@@ -46,6 +46,7 @@ MEMORY_EXTRACTOR_V3_PROMPT = """
 - "喜欢咖啡和绿茶"必须分别产生“咖啡”和“绿茶”两条 preference；“不喜欢咖啡，更偏向绿茶”必须分别产生咖啡 negative 与绿茶 positive 两条 preference。
 - 每条 preference 必须输出 polarity：positive（正向偏好）、negative（负向偏好）或 unknown（原文无法判断）；非 preference 必须输出 null。polarity 必须根据当前 candidate 的证据判断，不能省略。
 - preference 必须识别明确的适用场景并输出 scope：例如“早上喜欢咖啡”输出 scope="早上”，“工作时不喝咖啡”输出 scope="工作时”；没有明确场景时 scope=null，不能默认输出 global。非 preference 的 scope 输出 null。
+- preference 必须将基础 Topic 与限定条件分开："喜欢无糖咖啡"输出 canonical_topic="咖啡"、qualifiers=["sugar_free"]；"不喜欢太甜的绿茶"输出 canonical_topic="绿茶"、qualifiers=["sweet"]；"喜欢浓咖啡"输出 canonical_topic="咖啡"、qualifiers=["strong"]。qualifiers 只能填写原文明确表达的限定，不得包含 polarity、scope 或基础 Topic。非 preference 的 qualifiers 输出 []。
 - “我不喜欢/讨厌/不爱/过敏/不用 X” 是明确 preference；如果 evidence_span 只覆盖该偏好子句，就应作为独立候选。
 - evidence_span 必须逐字来自原文的连续片段；不得编造任何实体、值、日期或状态。
 - task 必须同时给出 entity、attribute、operation、canonical_topic、task_status。

@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from memory.canonicalizer import task_identity_compatible
+from memory.canonicalizer import task_instance_authorized
 from memory.models import MEMORY_KEY_V3_VERSION, MemoryCandidate, MemoryRecord, normalize_content
 from memory.policies import preference as preference_policy
 from memory.policies import task as task_policy
@@ -201,7 +201,9 @@ def evaluate_relation(candidate: MemoryCandidate, memory: MemoryRecord) -> Relat
     if exact_key and _is_stale_candidate(candidate, memory):
         return RelationGuardResult("conflict", "pending_review", "candidate_observed_before_current_memory", False)
     if candidate.memory_type == "task":
-        compatible = exact_key or task_identity_compatible(candidate, memory) or _task_refines_existing_identity(candidate, memory)
+        # Family membership only supplies a retrieval candidate. It cannot
+        # select an instance or advance that instance's lifecycle.
+        compatible = task_instance_authorized(candidate, memory)
         if not compatible:
             return RelationGuardResult("new", "insert", "task_requires_exact_canonical_key", False)
         if _task_values_changed(candidate, memory):

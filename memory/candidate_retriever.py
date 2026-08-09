@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 from core.settings import MEMORY_ADJUDICATION_TOP_K, MEMORY_RETRIEVAL_MODE
-from memory.canonicalizer import task_identity_compatible
+from memory.canonicalizer import task_family_compatible
 from memory.models import MemoryCandidate, MemoryRecord, normalize_content
 from memory.policies import preference as preference_policy
 from memory.policies import task as task_policy
@@ -110,7 +110,7 @@ def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> fl
         if candidate.memory_type != memory.memory_type:
             return 0.0
         if candidate.memory_type == "task":
-            if task_identity_compatible(candidate, memory):
+            if task_family_compatible(candidate, memory):
                 return 0.88
             # 任务的常规身份是精确 canonical key；唯一有意保留的例外是后续标题严格细化早期短标题。
             # 这里只把候选放入小规模裁决集；Relation Guard 仍是唯一允许批准变更的组件。
