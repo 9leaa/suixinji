@@ -218,6 +218,12 @@ def task_instance_authorized(candidate: Any, memory: Any) -> bool:
     memory_topics = set(_task_identity_topics(memory))
     if candidate_topics & memory_topics:
         return True
+    # Legacy task rows often keep a wider family key or a shorter title while
+    # the completion note carries the lifecycle transition.  When the task
+    # family is clearly the same and the state actually changed, allow the
+    # narrower mutation bridge; same-status rows still stay distinct.
+    if getattr(candidate, "task_status", None) != getattr(memory, "task_status", None) and task_family_compatible(candidate, memory):
+        return True
     if normalize_content(str(getattr(candidate, "subject", "") or "")) != normalize_content(str(getattr(memory, "subject", "") or "")):
         return False
     # A later, strictly longer title ending in the earlier title is a narrow
