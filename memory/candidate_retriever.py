@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 from core.settings import MEMORY_ADJUDICATION_TOP_K, MEMORY_RETRIEVAL_MODE
-from memory.canonicalizer import task_family_compatible
+from memory.canonicalizer import task_family_compatible, task_instance_authorized
 from memory.models import MemoryCandidate, MemoryRecord, normalize_content
 from memory.policies import preference as preference_policy
 from memory.policies import task as task_policy
@@ -50,7 +50,9 @@ def task_family_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> 
         and normalize_content(candidate.subject) == normalize_content(memory.subject)
     ) else 0.0
     score = 0.58 * topic_score + 0.24 * content_score + entity_bonus
-    return round(min(score, 0.84), 4) if score >= 0.28 else 0.0
+    # This is a bounded recall-only fallback. Exact family membership and
+    # strict task-instance compatibility have their own higher tiers below.
+    return round(min(score, 0.60), 4) if score >= 0.28 else 0.0
 
 
 def preference_family_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> float:
@@ -81,7 +83,7 @@ def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> fl
     if exact_key:
         return 1.0
     if candidate.normalized_content == memory.normalized_content:
-        return 1.0
+        return 0.98
 
     # Family/assertion keys are structured extractor output, not logical test
     # references.  They provide bounded recall for incomplete legacy keys;
@@ -98,12 +100,14 @@ def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> fl
     if candidate.memory_type == memory.memory_type == "task":
         candidate_family = str(candidate.scope.get("task_family_key") or "")
         memory_family = str(memory.scope.get("task_family_key") or "")
+        if task_instance_authorized(candidate, memory):
+            return 0.90
         if candidate_family and candidate_family == memory_family:
             # Family recall is deliberately broader than identity mutation.
             # A concrete instance key (round1 vs round2) must not hide the
             # related task from adjudication; RelationGuard decides whether it
             # is a new instance, merge, or pending review.
-            return 0.84
+            return 0.75
 
     if is_v3_candidate(candidate):
         # V3 检索仍可能返回宽泛 semantic 候选，但是否有用由 identity 槽位决定，而不是共享用户/模板决定。
@@ -111,7 +115,7 @@ def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> fl
             return 0.0
         if candidate.memory_type == "task":
             if task_family_compatible(candidate, memory):
-                return 0.88
+                return 0.68
             # 任务的常规身份是精确 canonical key；唯一有意保留的例外是后续标题严格细化早期短标题。
             # 这里只把候选放入小规模裁决集；Relation Guard 仍是唯一允许批准变更的组件。
             candidate_operation = normalize_content(str(candidate.scope.get("operation") or ""))
@@ -131,7 +135,7 @@ def candidate_similarity(candidate: MemoryCandidate, memory: MemoryRecord) -> fl
                 and candidate_title.endswith(memory_title)
             )
             if is_strict_suffix_refinement:
-                return 0.86
+                return 0.66
             return task_family_similarity(candidate, memory)
         if candidate.memory_type == "semantic":
             if normalize_content(candidate.predicate or "") in {"fact", "事实"}:

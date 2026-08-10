@@ -27,6 +27,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     func,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -342,6 +343,12 @@ class Memory(Base):
         Index("ix_memories_space_status_type", "space_id", "status", "memory_type"),
         Index("ix_memories_space_key_status", "space_id", "memory_key", "status"),
         Index("ix_memories_space_status_updated", "space_id", "status", "updated_at"),
+        Index(
+            "ix_memories_task_family_active",
+            "space_id",
+            text("(scope_json ->> 'task_family_key')"),
+            postgresql_where=text("memory_type = 'task' AND status = 'active'"),
+        ),
     )
 
 

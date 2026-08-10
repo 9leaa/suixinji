@@ -71,24 +71,24 @@ def test_cancelled_done_is_pending_review(monkeypatch):
     assert len(pending) == 1 and pending[0].task_status == "done"
 
 
-def test_orphan_completion_stays_done_task(monkeypatch):
+def test_orphan_completion_is_converted_to_episodic(monkeypatch):
     enable_stage2(monkeypatch)
     space = "stage2-orphan-event"
     report = consolidate_candidate(space, "event", candidate(space, "event", "我昨天提交了论文", "用户", "论文", "提交", "done"))
     assert report["relation"] == "new" and report["action"] == "insert"
     memories = repository.list_memories(space, status="active")
-    assert len(memories) == 1 and memories[0].memory_type == "task"
-    assert memories[0].task_status == "done"
-    assert not repository.list_memories(space, status="active", memory_type="episodic")
+    assert len(memories) == 1 and memories[0].memory_type == "episodic"
+    assert memories[0].task_status is None
+    assert memories[0].scope["derived_from"] == "orphan_completion"
 
 
-def test_orphan_strong_completion_can_create_explicit_done_task(monkeypatch):
+def test_orphan_strong_completion_is_also_an_episodic_event(monkeypatch):
     enable_stage2(monkeypatch)
     space = "stage2-orphan-strong"
     report = consolidate_candidate(space, "strong", candidate(space, "strong", "随心记第一阶段评测已经完成", "随心记", "第一阶段评测", "完善", "done"))
     assert report["relation"] == "new" and report["action"] == "insert"
-    active = repository.list_memories(space, status="active", memory_type="task")
-    assert len(active) == 1 and active[0].task_status == "done"
+    active = repository.list_memories(space, status="active", memory_type="episodic")
+    assert len(active) == 1 and active[0].task_status is None
 
 
 def test_multiple_history_matches_are_ambiguous(monkeypatch):

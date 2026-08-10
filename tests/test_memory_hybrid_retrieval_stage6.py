@@ -5,6 +5,9 @@
 
 
 from memory.extractor import extract_candidates, may_contain_memory
+from memory.candidate_retriever import candidate_similarity
+from memory.canonicalizer import canonicalize_candidate
+from memory.models import MemoryCandidate
 from memory.models import memory_key_for
 from memory.repository import hybrid_adjudication_candidates, insert_memory
 
@@ -86,3 +89,22 @@ def test_hybrid_adjudication_exact_key_survives_large_similar_set():
     assert target is not None
     assert results
     assert results[0].id == target.id
+
+
+def test_task_family_channel_recalls_related_instance_without_authorizing_merge():
+    first = canonicalize_candidate(MemoryCandidate(
+        "task", "完成检索质量优化第一轮", 0.8, 0.95,
+        task_status="todo", subject="用户", predicate="检索质量优化第一轮",
+        scope={"operation": "执行", "scope": "global"},
+    ))
+    stored = insert_memory("space-task-family-channel", first, source_note_id="note-first")
+    second = canonicalize_candidate(MemoryCandidate(
+        "task", "完成检索质量优化第二轮", 0.8, 0.95,
+        task_status="done", subject="用户", predicate="检索质量优化第二轮",
+        scope={"operation": "执行", "scope": "global"},
+    ))
+
+    results = hybrid_adjudication_candidates("space-task-family-channel", second, limit=8)
+
+    assert stored.id in {memory.id for memory in results}
+    assert candidate_similarity(second, stored) == 0.75

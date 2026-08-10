@@ -994,6 +994,10 @@ def _rrf_hits(
         # 结构化/canonical 命中对状态层查询信号最强；稀疏和向量通道用于补充，trigram 主要用于错字/分词恢复，因此权重更弱。
         "exact": 1.60,
         "structured": 1.35,
+        # Exact task-family membership is a strong bounded recall signal, but
+        # remains below the strict canonical key and structured slots because
+        # a family can contain multiple task instances.
+        "family": 1.20,
         "fts": 1.00,
         "vector": 0.95,
         "trigram": 0.60,
@@ -1026,11 +1030,13 @@ def _rrf_hits(
                 memory=_record(_NoSourceSession(), row, include_versions=False, sources=[]),
                 exact_rank=channel_ranks.get("exact"),
                 structured_rank=channel_ranks.get("structured"),
+                family_rank=channel_ranks.get("family"),
                 fts_rank=channel_ranks.get("fts"),
                 trigram_rank=channel_ranks.get("trigram"),
                 vector_rank=channel_ranks.get("vector"),
                 exact_score=(channel_weights["exact"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["exact"]) if "exact" in channel_ranks else 0.0,
                 structured_score=(channel_weights["structured"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["structured"]) if "structured" in channel_ranks else 0.0,
+                family_score=(channel_weights["family"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["family"]) if "family" in channel_ranks else 0.0,
                 fts_score=(channel_weights["fts"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["fts"]) if "fts" in channel_ranks else 0.0,
                 trigram_score=(channel_weights["trigram"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["trigram"]) if "trigram" in channel_ranks else 0.0,
                 vector_score=(channel_weights["vector"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["vector"]) if "vector" in channel_ranks else 0.0,
@@ -1446,6 +1452,18 @@ def hybrid_adjudication_candidates(
                         .limit(retrieval_limit)
                     ).scalars()
                 )
+            ))
+        task_family_key = str(candidate.scope.get("task_family_key") or "").strip()
+        if candidate.memory_type == "task" and task_family_key:
+            channels.append((
+                "family",
+                list(
+                    session.execute(
+                        base.where(Memory.scope_json["task_family_key"].astext == task_family_key)
+                        .order_by(Memory.updated_at.desc(), Memory.id.desc())
+                        .limit(min(20, retrieval_limit))
+                    ).scalars()
+                ),
             ))
         if candidate.memory_type == "task":
             # 旧版 V2 任务可能使用泛化 subject/predicate 槽位，因此为 identity bridge 保留一个有界任务切片。

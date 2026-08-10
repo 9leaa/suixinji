@@ -144,21 +144,27 @@ def _completion_event_topic(candidate: MemoryCandidate) -> str:
 
 def convert_orphan_done_task_to_episodic(candidate: MemoryCandidate) -> MemoryCandidate:
     """Convert a weak no-history completion claim into a historical event."""
-    # The structured extractor already supplied the canonical event identity.
-    # Prefer it over a lossy re-parse of natural language (which can retain
-    # batch labels, owners, or completion boilerplate).
-    topic = str(candidate.scope.get("canonical_topic") or candidate.object_value or _completion_event_topic(candidate)).strip()
+    # A completion without a task predecessor is evidence that an event
+    # occurred, not evidence that a task state should be created.  Derive the
+    # event topic from the grounded current utterance rather than retaining a
+    # task-shaped canonical topic such as "执行某任务".
+    source = str(candidate.evidence_span or candidate.content or "").strip()
+    topic = str(_completion_event_topic(candidate) or candidate.object_value or source).strip()
     scope = dict(candidate.scope)
-    for key in ("operation", "task_status", "old_value"):
+    for key in (
+        "operation", "task_status", "old_value", "new_value",
+        "closure_reason", "task_family_key", "blocker", "progress_note",
+    ):
         scope.pop(key, None)
     scope.update({"canonical_topic": topic, "new_value": topic, "scope": "history", "derived_from": "orphan_completion"})
     converted = replace(
         candidate,
         memory_type="episodic",
-        # Canonicalization derives episodic identity from evidence text first.
-        # Give it the trusted structured topic, not the noisy task sentence.
-        content=topic,
-        evidence_span=topic,
+        content=source,
+        # Preserve the actual current-message evidence span.  The event topic
+        # is stored separately in scope/object_value and must not replace its
+        # source evidence merely because its wording is more compact.
+        evidence_span=source,
         subject="用户",
         predicate="event",
         object_value=topic,
@@ -339,6 +345,38 @@ def _consolidate_candidate_standard(space_id: str, note_id: str, candidate: Memo
     )
     adjudication_started = time.perf_counter()
     decision = adjudicate_memory(candidate, similar)
+    if (
+        candidate.memory_type == "task"
+        and candidate.task_status == "done"
+        and decision.relation == "new"
+        and decision.recommended_action == "insert"
+    ):
+        # No same-instance task predecessor was found.  A completion claim is
+        # therefore recorded as history instead of inventing an active done
+        # task.  Ambiguous/conflicting task matches do not take this branch:
+        # they remain pending_review so a real task update is never hidden.
+        original_candidate = candidate
+        candidate = convert_orphan_done_task_to_episodic(candidate)
+        similar = retrieve_candidates(space_id, candidate)
+        decision = replace(
+            adjudicate_memory(candidate, similar),
+            reason="orphan_completion_converted_to_episodic",
+        )
+        add_step(
+            trace,
+            "orphan_completion_converted",
+            input_summary={
+                "candidate_id": original_candidate.candidate_id,
+                "memory_type": original_candidate.memory_type,
+                "task_status": original_candidate.task_status,
+            },
+            output_summary={
+                "memory_type": candidate.memory_type,
+                "canonical_topic": candidate.scope.get("canonical_topic"),
+                "retrieved_event_count": len(similar),
+            },
+            reason="no_same_instance_task_predecessor",
+        )
     advisory = maybe_memory_relation_advisory(candidate, similar, decision)
     shadow = build_relation_shadow_report(candidate, similar, decision)
     if shadow is not None:

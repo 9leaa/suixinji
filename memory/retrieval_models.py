@@ -21,11 +21,13 @@ class MemoryRetrievalHit:
     memory: MemoryRecord
     exact_rank: int | None = None
     structured_rank: int | None = None
+    family_rank: int | None = None
     fts_rank: int | None = None
     trigram_rank: int | None = None
     vector_rank: int | None = None
     exact_score: float = 0.0
     structured_score: float = 0.0
+    family_score: float = 0.0
     fts_score: float = 0.0
     trigram_score: float = 0.0
     vector_score: float = 0.0
