@@ -47,7 +47,9 @@ LAST_EXTRACTION_DIAGNOSTICS: dict[str, Any] = {}
 _LLM_CONNECTION_CIRCUIT_OPEN_UNTIL = 0.0
 _ERROR_PREVIEW_RE = re.compile(r"\b(text_preview|output_preview)=('(?:\\'|[^'])*'|\"(?:\\\"|[^\"])*\")")
 _DIAGNOSTIC_PREFIX_RE = re.compile(r"^\[MemoryV3-E2E-[^\]\n]{1,80}\]\s*")
-_REFERENCE_SIGNAL_RE = re.compile(r"(?:这个|那个|它|这件事|上面那个|继续做|也(?:做完|完成)|取消它|就按这个)")
+_REFERENCE_SIGNAL_RE = re.compile(
+    r"(?:这个|那个|它|这件事|上面那个|继续做|也(?:做完|完成)|取消它|就按这个|又|再次|仍然|后续|后来)"
+)
 
 LOW_VALUE_PATTERNS = {
     "你好",
@@ -151,7 +153,26 @@ def _should_skip_text(raw: str) -> bool:
         return True
     if contains_sensitive_data(raw):
         return True
-    return any(token in raw for token in LOW_CONFIDENCE_HINTS) and "记住" not in raw
+    # Tentative language must not discard an entire multi-claim message.
+    # The extractor/prompt handle uncertainty at candidate or clause level.
+    return False
+
+
+_TENTATIVE_CLAUSE_PREFIX_RE = re.compile(
+    r"^(?:(?:我|本人|用户)?(?:现在|目前|后续|接下来|之后)?)(?:可能|也许|大概|好像|猜一下)"
+)
+
+
+def _is_tentative_only_clause(raw: str) -> bool:
+    """Whether the clause's assertion is syntactically modal from its start.
+
+    This deliberately does *not* maintain a list of domain facts such as
+    failures, meetings, or task states. Mixed messages are split first and
+    the model sees the full message; rules only reject a standalone clause
+    whose predicate is introduced as speculation.
+    """
+    compact = re.sub(r"\s+", "", str(raw or ""))
+    return bool(_TENTATIVE_CLAUSE_PREFIX_RE.match(compact))
 
 
 def may_contain_memory(text: str, classification: dict[str, Any] | None = None) -> bool:
@@ -416,6 +437,10 @@ def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: in
     raw = re.sub(r"^(?:嗯|呃|那个|，|,|…|\s)+", "", raw)
     raw = re.sub(r"^(?:先忽略前面的闲聊|总之)[，,]?\s*", "", raw)
     raw = re.sub(r"(?:，|,)?\s*(?:先别急|别急)[。！？!?]*$", "", raw).strip()
+    # Do not turn a modal-only fragment into a standalone task with an empty
+    # identity. Hybrid LLM still receives the complete message.
+    if _is_tentative_only_clause(raw):
+        return []
 
     entities = _entities(raw)
     candidates: list[MemoryCandidate] = []
@@ -1362,6 +1387,8 @@ def extract_candidates(
         返回 `list[MemoryCandidate]`，表示按条件筛选、构造或查询得到的列表。
     """
     mode = MEMORY_EXTRACTOR_MODE if MEMORY_EXTRACTOR_MODE in {"rules", "llm", "hybrid"} else "rules"
+    LAST_EXTRACTION_DIAGNOSTICS.clear()
+    LAST_EXTRACTION_DIAGNOSTICS.update({"mode": mode, "llm_called": False, "skip_reason": None})
     rule_text = _strip_diagnostic_prefix(text)
     if mode == "rules":
         rows = _resolve_reference_fallback(

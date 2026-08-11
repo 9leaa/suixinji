@@ -22,7 +22,7 @@ from core.observability import log_event, observe
 from core.sensitive import mentions_sensitive_topic
 from core.settings import MEMORY_QUERY_MIN_SCORE, QUERY_MIN_SCORE, QUERY_TOP_K, STORAGE_BACKEND
 from core.taxonomy import is_valid_tag, is_valid_type, normalize_tag, normalize_type
-from memory.service import memory_search
+from memory.service import memory_search, task_status_search
 from memory.access import AccessContext
 from memory.repository import get_memory, get_memory_timeline, list_memory_decisions, list_memories
 from memory.consistency import wait_for_memory_barrier
@@ -62,6 +62,7 @@ REACT_SYSTEM_PROMPT = f"""
 4. get_note(note_id): 按 id 读取一条完整笔记。
 5. follow_links(note_id, limit): 查看某条笔记 related 关联的笔记，包括它指向的笔记和指向它的笔记。
 6. memory_search(query, memory_type, limit, min_score): 查询长期记忆，适合用户事实、偏好、任务状态和长期背景。
+7. task_status_search(query, limit, min_score): 任务当前状态优先，并补充同主题历史事件；事件只能作为证据，不能代表任务状态。
 
 每一步只能输出 JSON object。
 
@@ -1928,6 +1929,14 @@ def _execute_tool(space_id: str, action: str, args: dict[str, Any], *, access_co
             limit=args.get("limit", 8),
             access_context=access_context,
         )
+    if action == "task_status_search":
+        return task_status_search(
+            space_id,
+            str(args.get("query", "")),
+            min_score=args.get("min_score", DEFAULT_MEMORY_MIN_SCORE),
+            limit=args.get("limit", 8),
+            access_context=access_context,
+        )
     if action == "memory_history":
         return memory_history(space_id, str(args.get("query", "")), limit=args.get("limit", 10), access_context=access_context)
     if action == "list_tasks":
@@ -1986,7 +1995,7 @@ def _run_tool(
             return _execute_tool(space_id, action, args, access_context=(hook_context.metadata.get("access_context") if hook_context else None))
 
     result = get_default_hook_manager().run_tool(hook_context, action, args, execute) if hook_context else execute()
-    step = "memory_search" if action == "memory_search" else "note_search"
+    step = "memory_search" if action in {"memory_search", "task_status_search"} else "note_search"
     add_step(
         trace,
         step,
@@ -2326,7 +2335,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 fast_route = None
             if (
                 fast_route is not None
-                and str(fast_route.get("action")) == "memory_search"
+                and str(fast_route.get("action")) in {"memory_search", "task_status_search"}
                 and query_plan.complexity == "complex"
                 and query_plan.routing_state == "complex"
             ):
@@ -2364,7 +2373,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 action = str(fast_route["action"])
                 args = dict(fast_route["args"])
                 barrier: dict[str, Any] | None = None
-                if action == "memory_search":
+                if action in {"memory_search", "task_status_search"}:
                     barrier = wait_for_memory_barrier(space_id)
                     add_step(
                         trace,

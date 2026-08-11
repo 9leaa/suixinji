@@ -164,8 +164,9 @@ def route_for_intent(intent: QueryIntent, question: str, *, memory_min_score: fl
             "action": "filter_notes",
             "args": {"type": "任务", "limit": 30},
         }
+    action = "task_status_search" if memory_type == "task" else "memory_search"
     return {
-        "action": "memory_search",
+        "action": action,
         "args": {
             "query": retrieval_query,
             "memory_type": memory_type,

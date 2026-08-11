@@ -35,7 +35,7 @@ def test_query_intent_routes_natural_task_status_question(monkeypatch):
 
     assert intent is not None
     assert route is not None
-    assert route["action"] == "memory_search"
+    assert route["action"] == "task_status_search"
     assert route["args"]["memory_type"] == "task"
     assert "更换供应商" in route["args"]["query"]
     assert route["fallback"]["action"] == "memory_note_fallback"
@@ -61,14 +61,14 @@ def test_query_agent_uses_intent_memory_first(monkeypatch):
     calls = []
     monkeypatch.setattr(
         query_agent,
-        "memory_search",
+        "task_status_search",
         lambda space_id, query, **kwargs: calls.append(kwargs) or [{"id": "mem-1", "memory_type": "task", "content": "正在更换供应商", "sources": []}],
     )
     monkeypatch.setattr(query_agent, "_synthesize_answer", lambda *args, **kwargs: "正在更换供应商")
 
     answer = query_agent.answer_question("v3-space", "换得怎么样？")
 
-    assert calls and calls[0]["memory_type"] == "task"
+    assert calls and calls[0]["limit"] == 8
     assert "正在更换供应商" in answer
 
 

@@ -151,12 +151,19 @@ def convert_orphan_done_task_to_episodic(candidate: MemoryCandidate) -> MemoryCa
     source = str(candidate.evidence_span or candidate.content or "").strip()
     topic = str(_completion_event_topic(candidate) or candidate.object_value or source).strip()
     scope = dict(candidate.scope)
+    # The converted record is not a Task and therefore must not expose a
+    # task_family_key as an update identity.  Preserve a read-only lifecycle
+    # anchor, however, so later task-status queries can connect the historical
+    # completion with a newly opened follow-up task.
+    related_task_family_key = str(scope.get("task_family_key") or "").strip() or None
     for key in (
         "operation", "task_status", "old_value", "new_value",
         "closure_reason", "task_family_key", "blocker", "progress_note",
     ):
         scope.pop(key, None)
     scope.update({"canonical_topic": topic, "new_value": topic, "scope": "history", "derived_from": "orphan_completion"})
+    if related_task_family_key:
+        scope["related_task_family_key"] = related_task_family_key
     converted = replace(
         candidate,
         memory_type="episodic",

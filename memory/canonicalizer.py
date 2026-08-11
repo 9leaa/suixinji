@@ -71,6 +71,9 @@ _TASK_IDENTITY_PROGRESS_SUFFIX_RE = re.compile(
 _TASK_IDENTITY_DETAIL_BOUNDARY_RE = re.compile(
     r"(?:现在|目前|当前)?(?:被|因|由于|卡在|阻塞|等待).*$"
 )
+_PURE_TASK_REFERENCE_RE = re.compile(
+    r"^(?:这个|那个|它|这件事|上面那个)(?:(?:也)?(?:做完了?|完成了?|继续(?:做|处理)?(?:吧)?|取消了?|不做了?|不用做了?))?$"
+)
 _TASK_IDENTITY_ACTION_WORDS = frozenset(_TASK_OPERATION_ALIASES)
 _STABLE_SEMANTIC_ATTRIBUTES = {
     "location": "居住地",
@@ -376,13 +379,24 @@ def _task_identity_from_text(text: str, candidate: MemoryCandidate) -> tuple[str
     operation = str(candidate.scope.get("operation") or "").strip()
     resolved_operation = _first_operation(text, operation)
     canonical_topic = str(candidate.scope.get("canonical_topic") or "").strip()
-    if candidate.scope.get("reference_status") == "resolved" and canonical_topic:
+    compact_text = re.sub(r"\s+", "", str(text or "")).strip("。！？!?；;")
+    reference_is_identity_incomplete = bool(_PURE_TASK_REFERENCE_RE.fullmatch(compact_text))
+    if candidate.scope.get("reference_status") == "resolved" and canonical_topic and reference_is_identity_incomplete:
         # A resolved demonstrative (“这个也做完了”) inherits the antecedent
         # identity; its surface wording must not create a topic called “这个也”.
         inherited = _attribute_from_canonical_topic(canonical_topic, entity=entity, operation=resolved_operation)
         if inherited:
             return entity, inherited, str(candidate.scope.get("operation") or resolved_operation or "维护")
     text_operation, text_attribute = _task_action_and_material(text)
+    current_assertion_with_context = candidate.scope.get("reference_status") == "resolved" and not reference_is_identity_incomplete
+    if current_assertion_with_context:
+        # Resolved context is a relationship, not proof that an explicitly
+        # named current assertion has the antecedent's exact identity. Model
+        # fields copied from context are replaced by current evidence; the
+        # caller retains the antecedent only as a retrieval-only family link.
+        text_attribute = re.sub(
+            r"^(?:我|本人|用户)", "", task_attribute(None, text) or text_attribute
+        ).strip(" ：:，,。！？!?；;") or text_attribute
     progress_match = re.match(r"^(.*?)(?:正在(?:修复失败用例|补充测试|处理)|继续处理)(?:[^，。！？!?；;]*)$", text)
     if progress_match and progress_match.group(1).strip():
         text_attribute = progress_match.group(1).strip(" ：:，。！？!?；;")
@@ -396,6 +410,10 @@ def _task_identity_from_text(text: str, candidate: MemoryCandidate) -> tuple[str
 
     if any(marker in text for marker in ("大模型", "模型")) and "供应商" in text:
         attribute = "大模型供应商"
+    elif current_assertion_with_context and text_attribute:
+        # Do not let an antecedent canonical topic overwrite the explicitly
+        # present material merely because this clause has no surface verb.
+        attribute = text_attribute
     elif text_operation and text_attribute:
         # 显式源证据优先于不一致的模型槽位，使“需要完成 X / 正在完成 X / 已经完成 X”归为同一任务，
         # 而不是产生三条无关记忆。
@@ -542,11 +560,27 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
     memory_type = candidate.memory_type
 
     if memory_type == "task":
+        compact_source = re.sub(r"\s+", "", str(source_text or "")).strip("。！？!?；;")
+        resolved_reference = scope.get("reference_status") == "resolved"
+        identity_from_antecedent = resolved_reference and bool(_PURE_TASK_REFERENCE_RE.fullmatch(compact_source))
+        if identity_from_antecedent:
+            scope["identity_source"] = "antecedent"
+        else:
+            scope["identity_source"] = "current_evidence"
+            if resolved_reference:
+                related_family = str(
+                    scope.get("related_task_family_key") or scope.get("task_family_key") or ""
+                ).strip()
+                if related_family:
+                    scope["related_task_family_key"] = related_family
+                # A current assertion with its own text receives a new exact
+                # identity. The old family is non-authorizing retrieval context.
+                scope.pop("task_family_key", None)
         scope.update(task_progress_metadata(source_text))
         closure_reason = task_closure_reason(source_text=source_text)
         if normalize_task_status(candidate.task_status, source_text) == "done" and closure_reason:
             scope["closure_reason"] = closure_reason
-        entity, attribute, operation = _task_identity_from_text(source_text, candidate)
+        entity, attribute, operation = _task_identity_from_text(source_text, replace(candidate, scope=scope))
         entity = normalize_entity(entity, memory_type="task") or "用户"
         attribute = task_attribute(attribute, source_text) or attribute or "任务"
         operation = normalize_operation(operation, source_text) or operation or "执行"
@@ -565,7 +599,7 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
                 "task_status": normalize_task_status(candidate.task_status, source_text) or "todo",
                 "memory_key_version": MEMORY_KEY_V3_VERSION,
                 "task_family_key": scope.get("task_family_key")
-                if scope.get("reference_status") == "resolved" and scope.get("task_family_key")
+                if scope.get("identity_source") == "antecedent" and scope.get("task_family_key")
                 else f"task-family:{_task_identity_topic(f'{topic_entity}{attribute}') or _task_identity_topic(attribute) or normalize_identity(attribute)}",
             }
         )

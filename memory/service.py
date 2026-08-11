@@ -21,8 +21,8 @@ from infrastructure.redis_lock import coordinated_lock
 from memory.consolidator import consolidate_candidate
 from memory.candidate_validator import contains_sensitive_data, validate_candidates
 from memory.canonicalizer import task_instance_authorized
-from memory.extractor import extract_candidates, may_contain_memory
-from memory.models import candidate_id_for, candidate_id_for_evidence
+from memory.extractor import LAST_EXTRACTION_DIAGNOSTICS, extract_candidates, may_contain_memory
+from memory.models import candidate_id_for, candidate_id_for_evidence, normalize_content
 from memory.shadow import build_shadow_report
 from memory.repository import (
     approve_pending_memory,
@@ -59,6 +59,11 @@ LOGGER = logging.getLogger(__name__)
 
 
 _COVERAGE_QUERY_MARKERS = ("列出", "列举", "分别", "概括", "汇总", "有哪些", "哪几", "几件", "几个")
+_TASK_STATUS_QUERY_NOISE = (
+    "用户", "我", "当前", "现在", "最近", "这件", "这个", "那个",
+    "任务", "事项", "事宜", "情况", "进展", "状态", "怎么样", "如何",
+    "吗", "呢", "了", "的",
+)
 
 
 def _coverage_identity(item: dict[str, Any]) -> str:
@@ -153,7 +158,12 @@ def _note_value(note: Any, key: str, default: Any = None) -> Any:
     return getattr(note, key, default)
 
 
-def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None = None) -> dict[str, Any]:
+def _process_note_memory_impl(
+    note: Any,
+    classification: dict[str, Any] | None = None,
+    *,
+    force: bool = False,
+) -> dict[str, Any]:
     """函数功能：`_process_note_memory_impl` 负责处理 note memory impl，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
         note: note 参数，由调用方传入，类型为 `Any`。
@@ -194,7 +204,9 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
                 "extraction_status": "empty",
             }
         existing_state = get_extraction_state(note_id) if note_id else None
-        if existing_state is not None and existing_state.status in {"completed", "empty"}:
+        if existing_state is not None and existing_state.status in {"completed", "empty"} and not (
+            force and existing_state.status == "empty"
+        ):
             add_step(
                 trace,
                 "memory_extraction_skipped",
@@ -211,6 +223,13 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
                 "extraction_status": existing_state.status,
                 "idempotent": True,
             }
+        if force and existing_state is not None and existing_state.status == "empty":
+            add_step(
+                trace,
+                "memory_extraction_replayed",
+                output_summary={"note_id": note_id, "previous_status": existing_state.status, "previous_attempt_count": existing_state.attempt_count},
+                reason="explicit_replay_of_empty_state",
+            )
         if MEMORY_EXTRACTOR_MODE == "rules":
             if not may_contain_memory(text, classification=classification):
                 state = mark_extraction_empty_attempt(note_id, space_id)
@@ -314,6 +333,21 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
 
         if not candidates:
             state = mark_extraction_empty(note_id, space_id)
+            diagnostics = dict(LAST_EXTRACTION_DIAGNOSTICS)
+            empty_reason = "llm_empty_response" if diagnostics.get("llm_called") else "no_storeworthy_candidate"
+            add_step(
+                trace,
+                "memory_extraction_empty_diagnosed",
+                status="partial",
+                output_summary={
+                    "note_id": note_id,
+                    "raw_candidate_count": len(enriched_candidates),
+                    "rejected_candidate_count": len(rejections),
+                    "llm_called": bool(diagnostics.get("llm_called")),
+                    "llm_candidate_count": int(diagnostics.get("llm_candidate_count") or 0),
+                },
+                reason=empty_reason,
+            )
             add_step(
                 trace,
                 "extraction_state_empty",
@@ -323,6 +357,7 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
                     "processed_count": state.processed_count,
                     "attempt_count": state.attempt_count,
                 },
+                reason=empty_reason,
             )
             add_step(trace, "vector_written", output_summary={"note_id": note_id, "memory_count": 0}, reason="note_vector_written_before_memory")
             finish_trace(trace)
@@ -443,7 +478,12 @@ def _process_note_memory_impl(note: Any, classification: dict[str, Any] | None =
         raise
 
 
-def process_note_memory(note: Any, classification: dict[str, Any] | None = None) -> dict[str, Any]:
+def process_note_memory(
+    note: Any,
+    classification: dict[str, Any] | None = None,
+    *,
+    force: bool = False,
+) -> dict[str, Any]:
     """函数功能：`process_note_memory` 负责处理 note memory，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
         note: note 参数，由调用方传入，类型为 `Any`。
@@ -468,7 +508,7 @@ def process_note_memory(note: Any, classification: dict[str, Any] | None = None)
             context,
             "process_memory",
             {"note_id": note_id},
-            lambda: _process_note_memory_impl(note, classification),
+            lambda: _process_note_memory_impl(note, classification, force=force),
         ),
     )
 
@@ -509,6 +549,92 @@ def memory_search(
     )
     finish_trace(trace)
     return results
+
+
+def _task_status_query_anchor(query: str) -> str:
+    # Intent routing may append a normalized topic to the original question
+    # ("original topic").  Extract anchors per segment and deduplicate a
+    # repeated projection instead of requiring a literal doubled phrase to
+    # occur in a memory identity.
+    anchors: list[str] = []
+    for part in re.split(r"\s+", str(query or "").strip()):
+        value = normalize_content(part)
+        for marker in _TASK_STATUS_QUERY_NOISE:
+            value = value.replace(normalize_content(marker), "")
+        if len(value) >= 2 and value not in anchors:
+            anchors.append(value)
+    return "".join(anchors)
+
+
+def _memory_identity_text(item: dict[str, Any]) -> str:
+    scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
+    values = (
+        item.get("content"), item.get("subject"), item.get("predicate"),
+        item.get("object_value"), item.get("memory_key"),
+        scope.get("canonical_topic"), scope.get("task_family_key"),
+        scope.get("related_task_family_key"),
+    )
+    return normalize_content(" ".join(str(value or "") for value in values))
+
+
+def _task_status_hit_is_relevant(item: dict[str, Any], *, anchor: str) -> bool:
+    identity = _memory_identity_text(item)
+    if anchor and anchor in identity:
+        return True
+    # A type-filtered vector score around the global threshold is often a
+    # generic completed task, not evidence for the user's named topic.
+    return not anchor and float(item.get("score") or 0.0) >= 0.62
+
+
+def task_status_search(
+    space_id: str,
+    query: str,
+    *,
+    min_score: float = MEMORY_QUERY_MIN_SCORE,
+    limit: int = 8,
+    access_context: Any = None,
+) -> list[dict[str, Any]]:
+    """Retrieve current Tasks first, then bounded related episodic evidence.
+
+    Episodic rows can explain prior completion or a reopening, but are never
+    treated as task state or mutation targets.
+    """
+    requested_limit = max(1, min(int(limit), 20))
+    anchor = _task_status_query_anchor(query)
+    raw_tasks = memory_search(
+        space_id, query, memory_type="task", min_score=0.0,
+        limit=max(requested_limit * 3, 12), access_context=access_context,
+    )
+    task_hits = [
+        {**item, "task_evidence_role": "current_task"}
+        for item in raw_tasks
+        if _task_status_hit_is_relevant(item, anchor=anchor)
+    ]
+    task_families = {
+        str(family or "")
+        for item in task_hits
+        if isinstance(item.get("scope"), dict)
+        for family in (
+            (item.get("scope") or {}).get("task_family_key"),
+            (item.get("scope") or {}).get("related_task_family_key"),
+        )
+        if str(family or "")
+    }
+    raw_episodes = memory_search(
+        space_id, query, memory_type="episodic", min_score=0.0,
+        limit=max(requested_limit * 2, 8), access_context=access_context,
+    )
+    episode_hits: list[dict[str, Any]] = []
+    for item in raw_episodes:
+        scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
+        related_family = str(scope.get("related_task_family_key") or "")
+        family_related = bool(related_family and related_family in task_families)
+        if family_related or _task_status_hit_is_relevant(item, anchor=anchor):
+            episode_hits.append({**item, "task_evidence_role": "historical_event"})
+
+    # Current task evidence remains first; at most two history rows explain
+    # how the task reached its present state without crowding out the answer.
+    return [*task_hits[:requested_limit], *episode_hits[:2]][:requested_limit]
 
 
 def _format_memory(memory: dict[str, Any]) -> str:
