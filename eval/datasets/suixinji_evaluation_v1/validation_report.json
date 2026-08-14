@@ -1,0 +1,17 @@
+{
+  "status": "valid",
+  "counts": {
+    "l1": 1000,
+    "l2": 800,
+    "l3": 800,
+    "l1_l2_bridge": 300,
+    "l1_l2_l3_full": 200
+  },
+  "checks": {
+    "json_schema": true,
+    "evidence_substring": true,
+    "reference_integrity": true,
+    "world_split_leakage": true
+  },
+  "errors": []
+}

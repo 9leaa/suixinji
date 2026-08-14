@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "suixinji.evaluation.v1",
+  "title": "随心记 world-spec-first 评测数据",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "case_id",
+    "world_id",
+    "scenario_family",
+    "world_spec",
+    "input"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "world_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario_family": {
+      "type": "string",
+      "minLength": 1
+    },
+    "world_spec": {
+      "type": "object"
+    },
+    "input": {
+      "type": "object"
+    },
+    "expected": {
+      "type": "object"
+    },
+    "expected_l2": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "task_status": {
+      "enum": [
+        "todo",
+        "done",
+        null
+      ]
+    },
+    "memory_type": {
+      "enum": [
+        "task",
+        "preference",
+        "semantic",
+        "episodic"
+      ]
+    },
+    "answer_type": {
+      "enum": [
+        "answered",
+        "no_answer",
+        "qualified_history_only",
+        "conflict",
+        "clarification",
+        "restricted",
+        "system_error"
+      ]
+    },
+    "polarity": {
+      "enum": [
+        "positive",
+        "negative",
+        "unknown",
+        null
+      ]
+    }
+  },
+  "x-gold-rule": "world_spec + deterministic rules; never generated from model answer"
+}

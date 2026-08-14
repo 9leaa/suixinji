@@ -1,0 +1,12 @@
+{
+  "valid": true,
+  "case_count": 420,
+  "unique_case_ids": 420,
+  "error_count": 0,
+  "checks": [
+    "unique IDs",
+    "schema enums",
+    "reference integrity",
+    "two-state output contract"
+  ]
+}

@@ -10,6 +10,7 @@ from memory.canonicalizer import canonicalize_candidate
 from memory.models import MemoryCandidate
 from memory.models import memory_key_for
 from memory.repository import hybrid_adjudication_candidates, insert_memory
+from memory.candidate_retriever import retrieve_candidates
 
 
 def test_memory_key_v2_keeps_preference_polarity_in_one_slot():
@@ -108,3 +109,37 @@ def test_task_family_channel_recalls_related_instance_without_authorizing_merge(
 
     assert stored.id in {memory.id for memory in results}
     assert candidate_similarity(second, stored) == 0.75
+
+
+def test_preference_family_channel_recalls_old_related_preference_outside_structured_window():
+    target = insert_memory(
+        "space-preference-family-channel",
+        canonicalize_candidate(MemoryCandidate(
+            "preference", "用户喜欢喝拿铁", 0.8, 0.95,
+            subject="用户", predicate="preference", object_value="拿铁",
+            evidence_span="用户喜欢喝拿铁", scope={"scope": "global"}, polarity="positive",
+        )),
+        source_note_id="note-latte",
+    )
+    # These unrelated lexical matches ensure the family anchor must survive
+    # multi-channel retrieval before deterministic identity reranking.
+    for index in range(35):
+        insert_memory(
+            "space-preference-family-channel",
+            canonicalize_candidate(MemoryCandidate(
+                "preference", f"用户喜欢设备P{index}", 0.7, 0.9,
+                subject="用户", predicate="preference", object_value=f"设备P{index}",
+                evidence_span=f"用户喜欢设备P{index}", scope={"scope": "global"}, polarity="positive",
+            )),
+            source_note_id=f"note-device-{index}",
+        )
+
+    candidate = canonicalize_candidate(MemoryCandidate(
+        "preference", "用户喜欢喝咖啡", 0.8, 0.95,
+        subject="用户", predicate="preference", object_value="咖啡",
+        evidence_span="用户喜欢喝咖啡", scope={"scope": "global"}, polarity="positive",
+    ))
+    results = retrieve_candidates("space-preference-family-channel", candidate, limit=8)
+
+    assert target.id in {memory.id for memory in results}
+    assert candidate_similarity(candidate, target) == 0.84

@@ -1428,11 +1428,18 @@ def hybrid_adjudication_candidates(
             ))
 
         structured_filters = []
-        if candidate.memory_type and candidate.predicate:
+        # Preference uses a fixed predicate ("preference"), so predicate-only
+        # structured recall would return every preference in the space and
+        # drown out the more meaningful exact/family/topic channels.
+        generic_preference_predicate = (
+            candidate.memory_type == "preference"
+            and normalize_content(str(candidate.predicate or "")) == "preference"
+        )
+        if candidate.memory_type and candidate.predicate and not generic_preference_predicate:
             structured_filters.append((Memory.memory_type == candidate.memory_type) & (func.lower(Memory.predicate) == candidate.predicate.casefold()))
-        if candidate.subject and candidate.predicate:
+        if candidate.subject and candidate.predicate and not generic_preference_predicate:
             structured_filters.append((func.lower(Memory.subject) == candidate.subject.casefold()) & (func.lower(Memory.predicate) == candidate.predicate.casefold()))
-        if candidate.predicate and candidate.object_value:
+        if candidate.predicate and candidate.object_value and not generic_preference_predicate:
             structured_filters.append((func.lower(Memory.predicate) == candidate.predicate.casefold()) & Memory.object_value.ilike(f"%{candidate.object_value[:120]}%"))
         if candidate.object_value:
             structured_filters.append(Memory.object_value.ilike(f"%{candidate.object_value[:120]}%"))
@@ -1460,6 +1467,21 @@ def hybrid_adjudication_candidates(
                 list(
                     session.execute(
                         base.where(Memory.scope_json["task_family_key"].astext == task_family_key)
+                        .order_by(Memory.updated_at.desc(), Memory.id.desc())
+                        .limit(min(20, retrieval_limit))
+                    ).scalars()
+                ),
+            ))
+        preference_family_key = str(candidate.scope.get("preference_family_key") or "").strip()
+        if candidate.memory_type == "preference" and preference_family_key:
+            # Preference families are a bounded recall signal only. They sit
+            # below exact canonical identity in weighted RRF; RelationGuard
+            # remains the sole authority for an update.
+            channels.append((
+                "family",
+                list(
+                    session.execute(
+                        base.where(Memory.scope_json["preference_family_key"].astext == preference_family_key)
                         .order_by(Memory.updated_at.desc(), Memory.id.desc())
                         .limit(min(20, retrieval_limit))
                     ).scalars()

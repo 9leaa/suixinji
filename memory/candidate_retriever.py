@@ -238,7 +238,11 @@ def retrieve_candidates(space_id: str, candidate: MemoryCandidate, *, limit: int
     """
     top_k = limit if limit is not None else MEMORY_ADJUDICATION_TOP_K
     if MEMORY_RETRIEVAL_MODE == "hybrid":
-        memories = hybrid_adjudication_candidates(space_id, candidate, limit=max(top_k * 3, 20))
+        # Multi-channel retrieval is intentionally over-fetched before this
+        # module applies its type-aware deterministic identity ranking. This
+        # preserves an exact/family anchor when a broad lexical channel has
+        # many weak hits; only the final bounded Top-K reaches adjudication.
+        memories = hybrid_adjudication_candidates(space_id, candidate, limit=max(top_k * 6, 50))
     else:
         memories = list_adjudication_candidates(
             space_id,

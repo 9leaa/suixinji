@@ -1,0 +1,21 @@
+{
+  "$id": "suixinji.layer1.independent.v2",
+  "required": [
+    "schema_version",
+    "case_id",
+    "scenario_family",
+    "input",
+    "expected"
+  ],
+  "task_status_enum": [
+    "todo",
+    "done",
+    null
+  ],
+  "memory_type_enum": [
+    "task",
+    "preference",
+    "semantic",
+    "episodic"
+  ]
+}

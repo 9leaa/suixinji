@@ -1,0 +1,7 @@
+{
+  "dataset_name": "suixinji_l1_l2_bridge_v1_new_domains",
+  "schema_version": "suixinji.evaluation.v1.bridge",
+  "case_count": 300,
+  "seed": 20260813,
+  "gold_frozen": true
+}

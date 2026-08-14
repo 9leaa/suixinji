@@ -1,0 +1,36 @@
+{
+  "$id": "suixinji.layer2.independent.v2",
+  "required": [
+    "schema_version",
+    "case_id",
+    "scenario_family",
+    "input",
+    "expected"
+  ],
+  "task_status_output_enum": [
+    "todo",
+    "done",
+    null
+  ],
+  "identity_enum": [
+    "same_instance",
+    "same_family",
+    "different",
+    "uncertain",
+    "same_assertion"
+  ],
+  "relation_enum": [
+    "new",
+    "same",
+    "merge",
+    "update",
+    "supersede",
+    "conflict"
+  ],
+  "action_enum": [
+    "insert",
+    "add_source",
+    "update",
+    "pending_review"
+  ]
+}

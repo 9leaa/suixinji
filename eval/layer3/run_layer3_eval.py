@@ -9,7 +9,9 @@ for scoring; it is never passed into application code.
 from __future__ import annotations
 
 import argparse
+import copy
 import concurrent.futures
+import hashlib
 import json
 import math
 import os
@@ -44,6 +46,7 @@ DATA_FILES = (
     "semantic_paraphrase_and_noise.jsonl",
 )
 
+V1_SCHEMA_VERSION = "suixinji.layer3.retrieval_answer.v1"
 NON_FACT_ANSWER_TYPES = {"no_answer", "conflict", "clarification", "restricted", "system_error"}
 
 
@@ -53,25 +56,170 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def load_cases(data_dir: str) -> list[dict[str, Any]]:
+class Layer3PreflightError(ValueError):
+    """Raised before DB/model work when evaluator data cannot be seeded safely."""
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _source_data_sha256(files: dict[str, str]) -> str:
+    """Stable aggregate hash for a directory source (zip sources retain their file hash)."""
+    digest = hashlib.sha256()
+    for name in sorted(files):
+        digest.update(name.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(files[name].encode("ascii"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def _find_dataset_root(source: Path) -> Path:
+    if (source / DATA_FILES[0]).exists():
+        return source
+    matches = list(source.rglob(DATA_FILES[0]))
+    if not matches:
+        raise FileNotFoundError(f"missing Layer3 dataset: {DATA_FILES[0]}")
+    return matches[0].parent
+
+
+def _preflight_snapshot(case: dict[str, Any]) -> Counter[str]:
+    """Validate fixture-only logical references and task-state projectability."""
+    from memory.field_contracts import normalize_task_status
+
+    case_id = str(case.get("case_id") or "<unknown>")
+    snapshot = ((case.get("input") or {}).get("memory_snapshot") or {})
+    if not isinstance(snapshot, dict):
+        raise Layer3PreflightError(f"{case_id}: input.memory_snapshot must be an object")
+
+    def indexed(items: Any, field: str) -> dict[str, dict[str, Any]]:
+        if not isinstance(items, list):
+            raise Layer3PreflightError(f"{case_id}: memory_snapshot.{field}s must be a list")
+        result: dict[str, dict[str, Any]] = {}
+        for item in items:
+            if not isinstance(item, dict):
+                raise Layer3PreflightError(f"{case_id}: {field} entries must be objects")
+            ref = str(item.get(f"{field}_ref") or "")
+            if not ref or ref in result:
+                raise Layer3PreflightError(f"{case_id}: duplicate or empty {field}_ref: {ref!r}")
+            result[ref] = item
+        return result
+
+    memories = indexed(snapshot.get("memories") or [], "memory")
+    versions = indexed(snapshot.get("versions") or [], "version")
+    sources = indexed(snapshot.get("sources") or [], "source")
+    projected: Counter[str] = Counter()
+
+    def validate_task_state(item: dict[str, Any], *, memory_type: str, location: str) -> None:
+        raw_status = item.get("task_status")
+        if memory_type != "task":
+            if raw_status is not None:
+                raise Layer3PreflightError(f"{case_id}: non-task {location} must not carry task_status")
+            return
+        if raw_status is None:
+            return
+        normalized = normalize_task_status(raw_status, str(item.get("content") or ""))
+        if normalized not in {"todo", "done"}:
+            raise Layer3PreflightError(f"{case_id}: task {location} has non-projectable task_status: {raw_status!r}")
+        projected[f"{str(raw_status).strip().casefold()}->{normalized}"] += 1
+
+    for memory_ref, memory in memories.items():
+        validate_task_state(memory, memory_type=str(memory.get("memory_type") or ""), location=f"memory {memory_ref}")
+        for source_ref in memory.get("source_refs") or []:
+            if str(source_ref) not in sources:
+                raise Layer3PreflightError(f"{case_id}: memory {memory_ref} references missing source {source_ref!r}")
+    for version_ref, version in versions.items():
+        memory_ref = str(version.get("memory_ref") or "")
+        parent = memories.get(memory_ref)
+        if parent is None:
+            raise Layer3PreflightError(f"{case_id}: version {version_ref} references missing memory {memory_ref!r}")
+        validate_task_state(version, memory_type=str(parent.get("memory_type") or ""), location=f"version {version_ref}")
+        for source_ref in version.get("source_refs") or []:
+            if str(source_ref) not in sources:
+                raise Layer3PreflightError(f"{case_id}: version {version_ref} references missing source {source_ref!r}")
+    for review in snapshot.get("pending_reviews") or []:
+        if not isinstance(review, dict):
+            raise Layer3PreflightError(f"{case_id}: pending_review entries must be objects")
+        for memory_ref in review.get("memory_refs") or []:
+            if str(memory_ref) not in memories:
+                raise Layer3PreflightError(f"{case_id}: pending review references missing memory {memory_ref!r}")
+
+    expected = case.get("expected") or {}
+    for field, available in (
+        ("relevant_current_refs", memories),
+        ("relevant_history_refs", versions),
+        ("required_citation_refs", sources),
+    ):
+        for ref in expected.get(field) or []:
+            if str(ref) not in available:
+                raise Layer3PreflightError(f"{case_id}: expected.{field} references missing logical ref {ref!r}")
+    for ref in expected.get("must_not_return_refs") or []:
+        if str(ref) not in memories and str(ref) not in versions:
+            raise Layer3PreflightError(f"{case_id}: expected.must_not_return_refs references missing logical ref {ref!r}")
+    return projected
+
+
+def preflight_cases(cases: list[dict[str, Any]]) -> dict[str, Any]:
+    """Run all data-only checks before creating a space or invoking any model."""
+    from eval.layer3.contracts.v2 import validate_cases
+
+    validate_cases(cases)
+    task_projection: Counter[str] = Counter()
+    answer_types: Counter[str] = Counter()
+    evidence_modes: Counter[str] = Counter()
+    ordinary_current = 0
+    history = 0
+    for case in cases:
+        task_projection.update(_preflight_snapshot(case))
+        expected = case["expected"]
+        answer_type = str(expected["answer_type"])
+        mode = str(expected["evidence_mode"])
+        answer_types[answer_type] += 1
+        evidence_modes[mode] += 1
+        if answer_type == "answered" and mode in {"current", "mixed"} and expected.get("relevant_current_refs"):
+            ordinary_current += 1
+        if answer_type == "answered" and mode == "history" and expected.get("relevant_history_refs"):
+            history += 1
+    return {
+        "case_count": len(cases),
+        "case_ids_unique": True,
+        "v2_contract_valid": True,
+        "answer_type_counts": dict(sorted(answer_types.items())),
+        "evidence_mode_counts": dict(sorted(evidence_modes.items())),
+        "answered_count": answer_types["answered"],
+        "ordinary_current_retrieval_eligible_count": ordinary_current,
+        "history_version_retrieval_eligible_count": history,
+        "task_status_projection_counts": dict(sorted(task_projection.items())),
+    }
+
+
+def load_cases_with_manifest(data_dir: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Read immutable source cases, adapt one schema, and preflight before execution."""
     src = Path(data_dir)
     temp: Path | None = None
+    source_zip_sha256: str | None = _sha256_file(src) if src.is_file() else None
     if src.is_file() and src.suffix.lower() == ".zip":
         temp = Path(tempfile.mkdtemp(prefix="suixinji-l3-data-"))
         with zipfile.ZipFile(src) as zf:
             zf.extractall(temp)
-        dirs = [p for p in temp.rglob("current_state_retrieval.jsonl")]
-        src = dirs[0].parent if dirs else temp
+        src = _find_dataset_root(temp)
+    elif src.is_dir():
+        src = _find_dataset_root(src)
+    else:
+        raise FileNotFoundError(f"Layer3 data source is not a directory or zip: {data_dir}")
     cases: list[dict[str, Any]] = []
+    source_file_sha256: dict[str, str] = {}
     try:
         for name in DATA_FILES:
             path = src / name
             if not path.exists():
-                matches = list(src.rglob(name))
-                if matches:
-                    path = matches[0]
-            if not path.exists():
                 raise FileNotFoundError(f"missing Layer3 dataset: {name}")
+            source_file_sha256[name] = _sha256_file(path)
             with path.open(encoding="utf-8") as fh:
                 for line in fh:
                     if line.strip():
@@ -79,7 +227,46 @@ def load_cases(data_dir: str) -> list[dict[str, Any]]:
     finally:
         if temp:
             shutil.rmtree(temp, ignore_errors=True)
-    return cases
+    versions: dict[str, list[str]] = defaultdict(list)
+    for case in cases:
+        versions[str(case.get("schema_version") or "<missing>")].append(str(case.get("case_id") or "<missing>"))
+    version_set = set(versions)
+    if version_set == {V1_SCHEMA_VERSION}:
+        from eval.layer3.contract_migrations.v1_to_v2 import migrate_cases
+
+        effective_cases, changes = migrate_cases(copy.deepcopy(cases))
+        source_contract = V1_SCHEMA_VERSION
+        migration_applied = True
+    elif len(version_set) == 1:
+        from eval.layer3.contracts.v2 import SCHEMA_VERSION, validate_cases
+
+        if next(iter(version_set)) != SCHEMA_VERSION:
+            raise Layer3PreflightError(f"unsupported Layer3 schema: {next(iter(version_set))!r}; cases={versions}")
+        effective_cases = copy.deepcopy(cases)
+        validate_cases(effective_cases)
+        changes = []
+        source_contract = SCHEMA_VERSION
+        migration_applied = False
+    else:
+        details = {schema: ids[:10] for schema, ids in sorted(versions.items())}
+        raise Layer3PreflightError(f"mixed Layer3 schemas are not supported: {details}")
+    preflight = preflight_cases(effective_cases)
+    from eval.layer3.contracts.v2 import SCHEMA_VERSION
+
+    return effective_cases, {
+        "source_contract": source_contract,
+        "effective_contract": SCHEMA_VERSION,
+        "contract_migration_applied": migration_applied,
+        "source_data_sha256": source_zip_sha256 or _source_data_sha256(source_file_sha256),
+        "source_files_sha256": source_file_sha256,
+        "contract_migration_change_count": len(changes),
+        "preflight": preflight,
+    }
+
+
+def load_cases(data_dir: str) -> list[dict[str, Any]]:
+    """Compatibility wrapper for callers interested only in effective v2 cases."""
+    return load_cases_with_manifest(data_dir)[0]
 
 
 def _safe_json(value: Any) -> Any:
@@ -144,8 +331,10 @@ def _prf(tp: int, fp: int, fn: int) -> dict[str, Any]:
 
 
 def _candidate_for(raw: dict[str, Any], note_id: str):
+    from memory.field_contracts import normalize_task_status, project_legacy_task_scope, task_progress_metadata
     from memory.models import MemoryCandidate, MEMORY_KEY_V3_VERSION
 
+    memory_type = str(raw.get("memory_type") or "semantic")
     topic = raw.get("canonical_topic") or raw.get("attribute") or raw.get("entity")
     scope = {
         "scope": raw.get("access_scope", "owner"),
@@ -153,12 +342,20 @@ def _candidate_for(raw: dict[str, Any], note_id: str):
         "sensitivity": raw.get("sensitivity", "normal"),
         "layer3_seed": True,
     }
+    task_status = None
+    if memory_type == "task":
+        task_status = normalize_task_status(raw.get("task_status"), str(raw.get("content") or ""))
+        scope = project_legacy_task_scope(raw.get("task_status"), scope)
+        # Keep legacy blocker/progress semantics in fixture metadata while the
+        # persisted task state remains the production todo|done invariant.
+        for key, value in task_progress_metadata(str(raw.get("content") or "")).items():
+            scope[key] = value
     return MemoryCandidate(
-        memory_type=str(raw.get("memory_type") or "semantic"),
+        memory_type=memory_type,
         content=str(raw.get("content") or ""),
         importance=0.8,
         confidence=0.99,
-        task_status=raw.get("task_status"),
+        task_status=task_status,
         note_id=note_id,
         subject=raw.get("entity"),
         predicate=raw.get("attribute"),
@@ -172,6 +369,15 @@ def _candidate_for(raw: dict[str, Any], note_id: str):
         extractor_version="layer3-eval-v1",
         memory_key_version=MEMORY_KEY_V3_VERSION,
     )
+
+
+def _fixture_version_task_status(raw: dict[str, Any], memory_type: str) -> str | None:
+    """Project legacy fixture version state without changing its content or time."""
+    if memory_type != "task":
+        return None
+    from memory.field_contracts import normalize_task_status
+
+    return normalize_task_status(raw.get("task_status"), str(raw.get("content") or ""))
 
 
 def _embedding_contract_dict() -> dict[str, Any]:
@@ -365,7 +571,7 @@ class CaseRunner:
                             session.add(target)
                         target.content = str(version.get("content") or row.content)
                         target.status = str(raw.get("status") or "active")
-                        target.task_status = version.get("task_status")
+                        target.task_status = _fixture_version_task_status(version, candidate.memory_type)
                         target.confidence = row.confidence
                         target.importance = row.importance
                         target.valid_from = _dt(_iso_db(version.get("valid_from")))
@@ -1121,7 +1327,14 @@ def aggregate(scored: list[dict[str, Any]], predictions: list[dict[str, Any]]) -
     return metrics
 
 
-def write_reports(out_dir: Path, predictions: list[dict[str, Any]], scored: list[dict[str, Any]], started: str, args: argparse.Namespace) -> None:
+def write_reports(
+    out_dir: Path,
+    predictions: list[dict[str, Any]],
+    scored: list[dict[str, Any]],
+    started: str,
+    args: argparse.Namespace,
+    contract_manifest: dict[str, Any],
+) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     metrics = aggregate(scored, predictions)
     all_errors = [e for p in predictions for e in (p.get("errors") or [])]
@@ -1155,7 +1368,7 @@ def write_reports(out_dir: Path, predictions: list[dict[str, Any]], scored: list
     latency_values = [p.get("latency_ms", {}) for p in predictions]
     latency = {name: {"p50": _pct([float(x.get(name, 0)) for x in latency_values], .5), "p95": _pct([float(x.get(name, 0)) for x in latency_values], .95), "p99": _pct([float(x.get(name, 0)) for x in latency_values], .99)} for name in ("retrieval", "answer", "total")}
     failures = [p for p in predictions if p.get("errors") or score_case(p)["read_only"]["business_state_changed"] or score_case(p)["retrieval"]["must_not_return_violation"] or score_case(p)["answer"]["forbidden_claim_hit"]]
-    manifest = {"schema_version": "suixinji.layer3.run.v1", "started_at": started, "finished_at": now_iso(), "run_id": args.run_id, "backend": os.getenv("STORAGE_BACKEND"), "retrieval_mode": os.getenv("SUIXINJI_MEMORY_RETRIEVAL_MODE"), "dataset_dir": args.data_dir, "case_count": len(predictions), "concurrency": args.concurrency, "top_k": args.top_k, "production_entry": ["memory.service.memory_search", "agent.query_agent.answer_question_result", "agent.query_agent.answer_question"], "gold_not_passed_to_business_code": True, "answer_error_count": len(answer_errors), "execution_error_count": len(execution_errors), "answer_error_types": dict(Counter(str(e.get("type")) for e in answer_errors)), "stage0_contract": "selected_context_refs, selected_tool_refs, and executed_tools remain null/unavailable unless production explicitly exposes them; the evaluator does not infer them from answer text, Gold, route diagnostics, or extra lookups.", "notes": ["Raw channel capture is diagnostic and does not control the answer path.", "Access filtering is applied before RRF fusion.", "Answer availability, successful-call quality and end-to-end quality are reported separately.", "Stage 0 separates stale, irrelevant, access-control, ambiguous and must-not-return diagnostics.", "The current production memory query marks access metadata; read-only checks exclude access_count/last_accessed_at."]}
+    manifest = {"schema_version": "suixinji.layer3.run.v1", "started_at": started, "finished_at": now_iso(), "run_id": args.run_id, "backend": os.getenv("STORAGE_BACKEND"), "retrieval_mode": os.getenv("SUIXINJI_MEMORY_RETRIEVAL_MODE"), "dataset_dir": args.data_dir, "case_count": len(predictions), "concurrency": args.concurrency, "top_k": args.top_k, "production_entry": ["memory.service.memory_search", "agent.query_agent.answer_question_result", "agent.query_agent.answer_question"], "gold_not_passed_to_business_code": True, "answer_error_count": len(answer_errors), "execution_error_count": len(execution_errors), "answer_error_types": dict(Counter(str(e.get("type")) for e in answer_errors)), "stage0_contract": "selected_context_refs, selected_tool_refs, and executed_tools remain null/unavailable unless production explicitly exposes them; the evaluator does not infer them from answer text, Gold, route diagnostics, or extra lookups.", "notes": ["Raw channel capture is diagnostic and does not control the answer path.", "Access filtering is applied before RRF fusion.", "Answer availability, successful-call quality and end-to-end quality are reported separately.", "Stage 0 separates stale, irrelevant, access-control, ambiguous and must-not-return diagnostics.", "The current production memory query marks access metadata; read-only checks exclude access_count/last_accessed_at."], **contract_manifest}
     for name, payload in [("layer3_run_manifest.json", manifest), ("layer3_metrics.json", metrics), ("layer3_retrieval_metrics.json", retrieval), ("layer3_answer_metrics.json", answer), ("layer3_answer_availability.json", answer_availability), ("layer3_answer_quality.json", answer_quality), ("layer3_citation_metrics.json", citation), ("layer3_no_answer_report.json", no_answer), ("layer3_access_control_report.json", access), ("layer3_route_confusion.json", route_report), ("layer3_tag_breakdown.json", metrics["by_coverage_tag"]), ("layer3_latency_report.json", latency)]:
         (out_dir / name).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     with (out_dir / "layer3_predictions.jsonl").open("w", encoding="utf-8") as fh:
@@ -1180,8 +1393,12 @@ def main() -> None:
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--concurrency", type=int, default=3)
     parser.add_argument("--limit", type=int, default=0, help="test only the first N cases (smoke test)")
+    parser.add_argument("--preflight-only", action="store_true", help="validate/migrate locally without DB or model calls")
     args = parser.parse_args()
-    cases = load_cases(args.data_dir)
+    cases, contract_manifest = load_cases_with_manifest(args.data_dir)
+    if args.preflight_only:
+        print(json.dumps({"dataset_dir": args.data_dir, **contract_manifest}, ensure_ascii=False), flush=True)
+        return
     if args.limit > 0:
         cases = cases[: args.limit]
     started = now_iso()
@@ -1214,7 +1431,7 @@ def main() -> None:
                 print(f"progress {idx}/{len(futures)}", flush=True)
     predictions.sort(key=lambda x: str(x.get("case_id")))
     scored = [score_case(p) for p in predictions]
-    write_reports(out_dir, predictions, scored, started, args)
+    write_reports(out_dir, predictions, scored, started, args, contract_manifest)
     print(json.dumps({"run_id": args.run_id, "cases": len(predictions), "output_dir": str(out_dir)}, ensure_ascii=False), flush=True)
 
 

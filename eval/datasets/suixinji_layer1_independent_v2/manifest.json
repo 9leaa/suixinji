@@ -1,0 +1,36 @@
+{
+  "dataset_name": "suixinji_layer1_independent_v2",
+  "schema_version": "suixinji.layer1.independent.v2",
+  "case_count": 420,
+  "scenario_count": 14,
+  "scenario_counts": {
+    "atomic_assertion_coverage": 30,
+    "done_task_vs_episodic": 30,
+    "legacy_status_language_mapping": 30,
+    "multi_candidate_mixed": 30,
+    "multi_preference_split": 30,
+    "noise_and_schema_guard": 30,
+    "preference_identity_keys": 30,
+    "preference_qualifiers": 30,
+    "reference_resolution_guard": 30,
+    "reference_resolution_success": 30,
+    "should_store_basic": 30,
+    "task_binary_status": 30,
+    "task_detail_fields": 30,
+    "task_instance_family_keys": 30
+  },
+  "created_at": "2026-08-05T02:14:59.162857Z",
+  "contract": {
+    "task_status": [
+      "todo",
+      "done"
+    ],
+    "old_statuses_output_forbidden": [
+      "blocked",
+      "in_progress",
+      "cancelled",
+      "canceled"
+    ],
+    "logical_refs_evaluation_only": true
+  }
+}
