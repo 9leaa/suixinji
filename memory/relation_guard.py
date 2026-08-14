@@ -225,25 +225,12 @@ def evaluate_relation(candidate: MemoryCandidate, memory: MemoryRecord) -> Relat
         return RelationGuardResult("conflict", "pending_review", "invalid_task_state_transition", False)
 
     if candidate.memory_type == "semantic":
-        generic_fact = normalize_content(candidate.predicate or "") in {"fact", "事实"} or normalize_content(memory.predicate or "") in {"fact", "事实"}
-        if generic_fact and not exact_key:
-            return RelationGuardResult("new", "insert", "generic_semantic_fact_cannot_auto_merge", False)
-        if not exact_key:
-            return RelationGuardResult("new", "insert", "semantic_requires_exact_stable_slot_key", False)
-        if _is_unconfirmed(candidate):
-            return RelationGuardResult("conflict", "pending_review", "unconfirmed_semantic_change", False)
-        if _is_correction(candidate):
-            return RelationGuardResult("supersede", "update", "explicit_semantic_correction", True)
-        if _same_structured_value(candidate, memory):
-            if _has_detail_delta(candidate, memory):
-                return RelationGuardResult("merge", "update", "semantic_detail_merge", True)
-            return RelationGuardResult("same", "add_source", "same_semantic_value", True)
-        if _same(candidate.subject, memory.subject) and _same(candidate.predicate, memory.predicate):
-            # Coordinating language adds a compatible fact; it is not a replacement.
-            if any(marker in candidate.content for marker in ("也在", "同时", "以及", "并且")):
-                return RelationGuardResult("merge", "merge", "semantic_compatible_extension", True)
-            return RelationGuardResult("update", "update", "semantic_slot_value_update", True)
-        return RelationGuardResult("new", "insert", "semantic_identity_not_confirmed", False)
+        # Semantic memory is an append-only fact log.  The broad attribute is
+        # a retrieval facet, never a mutable state slot.  Only an identical
+        # fact key adds another source to the existing record.
+        if exact_key:
+            return RelationGuardResult("same", "add_source", "same_semantic_fact", True)
+        return RelationGuardResult("new", "insert", "semantic_append_only", True)
 
     if candidate.memory_type == "preference":
         same_scope = normalize_content(str(candidate.scope.get("scope") or "global")) == normalize_content(_scope(memory, "scope", "global"))

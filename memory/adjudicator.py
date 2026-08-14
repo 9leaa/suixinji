@@ -260,6 +260,11 @@ def _adjudicate_v3(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> 
         返回 `MemoryDecision` 类型结果；具体字段和语义由调用方按该对象约定使用。
     """
     exact = [memory for memory in memories if candidate.effective_memory_key == memory.effective_memory_key]
+    if candidate.memory_type == "semantic":
+        if exact:
+            best = max(exact, key=lambda memory: (memory.updated_at, memory.current_version))
+            return _decision(candidate, "same", "add_source", max(candidate.confidence, 0.92), "same_semantic_fact", [best])
+        return _decision(candidate, "new", "insert", max(0.8, candidate.confidence), "semantic_append_only")
     if len(exact) > 1:
         return _decision(
             candidate,
@@ -357,6 +362,16 @@ def adjudicate_memory(candidate: MemoryCandidate, memories: list[MemoryRecord]) 
         return _decision(candidate, "new", "discard", candidate.confidence, candidate.effective_reason or "candidate_should_not_store")
     if not memories:
         return _decision(candidate, "new", "insert", max(0.8, candidate.confidence), "no_related_active_memory")
+
+    # Semantic assertions deliberately do not enter relation inference.  This
+    # prevents a new location/project/career fact from being treated as an
+    # update merely because it shares a broad facet with prior evidence.
+    if candidate.memory_type == "semantic":
+        exact = [memory for memory in memories if candidate.effective_memory_key == memory.effective_memory_key]
+        if exact:
+            best = max(exact, key=lambda memory: (memory.updated_at, memory.current_version))
+            return _decision(candidate, "same", "add_source", max(candidate.confidence, 0.92), "same_semantic_fact", [best])
+        return _decision(candidate, "new", "insert", max(0.8, candidate.confidence), "semantic_append_only")
 
     exact_identity = any(candidate.effective_memory_key == memory.effective_memory_key for memory in memories)
     if not exact_identity:

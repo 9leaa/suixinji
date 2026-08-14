@@ -170,7 +170,10 @@ def route_for_intent(intent: QueryIntent, question: str, *, memory_min_score: fl
         "args": {
             "query": retrieval_query,
             "memory_type": memory_type,
-            "limit": 8 if memory_type == "task" else 5,
+            # Semantic facts are append-only.  Current-fact questions need a
+            # slightly wider evidence window so synthesis can compare older
+            # and newer assertions rather than seeing only one hit.
+            "limit": 8 if memory_type in {"task", "semantic"} else 5,
             "min_score": memory_min_score,
         },
         "fallback": fallback,

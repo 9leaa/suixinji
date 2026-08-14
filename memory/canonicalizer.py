@@ -75,20 +75,6 @@ _PURE_TASK_REFERENCE_RE = re.compile(
     r"^(?:这个|那个|它|这件事|上面那个)(?:(?:也)?(?:做完了?|完成了?|继续(?:做|处理)?(?:吧)?|取消了?|不做了?|不用做了?))?$"
 )
 _TASK_IDENTITY_ACTION_WORDS = frozenset(_TASK_OPERATION_ALIASES)
-_STABLE_SEMANTIC_ATTRIBUTES = {
-    "location": "居住地",
-    "current_project": "当前项目",
-    "currentproject": "当前项目",
-    "current_employer": "当前雇主",
-    "currentemployer": "当前雇主",
-    "learning_focus": "学习重点",
-    "learningfocus": "学习重点",
-    "birthplace": "籍贯",
-    "primary_device": "常用设备",
-    "preferred_language": "偏好交流语言",
-}
-
-
 def normalize_identity(value: str | None, *, fallback: str = "unspecified") -> str:
     """函数功能：`normalize_identity` 负责归一化 identity，服务于本文件职责：稳定身份和 canonical key。
     传参：
@@ -489,23 +475,12 @@ def task_key(entity: str, attribute: str, operation: str, scope: str = "global")
     )
 
 
-def semantic_key(entity: str, attribute: str, canonical_topic: str, scope: str = "current") -> str:
-    """函数功能：`semantic_key` 负责处理 semantic key，服务于本文件职责：稳定身份和 canonical key。
-    传参：
-        entity: entity 参数，由调用方传入，类型为 `str`。
-        attribute: attribute 参数，由调用方传入，类型为 `str`。
-        canonical_topic: canonical topic 参数，由调用方传入，类型为 `str`。
-        scope: scope 参数，由调用方传入，类型为 `str`，默认值为 `'current'`。
-    返回结果说明：
-        返回 `str`，通常是格式化后的文本、标识或路径。
-    """
+def semantic_key(entity: str, attribute: str, fact_text: str, scope: str = "current") -> str:
+    """Build an append-only key for one semantic assertion."""
     entity_key = "用户" if str(entity or "").strip() in {"", "我", "本人", "用户", "user", "me"} else normalize_identity(entity)
     attribute_key = normalize_identity(attribute)
-    stable = _STABLE_SEMANTIC_ATTRIBUTES.get(attribute_key)
-    if stable is not None:
-        return f"semantic:{entity_key}:{normalize_identity(stable)}:{normalize_scope(scope)}"
-    digest = hashlib.sha256(normalize_identity(canonical_topic).encode("utf-8")).hexdigest()[:16]
-    return f"semantic:{entity_key}:{digest}"
+    digest = hashlib.sha256(normalize_identity(fact_text).encode("utf-8")).hexdigest()[:16]
+    return f"semantic:{entity_key}:{attribute_key}:{digest}"
 
 
 def preference_key(entity: str, topic: str, scope: str = "global", *, qualifiers: tuple[str, ...] | list[str] = ()) -> str:
@@ -665,13 +640,14 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
     if memory_type == "semantic":
         entity = normalize_entity(candidate.subject, memory_type="semantic") or "用户"
         raw_attribute = str(candidate.predicate or "").strip()
-        attribute = normalize_semantic_attribute(raw_attribute, source_text) or (raw_attribute if normalize_content(raw_attribute) in {"fact", "事实"} else "current_project")
+        attribute = normalize_semantic_attribute(raw_attribute, source_text) or "other"
         canonical_topic = semantic_topic(attribute, scope.get("canonical_topic")) or source_text
         canonical_scope = str(scope.get("scope") or "current")
         scope.update(
             {
                 "canonical_topic": canonical_topic,
                 "scope": canonical_scope,
+                "semantic_append_only": True,
                 "memory_key_version": MEMORY_KEY_V3_VERSION,
             }
         )
@@ -679,7 +655,7 @@ def canonicalize_candidate(candidate: MemoryCandidate) -> MemoryCandidate:
             candidate,
             subject=entity,
             predicate=attribute,
-            memory_key=semantic_key(entity, attribute, canonical_topic, canonical_scope),
+            memory_key=semantic_key(entity, attribute, source_text, canonical_scope),
             scope=scope,
             memory_key_version=MEMORY_KEY_V3_VERSION,
         )

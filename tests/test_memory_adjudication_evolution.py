@@ -129,8 +129,8 @@ def test_legacy_relation_api_maps_formal_merge_name():
 
     decision = classify_relation(candidate, [old])
 
-    assert decision.relation == "extend"
-    assert decision.action == "merge"
+    assert decision.relation == "new"
+    assert decision.action == "insert"
 
 
 def test_merge_updates_content_and_preserves_a_version():
@@ -144,13 +144,11 @@ def test_merge_updates_content_and_preserves_a_version():
     report = process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我正在学习 Agent，也在研究 RAG"})
 
     semantics = list_memories("space-1", memory_type="semantic")
-    assert len(semantics) == 1
-    # The extractor now preserves both atomic assertions in one sentence:
-    # the repeated Agent claim is a source addition and the RAG claim merges.
-    assert any(result["action"] == "merge" for result in report["results"])
-    assert "Agent" in semantics[0].content and "RAG" in semantics[0].content
-    assert semantics[0].current_version == 2
-    assert len(get_memory(semantics[0].id).versions) == 2
+    assert len(semantics) >= 2
+    assert all(result["action"] in {"insert", "add_source"} for result in report["results"])
+    assert any("Agent" in memory.content for memory in semantics)
+    assert any("RAG" in memory.content for memory in semantics)
+    assert all(memory.current_version == 1 for memory in semantics)
 
 
 def test_preference_correction_updates_stable_identity_with_version_audit():
@@ -383,21 +381,15 @@ def test_medium_confidence_destructive_change_waits_for_review():
     decision = adjudicate_memory(candidate, [old])
     result = evolve_memory(space_id="space-1", note_id="note-2", candidate=candidate, decision=decision)
 
-    assert decision.relation == "merge"
-    assert decision.recommended_action == "pending_review"
-    assert result["action"] == "pending_review"
-    assert len(list_memories("space-1", status="pending_review")) == 1
+    assert decision.relation == "new"
+    assert decision.recommended_action == "insert"
+    assert result["action"] == "insert"
+    assert len(list_memories("space-1", status="pending_review")) == 0
     assert get_memory(old.id).status == "active"
-    assert list_memory_decisions("space-1")[0]["status"] == "pending_review"
-
-    approved = approve_pending_memory(result["memory_id"])
-
-    assert approved.id == old.id
-    assert "RAG" in approved.content
-    assert get_memory(result["memory_id"]).status == "archived"
-    approved_decision = list_memory_decisions("space-1")[0]
-    assert approved_decision["status"] == "applied"
-    assert approved_decision["recommended_action"] == "merge"
+    active = list_memories("space-1", status="active", memory_type="semantic")
+    assert len(active) == 2
+    assert any("RAG" in memory.content for memory in active)
+    assert list_memory_decisions("space-1")[0]["status"] == "applied"
 
 
 def test_completed_note_memory_processing_is_idempotent():

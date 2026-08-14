@@ -51,14 +51,8 @@ MEMORY_CONSOLIDATION_STATUSES = {"running", "completed", "failed"}
 MEMORY_KEY_VERSION = "memory-key-v2"
 MEMORY_KEY_V3_VERSION = "memory-key-v3"
 SLOT_SEMANTIC_PREDICATES = {
-    "location",
-    "current_project",
-    "currentproject",
-    "current_employer",
-    "currentemployer",
-    "learning_focus",
-    "learningfocus",
-    "birthplace",
+    "identity", "location", "education", "career", "project", "learning",
+    "capability", "device", "other",
 }
 
 
@@ -183,9 +177,9 @@ def memory_key_for(
         ).lstrip("是").rstrip("了")
         return f"task:{subject_key}:{predicate_key}:{task_text or 'unspecified'}"
     if memory_type == "semantic":
-        if predicate_key in SLOT_SEMANTIC_PREDICATES:
-            return f"semantic:{subject_key}:{predicate_key}"
-        topic = object_key or normalize_content(content)
+        # A broad facet is useful for retrieval, but must never collapse
+        # different semantic facts into one mutable slot.
+        topic = normalize_content(content) or object_key
         if not topic:
             digest = hashlib.sha1(f"{subject_key}\x1f{predicate_key}\x1f{normalize_content(content)}".encode("utf-8")).hexdigest()
             topic = digest[:16]

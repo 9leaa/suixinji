@@ -246,6 +246,15 @@ def retrieve_candidates(space_id: str, candidate: MemoryCandidate, *, limit: int
             memory_key=candidate.effective_memory_key,
             limit=200,
         )
+    # Semantic writes only need duplicate detection.  Broad-facet neighbours
+    # are intentionally not adjudication candidates because semantic facts
+    # are append-only and cannot update one another.
+    if candidate.memory_type == "semantic":
+        return [
+            memory for memory in memories
+            if candidate.effective_memory_key == memory.effective_memory_key
+            or candidate.normalized_content == memory.normalized_content
+        ][:1]
     scored = [(memory, candidate_similarity(candidate, memory)) for memory in memories]
     scored.sort(key=lambda item: (item[1], item[0].updated_at), reverse=True)
     return [memory for memory, score in scored[: max(1, min(int(top_k), 20))] if score >= 0.18]

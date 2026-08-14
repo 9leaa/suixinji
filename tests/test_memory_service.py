@@ -67,24 +67,18 @@ def test_process_note_memory_supersedes_repeated_dislike_preference():
     assert "喜欢喝牛奶" not in results
 
 
-def test_process_note_memory_supersedes_changed_city():
-    """函数功能：`test_process_note_memory_supersedes_changed_city` 负责验证 process note memory supersedes changed city 场景，服务于本文件职责：服务编排及命令输出。
-    传参：
-        无。
-    返回结果说明：
-        无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
-    """
+def test_process_note_memory_appends_changed_city_as_semantic_evidence():
+    """Semantic facts preserve changed values; profile/query projection resolves currentness."""
     process_note_memory({"id": "note-1", "space_id": "space-1", "text": "我住在北京"})
     process_note_memory({"id": "note-2", "space_id": "space-1", "text": "我搬到上海了"})
 
-    active = list_memories("space-1", status="active")
-    superseded = list_memories("space-1", status="superseded")
+    active = list_memories("space-1", status="active", memory_type="semantic")
+    superseded = list_memories("space-1", status="superseded", memory_type="semantic")
 
-    assert len(active) == 1
-    assert "上海" in active[0].content
+    assert len(active) == 2
+    assert {memory.object_value for memory in active} == {"北京", "上海"}
+    assert all(memory.current_version == 1 for memory in active)
     assert superseded == []
-    assert active[0].current_version == 2
-
 
 def test_process_note_memory_preserves_ambiguous_preference_conflict():
     """函数功能：`test_process_note_memory_preserves_ambiguous_preference_conflict` 负责验证 process note memory preserves ambiguous preference conflict 场景，服务于本文件职责：服务编排及命令输出。

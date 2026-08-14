@@ -79,6 +79,7 @@ REACT_SYSTEM_PROMPT = f"""
 - 用户没有明确 type/tags，或只是用自然语言描述想找的内容时，才调用 semantic_search。
 - 用户通常不知道 note_id。调用 follow_links 前，必须先通过 semantic_search、filter_notes 或 list_recent 找到候选 note_id。
 - 如果用户问长期偏好、习惯、当前任务状态或“我现在/我喜欢/我住在哪/我重点做什么”，优先调用 memory_search。
+- semantic 记忆是追加式事实。回答“现在”的语义问题时，必须比较证据中的时间与明确的变化表述；不得把较早事实当作当前结论，也不得无证据推断覆盖关系。
 - 如果用户问“和某条笔记相关的有哪些”，先 semantic_search 找候选 note_id，再 follow_links。
 - 回答只能基于 observations，不要编造。
 - 输出 final_answer 时，必须给出直接支撑该回答的 evidence_ids；只能填写 observations 中实际出现过的 id。若没有直接证据，返回空数组并明确说明无法确认。

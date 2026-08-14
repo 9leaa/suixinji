@@ -7,22 +7,28 @@ from memory.models import normalize_content
 
 MEMORY_TYPES = ("task", "semantic", "preference", "episodic")
 TASK_STATUSES = ("todo", "done")
+# Semantic attributes are deliberately broad facets. A semantic assertion is
+# append-only, so this field is for grouping/retrieval rather than state-slot
+# identity. Keep this list static until the offline taxonomy workflow exists.
+SEMANTIC_ATTRIBUTES = (
+    "identity", "location", "education", "career", "project",
+    "learning", "capability", "device", "other",
+)
 SEMANTIC_ATTRIBUTE_ALIASES = {
-    "location": "location", "居住地": "location", "住址": "location", "所在地": "location",
-    "current_project": "current_project", "currentproject": "current_project", "当前项目": "current_project", "项目": "current_project",
-    "current_employer": "current_employer", "currentemployer": "current_employer", "当前雇主": "current_employer", "工作单位": "current_employer", "公司": "current_employer",
-    "learning_focus": "learning_focus", "learningfocus": "learning_focus", "学习重点": "learning_focus", "学习方向": "learning_focus",
-    "birthplace": "birthplace", "籍贯": "birthplace", "出生地": "birthplace",
-    "school": "school", "学校": "school", "当前学校": "school",
-    "major": "major", "专业": "major", "job_target": "job_target", "求职目标": "job_target", "目标岗位": "job_target",
-    "primary_device": "primary_device", "常用设备": "primary_device", "主要设备": "primary_device",
-    "preferred_language": "preferred_language", "偏好交流语言": "preferred_language", "交流语言": "preferred_language",
+    "identity": "identity", "身份": "identity", "个人信息": "identity", "交流语言": "identity", "preferred_language": "identity", "偏好交流语言": "identity",
+    "location": "location", "居住地": "location", "住址": "location", "所在地": "location", "出生地": "location", "籍贯": "location", "birthplace": "location",
+    "education": "education", "教育": "education", "学校": "education", "大学": "education", "专业": "education", "school": "education", "major": "education",
+    "career": "career", "职业": "career", "工作": "career", "雇主": "career", "公司": "career", "工作单位": "career", "求职目标": "career", "目标岗位": "career", "current_employer": "career", "job_target": "career",
+    "project": "project", "项目": "project", "当前项目": "project", "current_project": "project",
+    "learning": "learning", "学习": "learning", "学习重点": "learning", "学习方向": "learning", "研究": "learning", "learning_focus": "learning",
+    "capability": "capability", "能力": "capability", "技能": "capability", "技术栈": "capability",
+    "device": "device", "设备": "device", "电脑": "device", "手机": "device", "常用设备": "device", "主要设备": "device", "primary_device": "device",
+    "other": "other", "其它": "other", "其他": "other", "fact": "other", "事实": "other",
 }
 SEMANTIC_CANONICAL_TOPICS = {
-    "location": "用户当前居住地", "current_project": "用户当前项目", "current_employer": "用户当前雇主",
-    "learning_focus": "用户当前学习重点", "birthplace": "用户籍贯", "school": "用户当前学校",
-    "major": "用户当前专业", "job_target": "用户求职目标", "primary_device": "用户常用设备",
-    "preferred_language": "用户偏好交流语言",
+    "identity": "身份相关事实", "location": "地点相关事实", "education": "教育相关事实",
+    "career": "职业相关事实", "project": "项目相关事实", "learning": "学习相关事实",
+    "capability": "能力相关事实", "device": "设备相关事实", "other": "其他长期事实",
 }
 TASK_OPERATION_ALIASES = {
     "学习": "学习", "学": "学习", "学完": "学习", "换": "更换", "换成": "更换", "更换": "更换",
@@ -163,25 +169,27 @@ def normalize_operation(value: Any, source_text: str = "") -> str | None:
 
 def normalize_semantic_attribute(value: Any, source_text: str = "") -> str | None:
     value = clean_text(value)
-    if value:
+    # fact and other are placeholders, not evidence that a fact belongs to the
+    # broad other facet. Infer a concrete facet from grounded source first.
+    generic_hint = value in {"fact", "事实", "other", "其它", "其他"}
+    if value and not generic_hint:
         direct = SEMANTIC_ATTRIBUTE_ALIASES.get(value)
         if direct:
             return direct
         value = value.casefold().replace(" ", "_")
-        if value in SEMANTIC_CANONICAL_TOPICS:
+        if value in SEMANTIC_ATTRIBUTES:
             return value
     text = str(source_text or "")
     for markers, attr in (
         (("住在", "居住", "搬到", "住址"), "location"),
-        (("项目", "开发", "负责"), "current_project"),
-        (("工作", "雇主", "跳槽"), "current_employer"),
-        (("学习", "研究", "重点"), "learning_focus"),
-        (("籍贯", "出生地"), "birthplace"),
-        (("学校", "大学"), "school"),
-        (("专业",), "major"),
-        (("求职", "岗位", "目标职位"), "job_target"),
-        (("设备", "电脑", "手机"), "primary_device"),
-        (("语言",), "preferred_language"),
+        (("籍贯", "出生地"), "location"),
+        (("学校", "大学", "专业"), "education"),
+        (("求职", "岗位", "目标职位", "工作", "雇主", "跳槽", "公司"), "career"),
+        (("项目", "开发", "负责"), "project"),
+        (("学习", "研究", "重点"), "learning"),
+        (("设备", "电脑", "手机"), "device"),
+        (("技能", "能力", "擅长", "会用"), "capability"),
+        (("语言", "身份", "姓名"), "identity"),
     ):
         if any(marker in text for marker in markers):
             return attr

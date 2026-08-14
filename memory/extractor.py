@@ -132,10 +132,10 @@ def _structured_fields(memory_type: str, text: str, entities: list[str]) -> tupl
             location = next((item for item in reversed(entities) if item in {"北京", "上海"}), entities[-1] if entities else cleaned)
             return "用户", "location", location
         if any(marker in text for marker in ("学习", "只学", "重点", "研究")):
-            return "用户", "learning_focus", " ".join(entities) or cleaned
+            return "用户", "learning", " ".join(entities) or cleaned
         if any(marker in text for marker in ("开发", "负责", "项目")):
-            return "用户", "current_project", " ".join(entities) or cleaned
-        return "用户", "fact", cleaned
+            return "用户", "project", " ".join(entities) or cleaned
+        return "用户", "other", cleaned
     if memory_type == "episodic":
         return "用户", "event", cleaned
     return None, None, None
@@ -1203,7 +1203,7 @@ def _merge_uncovered_rule_candidates(
         if model_candidate.effective_memory_key == rule_candidate.effective_memory_key:
             return True
         rule_attribute = normalize_content(str(rule_candidate.predicate or ""))
-        if rule_attribute not in {"fact", "事实"}:
+        if rule_attribute not in {"fact", "事实", "other", "其他"}:
             return False
         # The model itself must expose the stable slot.  Do not infer one from
         # the evidence here: otherwise a generic model ``fact`` could hide a

@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from dataclasses import asdict, is_dataclass, replace
@@ -922,6 +923,66 @@ def format_memory_decisions(space_id: str, *, limit: int = 10) -> str:
     return "\n".join(lines)
 
 
+_SEMANTIC_PROFILE_SELECTION_PROMPT = """
+你是随心记的用户画像投影器。semantic 是追加式事实记录，不是可覆盖状态。
+只输出 JSON：{"current_memory_ids":["..."],"uncertain_memory_ids":["..."]}。
+
+规则：
+- 每条候选都有 id、facet、时间、事实文本和来源笔记 ID；只能返回输入中真实存在的 id。
+- 来源笔记 ID 只用于可追溯性，不是原文证据；不得根据它补充事实。
+- 稳定且不冲突的事实应保留，例如出生地、学校、能力、项目经历可以同时存在。
+- 只有在同一“当前事实”存在明确时间顺序或明确变化证据时，才只保留较新的结论。
+- 无法确认两个事实是否互相替代时，不得擅自删除旧事实；将两条都放入 uncertain_memory_ids。
+- 不得根据常识补充、改写或编造事实。
+"""
+
+
+def _project_semantic_profile(memories: list[Any]) -> tuple[list[Any], list[Any]]:
+    """Select a current semantic profile view without mutating source facts."""
+    if not memories:
+        return [], []
+    ordered = sorted(
+        memories,
+        key=lambda memory: (str(memory.updated_at or ""), memory.current_version, memory.id),
+        reverse=True,
+    )[:60]
+    payload = [
+        {
+            "id": memory.id,
+            "facet": memory.predicate,
+            "observed_at": memory.updated_at,
+            "content": memory.content,
+            "source_note_ids": list(dict.fromkeys(
+                source.note_id for source in memory.sources if source.note_id
+            ))[:12],
+            "source_count": len(memory.sources),
+        }
+        for memory in ordered
+    ]
+    try:
+        from core.llm_client import complete_json
+
+        data = complete_json(
+            system_prompt=_SEMANTIC_PROFILE_SELECTION_PROMPT,
+            user_prompt=json.dumps({"semantic_facts": payload}, ensure_ascii=False),
+            model_role="fast",
+            llm_task="summary_draft",
+        )
+    except Exception as exc:
+        LOGGER.warning("semantic_profile_projection_fallback reason=%s", type(exc).__name__)
+        return list(memories), []
+    known = {memory.id: memory for memory in memories}
+    current_ids = [str(value) for value in data.get("current_memory_ids", []) if str(value) in known]
+    uncertain_ids = [str(value) for value in data.get("uncertain_memory_ids", []) if str(value) in known]
+    # An empty/invalid structured answer must never erase the user profile.
+    if not current_ids and not uncertain_ids:
+        return list(memories), []
+    selected_ids = list(dict.fromkeys([*current_ids, *uncertain_ids]))
+    selected = [known[memory_id] for memory_id in selected_ids]
+    uncertain = [known[memory_id] for memory_id in dict.fromkeys(uncertain_ids)]
+    return selected, uncertain
+
+
 def format_memory_profile(space_id: str) -> str:
     """函数功能：`format_memory_profile` 负责格式化 memory profile，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -970,10 +1031,13 @@ def format_memory_profile(space_id: str) -> str:
             space_id,
             [{"memory_id": memory_id, "stored": stored, "inferred": inferred} for memory_id, stored, inferred in mismatches],
         )
+    semantic_profile, uncertain_semantic = _project_semantic_profile(
+        [memory for memory in profile_memories if memory.memory_type == "semantic"]
+    )
     sections = [
         ("当前任务", [memory for memory in profile_memories if memory.memory_type == "task" and memory.task_status == "todo"]),
         ("偏好与约束", [memory for memory in profile_memories if memory.memory_type == "preference"]),
-        ("长期背景", [memory for memory in profile_memories if memory.memory_type == "semantic"]),
+        ("长期背景", semantic_profile),
         ("近期事件", [memory for memory in profile_memories if memory.memory_type == "episodic"][:5]),
     ]
     lines = ["动态用户画像："]
@@ -984,6 +1048,10 @@ def format_memory_profile(space_id: str) -> str:
         for memory in items[:10]:
             task_suffix = f"（{memory.task_status}）" if memory.task_status else ""
             lines.append(f"- {memory.content}{task_suffix}")
+    if uncertain_semantic:
+        lines.append("\n长期背景中存在待确认的新旧事实：")
+        for memory in uncertain_semantic[:5]:
+            lines.append(f"- {memory.content}")
     return "\n".join(lines)
 
 

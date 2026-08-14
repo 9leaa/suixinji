@@ -486,7 +486,7 @@ def test_hybrid_semantic_coverage_keeps_llm_stable_slot_over_generic_rule_fact()
 
     assert len(rows) == 1
     assert rows[0].extractor_type == "llm"
-    assert rows[0].predicate == "primary_device"
+    assert rows[0].predicate == "device"
 
 
 def test_hybrid_semantic_coverage_keeps_ambiguous_generic_rule_fact():
@@ -516,7 +516,7 @@ def test_hybrid_semantic_coverage_keeps_ambiguous_generic_rule_fact():
     rows = extractor._merge_uncovered_rule_candidates([location, device], [rule])
 
     assert len(rows) == 3
-    assert {row.predicate for row in rows} == {"location", "primary_device", "fact"}
+    assert {row.predicate for row in rows} == {"location", "device", "other"}
 
 
 def test_hybrid_semantic_coverage_keeps_rule_when_llm_has_no_semantic_candidate():
@@ -531,7 +531,7 @@ def test_hybrid_semantic_coverage_keeps_rule_when_llm_has_no_semantic_candidate(
     rows = extractor._merge_uncovered_rule_candidates([], [rule])
 
     assert len(rows) == 1
-    assert rows[0].predicate == "fact"
+    assert rows[0].predicate == "other"
     assert rows[0].extractor_type == "rules"
 
 

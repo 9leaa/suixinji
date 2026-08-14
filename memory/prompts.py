@@ -24,7 +24,7 @@ MEMORY_EXTRACTOR_PROMPT = """
 - confidence 和 importance 必须是 0 到 1 的数字。
 
 每个独立事实都必须单独输出；不得用覆盖整句的一条候选代替多个可独立更新的事实。只输出 JSON object，格式：
-{"candidates":[{"memory_type":"semantic","content":"用户正在开发随心记项目","subject":"用户","predicate":"current_project","object":"随心记项目","task_status":null,"polarity":null,"scope":null,"valid_from":null,"valid_until":null,"confidence":0.9,"importance":0.8,"evidence_span":"正在开发随心记项目","extraction_reason":"明确陈述长期项目","entities":["随心记"],"should_store":true}]}
+{"candidates":[{"memory_type":"semantic","content":"用户正在开发随心记项目","subject":"用户","predicate":"project","object":"随心记项目","task_status":null,"polarity":null,"scope":null,"valid_from":null,"valid_until":null,"confidence":0.9,"importance":0.8,"evidence_span":"正在开发随心记项目","extraction_reason":"明确陈述长期项目","entities":["随心记"],"should_store":true}]}
 """
 
 MEMORY_EXTRACTOR_V3_PROMPT = """
@@ -57,10 +57,10 @@ MEMORY_EXTRACTOR_V3_PROMPT = """
   "记得给随心记的大模型换一个供应商"、"正在给随心记的大模型换 DeepSeek 供应商"、
   "随心记的大模型供应商已经从 OpenAI 换成 DeepSeek 了"
   都应为 entity=随心记、attribute=大模型供应商、operation=更换、canonical_topic=更换随心记大模型供应商，状态依次 todo/todo/done。
-- semantic 的 entity/attribute 是稳定槽位；泛事实不要用“用户 + fact”假装与其他事实同一主题。
+- semantic 的 attribute 是静态的大类标签；每条语义事实独立保存，不能把不同事实当作同一槽位覆盖或更新。
 - confidence 和 importance 必须在 0 到 1 之间。
 - 字段契约是硬约束：preference 的 attribute 必须是 "preference"，operation/task_status 必须为 null；preference 的 new_value 只能是原文中的偏好对象。
-- semantic 的 attribute 只能使用这些枚举：location/current_project/current_employer/learning_focus/birthplace/school/major/job_target/primary_device/preferred_language；operation/task_status 必须为 null。
+- semantic 的 attribute 只能使用这些静态大类：identity/location/education/career/project/learning/capability/device/other。它们只用于分组和检索，不表示可覆盖的状态槽位；operation/task_status 必须为 null。
 - episodic 的 attribute 必须是 "event"，operation/task_status 必须为 null。
 - task 的 attribute 和 operation 必须是任务身份短语，不能填 task/任务/待办；task_status 只能是 todo/done。正在、阻塞、等待、暂停都归 todo；完成、取消、放弃都归 done。
 - 一条任务只要没有结束，无论是否卡住，都必须输出 todo，绝不能输出 blocked。

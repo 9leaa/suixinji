@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 
 from memory import extractor
@@ -318,3 +319,56 @@ def test_implicit_reopen_after_done_stays_pending_review(monkeypatch):
     assert active[0].current_version == 2
     assert len(pending) == 1
     assert pending[0].task_status == "todo"
+
+
+def test_semantic_facets_are_broad_and_location_changes_append(monkeypatch):
+    """A changed semantic fact is new evidence, not a state mutation."""
+    _enable_v3(monkeypatch)
+    old = canonicalize_candidate(
+        MemoryCandidate(
+            "semantic", "用户住在北京", 0.8, 0.9,
+            subject="用户", predicate="location", object_value="北京",
+            evidence_span="住在北京",
+        )
+    )
+    stored = insert_memory("semantic-append", old, source_note_id="beijing")
+    candidate = canonicalize_candidate(
+        MemoryCandidate(
+            "semantic", "用户搬到上海了", 0.8, 0.9,
+            subject="用户", predicate="location", object_value="上海",
+            evidence_span="搬到上海了",
+        )
+    )
+
+    decision = adjudicate_memory(candidate, [stored])
+
+    assert old.predicate == candidate.predicate == "location"
+    assert old.memory_key != candidate.memory_key
+    assert decision.relation == "new"
+    assert decision.recommended_action == "insert"
+    assert decision.target_memory_ids == []
+
+
+def test_semantic_profile_projection_uses_record_fields_not_candidate_evidence(monkeypatch):
+    from types import SimpleNamespace
+    from core import llm_client
+    from memory.service import _project_semantic_profile
+
+    rows = [
+        SimpleNamespace(id="beijing", predicate="location", updated_at="2026-01-01", current_version=1, content="用户住在北京", sources=[SimpleNamespace(note_id="note-beijing")]),
+        SimpleNamespace(id="shanghai", predicate="location", updated_at="2026-02-01", current_version=1, content="用户搬到上海", sources=[SimpleNamespace(note_id="note-shanghai"), SimpleNamespace(note_id="note-shanghai")]),
+    ]
+    captured = {}
+
+    def complete_json(**kwargs):
+        captured["payload"] = json.loads(kwargs["user_prompt"])["semantic_facts"]
+        return {"current_memory_ids": ["shanghai", "invented"], "uncertain_memory_ids": ["beijing"]}
+
+    monkeypatch.setattr(llm_client, "complete_json", complete_json)
+    selected, uncertain = _project_semantic_profile(rows)
+
+    assert [row.id for row in selected] == ["shanghai", "beijing"]
+    assert [row.id for row in uncertain] == ["beijing"]
+    assert captured["payload"][0]["source_note_ids"] == ["note-shanghai"]
+    assert captured["payload"][0]["source_count"] == 2
+    assert "evidence" not in captured["payload"][0]

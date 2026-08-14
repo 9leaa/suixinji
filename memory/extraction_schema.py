@@ -137,13 +137,13 @@ def normalize_extracted_row(row: dict[str, object], source_text: str) -> dict[st
         normalized["task_status"] = normalized.get("task_status") or "todo"
     elif memory_type == "semantic":
         normalized["entity"] = normalized.get("entity") or "用户"
-        normalized["attribute"] = normalize_semantic_attribute(normalized.get("attribute"), source_text) or "fact"
+        normalized["attribute"] = normalize_semantic_attribute(normalized.get("attribute"), source_text) or "other"
         normalized["operation"] = None
         normalized["task_status"] = None
         normalized["canonical_topic"] = canonical_topic_for(
             "semantic", source_text=source_text, attribute=normalized["attribute"],
             topic_hint=normalized.get("canonical_topic"),
-        ) or "用户当前事实"
+        ) or "用户语义事实"
     elif memory_type == "preference":
         from memory.policies.preference import preference_qualifiers
 

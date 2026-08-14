@@ -90,12 +90,12 @@ def test_preference_family_is_business_class_not_topic_or_carrier_word():
     assert taste.scope["preference_family_key"] == "preference-family:用户:口味"
 
 
-def test_semantic_attribute_is_enum_and_key_is_stable_for_value_updates():
+def test_semantic_attribute_is_broad_and_distinct_facts_have_distinct_keys():
     beijing = normalize_candidate_v3(_candidate("semantic", "我现在住在北京", predicate="fact", object_value="北京"))
     shanghai = normalize_candidate_v3(_candidate("semantic", "我现在住在上海", predicate="fact", object_value="上海"))
     assert beijing.predicate == shanghai.predicate == "location"
-    assert beijing.scope["canonical_topic"] == "用户当前居住地"
-    assert beijing.effective_memory_key == shanghai.effective_memory_key
+    assert beijing.scope["canonical_topic"] == "地点相关事实"
+    assert beijing.effective_memory_key != shanghai.effective_memory_key
 
 
 def test_episodic_contract_uses_event_slot():
