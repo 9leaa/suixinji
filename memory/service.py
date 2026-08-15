@@ -16,7 +16,11 @@ from typing import Any
 
 from agent.hooks import AgentRunContext, get_default_hook_manager
 from core.sensitive import safe_text_preview
-from core.settings import MEMORY_EXTRACTOR_MODE, MEMORY_QUERY_MIN_SCORE
+from core.settings import (
+    MEMORY_EXTRACTOR_MODE,
+    MEMORY_QUERY_MIN_SCORE,
+    SEMANTIC_PROFILE_PROJECTION_ENABLED,
+)
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock
 from memory.consolidator import consolidate_candidate
@@ -1031,9 +1035,21 @@ def format_memory_profile(space_id: str) -> str:
             space_id,
             [{"memory_id": memory_id, "stored": stored, "inferred": inferred} for memory_id, stored, inferred in mismatches],
         )
-    semantic_profile, uncertain_semantic = _project_semantic_profile(
-        [memory for memory in profile_memories if memory.memory_type == "semantic"]
-    )
+    semantic_memories = [memory for memory in profile_memories if memory.memory_type == "semantic"]
+    semantic_profile: list[Any]
+    uncertain_semantic: list[Any]
+    projected = None
+    if SEMANTIC_PROFILE_PROJECTION_ENABLED:
+        try:
+            from memory.semantic_profile_projection import semantic_profile_lines
+
+            projected = semantic_profile_lines(space_id, semantic_memories)
+        except Exception:
+            LOGGER.warning("semantic profile projection unavailable", exc_info=True)
+    if projected is None:
+        semantic_profile, uncertain_semantic = _project_semantic_profile(semantic_memories)
+    else:
+        semantic_profile, uncertain_semantic = projected
     sections = [
         ("当前任务", [memory for memory in profile_memories if memory.memory_type == "task" and memory.task_status == "todo"]),
         ("偏好与约束", [memory for memory in profile_memories if memory.memory_type == "preference"]),
@@ -1046,12 +1062,15 @@ def format_memory_profile(space_id: str) -> str:
             continue
         lines.append(f"\n{title}：")
         for memory in items[:10]:
+            if isinstance(memory, str):
+                lines.append(f"- {memory}")
+                continue
             task_suffix = f"（{memory.task_status}）" if memory.task_status else ""
             lines.append(f"- {memory.content}{task_suffix}")
     if uncertain_semantic:
         lines.append("\n长期背景中存在待确认的新旧事实：")
         for memory in uncertain_semantic[:5]:
-            lines.append(f"- {memory.content}")
+            lines.append(f"- {memory}" if isinstance(memory, str) else f"- {memory.content}")
     return "\n".join(lines)
 
 

@@ -34,6 +34,7 @@ from core.settings import (
     MEMORY_VECTOR_MAX_ATTEMPTS,
     MEMORY_VECTOR_RETRY_BASE_SECONDS,
     RETRIEVAL_WEIGHTED_RRF_ENABLED,
+    SEMANTIC_PROFILE_PROJECTION_ENABLED,
 )
 from infrastructure.database import session_scope
 from infrastructure.schema import (
@@ -81,6 +82,17 @@ from repositories.postgres.common import DEFAULT_TENANT_ID, ensure_tenant_space,
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _mark_semantic_profile_dirty(session: Any, row: Memory | None) -> None:
+    """Schedule a rebuild only after the source semantic mutation is durable."""
+    if not SEMANTIC_PROFILE_PROJECTION_ENABLED or row is None:
+        return
+    if row.memory_type != "semantic" or row.status != "active":
+        return
+    from repositories.postgres.semantic_profile_projection import mark_semantic_projection_dirty_in_session
+
+    mark_semantic_projection_dirty_in_session(session, row)
 
 
 def _schedule_memory_embedding(session: Any, row: Memory, *, force: bool = False) -> str | None:
@@ -756,7 +768,12 @@ def add_source(memory_id: str, note_id: str, relation: str, db_path: Any = None)
     del db_path
     with session_scope() as session:
         row = session.execute(select(Memory).where(Memory.id == memory_id).with_for_update()).scalar_one_or_none()
-        return False if row is None else _add_source(session, memory_id, note_id, relation)
+        if row is None:
+            return False
+        added = _add_source(session, memory_id, note_id, relation)
+        if added:
+            _mark_semantic_profile_dirty(session, row)
+        return added
 
 
 def insert_memory(space_id: str, candidate: MemoryCandidate, *, source_note_id: str, source_relation: str = "created_from", status: str = "active", db_path: Any = None) -> MemoryRecord:
@@ -774,6 +791,7 @@ def insert_memory(space_id: str, candidate: MemoryCandidate, *, source_note_id: 
     del db_path
     with session_scope() as session:
         row = _insert_memory(session, space_id, candidate, source_note_id=source_note_id, source_relation=source_relation, status=status)
+        _mark_semantic_profile_dirty(session, row)
         session.flush()
         result = _record(session, row)
     return result
@@ -1828,6 +1846,7 @@ def update_memory(
             confidence=confidence, importance=importance, last_confirmed_at=last_confirmed_at,
             reason=reason, source_note_id=source_note_id,
         )
+        _mark_semantic_profile_dirty(session, row)
         return _record(session, row)
 
 
@@ -1985,6 +2004,10 @@ def apply_memory_decision(
                 result.update({"memory_id": row.id, "target_memory_id": target.id})
             else:
                 raise ValueError(f"decision action cannot be applied: {action}")
+            if candidate.memory_type == "semantic" and action != "pending_review":
+                affected_id = str(result.get("memory_id") or "")
+                affected = target if target is not None and str(target.id) == affected_id else session.get(Memory, affected_id)
+                _mark_semantic_profile_dirty(session, affected)
             _save_decision(
                 session, space_id, note_id, decision,
                 status="pending_review" if action == "pending_review" else "applied",

@@ -47,7 +47,7 @@ for path in sorted(log_dir.glob("app-*.jsonl"), reverse=True):
 PY
 }
 
-for role in outbox-relay worker-ingest worker-query worker-summary worker-memory worker-memory-embedding worker-enrichment worker-delivery scheduler api receiver; do
+for role in outbox-relay worker-ingest worker-query worker-summary worker-memory worker-memory-embedding worker-semantic-profile-projection worker-enrichment worker-delivery scheduler api receiver; do
   pid_file="$PID_DIR/$role.pid"
   log_file="$LOG_DIR/$role.log"
   log_mtime="missing"

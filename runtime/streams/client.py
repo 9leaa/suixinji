@@ -23,6 +23,7 @@ GROUPS = {
     "summary": "summary-workers",
     "memory": "memory-workers",
     "memory_embedding": "memory-embedding-workers",
+    "semantic_profile_projection": "semantic-profile-projection-workers",
     "enrichment": "enrichment-workers",
     "delivery": "delivery-workers",
 }

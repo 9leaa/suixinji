@@ -245,6 +245,24 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
     return TaskOutcome(memory_ready_inbox_id=barrier_inbox_id or None)
 
 
+def handle_semantic_profile_projection(task: dict[str, Any]) -> TaskOutcome | None:
+    """Refresh one dirty semantic facet without blocking memory extraction."""
+    payload = _payload(task)
+    facet = str(payload.get("facet") or "").strip()
+    if not facet:
+        raise ValueError("semantic profile projection facet is required")
+    from memory.semantic_profile_projection import (
+        refresh_semantic_projection_task,
+        semantic_projection_wait_seconds,
+    )
+
+    wait_seconds = semantic_projection_wait_seconds(str(task["space_id"]), facet)
+    if wait_seconds > 0:
+        raise RetryLater("semantic profile projection debounce", delay_seconds=wait_seconds)
+    refresh_semantic_projection_task(str(task["space_id"]), facet)
+    return None
+
+
 def handle_memory_embedding(task: dict[str, Any]) -> TaskOutcome | None:
     """函数功能：`handle_memory_embedding` 负责处理 memory embedding，服务于本文件职责：分布式 task handler 注册表。
     传参：
@@ -348,6 +366,7 @@ HANDLERS = {
     "summary": handle_summary,
     "memory": handle_memory,
     "memory_embedding": handle_memory,
+    "semantic_profile_projection": handle_semantic_profile_projection,
     "enrichment": handle_enrichment,
     "delivery": handle_delivery,
 }

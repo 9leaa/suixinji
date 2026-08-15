@@ -86,6 +86,7 @@ start_role worker-query env SUIXINJI_PROCESS_ROLE=worker-query "$PYTHON" -m apps
 start_role worker-summary env SUIXINJI_PROCESS_ROLE=worker-summary "$PYTHON" -m apps.worker summary
 start_role worker-memory env SUIXINJI_PROCESS_ROLE=worker-memory "$PYTHON" -m apps.worker memory
 start_role worker-memory-embedding env SUIXINJI_PROCESS_ROLE=worker-memory-embedding "$PYTHON" -m apps.worker memory_embedding
+start_role worker-semantic-profile-projection env SUIXINJI_PROCESS_ROLE=worker-semantic-profile-projection "$PYTHON" -m apps.worker semantic_profile_projection
 start_role worker-enrichment env SUIXINJI_PROCESS_ROLE=worker-enrichment "$PYTHON" -m apps.worker enrichment
 start_role worker-delivery env SUIXINJI_PROCESS_ROLE=worker-delivery "$PYTHON" -m apps.worker delivery
 start_role scheduler env SUIXINJI_PROCESS_ROLE=scheduler "$PYTHON" -m apps.scheduler

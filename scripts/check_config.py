@@ -195,6 +195,7 @@ def check_database_budget() -> None:
         "worker-query": 1,
         "worker-summary": 1,
         "worker-memory": 1,
+        "worker-semantic-profile-projection": 1,
         "worker-enrichment": 1,
         "worker-delivery": 1,
         "scheduler": 1,

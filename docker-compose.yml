@@ -78,6 +78,13 @@ services:
     command: ["python", "-m", "apps.worker", "memory"]
     restart: unless-stopped
 
+  worker-semantic-profile-projection:
+    build: .
+    profiles: ["distributed"]
+    env_file: [.env]
+    command: ["python", "-m", "apps.worker", "semantic_profile_projection"]
+    restart: unless-stopped
+
   worker-delivery:
     build: .
     profiles: ["distributed"]

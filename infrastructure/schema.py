@@ -352,6 +352,29 @@ class Memory(Base):
     )
 
 
+class SemanticProfileProjection(Base):
+    """Rebuildable, facet-level semantic profile projection."""
+
+    __tablename__ = "semantic_profile_projections"
+
+    space_id: Mapped[str] = mapped_column(ForeignKey("spaces.id", ondelete="CASCADE"), primary_key=True)
+    facet: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    projection_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    source_memory_ids_json: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    processed_revision: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
+    target_revision: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="dirty", server_default="dirty")
+    dirty_since: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_semantic_profile_projection_dirty", "status", "dirty_since"),
+    )
+
+
 class MemoryCandidateRow(Base):
     """类功能：`MemoryCandidateRow` 封装与“PostgreSQL ORM schema”相关的数据结构、状态或行为。
     继承关系：继承 `Base`，复用其接口或生命周期约定。

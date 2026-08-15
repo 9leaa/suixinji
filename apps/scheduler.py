@@ -19,6 +19,10 @@ from memory.repository import consolidation_period_key, flush_access_counts
 from memory.scheduler import due_cadences, list_memory_space_ids
 from repositories.postgres.dispatch import enqueue_task
 from repositories.postgres.tasks import enqueue_due_retries
+from repositories.postgres.semantic_profile_projection import (
+    enqueue_stale_semantic_profile_projection_rebuilds,
+    enqueue_uninitialized_semantic_profile_projection_rebuilds,
+)
 from runtime.stream_dispatcher import StreamTaskDispatcher
 from summary.scheduler import run_scheduler_tick_safely
 
@@ -40,6 +44,17 @@ def run_once() -> bool:
             flush_access_counts()
         except Exception:
             LOGGER.warning("memory access counter flush failed", exc_info=True)
+        try:
+            initialized = enqueue_uninitialized_semantic_profile_projection_rebuilds()
+            rebuilt = enqueue_stale_semantic_profile_projection_rebuilds()
+            if initialized or rebuilt:
+                log_event(
+                    "semantic_profile_projection_rebuild_queued",
+                    status="queued",
+                    extra={"initialized_count": initialized, "expired_count": rebuilt},
+                )
+        except Exception:
+            LOGGER.warning("semantic profile projection rebuild scan failed", exc_info=True)
         if STAGE4_MODE:
             log_event("runtime.scheduler_leader", status="completed", extra={"stage4_mode": True})
             return True
