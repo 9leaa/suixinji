@@ -312,6 +312,20 @@ def _match_text(needle: Any, haystack: Any) -> bool:
     return bool(ta and len(ta & tb) / len(ta) >= 0.78)
 
 
+def _forbidden_claim_hit(forbidden: Any, answer: Any, *, answer_type: str) -> bool:
+    """Do not confuse a qualified historical statement with a current-state assertion."""
+    if answer_type == "qualified_history_only":
+        # Keep temporal tokens intact: _norm intentionally drops stop words such
+        # as "当前", which are exactly what this safety check must distinguish.
+        target = str(forbidden or "")
+        rendered = str(answer or "")
+        current_markers = ("现在", "当前", "目前", "仍然")
+        history_markers = ("历史", "以前", "曾", "无法据此确认当前", "不能确认当前")
+        if any(marker in target for marker in current_markers) and any(marker in rendered for marker in history_markers):
+            return False
+    return _match_text(forbidden, answer)
+
+
 def _pct(values: list[float], q: float) -> float | None:
     if not values:
         return None
@@ -388,40 +402,103 @@ def _embedding_contract_dict() -> dict[str, Any]:
 
 
 def _complete_seed_memory_vectors(memory_ids: list[str]) -> dict[str, Any]:
-    """Materialize ready memory_vectors for isolated Layer3 seed memories."""
+    """Materialize seed vectors with two DB transactions instead of two per row."""
     from core.llm_client import embed_text
-    from repositories.postgres.memory import claim_memory_vector, complete_memory_vector
+    from datetime import datetime, timezone
+    from infrastructure.schema import Memory, MemoryVector
+    from memory.vector_lifecycle import (
+        current_embedding_contract,
+        memory_content_hash,
+        memory_embedding_text,
+    )
+    from repositories.postgres.memory import session_scope
+    from sqlalchemy import select
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-    completed = 0
-    skipped = 0
+    if not memory_ids:
+        return {
+            "requested": 0,
+            "completed": 0,
+            "already_ready_or_inactive": 0,
+            "failed_count": 0,
+            "failed": [],
+        }
+    model, dimension, version = current_embedding_contract()
+    with session_scope() as session:
+        records = list(session.execute(select(Memory).where(Memory.id.in_(memory_ids))).scalars())
+    payloads: list[dict[str, Any]] = []
     failed: list[dict[str, Any]] = []
-    for memory_id in memory_ids:
-        claim = claim_memory_vector(memory_id)
-        if claim is None:
-            skipped += 1
-            continue
+    for record in records:
+        text = memory_embedding_text(
+            memory_type=record.memory_type,
+            subject=record.subject,
+            predicate=record.predicate,
+            object_value=record.object_value,
+            content=record.content,
+        )
         try:
-            embedding = embed_text(str(claim.get("text") or ""))
-            expected_dim = int(claim["dimension"])
-            if len(embedding) != expected_dim:
-                raise ValueError(f"embedding dimension mismatch: expected {expected_dim}, got {len(embedding)}")
-            if complete_memory_vector(
-                memory_id,
-                content_hash=str(claim["content_hash"]),
-                embedding=embedding,
-                model=str(claim["model"]),
-                dimension=expected_dim,
-                embedding_version=str(claim["embedding_version"]),
-            ):
-                completed += 1
-            else:
-                failed.append({"memory_id": memory_id, "error": "complete_memory_vector returned false"})
+            embedding = embed_text(text)
+            if len(embedding) != int(dimension):
+                raise ValueError(f"embedding dimension mismatch: expected {dimension}, got {len(embedding)}")
+            payloads.append({
+                "memory_id": record.id,
+                "embedding": [float(value) for value in embedding],
+                "model": model,
+                "dimension": int(dimension),
+                "content_hash": memory_content_hash(
+                    memory_type=record.memory_type,
+                    subject=record.subject,
+                    predicate=record.predicate,
+                    object_value=record.object_value,
+                    content=record.content,
+                    model=model,
+                    dimension=int(dimension),
+                    embedding_version=version,
+                ),
+                "embedding_version": version,
+            })
         except Exception as exc:
-            failed.append({"memory_id": memory_id, "error_type": type(exc).__name__})
+            failed.append({"memory_id": record.id, "error_type": type(exc).__name__})
+    now = datetime.now(timezone.utc)
+    values = [
+        {
+            **payload,
+            "status": "ready",
+            "attempt_count": 1,
+            "next_retry_at": None,
+            "last_error": None,
+            "created_at": now,
+            "updated_at": now,
+        }
+        for payload in payloads
+    ]
+    if values:
+        with session_scope() as session:
+            statement = pg_insert(MemoryVector).values(values)
+            session.execute(
+                statement.on_conflict_do_update(
+                    index_elements=[MemoryVector.memory_id],
+                    set_={
+                        "embedding": statement.excluded.embedding,
+                        "model": statement.excluded.model,
+                        "dimension": statement.excluded.dimension,
+                        "content_hash": statement.excluded.content_hash,
+                        "embedding_version": statement.excluded.embedding_version,
+                        "status": statement.excluded.status,
+                        "attempt_count": statement.excluded.attempt_count,
+                        "next_retry_at": statement.excluded.next_retry_at,
+                        "last_error": statement.excluded.last_error,
+                        "updated_at": statement.excluded.updated_at,
+                    },
+                )
+            )
+    missing = max(0, len(memory_ids) - len(records))
+    if missing:
+        failed.append({"error": "memory rows missing", "count": missing})
     return {
         "requested": len(memory_ids),
-        "completed": completed,
-        "already_ready_or_inactive": skipped,
+        "completed": len(payloads),
+        "already_ready_or_inactive": 0,
         "failed_count": len(failed),
         "failed": failed[:10],
     }
@@ -500,9 +577,10 @@ def _raw_vector_hits(
 
 
 class CaseRunner:
-    def __init__(self, case: dict[str, Any], run_id: str, top_k: int):
+    def __init__(self, case: dict[str, Any], run_id: str, top_k: int, ask_engine: str = "legacy"):
         self.case = case
         self.run_id = run_id
+        self.ask_engine = ask_engine
         self.top_k = int(case.get("input", {}).get("top_k") or top_k)
         self.logical_to_db: dict[str, str] = {}
         self.db_to_logical: dict[str, str] = {}
@@ -512,126 +590,255 @@ class CaseRunner:
         self.seed_vector_summary: dict[str, Any] = {}
 
     def seed(self) -> None:
-        from sqlalchemy import select
-        from infrastructure.schema import MemoryDecision as MemoryDecisionRow, MemoryVersion
+        """Seed one isolated case with bounded DB round trips.
+
+        The old evaluator reused row-oriented production write helpers.  That
+        made fixture creation perform several remote Postgres round trips per
+        memory.  Layer3 seeds are already normalized fixtures, so construct the
+        same persisted Memory/Source/Version contract in one transaction.
+        """
+        from infrastructure.schema import (
+            Memory,
+            MemoryDecision as MemoryDecisionRow,
+            MemorySource,
+            MemoryVersion,
+            MemoryVersionSource,
+            Note,
+        )
         from repositories.postgres.common import ensure_tenant_space
-        from repositories.postgres.memory import _add_source, _dt, _insert_memory, session_scope
+        from repositories.postgres.memory import _dt, session_scope
 
         snapshot = self.case["input"].get("memory_snapshot") or {}
+        query_time = str(self.case["input"].get("query_time") or now_iso())
         for source in snapshot.get("sources", []) or []:
             source_ref = str(source.get("source_ref") or "")
             if source_ref:
-                self.source_note_to_logical[f"layer3:{self.case['case_id']}:{source_ref}"] = source_ref
+                self.source_note_to_logical[
+                    f"layer3:{self.run_id}:{self.case['case_id']}:{source_ref}"
+                ] = source_ref
+
         vector_memory_ids: list[str] = []
+        raw_by_ref = {
+            str(memory["memory_ref"]): memory
+            for memory in snapshot.get("memories", [])
+        }
+        versions_by_memory: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for version in snapshot.get("versions", []) or []:
+            versions_by_memory[str(version.get("memory_ref") or "")].append(version)
+
         with session_scope() as session:
-            ensure_tenant_space(session, self.space_id, tenant_id="default", source="layer3_eval", metadata={"run_id": self.run_id})
-            for logical_ref, raw in ((str(m["memory_ref"]), m) for m in snapshot.get("memories", [])):
+            ensure_tenant_space(
+                session,
+                self.space_id,
+                tenant_id="default",
+                source="layer3_eval",
+                metadata={"run_id": self.run_id},
+            )
+
+            for source in snapshot.get("sources", []) or []:
+                source_ref = str(source.get("source_ref") or "")
+                if not source_ref:
+                    continue
+                note_id = f"layer3:{self.run_id}:{self.case['case_id']}:{source_ref}"
+                created_at = _dt(_iso_db(
+                    source.get("observed_at") or query_time
+                ))
+                session.add(Note(
+                    id=note_id,
+                    message_id=note_id,
+                    tenant_id="default",
+                    space_id=self.space_id,
+                    created_at=created_at,
+                    title="Layer3 source",
+                    note_type="other",
+                    summary=str(source.get("evidence_text") or ""),
+                    text=str(source.get("evidence_text") or ""),
+                    metadata_json={"layer3_source_ref": source_ref},
+                    enrichment_status="ready",
+                    enrichment_attempts=0,
+                    sensitivity="normal",
+                ))
+
+            for logical_ref, raw in raw_by_ref.items():
                 db_id = f"l3_{self.run_id}_{self.case['case_id']}_{logical_ref}"
                 self.logical_to_db[logical_ref] = db_id
                 self.db_to_logical[db_id] = logical_ref
-                source_refs = [str(x) for x in raw.get("source_refs") or []]
-                first_note = f"layer3:{self.case['case_id']}:{source_refs[0] if source_refs else logical_ref}"
-                candidate = _candidate_for(raw, first_note)
-                row = _insert_memory(
-                    session,
-                    self.space_id,
-                    candidate,
-                    source_note_id=first_note,
-                    source_relation="created_from",
-                    status=str(raw.get("status") or "active"),
-                    memory_id=db_id,
-                    now=_iso_db(str(raw.get("updated_at") or self.case["input"].get("query_time") or now_iso())),
-                )
-                row.created_at = row.updated_at
-                row.updated_at = row.updated_at
-                row.last_confirmed_at = row.updated_at
-                if str(raw.get("status") or "active") == "active":
+                candidate = _candidate_for(raw, logical_ref)
+                timestamp = _dt(_iso_db(
+                    raw.get("updated_at") or query_time
+                ))
+                status = str(raw.get("status") or "active")
+                source_refs = [
+                    str(value)
+                    for value in raw.get("source_refs") or []
+                    if str(value)
+                ]
+                persisted_source_refs = source_refs or [logical_ref]
+                version_specs = {
+                    int(version.get("sequence") or 1): dict(version)
+                    for version in versions_by_memory.get(logical_ref, [])
+                }
+                if 1 not in version_specs:
+                    version_specs[1] = {
+                        "sequence": 1,
+                        "version_ref": "v1",
+                        "content": candidate.content,
+                        "task_status": candidate.task_status,
+                        "valid_from": raw.get("updated_at"),
+                        "valid_until": None,
+                        "source_refs": persisted_source_refs,
+                    }
+                current_version = max(version_specs)
+                session.add(Memory(
+                    id=db_id,
+                    tenant_id="default",
+                    space_id=self.space_id,
+                    memory_type=candidate.memory_type,
+                    content=candidate.content,
+                    normalized_content=candidate.normalized_content,
+                    importance=float(candidate.importance),
+                    confidence=float(candidate.confidence),
+                    status=status,
+                    task_status=candidate.task_status,
+                    subject=candidate.subject,
+                    predicate=candidate.predicate,
+                    object_value=candidate.object_value,
+                    memory_key=candidate.effective_memory_key,
+                    memory_key_version=candidate.memory_key_version,
+                    polarity=candidate.polarity,
+                    scope_json=dict(candidate.scope),
+                    valid_from=_dt(candidate.valid_from),
+                    valid_until=_dt(candidate.valid_until),
+                    last_confirmed_at=timestamp,
+                    created_at=timestamp,
+                    updated_at=timestamp,
+                    access_count=0,
+                    current_version=current_version,
+                ))
+                if status == "active":
                     vector_memory_ids.append(db_id)
-                for source_ref in source_refs[1:]:
-                    _add_source(session, db_id, f"layer3:{self.case['case_id']}:{source_ref}", "supported_by")
-                versions = [v for v in snapshot.get("versions", []) if str(v.get("memory_ref")) == logical_ref]
-                first = session.execute(
-                    select(MemoryVersion).where(MemoryVersion.memory_id == db_id, MemoryVersion.version == 1)
-                ).scalar_one_or_none()
-                if versions:
-                    by_seq = {int(v.get("sequence") or 1): v for v in versions}
-                    for seq, version in sorted(by_seq.items()):
-                        version_ref = str(version.get("version_ref") or f"{logical_ref}:v{seq}")
-                        srcs = [str(x) for x in version.get("source_refs") or []]
-                        note = f"layer3:{self.case['case_id']}:{srcs[0]}" if srcs else first_note
-                        if seq == 1 and first is not None:
-                            target = first
-                        else:
-                            target = MemoryVersion(
-                                id=f"l3_{self.run_id}_{self.case['case_id']}_{logical_ref}_v{seq}",
-                                memory_id=db_id,
-                                version=seq,
-                                created_at=row.updated_at,
-                            )
-                            session.add(target)
-                        target.content = str(version.get("content") or row.content)
-                        target.status = str(raw.get("status") or "active")
-                        target.task_status = _fixture_version_task_status(version, candidate.memory_type)
-                        target.confidence = row.confidence
-                        target.importance = row.importance
-                        target.valid_from = _dt(_iso_db(version.get("valid_from")))
-                        target.valid_until = _dt(_iso_db(version.get("valid_until")))
-                        target.reason = "layer3_seed"
-                        target.source_note_id = note
-                        self.version_db_to_logical[str(target.id)] = version_ref
-                    row.current_version = max(by_seq)
-                elif first is not None:
-                    # The v1 stale-only fixtures describe the initial persisted
-                    # version as v1 without repeating it in `versions`.  This is
-                    # a seed-side ID mapping (not an answer-text/Gold inference)
-                    # for the real MemoryVersion row created with the memory.
-                    self.version_db_to_logical[str(first.id)] = "v1"
-            # A Layer3 pending review is seeded through the same persisted
-            # contract used in production: pending memory row plus a
-            # memory_decisions row that links the candidate/result to targets.
-            # `review_ref` remains evaluator metadata only; application code
-            # sees real database ids and decision fields.
+
+                for index, source_ref in enumerate(persisted_source_refs):
+                    note_id = (
+                        f"layer3:{self.run_id}:{self.case['case_id']}:{source_ref}"
+                    )
+                    session.add(MemorySource(
+                        memory_id=db_id,
+                        note_id=note_id,
+                        relation="created_from" if index == 0 else "supported_by",
+                        created_at=timestamp,
+                    ))
+
+                for sequence, version in sorted(version_specs.items()):
+                    version_ref = str(
+                        version.get("version_ref")
+                        or f"{logical_ref}:v{sequence}"
+                    )
+                    version_id = (
+                        f"l3_{self.run_id}_{self.case['case_id']}_"
+                        f"{logical_ref}_v{sequence}"
+                    )
+                    version_source_refs = [
+                        str(value)
+                        for value in version.get("source_refs") or []
+                        if str(value)
+                    ] or persisted_source_refs
+                    source_note_id = (
+                        f"layer3:{self.run_id}:{self.case['case_id']}:"
+                        f"{version_source_refs[0]}"
+                    )
+                    session.add(MemoryVersion(
+                        id=version_id,
+                        memory_id=db_id,
+                        version=sequence,
+                        content=str(version.get("content") or candidate.content),
+                        status=status,
+                        task_status=_fixture_version_task_status(
+                            version,
+                            candidate.memory_type,
+                        ),
+                        confidence=float(candidate.confidence),
+                        importance=float(candidate.importance),
+                        valid_from=_dt(_iso_db(version.get("valid_from"))),
+                        valid_until=_dt(_iso_db(version.get("valid_until"))),
+                        reason="layer3_seed",
+                        source_note_id=source_note_id,
+                        created_at=timestamp,
+                    ))
+                    self.version_db_to_logical[version_id] = version_ref
+                    for source_ref in dict.fromkeys(version_source_refs):
+                        session.add(MemoryVersionSource(
+                            version_id=version_id,
+                            note_id=(
+                                f"layer3:{self.run_id}:{self.case['case_id']}:"
+                                f"{source_ref}"
+                            ),
+                            created_at=timestamp,
+                        ))
+
             for review in snapshot.get("pending_reviews", []) or []:
                 review_ref = str(review.get("review_ref") or "review")
                 refs = [str(ref) for ref in review.get("memory_refs") or []]
-                db_refs = [self.logical_to_db[ref] for ref in refs if ref in self.logical_to_db]
+                db_refs = [
+                    self.logical_to_db[ref]
+                    for ref in refs
+                    if ref in self.logical_to_db
+                ]
                 if not db_refs:
                     continue
                 pending_ids = [
                     memory_id
                     for memory_id in db_refs
-                    if str(next((raw.get("status") for raw in snapshot.get("memories", []) if str(raw.get("memory_ref")) == self.db_to_logical.get(memory_id)), "")) == "pending_review"
+                    if str(raw_by_ref[self.db_to_logical[memory_id]].get("status"))
+                    == "pending_review"
                 ]
                 result_ids = pending_ids or [db_refs[-1]]
-                target_ids = [memory_id for memory_id in db_refs if memory_id not in result_ids]
-                session.add(
-                    MemoryDecisionRow(
-                        id=f"l3_{self.run_id}_{self.case['case_id']}_{review_ref}",
-                        space_id=self.space_id,
-                        note_id=f"layer3:{self.case['case_id']}:{review_ref}",
-                        candidate_id=f"layer3:{self.case['case_id']}:{review_ref}:candidate",
-                        relation="conflict",
-                        target_memory_ids_json=target_ids,
-                        confidence=0.8,
-                        reason=str(review.get("reason") or "pending_review"),
-                        evidence_json=[{"memory_id": memory_id} for memory_id in db_refs],
-                        recommended_action="pending_review",
-                        status="pending_review",
-                        result_memory_ids_json=result_ids,
-                        error=None,
-                        policy_version="layer3-eval-v1",
-                        adjudicator_version="layer3-eval-v1",
-                        model=None,
-                        prompt_hash=None,
-                        input_hash=None,
-                        target_snapshot_version=None,
-                        retry_of_decision_id=None,
-                        created_at=_dt(_iso_db(str(self.case["input"].get("query_time") or now_iso()))),
-                        applied_at=None,
-                    )
-                )
+                target_ids = [
+                    memory_id
+                    for memory_id in db_refs
+                    if memory_id not in result_ids
+                ]
+                session.add(MemoryDecisionRow(
+                    id=f"l3_{self.run_id}_{self.case['case_id']}_{review_ref}",
+                    space_id=self.space_id,
+                    note_id=(
+                        f"layer3:{self.run_id}:{self.case['case_id']}:"
+                        f"{review_ref}"
+                    ),
+                    candidate_id=(
+                        f"layer3:{self.run_id}:{self.case['case_id']}:"
+                        f"{review_ref}:candidate"
+                    ),
+                    relation="conflict",
+                    target_memory_ids_json=target_ids,
+                    confidence=0.8,
+                    reason=str(review.get("reason") or "pending_review"),
+                    evidence_json=[
+                        {"memory_id": memory_id}
+                        for memory_id in db_refs
+                    ],
+                    recommended_action="pending_review",
+                    status="pending_review",
+                    result_memory_ids_json=result_ids,
+                    error=None,
+                    policy_version="layer3-eval-v1",
+                    adjudicator_version="layer3-eval-v1",
+                    model=None,
+                    prompt_hash=None,
+                    input_hash=None,
+                    target_snapshot_version=None,
+                    retry_of_decision_id=None,
+                    created_at=_dt(_iso_db(query_time)),
+                    applied_at=None,
+                ))
             session.flush()
-        self.seed_vector_summary = _complete_seed_memory_vectors(vector_memory_ids)
+
+        from eval.layer3.vector_bank import complete_seed_memory_vectors_from_bank
+
+        self.seed_vector_summary = (
+            complete_seed_memory_vectors_from_bank(vector_memory_ids)
+            or _complete_seed_memory_vectors(vector_memory_ids)
+        )
 
     def db_snapshot(self) -> dict[str, Any]:
         from sqlalchemy import select
@@ -639,12 +846,57 @@ class CaseRunner:
         from repositories.postgres.memory import session_scope
 
         with session_scope() as session:
-            rows = list(session.execute(select(Memory).where(Memory.space_id == self.space_id).order_by(Memory.id)).scalars())
+            rows = list(
+                session.execute(
+                    select(Memory)
+                    .where(Memory.space_id == self.space_id)
+                    .order_by(Memory.id)
+                ).scalars()
+            )
+            memory_ids = [row.id for row in rows]
+            sources = list(
+                session.execute(
+                    select(MemorySource)
+                    .where(MemorySource.memory_id.in_(memory_ids))
+                    .order_by(MemorySource.memory_id, MemorySource.note_id)
+                ).scalars()
+            ) if memory_ids else []
+            versions = list(
+                session.execute(
+                    select(MemoryVersion)
+                    .where(MemoryVersion.memory_id.in_(memory_ids))
+                    .order_by(MemoryVersion.memory_id, MemoryVersion.version)
+                ).scalars()
+            ) if memory_ids else []
+            vectors = list(
+                session.execute(
+                    select(
+                        MemoryVector.memory_id,
+                        MemoryVector.status,
+                        MemoryVector.model,
+                        MemoryVector.dimension,
+                        MemoryVector.embedding_version,
+                        MemoryVector.embedding.is_not(None).label("has_embedding"),
+                    )
+                    .where(MemoryVector.memory_id.in_(memory_ids))
+                ).mappings()
+            ) if memory_ids else []
+
+            sources_by_memory: dict[str, list[Any]] = defaultdict(list)
+            versions_by_memory: dict[str, list[Any]] = defaultdict(list)
+            vectors_by_memory = {
+                str(vector["memory_id"]): vector for vector in vectors
+            }
+            for source in sources:
+                sources_by_memory[source.memory_id].append(source)
+            for version in versions:
+                versions_by_memory[version.memory_id].append(version)
+
             result = []
             for row in rows:
-                sources = list(session.execute(select(MemorySource).where(MemorySource.memory_id == row.id).order_by(MemorySource.note_id)).scalars())
-                versions = list(session.execute(select(MemoryVersion).where(MemoryVersion.memory_id == row.id).order_by(MemoryVersion.version)).scalars())
-                vector = session.get(MemoryVector, row.id)
+                vector = vectors_by_memory.get(row.id)
+                row_sources = sources_by_memory.get(row.id, [])
+                row_versions = versions_by_memory.get(row.id, [])
                 result.append({
                     "id": row.id,
                     "logical_ref": self.db_to_logical.get(row.id),
@@ -659,18 +911,24 @@ class CaseRunner:
                     "access_count": row.access_count,
                     "last_accessed_at": str(row.last_accessed_at) if row.last_accessed_at else None,
                     "vector": {
-                        "status": vector.status,
-                        "model": vector.model,
-                        "dimension": vector.dimension,
-                        "embedding_version": vector.embedding_version,
-                        "has_embedding": vector.embedding is not None,
+                        "status": vector["status"],
+                        "model": vector["model"],
+                        "dimension": vector["dimension"],
+                        "embedding_version": vector["embedding_version"],
+                        "has_embedding": bool(vector["has_embedding"]),
                     } if vector is not None else None,
-                    "source_note_ids": sorted(str(x.note_id) for x in sources),
+                    "source_note_ids": sorted(str(item.note_id) for item in row_sources),
                     "versions": [
-                        {"version": v.version, "content": v.content, "status": v.status, "task_status": v.task_status,
-                         "valid_from": str(v.valid_from) if v.valid_from else None, "valid_until": str(v.valid_until) if v.valid_until else None,
-                         "source_note_id": v.source_note_id}
-                        for v in versions
+                        {
+                            "version": version.version,
+                            "content": version.content,
+                            "status": version.status,
+                            "task_status": version.task_status,
+                            "valid_from": str(version.valid_from) if version.valid_from else None,
+                            "valid_until": str(version.valid_until) if version.valid_until else None,
+                            "source_note_id": version.source_note_id,
+                        }
+                        for version in row_versions
                     ],
                 })
             return {"memories": result}
@@ -693,6 +951,7 @@ class CaseRunner:
 
     def run(self) -> dict[str, Any]:
         from agent.query_agent import _deterministic_route, answer_question_result, memory_history
+        from agent.ask_workflow import answer_question_v2
         from memory.service import memory_search
         from repositories.postgres.memory import hybrid_search_memory_hits
 
@@ -711,7 +970,10 @@ class CaseRunner:
                 "type": "SeedVectorError",
                 "message": f"{self.seed_vector_summary['failed_count']} memory vectors failed to seed",
             })
-        pre = self.db_snapshot()
+        skip_db_snapshot = (
+            os.getenv("SUIXINJI_EVAL_SKIP_DB_SNAPSHOT", "false").lower() == "true"
+        )
+        pre = {"skipped_for_retrieval_eval": True} if skip_db_snapshot else self.db_snapshot()
         inp = self.case["input"]
         query = str(inp.get("query") or "")
         expected = self.case.get("expected") or {}
@@ -743,17 +1005,36 @@ class CaseRunner:
                 errors.append({"stage": "history_retrieval", "type": type(exc).__name__, "message": str(exc)})
         retrieval_ms = (time.perf_counter() - retrieval_started) * 1000
         try:
-            vector_raw_hits = {item["memory_id"]: item for item in _raw_vector_hits(self.space_id, query_embedding, limit=self.top_k, access_context=access_context)}
-            for hit in hybrid_search_memory_hits(self.space_id, query, include_inactive=True, query_embedding=query_embedding, limit=self.top_k, access_context=access_context):
-                executed_channels.update(name for name, rank in (("exact", hit.exact_rank), ("structured", hit.structured_rank), ("fts", hit.fts_rank), ("trigram", hit.trigram_rank), ("vector", hit.vector_rank)) if rank is not None)
+            diagnostic_limit = max(self.top_k * 4, 40)
+            vector_raw_hits = {
+                item["memory_id"]: item
+                for item in _raw_vector_hits(
+                    self.space_id,
+                    query_embedding,
+                    limit=diagnostic_limit,
+                    access_context=access_context,
+                )
+            }
+            for hit in hybrid_search_memory_hits(
+                self.space_id,
+                query,
+                include_inactive=True,
+                query_embedding=query_embedding,
+                limit=diagnostic_limit,
+                access_context=access_context,
+            ):
+                executed_channels.update(str(name) for name in hit.channel_ranks)
                 raw_hits.append({
                     "memory_id": hit.memory.id,
                     "logical_ref": self.db_to_logical.get(hit.memory.id),
                     "exact_rank": hit.exact_rank,
                     "structured_rank": hit.structured_rank,
+                    "family_rank": hit.family_rank,
                     "fts_rank": hit.fts_rank,
                     "trigram_rank": hit.trigram_rank,
                     "vector_rank": hit.vector_rank,
+                    "channel_ranks": dict(hit.channel_ranks),
+                    "channel_scores": dict(hit.channel_scores),
                     "vector_raw_similarity": vector_raw_hits.get(hit.memory.id, {}).get("raw_similarity"),
                     "rrf_score": hit.rrf_score,
                     "policy_score": hit.policy_score,
@@ -765,27 +1046,56 @@ class CaseRunner:
         answer_started = time.perf_counter()
         answer_result_payload: dict[str, Any] = {}
         try:
-            structured = answer_question_result(
-                self.space_id,
-                query,
-                max_steps=4,
-                tenant_id="default",
-                # Keep ACL semantics from access_context, but isolate evaluator
-                # traffic from the production per-user ask quota.
-                user_id=f"layer3_eval:{self.run_id}:{self.case['case_id']}",
-                message_id=f"layer3:{self.run_id}:{self.case['case_id']}",
-                task_id=f"layer3:{self.run_id}:{self.case['case_id']}",
-                access_context=access_context,
-            )
-            answer_result_payload = _safe_json(structured.to_dict())
-            answer = str(structured.answer or "")
-            if structured.answer_type == "system_error":
-                errors.append({"stage": "answer", "type": "StructuredAnswerError", "message": structured.reason_code})
+            if self.ask_engine == "v2":
+                # Map only the V2 workflow's exposed evidence IDs to evaluator refs.
+                workflow = answer_question_v2(self.space_id, query, access_context=access_context)
+                evidence = [item for bundle in workflow.bundles for item in bundle.evidence]
+                memory_ids = [item.memory_id for item in evidence if item.memory_id]
+                current_memory_ids = [item.memory_id for item in evidence if item.memory_id and not item.version_id]
+                version_ids = [item.version_id for item in evidence if item.version_id]
+                note_ids = [item.note_id for item in evidence if item.note_id]
+                source_ids = [source_id for item in evidence for source_id in item.source_note_ids]
+                statuses = [bundle.resolution.status for bundle in workflow.bundles]
+                answer_type = workflow.answer_type or ("conflict" if "conflict" in statuses else ("no_answer" if statuses and all(status == "not_found" for status in statuses) else "answered"))
+                answer_result_payload = {
+                    "answer_type": answer_type,
+                    "reason_code": workflow.reason_code or workflow.answer_source,
+                    "selected_memory_ids": list(dict.fromkeys(memory_ids)),
+                    "selected_version_ids": list(dict.fromkeys(version_ids)),
+                    "selected_source_ids": list(dict.fromkeys([*note_ids, *source_ids])),
+                    "selected_context_refs": list(dict.fromkeys([*current_memory_ids, *version_ids, *note_ids])),
+                    "selected_tool_refs": [unit.intent for unit in workflow.plan.units],
+                    "executed_tools": list(dict.fromkeys(channel for item in evidence for channel in item.retrieval_channels)),
+                    "evidence_bundle": [bundle.model_dump() for bundle in workflow.bundles],
+                    "claims": workflow.claims,
+                    "claim_groups": workflow.claim_groups,
+                }
+                answer = str(workflow.answer or "")
+            else:
+                structured = answer_question_result(
+                    self.space_id,
+                    query,
+                    max_steps=4,
+                    tenant_id="default",
+                    # Keep ACL semantics from access_context, but isolate evaluator
+                    # traffic from the production per-user ask quota.
+                    user_id=f"layer3_eval:{self.run_id}:{self.case['case_id']}",
+                    message_id=f"layer3:{self.run_id}:{self.case['case_id']}",
+                    task_id=f"layer3:{self.run_id}:{self.case['case_id']}",
+                    access_context=access_context,
+                )
+                answer_result_payload = _safe_json(structured.to_dict())
+                answer = str(structured.answer or "")
+                if structured.answer_type == "system_error":
+                    errors.append({"stage": "answer", "type": "StructuredAnswerError", "message": structured.reason_code})
         except Exception as exc:
             errors.append({"stage": "answer", "type": type(exc).__name__, "message": str(exc)})
             answer = ""
         answer_ms = (time.perf_counter() - answer_started) * 1000
-        post = self.db_snapshot()
+        post = (
+            {"skipped_for_retrieval_eval": True}
+            if skip_db_snapshot else self.db_snapshot()
+        )
         route_name = "complex"
         if route:
             action = str(route.get("action"))
@@ -1005,6 +1315,20 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
     relevant_current = set(expected.get("relevant_current_refs") or [])
     relevant_history = set(expected.get("relevant_history_refs") or [])
     relevant = relevant_current | relevant_history
+    # Final evidence is the memory/version context actually exposed by the
+    # answer contract. Source-note refs are scored separately as citations;
+    # raw retrieved_refs must never proxy for final evidence.
+    selected_evidence_refs = list(dict.fromkeys(
+        str(ref)
+        for ref in [*(pred.get("answer_selected_memory_refs") or []), *(pred.get("answer_selected_version_refs") or [])]
+        if str(ref)
+    ))
+    selected_evidence_available = selected_status == "available"
+    selected_evidence_eligible = expected_answer_type == "answered" and bool(relevant) and selected_evidence_available
+    selected_evidence_set = set(selected_evidence_refs)
+    selected_evidence_tp = len(selected_evidence_set & relevant) if selected_evidence_eligible else 0
+    selected_evidence_fp = len(selected_evidence_set - relevant) if selected_evidence_eligible else 0
+    selected_evidence_fn = len(relevant - selected_evidence_set) if selected_evidence_eligible else 0
     must_not = set(expected.get("must_not_return_refs") or [])
     maps = _snapshot_maps(pred.get("memory_snapshot_input") or {})
     must_not_hits = set() if expected_answer_type == "clarification" else judged_refs & must_not
@@ -1073,6 +1397,7 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
         matched_groups = 0
         order_correct = 0
         version_source_correct = 0
+        summary_text_correct = 0
         for expected_group in expected_groups:
             if not isinstance(expected_group, dict):
                 continue
@@ -1085,13 +1410,16 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
                 actual_versions = [str(item) for item in produced_group.get("version_refs") or []]
                 actual_sources = set(str(item) for item in produced_group.get("source_refs") or [])
                 actual_summary = (produced_group.get("summary_claim") or {}).get("text")
+                # Timeline correctness is an ordered structured contract:
+                # exact Version sequence plus exact source set. Summary prose is
+                # useful, but paraphrase must not erase a correct timeline.
                 if target_versions != actual_versions or target_sources != actual_sources:
-                    continue
-                if target_summary and not _match_text(target_summary, actual_summary):
                     continue
                 matched_groups += 1
                 order_correct += 1
                 version_source_correct += 1
+                if not target_summary or _match_text(target_summary, actual_summary):
+                    summary_text_correct += 1
                 break
         answer_prf = _prf(matched_groups, max(0, len(produced_groups) - matched_groups), max(0, len(expected_groups) - matched_groups))
         group_score = {
@@ -1100,6 +1428,7 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
             "expected": len(expected_groups),
             "timeline_order_accuracy": round(order_correct / len(expected_groups), 6) if expected_groups else 0.0,
             "version_source_exact": round(version_source_correct / len(expected_groups), 6) if expected_groups else 0.0,
+            "summary_text_match_rate": round(summary_text_correct / len(expected_groups), 6) if expected_groups else 0.0,
         }
     elif structured_claims:
         for claim in claims:
@@ -1136,7 +1465,7 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
         len(required_sources - citation_scored_cited),
     )
     forbidden = [str(x) for x in expected.get("forbidden_claims") or []]
-    forbidden_hit = any(_match_text(x, answer) for x in forbidden)
+    forbidden_hit = any(_forbidden_claim_hit(x, answer, answer_type=structured_type) for x in forbidden)
     stale_snapshot_refs = {ref for ref in content_by_ref if _is_stale_ref(ref, maps, pred.get("query_time"))}
     stale_answer = any(_match_text(content_by_ref.get(ref), answer) for ref in stale_snapshot_refs if content_by_ref.get(ref)) and not (
         str((pred.get("answer_result") or {}).get("answer_type") or "") == "qualified_history_only"
@@ -1166,6 +1495,7 @@ def score_case(pred: dict[str, Any]) -> dict[str, Any]:
                        "irrelevant_retrieval": irrelevant_retrieved, "irrelevant_refs": sorted(irrelevant_refs),
                        "ambiguous_candidate": ambiguous_candidate, "ambiguous_candidate_usage": ambiguous_candidate, "ambiguous_candidate_refs": sorted(ambiguous_refs)},
         "answer": {"claims": answer_prf, "claim_groups": group_score, "matched_claims": len(matched_claims), "expected_claims": len(claims), "forbidden_claim_hit": forbidden_hit, "stale_used": stale_answer, "stale_answer_usage": stale_answer, "answer_type": structured_type or ("no_answer" if predicted_no else "answered"), "reason_code": answer_result.get("reason_code"), "restricted_predicted": restricted_predicted, "restricted_expected": restricted_expected},
+        "selected_evidence": {"available": selected_evidence_available, "eligible": selected_evidence_eligible, "refs": selected_evidence_refs, **_prf(selected_evidence_tp, selected_evidence_fp, selected_evidence_fn)},
         "no_answer": {"expected": expected_no, "predicted": predicted_no, "tp": no_tp, "fp": no_fp, "fn": no_fn, "tn": no_tn, **_prf(no_tp, no_fp, no_fn)},
         "citation": {"required": sorted(required_sources), "actual": sorted(citation_scored_cited), "exact_set": citation_scored_cited == required_sources, **cite_prf},
         "access": {"violation": access_violation, "sensitive_answer_leak": sensitive_answer_leak, "sensitive_refs": sorted(sensitive_refs), "retrieved_sensitive_refs": sorted(judged_refs & sensitive_refs), "must_not_return": bool(expected.get("must_not_return_refs")), "restricted_expected": restricted_expected, "restricted_predicted": restricted_predicted},
@@ -1248,6 +1578,20 @@ def aggregate(scored: list[dict[str, Any]], predictions: list[dict[str, Any]]) -
         out["selected_tool_refs_unavailable_rate"] = round(statistics.mean(1.0 if x.get("stage0_contract", {}).get("selected_tool_refs_status") != "available" else 0.0 for x in items), 6) if items else 0.0
         out["executed_tools_unavailable_rate"] = round(statistics.mean(1.0 if x.get("stage0_contract", {}).get("executed_tools_status") != "available" else 0.0 for x in items), 6) if items else 0.0
         out["business_state_mutation_count"] = sum(1 for x in items if x["read_only"]["business_state_changed"])
+        evidence_items = [x for x in items if x["selected_evidence"].get("eligible")]
+        evidence_available_items = [x for x in items if x["selected_evidence"].get("available")]
+        out["selected_evidence"] = {
+            "cases": len(evidence_items),
+            "tp": sum(x["selected_evidence"]["tp"] for x in evidence_items),
+            "fp": sum(x["selected_evidence"]["fp"] for x in evidence_items),
+            "fn": sum(x["selected_evidence"]["fn"] for x in evidence_items),
+        }
+        out["selected_evidence"].update(_prf(
+            out["selected_evidence"]["tp"],
+            out["selected_evidence"]["fp"],
+            out["selected_evidence"]["fn"],
+        ))
+        out["selected_evidence_available_rate"] = round(len(evidence_available_items) / len(items), 6) if items else 0.0
         # The original top-level rank metrics remain raw diagnostics for
         # backwards comparison.  These two explicit metrics are the scoring
         # contract for ordinary factual retrieval and timeline version lookup.
@@ -1367,8 +1711,9 @@ def write_reports(
     route_report = {"confusion": [{"expected": a, "observed": b, "count": n} for (a, b), n in sorted(route.items())]}
     latency_values = [p.get("latency_ms", {}) for p in predictions]
     latency = {name: {"p50": _pct([float(x.get(name, 0)) for x in latency_values], .5), "p95": _pct([float(x.get(name, 0)) for x in latency_values], .95), "p99": _pct([float(x.get(name, 0)) for x in latency_values], .99)} for name in ("retrieval", "answer", "total")}
-    failures = [p for p in predictions if p.get("errors") or score_case(p)["read_only"]["business_state_changed"] or score_case(p)["retrieval"]["must_not_return_violation"] or score_case(p)["answer"]["forbidden_claim_hit"]]
-    manifest = {"schema_version": "suixinji.layer3.run.v1", "started_at": started, "finished_at": now_iso(), "run_id": args.run_id, "backend": os.getenv("STORAGE_BACKEND"), "retrieval_mode": os.getenv("SUIXINJI_MEMORY_RETRIEVAL_MODE"), "dataset_dir": args.data_dir, "case_count": len(predictions), "concurrency": args.concurrency, "top_k": args.top_k, "production_entry": ["memory.service.memory_search", "agent.query_agent.answer_question_result", "agent.query_agent.answer_question"], "gold_not_passed_to_business_code": True, "answer_error_count": len(answer_errors), "execution_error_count": len(execution_errors), "answer_error_types": dict(Counter(str(e.get("type")) for e in answer_errors)), "stage0_contract": "selected_context_refs, selected_tool_refs, and executed_tools remain null/unavailable unless production explicitly exposes them; the evaluator does not infer them from answer text, Gold, route diagnostics, or extra lookups.", "notes": ["Raw channel capture is diagnostic and does not control the answer path.", "Access filtering is applied before RRF fusion.", "Answer availability, successful-call quality and end-to-end quality are reported separately.", "Stage 0 separates stale, irrelevant, access-control, ambiguous and must-not-return diagnostics.", "The current production memory query marks access metadata; read-only checks exclude access_count/last_accessed_at."], **contract_manifest}
+    failures = [p for p in predictions if p.get("errors") or score_case(p)["read_only"]["business_state_changed"] or score_case(p)["retrieval"]["must_not_return_violation"] or (not getattr(args, "retrieval_only", False) and score_case(p)["answer"]["forbidden_claim_hit"])]
+    manifest = {"schema_version": "suixinji.layer3.run.v1", "started_at": started, "finished_at": now_iso(), "run_id": args.run_id, "backend": os.getenv("STORAGE_BACKEND"), "retrieval_mode": os.getenv("SUIXINJI_MEMORY_RETRIEVAL_MODE"), "dataset_dir": args.data_dir, "case_count": len(predictions), "concurrency": args.concurrency, "top_k": args.top_k, "production_entry": ["memory.service.memory_search", "agent.query_agent.answer_question_result", "agent.query_agent.answer_question"], "gold_not_passed_to_business_code": True, "answer_error_count": len(answer_errors), "execution_error_count": len(execution_errors), "answer_error_types": dict(Counter(str(e.get("type")) for e in answer_errors)), "stage0_contract": "selected_context_refs, selected_tool_refs, and executed_tools remain null/unavailable unless production explicitly exposes them; the evaluator does not infer them from answer text, Gold, route diagnostics, or extra lookups. selected_evidence is the answer-contract memory/version subset and is scored separately from raw retrieval.", "notes": ["Raw channel capture is diagnostic and does not control the answer path.", "Access filtering is applied before RRF fusion.", "Answer availability, successful-call quality and end-to-end quality are reported separately.", "Stage 0 separates stale, irrelevant, access-control, ambiguous and must-not-return diagnostics.", "The current production memory query marks access metadata; read-only checks exclude access_count/last_accessed_at.", "selected_evidence precision/recall/F1 uses answer-selected memory/version refs; source-note citations are scored separately."], **contract_manifest}
+    manifest["retrieval_only"] = bool(getattr(args, "retrieval_only", False))
     for name, payload in [("layer3_run_manifest.json", manifest), ("layer3_metrics.json", metrics), ("layer3_retrieval_metrics.json", retrieval), ("layer3_answer_metrics.json", answer), ("layer3_answer_availability.json", answer_availability), ("layer3_answer_quality.json", answer_quality), ("layer3_citation_metrics.json", citation), ("layer3_no_answer_report.json", no_answer), ("layer3_access_control_report.json", access), ("layer3_route_confusion.json", route_report), ("layer3_tag_breakdown.json", metrics["by_coverage_tag"]), ("layer3_latency_report.json", latency)]:
         (out_dir / name).write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     with (out_dir / "layer3_predictions.jsonl").open("w", encoding="utf-8") as fh:
@@ -1392,8 +1737,10 @@ def main() -> None:
     parser.add_argument("--run-id", default=f"layer3_{time.strftime('%Y%m%d_%H%M%S')}")
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--concurrency", type=int, default=3)
+    parser.add_argument("--ask-engine", choices=("legacy", "v2"), default="legacy", help="explicit answer path; default preserves legacy behavior")
     parser.add_argument("--limit", type=int, default=0, help="test only the first N cases (smoke test)")
     parser.add_argument("--preflight-only", action="store_true", help="validate/migrate locally without DB or model calls")
+    parser.add_argument("--retrieval-only", action="store_true", help="skip answer LLM while preserving production retrieval")
     args = parser.parse_args()
     cases, contract_manifest = load_cases_with_manifest(args.data_dir)
     if args.preflight_only:
@@ -1401,6 +1748,23 @@ def main() -> None:
         return
     if args.limit > 0:
         cases = cases[: args.limit]
+    if args.retrieval_only:
+        import agent.query_agent as query_agent
+
+        class _RetrievalOnlyAnswer:
+            answer = ""
+            answer_type = "no_answer"
+            reason_code = "retrieval_only"
+
+            @staticmethod
+            def to_dict() -> dict[str, Any]:
+                return {
+                    "answer": "", "answer_type": "no_answer",
+                    "reason_code": "retrieval_only", "evidence_bundle": [],
+                    "claims": [], "claim_groups": [],
+                }
+
+        query_agent.answer_question_result = lambda *_args, **_kwargs: _RetrievalOnlyAnswer()
     started = now_iso()
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -1409,7 +1773,7 @@ def main() -> None:
     checkpoint = out_dir / "layer3_predictions.inprogress.jsonl"
 
     def execute(case: dict[str, Any]) -> dict[str, Any]:
-        runner = CaseRunner(case, args.run_id, args.top_k)
+        runner = CaseRunner(case, args.run_id, args.top_k, args.ask_engine)
         try:
             return runner.run()
         except Exception as exc:

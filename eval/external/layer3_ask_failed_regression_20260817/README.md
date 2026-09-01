@@ -1,0 +1,1 @@
+Regression-only subset built from layer3_ask_claim_contract_v1_20260817 failed_cases.jsonl.\nCases: 35\n
