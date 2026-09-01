@@ -6,6 +6,7 @@
 
 from datetime import date, datetime, timedelta
 
+from apps import scheduler as distributed_scheduler
 from memory import scheduler
 from memory.repository import (
     _connect,
@@ -91,6 +92,50 @@ def test_scheduler_run_once_is_db_idempotent(monkeypatch):
         ("space-1", "daily"),
         ("space-2", "daily"),
     ]
+
+
+def test_scheduler_never_consolidates_synthetic_evaluation_spaces(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        scheduler,
+        "run_memory_consolidation",
+        lambda space_id, cadence: calls.append((space_id, cadence)) or {"space_id": space_id},
+    )
+
+    report = scheduler.run_memory_consolidation_once(
+        "daily",
+        space_ids=["l3_eval_run_001_case_001", "space-1"],
+        today=date(2026, 7, 14),
+    )
+
+    assert report["results"][0]["status"] == "skipped"
+    assert report["results"][0]["reason"] == "synthetic_evaluation_space"
+    assert calls == [("space-1", "daily")]
+
+
+def test_distributed_scheduler_skips_synthetic_evaluation_spaces(monkeypatch):
+    enqueued = []
+
+    class Lock:
+        def acquire(self, wait_seconds=0):
+            return True
+
+        def release(self):
+            return None
+
+    monkeypatch.setattr(distributed_scheduler, "RedisDistributedLock", lambda *args, **kwargs: Lock())
+    monkeypatch.setattr(distributed_scheduler, "flush_access_counts", lambda: 0)
+    monkeypatch.setattr(distributed_scheduler, "enqueue_uninitialized_semantic_profile_projection_rebuilds", lambda: 0)
+    monkeypatch.setattr(distributed_scheduler, "enqueue_stale_semantic_profile_projection_rebuilds", lambda: 0)
+    monkeypatch.setattr(distributed_scheduler, "run_scheduler_tick_safely", lambda *args, **kwargs: None)
+    monkeypatch.setattr(distributed_scheduler, "due_cadences", lambda *args, **kwargs: ["daily"])
+    monkeypatch.setattr(distributed_scheduler, "list_memory_space_ids", lambda: ["l3_eval_run_001_case_001", "space-1"])
+    monkeypatch.setattr(distributed_scheduler, "enqueue_due_retries", lambda: 0)
+    monkeypatch.setattr(distributed_scheduler, "STAGE4_MODE", False)
+    monkeypatch.setattr(distributed_scheduler, "enqueue_task", lambda **kwargs: enqueued.append(kwargs))
+
+    assert distributed_scheduler.run_once() is True
+    assert [item["space_id"] for item in enqueued] == ["space-1"]
 
 
 def test_scheduler_failed_run_can_retry(monkeypatch):

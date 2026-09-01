@@ -16,7 +16,7 @@ from core.settings import SCHEDULER_LEADER_TTL_MS, STAGE4_MODE
 from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import RedisDistributedLock
 from memory.repository import consolidation_period_key, flush_access_counts
-from memory.scheduler import due_cadences, list_memory_space_ids
+from memory.scheduler import due_cadences, is_evaluation_space, list_memory_space_ids
 from repositories.postgres.dispatch import enqueue_task
 from repositories.postgres.tasks import enqueue_due_retries
 from repositories.postgres.semantic_profile_projection import (
@@ -63,6 +63,11 @@ def run_once() -> bool:
         for cadence in due_cadences(today, {}):
             period_key = consolidation_period_key(cadence, today)
             for space_id in list_memory_space_ids():
+                # Layer evaluation spaces contain real-looking seed Notes, but
+                # are test fixtures and must never enter the distributed
+                # consolidation stream.
+                if is_evaluation_space(space_id):
+                    continue
                 enqueue_task(
                     task_type="memory",
                     space_id=space_id,

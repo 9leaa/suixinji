@@ -28,6 +28,12 @@ from storage.note_storage import NOTES_DIR, list_note_space_ids
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MEMORY_SCHEDULER_INTERVAL_SECONDS = 3600
+_EVALUATION_SPACE_PREFIXES = ("l1_eval_", "l2_eval_", "l3_eval_")
+
+
+def is_evaluation_space(space_id: str) -> bool:
+    """Return whether a space is synthetic evaluator state, never user data."""
+    return str(space_id or "").startswith(_EVALUATION_SPACE_PREFIXES)
 
 
 def list_memory_space_ids(notes_dir: Path | None = None) -> list[str]:
@@ -78,6 +84,21 @@ def run_memory_consolidation_once(cadence: str, *, space_ids: list[str] | None =
     results = []
     for space_id in targets:
         safe_id = safe_space_id(space_id)
+        # Evaluation runners seed real Notes and Memories so retrieval is
+        # realistic. They are intentionally read-only after seeding: a
+        # background consolidation pass must never extract their source Notes
+        # a second time or enqueue follow-up work into the shared workers.
+        if is_evaluation_space(safe_id):
+            results.append(
+                {
+                    "space_id": safe_id,
+                    "cadence": cadence,
+                    "period_key": period_key,
+                    "status": "skipped",
+                    "reason": "synthetic_evaluation_space",
+                }
+            )
+            continue
         run = reserve_consolidation_run(safe_id, cadence, period_key)
         if run is None:
             LOGGER.info(

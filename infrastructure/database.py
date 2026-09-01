@@ -7,14 +7,20 @@
 
 from __future__ import annotations
 
+import logging
 import os
+import time
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Any, Callable, Iterator
 
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Engine, create_engine, event, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from core.settings import (
+    DATABASE_CONNECT_MAX_ATTEMPTS,
+    DATABASE_CONNECT_RETRY_BASE_SECONDS,
+    DATABASE_CONNECT_RETRY_MAX_SECONDS,
+    DATABASE_CONNECT_TIMEOUT_SECONDS,
     DATABASE_POOL_RECYCLE_SECONDS,
     DATABASE_POOL_TIMEOUT_SECONDS,
     DATABASE_URL,
@@ -27,6 +33,7 @@ _engine: Engine | None = None
 _session_factory: sessionmaker[Session] | None = None
 _role_engines: dict[str, Engine] = {}
 _role_session_factories: dict[str, sessionmaker[Session]] = {}
+LOGGER = logging.getLogger(__name__)
 
 
 def _normalized_database_url(url: str) -> str:
@@ -53,6 +60,28 @@ def _resolved_role(role: str | None = None) -> str:
     return (role or PROCESS_ROLE or "default").strip().lower() or "default"
 
 
+def _connect_with_retry(connect: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
+    """Retry creation of a physical DBAPI connection with exponential backoff."""
+    attempts = max(1, DATABASE_CONNECT_MAX_ATTEMPTS)
+    for attempt in range(1, attempts + 1):
+        try:
+            return connect(*args, **kwargs)
+        except Exception:
+            if attempt >= attempts:
+                raise
+            delay = min(
+                max(0.0, DATABASE_CONNECT_RETRY_MAX_SECONDS),
+                max(0.0, DATABASE_CONNECT_RETRY_BASE_SECONDS) * (2 ** (attempt - 1)),
+            )
+            LOGGER.warning(
+                "database physical connection unavailable; retrying",
+                extra={"attempt": attempt, "max_attempts": attempts, "delay_seconds": delay},
+            )
+            if delay:
+                time.sleep(delay)
+    raise RuntimeError("database connection retry loop exhausted")
+
+
 def get_engine(role: str | None = None) -> Engine:
     """函数功能：`get_engine` 负责获取 engine，服务于本文件职责：SQLAlchemy engine/session 生命周期。
     传参：
@@ -71,16 +100,32 @@ def get_engine(role: str | None = None) -> Engine:
     if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL is not configured")
     pool_size, max_overflow = database_pool_budget(resolved if role is not None else None)
+    normalized_url = _normalized_database_url(DATABASE_URL)
+    connect_args: dict[str, object] = {}
+    if normalized_url.startswith("postgresql+"):
+        connect_args = {
+            "application_name": f"suixinji:{SUIXINJI_ENV}:{resolved}:{os.getpid()}",
+            "connect_timeout": max(1, DATABASE_CONNECT_TIMEOUT_SECONDS),
+            "keepalives": 1,
+            "keepalives_idle": 30,
+            "keepalives_interval": 10,
+            "keepalives_count": 3,
+        }
     engine = create_engine(
-        _normalized_database_url(DATABASE_URL),
+        normalized_url,
         pool_pre_ping=True,
         pool_size=pool_size,
         max_overflow=max_overflow,
         pool_timeout=max(1, DATABASE_POOL_TIMEOUT_SECONDS),
         pool_recycle=max(60, DATABASE_POOL_RECYCLE_SECONDS),
-        connect_args={"application_name": f"suixinji:{SUIXINJI_ENV}:{resolved}:{os.getpid()}"},
+        connect_args=connect_args,
         future=True,
     )
+    if normalized_url.startswith("postgresql+"):
+        @event.listens_for(engine, "do_connect")
+        def _retry_physical_connect(dialect: Any, _connection_record: Any, cargs: tuple[Any, ...], cparams: dict[str, Any]) -> Any:
+            return _connect_with_retry(dialect.connect, *cargs, **cparams)
+
     session_factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
     if resolved == default_role:
         _engine = engine
