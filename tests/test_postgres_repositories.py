@@ -16,6 +16,7 @@ from sqlalchemy import delete, inspect, select
 
 from core.wal import WalRecord
 from infrastructure.database import get_engine, session_scope
+from memory.retrieval_models import MemoryQuerySpec
 from infrastructure.schema import Delivery, InboxMessage, MemoryVersion, MemoryVersionSource, Space
 from memory.models import MemoryCandidate
 from repositories.postgres import delivery, inbox, memory, notes, summary, tasks, vectors
@@ -218,6 +219,58 @@ def test_postgres_memory_search_tolerates_omitted_chinese_connectives(pg_space):
     assert [record.id for record, _score in results] == [created.id]
 
 
+
+
+def test_postgres_memory_structured_and_family_query_spec(pg_space):
+    created = memory.insert_memory(
+        pg_space,
+        MemoryCandidate(
+            "task",
+            "用户正在制作项目发布报告",
+            0.8,
+            0.9,
+            task_status="todo",
+            subject="用户",
+            predicate="项目发布报告",
+            object_value="项目发布报告",
+            memory_key="task:用户:项目发布报告:制作:global",
+            scope={"canonical_topic": "制作项目发布报告", "task_family_key": "task-family:项目发布报告"},
+        ),
+        source_note_id="note-structured",
+    )
+    memory.insert_memory(
+        pg_space,
+        MemoryCandidate(
+            "task",
+            "用户正在制作季度财务报告",
+            0.8,
+            0.9,
+            task_status="todo",
+            subject="用户",
+            predicate="季度财务报告",
+            object_value="季度财务报告",
+            scope={"canonical_topic": "制作季度财务报告", "task_family_key": "task-family:季度财务报告"},
+        ),
+        source_note_id="note-distractor",
+    )
+
+    hits = memory.hybrid_search_memory_hits(
+        pg_space,
+        "发布报告怎么样了",
+        memory_type="task",
+        query_spec=MemoryQuerySpec(
+            memory_type="task",
+            canonical_topic="制作项目发布报告",
+            family_key="task-family:项目发布报告",
+        ),
+        query_embedding=[],
+        limit=10,
+    )
+
+    assert hits[0].memory.id == created.id
+    created_hit = next(hit for hit in hits if hit.memory.id == created.id)
+    assert created_hit.channel_ranks["structured_slot"] == 1
+    assert created_hit.channel_ranks["family"] == 1
 def test_postgres_memory_candidate_lifecycle(pg_space):
     """函数功能：`test_postgres_memory_candidate_lifecycle` 负责验证 postgres memory candidate lifecycle 场景，服务于本文件职责：PostgreSQL repositories、租户隔离及 schema CRUD。
     传参：

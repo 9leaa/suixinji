@@ -36,12 +36,25 @@ def _parse_ts(value: str | None) -> datetime | None:
 _QUERY_FILLERS = (
     "请优先回答", "请帮我查找", "请帮我查", "请查找", "请回答", "请问", "帮我", "告诉我",
     "结合长期记忆", "根据长期记忆", "长期记忆", "当前信息", "当前状态", "目前状态",
-    "长期结论", "相关结论", "相关记忆", "最近记忆", "有什么记忆", "是什么状态",
+    "目前记录的最新事实", "记录的最新事实", "最新事实", "长期结论", "相关结论",
+    "相关记忆", "最近记忆", "有什么记忆", "是什么状态", "记录",
     "是否已经完成", "是否完成", "需要处理吗", "需要处理", "偏好或习惯是什么", "偏好是什么",
     "习惯是什么", "分别", "比较", "对比", "总结", "归纳", "当前", "目前", "最近", "关于",
     "对应的", "对应", "里的", "是什么", "有哪些", "为什么", "怎么", "如何", "我的", "我对",
     "what is the current task status for", "what is my current memory about", "what is my preference about",
     "current task status", "current memory", "my preference", "what is", "about", "for",
+)
+
+
+_QUERY_SCAFFOLD_PATTERNS = (
+    # Time boundaries select a current snapshot; they are not part of the fact identity.
+    r"(?:截至|截止|到)(?:现在|当前|目前|如今|现阶段|今天|此刻)(?:为止)?",
+    r"(?:直)?至今",
+    # Choice/comparison scaffolding likewise describes how to answer, not what to retrieve.
+    r"(?:应该|应当|应|需要)?以",
+    r"哪(?:一)?(?:条|项|个|份|则)?(?:记录|事实|信息|结论|值)?",
+    r"(?:才)?是(?:当前|现在|最新)(?:的)?(?:记录|事实|信息|结论|值)?",
+    r"(?:作为|当作)?(?:当前|现在|最新)?(?:的)?(?:记录|事实|信息|结论|值)?为准",
 )
 
 
@@ -53,6 +66,8 @@ def retrieval_topic_text(value: str) -> str:
         返回 `str`，通常是格式化后的文本、标识或路径。
     """
     text = str(value or "").casefold()
+    for pattern in _QUERY_SCAFFOLD_PATTERNS:
+        text = re.sub(pattern, " ", text)
     for filler in sorted(_QUERY_FILLERS, key=len, reverse=True):
         text = text.replace(filler, " ")
     text = re.sub(r"(?:我|用户)(?:现在|当前|最近)?", " ", text)
@@ -217,9 +232,9 @@ def score_memory(query: str, memory: MemoryRecord) -> float:
         # 明确结构化意图是确定性约束，不是软语义偏好；为不完美表达保留小 fallback 分，但不能让同标签事实排在目标任务前。
         status_factor *= 0.35
     if memory.status == "conflicted":
-        status_factor = 0.5
+        status_factor *= 0.5
     elif memory.status != "active":
-        status_factor = 0.2
+        status_factor *= 0.2
     if (
         memory.memory_type == "task"
         and memory.task_status == "done"
@@ -228,14 +243,14 @@ def score_memory(query: str, memory: MemoryRecord) -> float:
     ):
         status_factor *= 0.7
 
-    access_frequency = min(memory.access_count / 10, 1.0)
+    # Access count is observability, not relevance. Ranking by it would create
+    # a self-reinforcing loop where previously returned rows keep rising.
     final = (
-        0.72 * topic_similarity
+        0.75 * topic_similarity
         + 0.08 * intent_similarity
         + 0.07 * memory.importance
         + 0.05 * _recency_score(memory)
         + 0.05 * memory.confidence
-        + 0.03 * access_frequency
     )
     return round(final * status_factor, 4)
 

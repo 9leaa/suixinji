@@ -25,9 +25,14 @@ from infrastructure.redis_keys import KEYS
 from infrastructure.redis_lock import coordinated_lock
 from memory.consolidator import consolidate_candidate
 from memory.candidate_validator import contains_sensitive_data, validate_candidates
-from memory.canonicalizer import task_instance_authorized
+from memory.canonicalizer import (
+    preference_family_key,
+    task_family_key,
+    task_instance_authorized,
+)
 from memory.extractor import LAST_EXTRACTION_DIAGNOSTICS, extract_candidates, may_contain_memory
 from memory.models import candidate_id_for, candidate_id_for_evidence, normalize_content
+from memory.retrieval_models import MemoryQuerySpec
 from memory.shadow import build_shadow_report
 from memory.repository import (
     approve_pending_memory,
@@ -66,8 +71,17 @@ LOGGER = logging.getLogger(__name__)
 _COVERAGE_QUERY_MARKERS = ("列出", "列举", "分别", "概括", "汇总", "有哪些", "哪几", "几件", "几个")
 _TASK_STATUS_QUERY_NOISE = (
     "用户", "我", "当前", "现在", "最近", "这件", "这个", "那个",
-    "任务", "事项", "事宜", "情况", "进展", "状态", "怎么样", "如何",
+    "任务", "事项", "事宜", "情况", "进展", "处于什么", "处在什么", "是什么", "什么", "处于", "处在", "状态", "怎么样", "如何",
     "吗", "呢", "了", "的",
+)
+_CURRENT_QUERY_MARKERS = (
+    "现在", "当前", "目前", "最新", "如今", "现阶段",
+    "currently", "at present", "latest", "current",
+)
+_HISTORY_QUERY_MARKERS = (
+    "历史", "变化", "演进", "过程", "经历", "过去", "以前", "最初",
+    "从开始到完成", "开始到完成", "完成前", "版本", "时间线",
+    "history", "timeline", "changed", "change over time",
 )
 
 
@@ -518,11 +532,55 @@ def process_note_memory(
     )
 
 
+def _memory_is_non_exportable(memory: Any) -> bool:
+    scope = getattr(memory, "scope", None)
+    if not isinstance(scope, dict):
+        scope = {}
+    sensitivity = str(scope.get("sensitivity") or "normal").casefold()
+    return contains_sensitive_data(str(getattr(memory, "content", "") or "")) or sensitivity in {
+        "sensitive", "secret", "restricted", "high",
+    }
+
+
+def build_memory_query_spec(
+    query: str,
+    *,
+    memory_type: str | None = None,
+    canonical_topic: str | None = None,
+    predicate: str | None = None,
+    time_mode: str = "all",
+) -> MemoryQuerySpec:
+    """Build bounded structured hints without turning them into update authority."""
+    from memory.retriever import retrieval_topic_text
+
+    topic = str(canonical_topic or retrieval_topic_text(query) or "").strip() or None
+    family_key = None
+    if topic and memory_type == "task":
+        family_key = task_family_key(topic)
+    elif topic and memory_type == "preference":
+        family_key = preference_family_key("用户", topic, query)
+    resolved_time_mode = str(time_mode or "all")
+    normalized_query = str(query or "").casefold()
+    if resolved_time_mode == "all":
+        if any(marker in normalized_query for marker in _HISTORY_QUERY_MARKERS):
+            resolved_time_mode = "history"
+        elif any(marker in normalized_query for marker in _CURRENT_QUERY_MARKERS):
+            resolved_time_mode = "current"
+    return MemoryQuerySpec(
+        memory_type=memory_type,
+        canonical_topic=topic,
+        family_key=family_key,
+        predicate=predicate,
+        time_mode=resolved_time_mode,
+    )
+
+
 def memory_search(
     space_id: str,
     query: str,
     *,
     memory_type: str | None = None,
+    query_spec: MemoryQuerySpec | None = None,
     min_score: float = MEMORY_QUERY_MIN_SCORE,
     limit: int = 8,
     access_context: Any = None,
@@ -537,16 +595,44 @@ def memory_search(
     返回结果说明：
         返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
+    spec = query_spec or build_memory_query_spec(query, memory_type=memory_type)
+    effective_memory_type = memory_type or spec.memory_type
     trace = start_trace("memory_query", space_id, query_len=len(query))
-    add_step(trace, "query_received", input_summary={"query_len": len(query), "memory_type": memory_type, "min_score": min_score})
+    add_step(
+        trace,
+        "query_received",
+        input_summary={
+            "query_len": len(query),
+            "memory_type": effective_memory_type,
+            "min_score": min_score,
+            "has_canonical_topic": bool(spec.canonical_topic),
+            "has_family_key": bool(spec.family_key),
+        },
+    )
     requested_limit = max(1, min(int(limit), 50))
     fetch_limit = max(30, requested_limit * 4)
+    ranking_trace: list[dict[str, Any]] = []
     candidates = [
         {**memory.to_dict(), "score": score}
-        for memory, score in search_memories(space_id, query, memory_type=memory_type, min_score=min_score, limit=fetch_limit, access_context=access_context)
-        if not contains_sensitive_data(memory.content)
+        for memory, score in search_memories(
+            space_id,
+            query,
+            memory_type=effective_memory_type,
+            query_spec=spec,
+            min_score=min_score,
+            limit=fetch_limit,
+            access_context=access_context,
+            retrieval_trace=ranking_trace,
+        )
+        if not _memory_is_non_exportable(memory)
     ]
     results = _coverage_rerank_memory_results(candidates, query=query, limit=requested_limit)
+    add_step(
+        trace,
+        "memory_retrieval_fusion",
+        output_summary={"ranking": ranking_trace[: min(12, fetch_limit)]},
+        reason="channel_rank_rrf_policy",
+    )
     add_step(
         trace,
         "memory_search",
@@ -582,9 +668,29 @@ def _memory_identity_text(item: dict[str, Any]) -> str:
     return normalize_content(" ".join(str(value or "") for value in values))
 
 
-def _task_status_hit_is_relevant(item: dict[str, Any], *, anchor: str) -> bool:
+def _task_status_hit_is_relevant(item: dict[str, Any], *, query: str, anchor: str) -> bool:
     identity = _memory_identity_text(item)
     if anchor and anchor in identity:
+        return True
+    # Inserted modifiers are common in natural language: a user may ask for
+    # “潜水资格证结业考核”, while the evidence says “潜水资格证线下结业考核”.
+    # A contiguous-substring gate rejects that valid evidence. Reuse the same
+    # bounded topic-overlap contract as Memory ranking so identity-bearing CJK
+    # n-grams and named tokens can authorize the hit without trusting its
+    # vector score alone.
+    from memory.retriever import _overlap_score
+
+    scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
+    identity_fields = (
+        item.get("content"), item.get("subject"), item.get("predicate"),
+        item.get("object_value"), scope.get("canonical_topic"),
+        scope.get("task_family_key"), scope.get("related_task_family_key"),
+    )
+    overlap = max(
+        (_overlap_score(query, str(value or "")) for value in identity_fields),
+        default=0.0,
+    )
+    if overlap >= 0.45:
         return True
     # A type-filtered vector score around the global threshold is often a
     # generic completed task, not evidence for the user's named topic.
@@ -595,6 +701,7 @@ def task_status_search(
     space_id: str,
     query: str,
     *,
+    query_spec: MemoryQuerySpec | None = None,
     min_score: float = MEMORY_QUERY_MIN_SCORE,
     limit: int = 8,
     access_context: Any = None,
@@ -604,16 +711,18 @@ def task_status_search(
     Episodic rows can explain prior completion or a reopening, but are never
     treated as task state or mutation targets.
     """
+    spec = query_spec or build_memory_query_spec(query, memory_type="task", time_mode="current")
     requested_limit = max(1, min(int(limit), 20))
     anchor = _task_status_query_anchor(query)
     raw_tasks = memory_search(
         space_id, query, memory_type="task", min_score=0.0,
-        limit=max(requested_limit * 3, 12), access_context=access_context,
+        query_spec=spec, limit=max(requested_limit * 3, 12),
+        access_context=access_context,
     )
     task_hits = [
         {**item, "task_evidence_role": "current_task"}
         for item in raw_tasks
-        if _task_status_hit_is_relevant(item, anchor=anchor)
+        if _task_status_hit_is_relevant(item, query=query, anchor=anchor)
     ]
     task_families = {
         str(family or "")
@@ -627,6 +736,7 @@ def task_status_search(
     }
     raw_episodes = memory_search(
         space_id, query, memory_type="episodic", min_score=0.0,
+        query_spec=replace(spec, memory_type="episodic"),
         limit=max(requested_limit * 2, 8), access_context=access_context,
     )
     episode_hits: list[dict[str, Any]] = []
@@ -634,7 +744,7 @@ def task_status_search(
         scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
         related_family = str(scope.get("related_task_family_key") or "")
         family_related = bool(related_family and related_family in task_families)
-        if family_related or _task_status_hit_is_relevant(item, anchor=anchor):
+        if family_related or _task_status_hit_is_relevant(item, query=query, anchor=anchor):
             episode_hits.append({**item, "task_evidence_role": "historical_event"})
 
     # Current task evidence remains first; at most two history rows explain

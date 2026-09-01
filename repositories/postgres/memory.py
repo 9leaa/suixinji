@@ -71,7 +71,7 @@ from memory.models import (
     utc_now_iso,
 )
 from memory.field_contracts import normalize_task_status, project_legacy_task_scope
-from memory.retrieval_models import MemoryRetrievalHit
+from memory.retrieval_models import MemoryQuerySpec, MemoryRetrievalHit
 from memory.access import memory_access_allowed
 from memory.vector_lifecycle import (
     current_embedding_contract,
@@ -986,6 +986,374 @@ def _query_terms(text: str, *, entities: list[str] | None = None) -> list[str]:
     return terms[:12]
 
 
+_LEXICAL_NOISE_RUNS = {
+    "参加", "参加过", "发生", "发生过", "完成", "已经完成", "记录", "相关记录",
+    "事实", "最新事实", "当前事实", "事宜", "事情", "情况", "任务", "状态",
+    "什么", "怎么样", "如何", "哪里", "哪些", "目前", "现在", "当前", "最近",
+    "关于", "分别", "告诉我", "查询", "查找", "回答", "用户", "本人", "自己",
+    "what", "when", "where", "which", "current", "latest", "record", "records",
+}
+
+
+def _strong_lexical_terms(
+    text: str,
+    *,
+    canonical_topic: str | None = None,
+    entities: list[str] | None = None,
+) -> list[str]:
+    """Return identity-bearing lexical terms, excluding generic question evidence.
+
+    Lexical is a corroborating RRF channel, so matching a generic verb such as
+    “参加” or “发生” must not count as a second independent vote beside Vector.
+    Three-or-more-character CJK fragments still bridge natural modifiers, for
+    example “健身房体验课” to “力量训练体验课”.
+    """
+    from memory.retriever import retrieval_topic_text
+
+    topic = retrieval_topic_text(text)
+    values = [str(canonical_topic or ""), topic]
+    values.extend(str(value or "") for value in entities or [])
+    if not any(value.strip() for value in values):
+        values.append(str(text or ""))
+
+    terms: list[str] = []
+
+    def add(value: str) -> None:
+        token = str(value or "").strip().casefold()
+        compact = normalize_content(token)
+        if len(compact) < 3 or compact in _LEXICAL_NOISE_RUNS or token in terms:
+            return
+        terms.append(token)
+
+    for value in values:
+        for run in re.findall(r"[A-Za-z0-9][A-Za-z0-9+#._-]*|[\u4e00-\u9fff]+", value):
+            compact_run = normalize_content(run)
+            if compact_run in _LEXICAL_NOISE_RUNS:
+                continue
+            if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9+#._-]*", run):
+                add(run)
+                continue
+            add(run)
+            for width in (6, 5, 4, 3):
+                if len(run) < width:
+                    continue
+                for start in range(len(run) - width + 1):
+                    add(run[start : start + width])
+    return terms[:32]
+
+
+def _fts_query(terms: list[str], fallback: str) -> Any:
+    """Build a bounded OR tsquery; later fusion still decides final rank."""
+    safe_terms: list[str] = []
+    for term in terms[:8]:
+        cleaned = "".join(re.findall(r"[A-Za-z0-9_一-鿿]+", str(term or "")))
+        if len(cleaned) >= 2 and cleaned not in safe_terms:
+            safe_terms.append(cleaned)
+    if safe_terms:
+        return func.to_tsquery("simple", " | ".join(safe_terms))
+    return func.plainto_tsquery("simple", str(fallback or "")[:500])
+
+
+_RRF_CHANNEL_WEIGHTS = {
+    "exact": 1.60,
+    "structured": 1.35,  # Backward-compatible alias.
+    "structured_slot": 1.35,
+    "family": 1.20,
+    "fts": 1.00,
+    "lexical": 0.95,
+    "vector": 0.95,
+    "trigram": 0.60,
+    # This channel widens the pool but is weak relevance evidence.
+    "legacy_recent": 0.10,
+}
+_STRUCTURED_TRACE_CHANNELS = {
+    "structured", "structured_slot", "lexical",
+}
+_CORROBORATING_CHANNELS = {
+    "exact", "structured", "structured_slot", "family", "fts", "lexical", "trigram", "vector",
+}
+
+
+def _best_rank(ranks: dict[str, int], channels: set[str]) -> int | None:
+    values = [rank for channel, rank in ranks.items() if channel in channels]
+    return min(values) if values else None
+
+
+def _hit_channel_count(hit: MemoryRetrievalHit) -> int:
+    """Count independent relevance signals; broad pool-widening lanes do not count."""
+    if hit.channel_ranks:
+        return sum(channel in _CORROBORATING_CHANNELS for channel in hit.channel_ranks)
+    return sum(
+        rank is not None
+        for rank in (
+            hit.exact_rank, hit.structured_rank, hit.family_rank,
+            hit.fts_rank, hit.trigram_rank, hit.vector_rank,
+        )
+    )
+
+
+def _semantic_event_timestamp(memory: MemoryRecord) -> float:
+    """Business time first; storage write order must not define current truth."""
+    now = _dt(utc_now_iso())
+    valid_from = _dt(memory.valid_from)
+    if valid_from is not None:
+        if now is not None and valid_from > now:
+            return float("-inf")
+        return valid_from.timestamp()
+    for value in (memory.last_confirmed_at, memory.updated_at, memory.created_at):
+        parsed = _dt(value)
+        if parsed is not None:
+            return parsed.timestamp()
+    return float("-inf")
+
+
+def _apply_semantic_current_precedence(
+    ranked: list[tuple[MemoryRecord, float, MemoryRetrievalHit]],
+    *,
+    query: str,
+) -> list[tuple[MemoryRecord, float, MemoryRetrievalHit]]:
+    """Prefer the latest fact among candidates authorized by this query.
+
+    Semantic storage remains append-only. This read-side adjustment is active
+    only for `time_mode=current`; history queries preserve the original order.
+    Broad semantic facets are grouping labels rather than fact identity, so the
+    query itself supplies the fine-grained identity boundary.
+    """
+    from memory.retriever import _overlap_score
+
+    def overlap(memory: MemoryRecord) -> float:
+        scope = memory.scope if isinstance(memory.scope, dict) else {}
+        return max(
+            _overlap_score(query, str(value or ""))
+            for value in (
+                memory.content, memory.object_value, memory.predicate,
+                scope.get("canonical_topic"),
+            )
+        )
+
+    relevant = [
+        memory for memory, _score, _hit in ranked
+        if overlap(memory) >= 0.45
+    ]
+    if len(relevant) <= 1:
+        return ranked
+    latest_id = max(
+        relevant,
+        key=lambda item: (_semantic_event_timestamp(item), item.id),
+    ).id
+    relevant_ids = {memory.id for memory in relevant}
+    adjusted: list[tuple[MemoryRecord, float, MemoryRetrievalHit]] = []
+    for memory, score, hit in ranked:
+        if memory.id not in relevant_ids:
+            adjusted.append((memory, score, hit))
+            continue
+        if memory.id == latest_id:
+            score = min(1.0, score + 0.03)
+            hit.reasons.append("semantic_current_latest_boost")
+        else:
+            score = max(0.0, score - 0.03)
+            hit.reasons.append("semantic_current_history_penalty")
+        hit.final_score = round(score, 4)
+        adjusted.append((memory, hit.final_score, hit))
+    return adjusted
+
+
+def _task_current_timestamp(memory: MemoryRecord) -> float:
+    """Use confirmation/write time for mutable Task state, not status value."""
+    now = _dt(utc_now_iso())
+    for value in (
+        memory.last_confirmed_at,
+        memory.updated_at,
+        memory.valid_from,
+        memory.created_at,
+    ):
+        parsed = _dt(value)
+        if parsed is not None and (now is None or parsed <= now):
+            return parsed.timestamp()
+    return float("-inf")
+
+
+def _task_authority_key(memory: MemoryRecord) -> tuple[int, int, float, int, float]:
+    status = str(memory.status or "").casefold()
+    safe = status not in {"pending", "pending_review", "conflicted"}
+    return (
+        int(status == "active"),
+        int(safe),
+        _task_current_timestamp(memory),
+        int(memory.current_version or 1),
+        float(memory.confidence or 0.0),
+    )
+
+
+def _same_task_instance(left: MemoryRecord, right: MemoryRecord) -> bool:
+    """Reuse the mutation-safe identity contract; Family alone is insufficient."""
+    from memory.canonicalizer import task_instance_authorized
+
+    return task_instance_authorized(left, right) or task_instance_authorized(right, left)
+
+
+def _task_instance_groups(
+    ranked: list[tuple[MemoryRecord, float, MemoryRetrievalHit]],
+) -> list[list[tuple[MemoryRecord, float, MemoryRetrievalHit]]]:
+    groups: list[list[tuple[MemoryRecord, float, MemoryRetrievalHit]]] = []
+    for item in (row for row in ranked if row[0].memory_type == "task"):
+        for group in groups:
+            if any(_same_task_instance(item[0], existing[0]) for existing in group):
+                group.append(item)
+                break
+        else:
+            groups.append([item])
+    return groups
+
+
+def _apply_task_current_precedence(
+    ranked: list[tuple[MemoryRecord, float, MemoryRetrievalHit]],
+) -> list[tuple[MemoryRecord, float, MemoryRetrievalHit]]:
+    """Select the authoritative current state inside each Task instance.
+
+    ``done`` never outranks ``todo`` merely because of its value. A newer
+    confirmed/versioned record may therefore reopen a completed task. If two
+    equally authoritative records disagree, keep both unchanged and expose an
+    ambiguity reason instead of guessing.
+    """
+    adjusted_scores: dict[str, float] = {}
+    for group in _task_instance_groups(ranked):
+        if len(group) <= 1:
+            continue
+        best_key = max(_task_authority_key(memory) for memory, _score, _hit in group)
+        leaders = [
+            item for item in group if _task_authority_key(item[0]) == best_key
+        ]
+        leader_statuses = {
+            str(memory.task_status or "") for memory, _score, _hit in leaders
+        }
+        if len(leaders) > 1 and len(leader_statuses) > 1:
+            for _memory, _score, hit in leaders:
+                hit.reasons.append("task_current_state_ambiguous")
+            continue
+
+        winner = max(leaders, key=lambda item: (item[1], item[0].id))
+        winner_score = min(1.0, max(score for _memory, score, _hit in group) + 0.02)
+        loser_cap = max(0.0, winner_score - 0.02)
+        for memory, score, hit in group:
+            if memory.id == winner[0].id:
+                adjusted_scores[memory.id] = winner_score
+                hit.reasons.append("task_current_authoritative")
+            else:
+                adjusted_scores[memory.id] = min(score, loser_cap)
+                hit.reasons.append("task_current_superseded")
+
+    adjusted = []
+    for memory, score, hit in ranked:
+        score = adjusted_scores.get(memory.id, score)
+        hit.final_score = round(score, 4)
+        adjusted.append((memory, hit.final_score, hit))
+    return adjusted
+
+
+def _task_history_authority_key(memory: MemoryRecord) -> tuple[int, int, int, int, int, float, float]:
+    """Choose the Task row that owns the richest trustworthy timeline."""
+    status = str(memory.status or "").casefold()
+    safe = status not in {"pending", "pending_review", "conflicted"}
+    return (
+        int(status == "active"),
+        int(safe),
+        int(memory.current_version or 1),
+        len(memory.sources),
+        len(memory.versions),
+        _task_current_timestamp(memory),
+        float(memory.confidence or 0.0),
+    )
+
+
+def _apply_task_history_precedence(
+    ranked: list[tuple[MemoryRecord, float, MemoryRetrievalHit]],
+) -> list[tuple[MemoryRecord, float, MemoryRetrievalHit]]:
+    """Prefer the representative Task row for a timeline query.
+
+    This is evidence-first, not ``done``-first: version/source completeness
+    selects the row that can actually explain the evolution. Equal evidence
+    remains ambiguous instead of being resolved by the task status value.
+    """
+    adjusted_scores: dict[str, float] = {}
+    for group in _task_instance_groups(ranked):
+        if len(group) <= 1:
+            continue
+        best_key = max(_task_history_authority_key(memory) for memory, _score, _hit in group)
+        leaders = [
+            item for item in group
+            if _task_history_authority_key(item[0]) == best_key
+        ]
+        if len(leaders) != 1:
+            for _memory, _score, hit in leaders:
+                hit.reasons.append("task_history_representative_ambiguous")
+            continue
+        winner = leaders[0]
+        winner_score = min(1.0, max(score for _memory, score, _hit in group) + 0.02)
+        loser_cap = max(0.0, winner_score - 0.02)
+        for memory, score, hit in group:
+            if memory.id == winner[0].id:
+                adjusted_scores[memory.id] = winner_score
+                hit.reasons.append("task_history_representative")
+            else:
+                adjusted_scores[memory.id] = min(score, loser_cap)
+                hit.reasons.append("task_history_nonrepresentative")
+
+    adjusted = []
+    for memory, score, hit in ranked:
+        score = adjusted_scores.get(memory.id, score)
+        hit.final_score = round(score, 4)
+        adjusted.append((memory, hit.final_score, hit))
+    return adjusted
+
+
+def _apply_task_read_precedence(
+    ranked: list[tuple[MemoryRecord, float, MemoryRetrievalHit]],
+    *,
+    time_mode: str,
+) -> list[tuple[MemoryRecord, float, MemoryRetrievalHit]]:
+    """Apply Task read rules even when the caller used mixed-type search."""
+    if time_mode == "current":
+        return _apply_task_current_precedence(ranked)
+    if time_mode == "history":
+        return _apply_task_history_precedence(ranked)
+    return ranked
+
+
+_TASK_READ_DEMOTION_REASONS = {
+    "task_current_superseded",
+    "task_history_nonrepresentative",
+}
+_TASK_CURRENT_INTENT_MARKERS = (
+    "任务", "项目", "状态", "进展", "待办", "完成了吗", "做完了吗",
+    "阻塞", "卡住", "todo", "done", "blocked", "task status",
+)
+_TASK_HISTORY_INTENT_MARKERS = (
+    *_TASK_CURRENT_INTENT_MARKERS,
+    "从开始到完成", "开始到完成", "完成过程", "状态变化", "任务演进",
+)
+
+
+def _task_read_precedence_authorized(
+    query: str,
+    *,
+    memory_type: str | None,
+    time_mode: str,
+) -> bool:
+    """Gate Task-only ranking so mixed semantic facts are not displaced."""
+    if memory_type == "task":
+        return True
+    normalized = str(query or "").casefold()
+    markers = (
+        _TASK_HISTORY_INTENT_MARKERS
+        if time_mode == "history"
+        else _TASK_CURRENT_INTENT_MARKERS
+    )
+    return time_mode in {"current", "history"} and any(
+        marker in normalized for marker in markers
+    )
+
+
 def _rrf_hits(
     channels: list[tuple[str, list[Memory]]],
     *,
@@ -1004,64 +1372,87 @@ def _rrf_hits(
     返回结果说明：
         返回 `list[MemoryRetrievalHit]`，表示按条件筛选、构造或查询得到的列表。
     """
-    scores: dict[str, float] = {}
     rows: dict[str, Memory] = {}
     ranks: dict[str, dict[str, int]] = {}
+    contributions: dict[str, dict[str, float]] = {}
     rrf_k = max(1, int(MEMORY_HYBRID_RRF_K))
-    channel_weights = {
-        # 结构化/canonical 命中对状态层查询信号最强；稀疏和向量通道用于补充，trigram 主要用于错字/分词恢复，因此权重更弱。
-        "exact": 1.60,
-        "structured": 1.35,
-        # Exact task-family membership is a strong bounded recall signal, but
-        # remains below the strict canonical key and structured slots because
-        # a family can contain multiple task instances.
-        "family": 1.20,
-        "fts": 1.00,
-        "vector": 0.95,
-        "trigram": 0.60,
-    }
+
+    # Merge repeated labels before scoring. A candidate can therefore receive
+    # at most one contribution from one logical channel.
+    merged_channels: dict[str, dict[str, tuple[int, Memory]]] = {}
     for channel, ranked in channels:
-        weight = channel_weights.get(channel, 1.0) if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0
+        channel_rows = merged_channels.setdefault(channel, {})
         for rank, row in enumerate(ranked, start=1):
+            previous = channel_rows.get(row.id)
+            if previous is None or rank < previous[0]:
+                channel_rows[row.id] = (rank, row)
             rows[row.id] = row
-            ranks.setdefault(row.id, {})[channel] = rank
-            scores[row.id] = scores.get(row.id, 0.0) + weight / (rrf_k + rank)
+
+    reference_size = max(
+        (
+            len(values)
+            for name, values in merged_channels.items()
+            if name in {"structured", "structured_slot", "lexical", "fts"}
+        ),
+        default=0,
+    )
+    vector_size = len(merged_channels.get("vector", {}))
+    vector_scale = 1.0
+    if reference_size >= 5 and vector_size < reference_size:
+        vector_scale = max(0.25, vector_size / reference_size)
+
+    for channel, channel_rows in merged_channels.items():
+        base_weight = _RRF_CHANNEL_WEIGHTS.get(channel, 1.0)
+        if not RETRIEVAL_WEIGHTED_RRF_ENABLED:
+            weight = 1.0
+        elif channel == "vector":
+            weight = base_weight * vector_scale
+        else:
+            weight = base_weight
+        for memory_id, (rank, _row) in channel_rows.items():
+            contribution = weight / (rrf_k + rank)
+            ranks.setdefault(memory_id, {})[channel] = rank
+            contributions.setdefault(memory_id, {})[channel] = contribution
+
     hits: list[MemoryRetrievalHit] = []
     for memory_id, row in rows.items():
         policy_score = 0.0
         reasons = []
+        channel_contributions = contributions.get(memory_id, {})
+        rrf_score = sum(channel_contributions.values())
         if exact_key and row.memory_key == exact_key:
-            scores[memory_id] += 0.08
             policy_score += 0.08
             reasons.append("exact_key_boost")
         if subject and row.subject and normalize_content(subject) == normalize_content(row.subject):
-            scores[memory_id] += 0.03
             policy_score += 0.03
             reasons.append("subject_match")
         if predicate and row.predicate and normalize_content(predicate) == normalize_content(row.predicate):
-            scores[memory_id] += 0.03
             policy_score += 0.03
             reasons.append("predicate_match")
         channel_ranks = ranks.get(memory_id, {})
+        if "vector" in channel_ranks and vector_scale < 1.0:
+            reasons.append("vector_coverage_scaled")
         hits.append(
             MemoryRetrievalHit(
                 memory=_record(_NoSourceSession(), row, include_versions=False, sources=[]),
                 exact_rank=channel_ranks.get("exact"),
-                structured_rank=channel_ranks.get("structured"),
+                structured_rank=_best_rank(channel_ranks, _STRUCTURED_TRACE_CHANNELS),
                 family_rank=channel_ranks.get("family"),
                 fts_rank=channel_ranks.get("fts"),
                 trigram_rank=channel_ranks.get("trigram"),
                 vector_rank=channel_ranks.get("vector"),
-                exact_score=(channel_weights["exact"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["exact"]) if "exact" in channel_ranks else 0.0,
-                structured_score=(channel_weights["structured"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["structured"]) if "structured" in channel_ranks else 0.0,
-                family_score=(channel_weights["family"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["family"]) if "family" in channel_ranks else 0.0,
-                fts_score=(channel_weights["fts"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["fts"]) if "fts" in channel_ranks else 0.0,
-                trigram_score=(channel_weights["trigram"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["trigram"]) if "trigram" in channel_ranks else 0.0,
-                vector_score=(channel_weights["vector"] if RETRIEVAL_WEIGHTED_RRF_ENABLED else 1.0) / (rrf_k + channel_ranks["vector"]) if "vector" in channel_ranks else 0.0,
-                rrf_score=scores.get(memory_id, 0.0) - policy_score,
+                exact_score=channel_contributions.get("exact", 0.0),
+                structured_score=sum(channel_contributions.get(name, 0.0) for name in _STRUCTURED_TRACE_CHANNELS),
+                family_score=channel_contributions.get("family", 0.0),
+                fts_score=channel_contributions.get("fts", 0.0),
+                trigram_score=channel_contributions.get("trigram", 0.0),
+                vector_score=channel_contributions.get("vector", 0.0),
+                rrf_score=rrf_score,
                 policy_score=policy_score,
-                final_score=scores.get(memory_id, 0.0),
+                final_score=rrf_score + policy_score,
                 reasons=reasons + sorted(channel_ranks),
+                channel_ranks=dict(channel_ranks),
+                channel_scores={name: round(score, 8) for name, score in channel_contributions.items()},
             )
         )
     hits.sort(key=lambda hit: (hit.final_score, hit.memory.updated_at, hit.memory.id), reverse=True)
@@ -1465,7 +1856,7 @@ def hybrid_adjudication_candidates(
             structured_filters.append((Memory.memory_type == candidate.memory_type) & Memory.content.ilike(f"%{str(entity)[:120]}%"))
         if structured_filters:
             channels.append((
-                "structured",
+                "structured_slot",
                 list(
                     session.execute(
                         base.where(or_(*structured_filters))
@@ -1508,7 +1899,7 @@ def hybrid_adjudication_candidates(
         if candidate.memory_type == "task":
             # 旧版 V2 任务可能使用泛化 subject/predicate 槽位，因此为 identity bridge 保留一个有界任务切片。
             channels.append((
-                "structured",
+                "legacy_recent",
                 list(
                     session.execute(
                         base.order_by(Memory.updated_at.desc(), Memory.id.desc()).limit(retrieval_limit)
@@ -1519,7 +1910,7 @@ def hybrid_adjudication_candidates(
         query_text = " ".join(terms) or candidate.content
         if query_text.strip():
             document = _text_document()
-            tsquery = func.plainto_tsquery("simple", query_text[:500])
+            tsquery = _fts_query(terms, query_text)
             channels.append((
                 "fts",
                 list(
@@ -1533,7 +1924,7 @@ def hybrid_adjudication_candidates(
             lexical_filters = [Memory.content.ilike(f"%{term[:120]}%") for term in terms[:8]]
             if lexical_filters:
                 channels.append((
-                    "structured",
+                    "lexical",
                     list(
                         session.execute(
                             base.where(or_(*lexical_filters))
@@ -2800,6 +3191,7 @@ def hybrid_search_memory_hits(
     query: str,
     *,
     memory_type: str | None = None,
+    query_spec: MemoryQuerySpec | None = None,
     include_inactive: bool = False,
     query_embedding: list[float] | None = None,
     limit: int = 40,
@@ -2819,14 +3211,16 @@ def hybrid_search_memory_hits(
         返回 `list[MemoryRetrievalHit]`，表示按条件筛选、构造或查询得到的列表。
     """
     del db_path
+    spec = query_spec or MemoryQuerySpec(memory_type=memory_type)
+    effective_memory_type = memory_type or spec.memory_type
     top = max(1, min(int(limit), 100))
     retrieval_limit = max(30, min(120, top * 3))
-    terms = _query_terms(query)
+    terms = _query_terms(query, entities=list(spec.entities))
     embedding = query_embedding
     channels: list[tuple[str, list[Memory]]] = []
     _, embedding_dimension, _ = current_embedding_contract()
     with session_scope() as session:
-        base = _base_memory_statement(space_id, memory_type=memory_type, include_inactive=include_inactive)
+        base = _base_memory_statement(space_id, memory_type=effective_memory_type, include_inactive=include_inactive)
         # 状态层查询以精确命中优先：canonical key 或规范化原句必须排在近似语义匹配前。
         normalized_query = normalize_content(query)
         #memory 标准化内容是否和问题完全相同
@@ -2840,6 +3234,8 @@ def hybrid_search_memory_hits(
                     Memory.content.ilike(f"%{query.strip()[:160]}%"),
                 ]
             )
+        if spec.memory_key:
+            exact_filters.append(Memory.memory_key == spec.memory_key)
         #查询中含有TASK-123、README-01 等编号时，在结构化字段中精确找编编号
         identifiers = re.findall(r"[\u4e00-\u9fffA-Za-z]+-\d+|[A-Za-z][A-Za-z0-9+#._-]*-\d+", query)
         for identifier in identifiers[:4]:
@@ -2862,27 +3258,70 @@ def hybrid_search_memory_hits(
         )
         if exact_rows:
             channels.append(("exact", exact_rows))
-        type_hints: list[str] = []
-        if any(marker in query for marker in ("喜欢", "偏好", "习惯", "讨厌", "避开", "过敏")):
-            type_hints.append("preference")
-        if any(marker in query for marker in ("任务", "待办", "要做", "进度", "完成", "取消")):
-            type_hints.append("task")
-        if any(marker in query for marker in ("住哪", "住在", "哪里", "项目", "学习", "研究")):
-            type_hints.append("semantic")
-        if type_hints and memory_type is None:
+
+        identity_filters: list[Any] = []
+        topic = str(spec.canonical_topic or "").strip()
+        if topic:
+            identity_filters.append(
+                func.lower(Memory.scope_json["canonical_topic"].astext) == topic.casefold()
+            )
+        if spec.subject and spec.predicate:
+            identity_filters.append(
+                (func.lower(Memory.subject) == spec.subject.casefold())
+                & (func.lower(Memory.predicate) == spec.predicate.casefold())
+            )
+        elif spec.subject and normalize_content(spec.subject) not in {"用户", "我", "本人"}:
+            identity_filters.append(func.lower(Memory.subject) == spec.subject.casefold())
+        if spec.predicate and effective_memory_type not in {None, "semantic", "preference"}:
+            identity_filters.append(func.lower(Memory.predicate) == spec.predicate.casefold())
+        for entity in spec.entities[:5]:
+            value = str(entity or "").strip()[:120]
+            if value:
+                identity_filters.append(
+                    Memory.subject.ilike(f"%{value}%")
+                    | Memory.object_value.ilike(f"%{value}%")
+                )
+        if identity_filters:
+            identity_priority = case(
+                *((condition, index) for index, condition in enumerate(identity_filters)),
+                else_=len(identity_filters),
+            )
             channels.append((
-                "structured",
+                "structured_slot",
                 list(
                     session.execute(
-                        base.where(Memory.memory_type.in_(type_hints))
-                        .order_by(Memory.updated_at.desc(), Memory.id.desc())
+                        base.where(or_(*identity_filters))
+                        .order_by(identity_priority, Memory.updated_at.desc(), Memory.id.desc())
                         .limit(retrieval_limit)
                     ).scalars()
-                )
+                ),
             ))
 
-        structured_filters = [Memory.content.ilike(f"%{term[:120]}%") for term in terms[:12]]
-        for term in terms[:12]:
+        if spec.family_key:
+            family_fields = ["task_family_key", "related_task_family_key"]
+            if effective_memory_type == "preference":
+                family_fields = ["preference_family_key"]
+            family_filters = [
+                Memory.scope_json[field].astext == spec.family_key for field in family_fields
+            ]
+            channels.append((
+                "family",
+                list(
+                    session.execute(
+                        base.where(or_(*family_filters))
+                        .order_by(Memory.updated_at.desc(), Memory.id.desc())
+                        .limit(min(20, retrieval_limit))
+                    ).scalars()
+                ),
+            ))
+
+        lexical_terms = _strong_lexical_terms(
+            query,
+            canonical_topic=spec.canonical_topic,
+            entities=list(spec.entities),
+        )
+        structured_filters = [Memory.content.ilike(f"%{term[:120]}%") for term in lexical_terms]
+        for term in lexical_terms:
             structured_filters.extend(
                 [
                     Memory.subject.ilike(f"%{term[:120]}%"),
@@ -2891,12 +3330,16 @@ def hybrid_search_memory_hits(
                 ]
             )
         if structured_filters:
+            lexical_priority = case(
+                *((condition, index) for index, condition in enumerate(structured_filters[:32])),
+                else_=32,
+            )
             channels.append((
-                "structured",
+                "lexical",
                 list(
                     session.execute(
                         base.where(or_(*structured_filters))
-                        .order_by(Memory.updated_at.desc(), Memory.id.desc())
+                        .order_by(lexical_priority, Memory.updated_at.desc(), Memory.id.desc())
                         .limit(retrieval_limit)
                     ).scalars()
                 )
@@ -2905,7 +3348,7 @@ def hybrid_search_memory_hits(
         query_text = " ".join(terms) or query
         if query_text.strip():
             document = _text_document()
-            tsquery = func.plainto_tsquery("simple", query_text[:500])
+            tsquery = _fts_query(terms, query_text)
             channels.append((
                 "fts",
                 list(
@@ -2959,7 +3402,13 @@ def hybrid_search_memory_hits(
         # Apply ACL to every channel before RRF fusion.
         if access_context is not None:
             channels = [(name, [row for row in rows if memory_access_allowed(row, access_context)]) for name, rows in channels]
-        hits = _rrf_hits(channels, limit=top)
+        hits = _rrf_hits(
+            channels,
+            exact_key=spec.memory_key,
+            subject=spec.subject,
+            predicate=spec.predicate,
+            limit=top,
+        )
         ids = [hit.memory.id for hit in hits]
         if not ids:
             return []
@@ -2982,6 +3431,7 @@ def hybrid_search_memories(
     query: str,
     *,
     memory_type: str | None = None,
+    query_spec: MemoryQuerySpec | None = None,
     include_inactive: bool = False,
     query_embedding: list[float] | None = None,
     limit: int = 40,
@@ -3006,6 +3456,7 @@ def hybrid_search_memories(
             space_id,
             query,
             memory_type=memory_type,
+            query_spec=query_spec,
             include_inactive=include_inactive,
             query_embedding=query_embedding,
             limit=limit,
@@ -3020,12 +3471,14 @@ def search_memories(
     query: str,
     *,
     memory_type: str | None = None,
+    query_spec: MemoryQuerySpec | None = None,
     include_inactive: bool = False,
     min_score: float = MEMORY_QUERY_MIN_SCORE,
     limit: int = 10,
     mark_access: bool = True,
     db_path: Any = None,
     access_context: Any = None,
+    retrieval_trace: list[dict[str, Any]] | None = None,
 ) -> list[tuple[MemoryRecord, float]]:
     """函数功能：`search_memories` 负责搜索 memories，服务于本文件职责：Memory 数据访问。
     传参：
@@ -3041,12 +3494,13 @@ def search_memories(
         返回 `list[tuple[MemoryRecord, float]]`，表示按条件筛选、构造或查询得到的列表。
     """
     from memory.retriever import score_memory
+    effective_memory_type = memory_type or (query_spec.memory_type if query_spec else None)
 
     if MEMORY_RETRIEVAL_MODE not in {"hybrid", "hybrid_v1", "hybrid_v2"}:
         candidates = list_memories(
             space_id,
             status=None if include_inactive else "active",
-            memory_type=memory_type,
+            memory_type=effective_memory_type,
             limit=100,
             db_path=db_path,
         )
@@ -3061,9 +3515,10 @@ def search_memories(
         hits = hybrid_search_memory_hits(
             space_id,
             query,
-            memory_type=memory_type,
+            memory_type=effective_memory_type,
+            query_spec=query_spec,
             include_inactive=include_inactive,
-            query_embedding=_safe_embedding(space_id, query, memory_type=memory_type),
+            query_embedding=_safe_embedding(space_id, query, memory_type=effective_memory_type),
             limit=max(limit * 4, 30),
             db_path=db_path,
             access_context=access_context,
@@ -3073,10 +3528,7 @@ def search_memories(
         for hit in hits:
             policy = score_memory(query, hit.memory)
             rrf = hit.final_score / maximum_rrf if maximum_rrf > 0 else 0.0
-            channel_count = sum(
-                rank is not None
-                for rank in (hit.exact_rank, hit.structured_rank, hit.fts_rank, hit.trigram_rank, hit.vector_rank)
-            )
+            channel_count = _hit_channel_count(hit)
             fused_signal = min(1.0, rrf + 0.04 * max(0, channel_count - 1))
             final = 0.52 * policy + 0.48 * fused_signal
             if hit.exact_rank is not None:
@@ -3086,8 +3538,27 @@ def search_memories(
             hit.final_score = round(min(1.0, final), 4)
             hit.reasons.append("deterministic_policy_rerank")
             ranked.append((hit.memory, hit.final_score, hit))
+        if (
+            effective_memory_type == "semantic"
+            and query_spec is not None
+            and query_spec.time_mode == "current"
+        ):
+            ranked = _apply_semantic_current_precedence(ranked, query=query)
+        if (
+            query_spec is not None
+            and _task_read_precedence_authorized(
+                query,
+                memory_type=effective_memory_type,
+                time_mode=query_spec.time_mode,
+            )
+        ):
+            ranked = _apply_task_read_precedence(
+                ranked,
+                time_mode=query_spec.time_mode,
+            )
         ranked.sort(
             key=lambda item: (
+                not any(reason in _TASK_READ_DEMOTION_REASONS for reason in item[2].reasons),
                 item[2].exact_rank is not None,
                 item[1],
                 item[2].rrf_score,
@@ -3096,6 +3567,19 @@ def search_memories(
             ),
             reverse=True,
         )
+        if retrieval_trace is not None:
+            retrieval_trace.extend(
+                {
+                    "memory_id": hit.memory.id,
+                    "channel_ranks": dict(hit.channel_ranks),
+                    "channel_scores": dict(hit.channel_scores),
+                    "rrf_score": round(hit.rrf_score, 8),
+                    "policy_score": round(hit.policy_score, 4),
+                    "final_score": hit.final_score,
+                    "reasons": list(hit.reasons),
+                }
+                for _memory, _score, hit in ranked
+            )
         scored = [(memory, score) for memory, score, _hit in ranked]
 
     if MEMORY_RETRIEVAL_MODE == "hybrid_v2" or MEMORY_UNIFIED_RERANK_ENABLED:

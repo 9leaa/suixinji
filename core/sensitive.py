@@ -11,13 +11,17 @@ import re
 from dataclasses import dataclass
 
 
+HIGH_RISK_IDENTIFIER_LABELS = (
+    "身份证", "身份证号", "身份号码", "证件号", "证件号码",
+    "银行卡", "银行卡号", "银行账号", "社保号", "护照号",
+)
+
 SENSITIVE_TOPIC_KEYWORDS = (
     "密码",
     "口令",
     "私钥",
     "密钥",
-    "身份证",
-    "银行卡",
+    *HIGH_RISK_IDENTIFIER_LABELS,
     "api key",
     "apikey",
     "access key",
@@ -95,6 +99,9 @@ def assess_sensitive_text(text: str) -> SensitiveAssessment:
         return SensitiveAssessment(True, "credential", "credential_label_with_space_value", True)
     if _IDENTIFIER_RE.search(value):
         return SensitiveAssessment(True, "identifier", "high_risk_identifier", True)
+    compact = value.casefold()
+    if any(label.casefold() in compact for label in HIGH_RISK_IDENTIFIER_LABELS):
+        return SensitiveAssessment(True, "identifier", "high_risk_identifier_label", True)
     return SensitiveAssessment(False)
 
 

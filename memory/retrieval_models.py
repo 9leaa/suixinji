@@ -12,6 +12,20 @@ from dataclasses import dataclass, field
 from memory.models import MemoryRecord
 
 
+@dataclass(frozen=True)
+class MemoryQuerySpec:
+    """Structured read-side hints; text retrieval remains a fallback lane."""
+
+    memory_type: str | None = None
+    memory_key: str | None = None
+    canonical_topic: str | None = None
+    family_key: str | None = None
+    subject: str | None = None
+    predicate: str | None = None
+    entities: tuple[str, ...] = ()
+    time_mode: str = "all"
+
+
 @dataclass
 class MemoryRetrievalHit:
     """类功能：`MemoryRetrievalHit` 封装与“Memory 检索 DTO”相关的数据结构、状态或行为。
@@ -35,3 +49,7 @@ class MemoryRetrievalHit:
     policy_score: float = 0.0
     final_score: float = 0.0
     reasons: list[str] = field(default_factory=list)
+    # Full trace is authoritative. Fixed fields above remain for callers that
+    # still expect the original six-channel contract.
+    channel_ranks: dict[str, int] = field(default_factory=dict)
+    channel_scores: dict[str, float] = field(default_factory=dict)

@@ -498,6 +498,14 @@ def preference_key(entity: str, topic: str, scope: str = "global", *, qualifiers
     return ":".join(key_parts)
 
 
+def task_family_key(topic: str) -> str | None:
+    """Project a query topic into the same retrieval-only Task family space."""
+    identity = _task_identity_topic(topic)
+    if not identity:
+        return None
+    return f"task-family:{identity}"
+
+
 def preference_family_key(entity: str, topic: str, source_text: str | None = None) -> str:
     """Build a retrieval-only Preference family key from a business class."""
     from memory.policies.preference import preference_family

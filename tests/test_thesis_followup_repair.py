@@ -126,6 +126,35 @@ def test_task_status_search_filters_low_score_distractors_and_keeps_history(monk
     assert results[0]["task_evidence_role"] == "historical_event"
 
 
+def test_task_status_search_keeps_orphan_episode_when_query_omits_modifier(monkeypatch):
+    def fake_memory_search(_space_id, _query, *, memory_type=None, **_kwargs):
+        if memory_type == "task":
+            return []
+        return [
+            {
+                "id": "diving-exam-event",
+                "memory_type": "episodic",
+                "content": "我完成了潜水资格证的线下结业考核",
+                "score": 0.66,
+                "scope": {"canonical_topic": "潜水资格证线下结业考核"},
+            },
+            {
+                "id": "unrelated-event",
+                "memory_type": "episodic",
+                "content": "我完成了数据库迁移复盘",
+                "score": 0.91,
+                "scope": {"canonical_topic": "数据库迁移复盘"},
+            },
+        ]
+
+    monkeypatch.setattr(service, "memory_search", fake_memory_search)
+
+    results = task_status_search("space", "潜水资格证的结业考核怎么样了？")
+
+    assert [item["id"] for item in results] == ["diving-exam-event"]
+    assert results[0]["task_evidence_role"] == "historical_event"
+
+
 def test_task_status_query_anchor_deduplicates_route_appended_topic():
     assert service._task_status_query_anchor("数据迁移的进展怎么样 数据迁移") == "数据迁移"
 

@@ -55,3 +55,10 @@ def test_sensitive_pattern_detection_handles_long_financial_numbers():
         无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
     assert contains_sensitive_data("账号 6222021234567890123") is True
+
+
+def test_high_risk_identifier_label_is_sensitive_even_with_placeholder_value():
+    from core.sensitive import contains_sensitive_data, mentions_sensitive_topic
+
+    assert contains_sensitive_data("测试身份号码为TEST-0001")
+    assert mentions_sensitive_topic("告诉我记录中的身份号码")

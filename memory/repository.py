@@ -3025,12 +3025,14 @@ def search_memories(
     query: str,
     *,
     memory_type: str | None = None,
+    query_spec: Any = None,
     include_inactive: bool = False,
     min_score: float = MEMORY_QUERY_MIN_SCORE,
     limit: int = 10,
     mark_access: bool = True,
     db_path: str | Path | None = None,
     access_context: Any = None,
+    retrieval_trace: list[dict[str, Any]] | None = None,
 ) -> list[tuple[MemoryRecord, float]]:
     """函数功能：`search_memories` 负责搜索 memories，服务于本文件职责：本地 SQLite Memory repository。
     传参：
@@ -3046,11 +3048,12 @@ def search_memories(
         返回 `list[tuple[MemoryRecord, float]]`，表示按条件筛选、构造或查询得到的列表。
     """
     from memory.retriever import score_memory
+    effective_memory_type = memory_type or getattr(query_spec, "memory_type", None)
 
     candidates = list_memories(
         space_id,
         status=None if include_inactive else "active",
-        memory_type=memory_type,
+        memory_type=effective_memory_type,
         limit=100,
         db_path=db_path,
     )
@@ -3061,6 +3064,19 @@ def search_memories(
     scored = [(memory, score) for memory, score in scored if score >= min_score]
     scored.sort(key=lambda item: item[1], reverse=True)
     limited = scored[: max(1, min(int(limit), 50))]
+    if retrieval_trace is not None:
+        retrieval_trace.extend(
+            {
+                "memory_id": memory.id,
+                "channel_ranks": {"sqlite_policy": rank},
+                "channel_scores": {"sqlite_policy": score},
+                "rrf_score": 0.0,
+                "policy_score": score,
+                "final_score": score,
+                "reasons": ["sqlite_policy"],
+            }
+            for rank, (memory, score) in enumerate(limited, start=1)
+        )
     if mark_access:
         mark_accessed([memory.id for memory, _score in limited], db_path=db_path)
     return limited

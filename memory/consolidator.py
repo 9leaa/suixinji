@@ -62,6 +62,15 @@ def _task_topic_similarity(left: str, right: str) -> float:
     return len(left_set & right_set) / len(left_set | right_set) if left_set and right_set else 0.0
 
 
+def _task_identity_anchor(value: str) -> str:
+    """Remove lifecycle wording before comparing the concrete task object."""
+    compact = normalize_content(value).strip(" ，,。.!！?？；;：:").replace("的", "")
+    compact = re.sub(r"^(?:我|用户|需要|要|想要|准备|记得|正在|已经|已)+", "", compact)
+    compact = re.sub(r"(?:(?:已经|已)?(?:完成|做完|搞定|处理完|修复完|提交完)|正在|需要|要|准备)$", "", compact)
+    compact = re.sub(r"^(?:完成|做完|搞定|处理|修复|提交|编写|制作|完善|部署)+", "", compact)
+    return compact.strip(" ，,。.!！?？；;：:")
+
+
 def _task_match_kind(candidate: MemoryCandidate, memory: MemoryRecord) -> tuple[str, float] | None:
     if candidate.memory_type != "task" or memory.memory_type != "task":
         return None
@@ -81,6 +90,10 @@ def _task_match_kind(candidate: MemoryCandidate, memory: MemoryRecord) -> tuple[
     if task_family_compatible(candidate, memory):
         return "identity_compatible", 0.92
     if normalize_content(candidate.subject or "") == normalize_content(memory.subject or ""):
+        candidate_anchor = _task_identity_anchor(str(candidate.content or candidate.evidence_span or ""))
+        memory_anchor = _task_identity_anchor(str(memory.content or ""))
+        if candidate_anchor and memory_anchor and _task_topic_similarity(candidate_anchor, memory_anchor) >= 0.82:
+            return "identity_compatible", 0.90
         candidate_attribute = normalize_content(candidate.predicate or "").replace("的", "")
         memory_attribute = normalize_content(memory.predicate or "").replace("的", "")
         if candidate_attribute.endswith(memory_attribute) or memory_attribute.endswith(candidate_attribute):
@@ -355,35 +368,58 @@ def _consolidate_candidate_standard(space_id: str, note_id: str, candidate: Memo
     if (
         candidate.memory_type == "task"
         and candidate.task_status == "done"
-        and decision.relation == "new"
         and decision.recommended_action == "insert"
     ):
-        # No same-instance task predecessor was found.  A completion claim is
-        # therefore recorded as history instead of inventing an active done
-        # task.  Ambiguous/conflicting task matches do not take this branch:
-        # they remain pending_review so a real task update is never hidden.
-        original_candidate = candidate
-        candidate = convert_orphan_done_task_to_episodic(candidate)
-        similar = retrieve_candidates(space_id, candidate)
-        decision = replace(
-            adjudicate_memory(candidate, similar),
-            reason="orphan_completion_converted_to_episodic",
+        # Candidate retrieval is bounded and score-oriented, so it can miss a
+        # prior Task whose wording changed from a plan to a completion.  Before
+        # declaring an orphan, use the deterministic task identity matcher over
+        # active Tasks in this space.  Fuzzy-only/multiple matches remain under
+        # review; only one strong same-instance match may advance todo -> done.
+        task_matches = _matched_task_memories(
+            candidate,
+            list_memories(space_id, status="active", memory_type="task", limit=200),
         )
         add_step(
             trace,
-            "orphan_completion_converted",
-            input_summary={
-                "candidate_id": original_candidate.candidate_id,
-                "memory_type": original_candidate.memory_type,
-                "task_status": original_candidate.task_status,
-            },
-            output_summary={
-                "memory_type": candidate.memory_type,
-                "canonical_topic": candidate.scope.get("canonical_topic"),
-                "retrieved_event_count": len(similar),
-            },
-            reason="no_same_instance_task_predecessor",
+            "done_task_history_checked",
+            input_summary={"candidate_id": candidate.candidate_id, "requested_status": candidate.task_status},
+            output_summary={"matches": [{"memory_id": item.memory.id, "kind": item.kind, "score": item.score} for item in task_matches]},
+            reason="deterministic_task_identity_fallback",
         )
+        if len(task_matches) == 1 and task_matches[0].kind != "fuzzy_topic":
+            match = task_matches[0]
+            candidate = replace(
+                candidate,
+                memory_key=match.memory.memory_key,
+                memory_key_version=match.memory.memory_key_version,
+            )
+            decision = (
+                update_existing_task_to_done(candidate, match.memory, match=match)
+                if match.memory.task_status == "todo"
+                else add_source_or_noop(candidate, match.memory, match=match)
+            )
+        elif task_matches:
+            decision = _done_decision(
+                candidate, task_matches, relation="ambiguous_match", action="pending_review",
+                reason="completion_requires_unambiguous_task_identity",
+            )
+        else:
+            # No same-instance task predecessor was found.  A completion claim
+            # is historical evidence, not a newly invented active done task.
+            original_candidate = candidate
+            candidate = convert_orphan_done_task_to_episodic(candidate)
+            similar = retrieve_candidates(space_id, candidate)
+            decision = replace(
+                adjudicate_memory(candidate, similar),
+                reason="orphan_completion_converted_to_episodic",
+            )
+            add_step(
+                trace,
+                "orphan_completion_converted",
+                input_summary={"candidate_id": original_candidate.candidate_id, "memory_type": original_candidate.memory_type, "task_status": original_candidate.task_status},
+                output_summary={"memory_type": candidate.memory_type, "canonical_topic": candidate.scope.get("canonical_topic"), "retrieved_event_count": len(similar)},
+                reason="no_same_instance_task_predecessor",
+            )
     advisory = maybe_memory_relation_advisory(candidate, similar, decision)
     shadow = build_relation_shadow_report(candidate, similar, decision)
     if shadow is not None:
