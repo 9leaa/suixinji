@@ -327,6 +327,7 @@ def complete_json(
     model_role: str | None = None,
     llm_task: str | None = None,
     route_context: dict[str, Any] | None = None,
+    timeout_seconds: float | None = None,
 ) -> dict[str, Any]:
     """函数功能：`complete_json` 负责完成 json，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
     传参：
@@ -335,11 +336,16 @@ def complete_json(
         model_role: model role 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
         llm_task: llm task 参数，由调用方传入，类型为 `str | None`，默认值为 `None`。
         route_context: route context 参数，由调用方传入，类型为 `dict[str, Any] | None`，默认值为 `None`。
+        timeout_seconds: 可选的本次调用超时覆盖；不改变全局模型配置。
     返回结果说明：
         返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     route = route_model(task=llm_task, model_role=model_role, range_key=(route_context or {}).get("range_key"))
     config = _config_for_route(route)
+    if timeout_seconds is not None:
+        # Workflow budgets are per call. Keep provider routing and retries intact
+        # while preventing a planner or synthesizer from borrowing the global timeout.
+        config = replace(config, timeout_seconds=max(1.0, float(timeout_seconds)))
     start = time.perf_counter()
     timeout_retries = _timeout_retries_for_route(route)
     max_attempts = timeout_retries + 1

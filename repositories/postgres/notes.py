@@ -8,12 +8,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+import os
 from datetime import datetime
 from typing import Any
 
 import re
 
-from sqlalchemy import delete, func, or_, select, update
+from sqlalchemy import case, delete, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from infrastructure.database import session_scope
@@ -271,6 +272,11 @@ _NOTE_QUERY_FILLERS = (
     "请问", "帮我", "告诉我", "查一下", "看一下", "什么", "哪个", "哪些",
     "是否", "有没有", "相关内容", "相关记录", "刚才", "上次",
 )
+_NOTE_QUERY_STOPWORDS = frozenset({
+    "when", "what", "where", "who", "which", "how", "did", "does", "do",
+    "is", "are", "was", "were", "the", "a", "an", "my", "i", "me",
+    "tell", "please", "could", "would", "should", "about", "recently",
+})
 
 
 def _note_query_terms(text: str) -> list[str]:
@@ -293,6 +299,8 @@ def _note_query_terms(text: str) -> list[str]:
             无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
         """
         token = str(token or "").strip()
+        if token.casefold() in _NOTE_QUERY_STOPWORDS:
+            return
         if len(token) >= 2 and token not in terms:
             terms.append(token)
 
@@ -322,11 +330,11 @@ def _weighted_note_rrf(
         返回 `list[tuple[Note, float, list[str]]]`，表示按条件筛选、构造或查询得到的列表。
     """
     weights = {
-        "exact": 1.55,
-        "fts": 1.00,
-        "lexical": 0.85,
-        "trigram": 0.60,
-        "vector": 0.95,
+        "exact": float(os.getenv("SUIXINJI_NOTE_WEIGHT_EXACT", "1.65")),
+        "fts": float(os.getenv("SUIXINJI_NOTE_WEIGHT_FTS", "0.90")),
+        "lexical": float(os.getenv("SUIXINJI_NOTE_WEIGHT_LEXICAL", "0.65")),
+        "trigram": float(os.getenv("SUIXINJI_NOTE_WEIGHT_TRIGRAM", "0.50")),
+        "vector": float(os.getenv("SUIXINJI_NOTE_WEIGHT_VECTOR", "1.35")),
     }
     rrf_k = max(1, int(NOTE_HYBRID_RRF_K))
     rows: dict[str, Note] = {}
@@ -404,10 +412,11 @@ def hybrid_search_notes(
 
         if terms:
             conditions = [document.ilike(f"%{term[:80]}%") for term in terms]
+            lexical_hits = sum(case((condition, 1), else_=0) for condition in conditions)
             lexical = list(
                 session.execute(
                     base.where(or_(*conditions))
-                    .order_by(Note.created_at.desc(), Note.id.desc())
+                    .order_by(lexical_hits.desc(), Note.created_at.desc(), Note.id.desc())
                     .limit(retrieval_limit)
                 ).scalars()
             )

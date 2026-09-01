@@ -300,7 +300,7 @@ def _deterministic_route(question: str) -> dict[str, Any] | None:
                 "args": {"type": "任务", "limit": 30},
             }
         return {
-            "action": "memory_search",
+            "action": "task_status_search",
             "args": {"query": normalized, "memory_type": "task", "limit": 8, "min_score": DEFAULT_MEMORY_MIN_SCORE},
             "fallback": fallback,
             "synthesize": True,
@@ -1056,6 +1056,29 @@ def get_note(space_id: str, note_id: str) -> dict[str, Any]:
     return _note_brief(note, text_limit=1200)
 
 
+def get_note_for_evidence(space_id: str, note_id: str) -> dict[str, Any]:
+    """Read one already-authorized Note for bounded V2 evidence selection.
+
+    Unlike ``get_note`` this helper does not pre-truncate the text.  It is
+    intentionally not a public ReAct tool: the V2 executor may call it only
+    for a Note ID that came from its own selected evidence set, and the
+    Evidence Resolver clips the result before any LLM receives it.
+    """
+    note = _postgres_find_note(space_id, note_id) if STORAGE_BACKEND == "postgres" else _find_note(space_id, note_id)
+    if note is not None and not is_note_queryable(note):
+        note = None
+    if note is None:
+        return {"error": f"note not found: {note_id}"}
+    return {
+        "id": note.get("id"),
+        "ts": note.get("ts"),
+        "created_at": note.get("created_at"),
+        "title": note.get("title"),
+        "summary": note.get("summary"),
+        "text": str(note.get("text") or ""),
+    }
+
+
 def list_recent(space_id: str, days: int = 7, limit: int = 10) -> list[dict[str, Any]]:
     """函数功能：`list_recent` 负责列出 recent，服务于本文件职责：问答主编排。
     传参：
@@ -1746,7 +1769,7 @@ def decide_answer(
         return AnswerDecision("no_answer", "no_relevant_evidence")
     if _query_history_intent(question, route) and (history_evidence or any(getattr(item, "role", "") in {"history", "stale_history"} for item in items)):
         return AnswerDecision("answered", "history_query")
-    if _query_conflict_intent(question) and any(str(item.get("status") or "") in {"pending_review", "pending", "conflicted"} for item in current_evidence):
+    if any(str(item.get("status") or "") in {"pending_review", "pending", "conflicted"} for item in current_evidence):
         conflict_ids = pending_review_ids + [
             str(item.get("id") or item.get("memory_id"))
             for item in current_evidence
@@ -2282,6 +2305,48 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
             finish_trace(trace)
             _store_answer_evidence(hook_context, answer_source="sensitive_query_blocked", selected_evidence=[], observations=[])
             return answer
+
+        if settings.ASK_V2_ENABLED:
+            from agent.ask_workflow import answer_question_v2
+
+            outcome = answer_question_v2(space_id, question, hook_context=hook_context, trace=trace)
+            answer = _with_sources(outcome.answer, outcome.selected_records)
+            _log_final_answer(space_id, answer, source=outcome.answer_source, observations=outcome.observations)
+            add_step(
+                trace,
+                "answer_generated",
+                output_summary={"answer_len": len(answer), "unit_count": len(outcome.plan.units)},
+                reason=outcome.answer_source,
+            )
+            add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+            finish_trace(trace)
+            _store_answer_evidence(
+                hook_context,
+                answer_source=outcome.answer_source,
+                selected_evidence=outcome.selected_records,
+                observations=outcome.observations,
+            )
+            return answer
+
+        if settings.ASK_V2_SHADOW:
+            try:
+                from agent.ask_workflow import build_shadow_plan
+
+                shadow_plan = build_shadow_plan(question, hook_context=hook_context)
+                add_step(
+                    trace,
+                    "ask_plan_generated",
+                    status="partial",
+                    output_summary={
+                        "shadow": True,
+                        "unit_count": len(shadow_plan.units),
+                        "answer_mode": shadow_plan.answer_mode,
+                        "intents": [unit.intent for unit in shadow_plan.units],
+                    },
+                    reason="ask_v2_shadow",
+                )
+            except Exception as exc:
+                add_step(trace, "ask_plan_generated", status="partial", error=f"{type(exc).__name__}: {exc}", reason="ask_v2_shadow_failed")
 
         observations: list[dict[str, Any]] = []
         selected_evidence: list[dict[str, Any]] = []
