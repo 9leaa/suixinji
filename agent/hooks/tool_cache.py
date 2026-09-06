@@ -15,7 +15,7 @@ from agent.hooks.context import AgentRunContext
 from core.settings import CACHE_ENABLED, COORDINATION_BACKEND
 from infrastructure.redis_cache import RedisCache
 
-READ_TOOLS = {"memory_search", "semantic_search", "list_recent", "get_note", "follow_links", "by_type", "by_tag", "filter_notes", "related_notes"}
+READ_TOOLS = {"search_notes", "get_note", "get_related_notes", "search_memories", "search_tasks", "memory_search", "semantic_search", "list_recent", "follow_links", "by_type", "by_tag", "filter_notes", "related_notes", "task_status_search"}
 WRITE_TOOLS = {"save_note", "update_memory", "forget_memory", "purge_memory", "consolidate_memory", "process_memory"}
 
 

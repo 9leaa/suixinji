@@ -71,13 +71,13 @@ def test_answer_question_fast_routes_current_task_then_synthesizes_once(monkeypa
     assert "来源（最多展示 5 条记忆和 5 条笔记）：" in answer
     assert "note:task-1" in answer
     assert len(prompts) == 1
-    assert prompts[0]["observations"][0]["tool"] == "memory_search"
+    assert prompts[0]["observations"][0]["tool"] == "task_status_search"
     assert prompts[0]["observations"][1]["tool"] == "filter_notes"
     assert prompts[0]["observations"][1]["result"][0]["id"] == "task-1"
 
 
-def test_answer_question_defaults_to_semantic_search_when_llm_returns_no_action(monkeypatch):
-    """函数功能：`test_answer_question_defaults_to_semantic_search_when_llm_returns_no_action` 负责验证 answer question defaults to semantic search when llm returns no action 场景，服务于本文件职责：早期 ReAct 查询流程。
+def test_answer_question_defaults_to_search_notes_when_llm_returns_no_action(monkeypatch):
+    """函数功能：`test_answer_question_defaults_to_search_notes_when_llm_returns_no_action` 负责验证 answer question defaults to search notes when llm returns no action 场景，服务于本文件职责：早期 ReAct 查询流程。
     传参：
         monkeypatch: monkeypatch 参数，由调用方传入。
     返回结果说明：
@@ -94,8 +94,8 @@ def test_answer_question_defaults_to_semantic_search_when_llm_returns_no_action(
     monkeypatch.setattr(query_agent, "complete_json", lambda system_prompt, user_prompt, model_role=None: next(decisions))
     monkeypatch.setattr(
         query_agent,
-        "semantic_search",
-        lambda space_id, query, top_k, min_score: calls.append((space_id, query, top_k, min_score))
+        "search_notes",
+        lambda space_id, query, *, note_type=None, tags=None, days=None, match_all_tags=True, limit=10, min_score=0.0: calls.append((space_id, query, limit, min_score))
         or [{"id": "semantic-1", "title": "语义结果", "summary": "相关内容。"}],
     )
 
