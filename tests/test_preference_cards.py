@@ -186,7 +186,13 @@ def test_consolidation_rejects_cross_condition_model_merge(monkeypatch):
     write('我喜欢晚上喝咖啡', 'n2')
     before = card()
     monkeypatch.setattr(settings, 'MEMORY_EXTRACTOR_MODE', 'llm')
-    monkeypatch.setattr(cards, 'complete_json', lambda **_: {'merge_groups': [[d['id'] for d in before['details']]]})
+    from memory import preference_consolidation as review
+    sources = {s['note_id']: {'id': s['note_id'], 'text': s['original_text']} for d in before['details'] for s in d['sources']}
+    monkeypatch.setattr('storage.note_storage.find_note', lambda space, key: sources.get(key))
+    monkeypatch.setattr(review, 'complete_json', lambda **_: {'assessments': [{'detail_id': d['id'], 'verdict': 'supported', 'quote': d['sources'][0]['original_text'], 'source_ids': [d['sources'][0]['id']], 'reason': '原文明确'} for d in before['details']], 'relations': [], 'actions': [{
+        'action': 'deduplicate', 'card_id': cards.find_card('s', '用户', '咖啡').id,
+        'detail_ids': [d['id'] for d in before['details']],
+        'source_ids': [s['id'] for d in before['details'] for s in d['sources']], 'reason': '错误合并'}]})
     result = cards.run_consolidation('s', force=True)
     assert result[0]['action'] == 'failed'
     assert card() == before

@@ -464,7 +464,7 @@ def _record_is_exportable(item: dict[str, Any], access_context: Any) -> bool:
 
 def _record_relevant_to_unit(unit: QueryUnit, item: dict[str, Any]) -> bool:
     """Hybrid rank makes candidates; identity-bearing overlap authorizes evidence."""
-    if item.get('memory_key_version') == 'preference-card-v1' and item.get('match_kind') in {'exact', 'related'}:
+    if item.get('memory_key_version') == 'preference-card-v1' and item.get('match_kind') in {'exact', 'related', 'candidate'}:
         return True
     # Facet is a controlled routing label (for example `other`), not user
     # evidence.  Mixing it into lexical matching creates accidental overlaps

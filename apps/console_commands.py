@@ -5,6 +5,7 @@ from core.lifecycle import traced, span
 COMMANDS = [
     {'command':'普通消息','example':'我喜欢喝无糖咖啡。','description':'保存笔记、提取与更新记忆'},
     {'command':'/ask','example':'/ask 我喜欢喝什么？','description':'自然语言查询与多路召回'},
+    {'command':'/memory consolidate preferences','example':'/memory consolidate preferences','description':'审核偏好原文、整理细节与单向关联'},
     {'command':'/type','example':'/type 生活 10','description':'按类型查询笔记'},
     {'command':'/tag','example':'/tag 饮食 10','description':'按标签查询笔记'},
     {'command':'/filter','example':'/filter type=生活 tags=饮食 match=any limit=10','description':'组合筛选笔记'},
@@ -65,6 +66,10 @@ def execute_command(space_id, text, *, tenant_id='default', message_id=None):
     if head in {'/type','/tag','/filter'}:
         return existing._handle_direct_query_command(space_id,text)
     if head=='/memory':
+        if tail.strip() in {'consolidate', 'consolidate preferences'}:
+            from memory.preference_cards import run_consolidation
+            import json
+            return json.dumps(run_consolidation(space_id, force=True), ensure_ascii=False, indent=2)
         parts=tail.split(maxsplit=2)
         if parts and parts[0] in {'show','forget','purge','correct','reject','edit','resolve','approve'} and len(parts)>1:
             _check_memory_scope(space_id,parts[1])

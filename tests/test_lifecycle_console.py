@@ -105,7 +105,7 @@ def test_all_message_routes(message,task,mode):
 
 def test_command_menu_covers_memory_actions():
     from apps.console_commands import COMMANDS
-    assert len([c for c in COMMANDS if c['command'].startswith('/memory ')])==16
+    assert len([c for c in COMMANDS if c['command'].startswith('/memory ')])==17
 
 
 def test_cross_space_memory_rejected(monkeypatch):

@@ -71,8 +71,10 @@ def capture_issue(space_id, *, stage, reason, snapshot, trace_id=None):
         from core import settings
         from memory.preference_cards import EXTRACTION_PROMPT, DECISION_PROMPT
         from memory.prompts import MEMORY_CARD_EXTRACTOR_PROMPT
+        from memory.preference_consolidation import REVIEW_PROMPT, RELATION_PROMPT, SUPPORT_PROMPT
         row.update(extractor_mode=settings.MEMORY_EXTRACTOR_MODE,
-                   prompt_hash=stable_id(MEMORY_CARD_EXTRACTOR_PROMPT, EXTRACTION_PROMPT, DECISION_PROMPT),
+                   prompt_hash=stable_id(MEMORY_CARD_EXTRACTOR_PROMPT, EXTRACTION_PROMPT, DECISION_PROMPT,
+                                         REVIEW_PROMPT, RELATION_PROMPT, SUPPORT_PROMPT),
                    dataset_type={'association': 'association', 'consolidation': 'consolidation',
                                  'query': 'query', 'user_feedback': 'query'}.get(stage, 'extraction'),
                    group_id=stable_id(space_id))
