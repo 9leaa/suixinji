@@ -80,7 +80,7 @@ def guarded_handler(handler):
     from functools import wraps
     @wraps(handler)
     def run(task):
-        if not settings.PREFERENCE_CARDS_ENABLED:
+        if not (settings.PREFERENCE_CARDS_ENABLED or settings.TASK_CARDS_ENABLED):
             return handler(task)
         from repositories.postgres.dispatch import load_inbox_record
         from core.lifecycle import current

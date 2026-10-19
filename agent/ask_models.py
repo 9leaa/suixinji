@@ -103,6 +103,7 @@ class EvidenceItem(BaseModel):
     task_status: str | None = Field(default=None, max_length=40)
     # Natural-language preference details retain their own message time and original evidence.
     preference_details: list[dict[str, Any]] = Field(default_factory=list)
+    task_card: dict[str, Any] | None = None
     retrieval_channels: list[str] = Field(default_factory=list, max_length=8)
     evidence_role: Literal["current_candidate", "historical", "supporting", "conflicting", "raw_note"] = "supporting"
 

@@ -51,6 +51,15 @@ def validate_candidate(candidate: MemoryCandidate, *, note_text: str = "") -> tu
     返回结果说明：
         返回 `tuple[MemoryCandidate | None, CandidateRejection | None]`，表示由多个相关值组成的结果。
     """
+    if 'task_input' in candidate.scope:
+        # The task writer validates all nested evidence and reports ambiguous rows via pending.
+        if contains_sensitive_data(note_text) or contains_sensitive_data(candidate.content):
+            return None, CandidateRejection(candidate.candidate_id, 'sensitive_data')
+        if not candidate.should_store:
+            return None, CandidateRejection(candidate.candidate_id, 'candidate_should_not_store')
+        if candidate.confidence < MEMORY_CANDIDATE_MIN_CONFIDENCE:
+            return None, CandidateRejection(candidate.candidate_id, 'confidence_below_minimum')
+        return candidate, None
     content = " ".join(str(candidate.content or "").split()).strip()
     normalized = normalize_content(content)
     if contains_sensitive_data(note_text) or contains_sensitive_data(content):
@@ -126,7 +135,7 @@ def validate_candidates(
             continue
         if checked is None:
             continue
-        key = (checked.memory_type, checked.normalized_content)
+        key = (checked.memory_type, checked.candidate_id if 'task_input' in checked.scope else checked.normalized_content)
         if key in seen:
             rejected.append(CandidateRejection(checked.candidate_id, "duplicate_candidate"))
             continue

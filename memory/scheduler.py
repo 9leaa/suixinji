@@ -231,12 +231,13 @@ def run_memory_scheduler_tick(last_run_dates: dict[str, str] | None = None, *, t
     state = last_run_dates if last_run_dates is not None else {}
     current_day = today or date.today()
     reports = []
-    if settings.PREFERENCE_CARDS_ENABLED:
+    if settings.PREFERENCE_CARDS_ENABLED or settings.TASK_CARDS_ENABLED:
         from memory.preference_cards import run_consolidation
         from memory.runtime_workflow import daily_issue_digest, flush_notifications
         for space_id in list_memory_space_ids():
             if not is_evaluation_space(space_id):
-                run_consolidation(space_id)
+                if settings.PREFERENCE_CARDS_ENABLED:
+                    run_consolidation(space_id)
                 daily_issue_digest(space_id)
                 try:
                     flush_notifications(space_id)
@@ -287,7 +288,7 @@ def start_memory_scheduler(interval_seconds: int = DEFAULT_MEMORY_SCHEDULER_INTE
                 run_memory_scheduler_tick(last_run_dates)
             except Exception:
                 LOGGER.exception("Memory scheduler tick failed")
-            time.sleep(60 if settings.PREFERENCE_CARDS_ENABLED else max(60, int(interval_seconds)))
+            time.sleep(60 if settings.PREFERENCE_CARDS_ENABLED or settings.TASK_CARDS_ENABLED else max(60, int(interval_seconds)))
 
     thread = threading.Thread(target=_loop, name="memory-scheduler", daemon=True)
     thread.start()

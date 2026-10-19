@@ -725,6 +725,7 @@ def extract_llm_candidates(
     *,
     hints: list[dict[str, Any]] | None = None,
     previous_messages: list[dict[str, Any]] | None = None,
+    message_time: str | None = None,
 ) -> list[MemoryCandidate]:
     """函数功能：`extract_llm_candidates` 负责抽取 llm candidates，服务于本文件职责：Memory 候选抽取。
     传参：
@@ -742,9 +743,10 @@ def extract_llm_candidates(
     model_text = _strip_diagnostic_prefix(raw)
     if _should_skip_text(model_text):
         return []
-    reference_messages = _recent_reference_messages(previous_messages) if _REFERENCE_SIGNAL_RE.search(model_text) else []
+    reference_messages = _recent_reference_messages(previous_messages) if settings.TASK_CARDS_ENABLED or _REFERENCE_SIGNAL_RE.search(model_text) else []
     payload = {
         "note_id": note_id,
+        "message_time": message_time,
         "text": model_text,
         "classification": classification or {},
         "hints": hints or [],
@@ -757,6 +759,9 @@ def extract_llm_candidates(
     prompt = MEMORY_EXTRACTOR_V3_PROMPT if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED else MEMORY_EXTRACTOR_PROMPT
     if settings.PREFERENCE_CARDS_ENABLED:
         prompt = MEMORY_CARD_EXTRACTOR_PROMPT
+    if settings.TASK_CARDS_ENABLED:
+        from memory.task_schema import TASK_EXTRACTION_PROMPT
+        prompt += TASK_EXTRACTION_PROMPT
     data = complete_json(
         system_prompt=prompt,
         user_prompt=json.dumps(payload, ensure_ascii=False),
@@ -769,6 +774,11 @@ def extract_llm_candidates(
     candidates: list[MemoryCandidate] = []
     for row_index, row in enumerate(rows):
         if not isinstance(row, dict):
+            continue
+        if settings.TASK_CARDS_ENABLED and row.get('memory_type') == 'task':
+            from memory.task_cards import candidate_from_row
+            candidates.append(candidate_from_row(note_id, raw, row, prompt_hash=hashlib.sha256(prompt.encode()).hexdigest()[:16]))
+            LAST_EXTRACTION_DIAGNOSTICS['llm_candidate_count'] += 1
             continue
         if settings.PREFERENCE_CARDS_ENABLED and row.get('memory_type') == 'preference':
             candidates.append(_preference_card_candidate(note_id, raw, row, prompt))
@@ -1049,6 +1059,10 @@ def _resolve_reference_fallback(
     previous_messages: list[dict[str, Any]] | None,
 ) -> list[MemoryCandidate]:
     """Attach recent task identity to a current pronoun-only candidate."""
+    direct_tasks = [c for c in candidates if 'task_input' in c.scope]
+    if direct_tasks:
+        rest = [c for c in candidates if 'task_input' not in c.scope]
+        return [*direct_tasks, *_resolve_reference_fallback(note_id, current_text, rest, previous_messages)]
     if not previous_messages:
         # A demonstrative inside a self-contained task title (for example
         # “这个项目继续做”) is not a failed cross-message resolution when no
@@ -1191,6 +1205,15 @@ def _merge_uncovered_rule_candidates(
     rule_candidates: list[MemoryCandidate],
 ) -> list[MemoryCandidate]:
     """Fill atom/type coverage gaps without blindly unioning both extractors."""
+
+    task_direct = [c for c in model_candidates if 'task_input' in c.scope]
+    if task_direct:
+        uncovered = [r for r in rule_candidates if r.memory_type == 'task' and not any(
+            r.evidence_span and c.evidence_span and r.evidence_span in c.evidence_span for c in task_direct)]
+        rest = _merge_uncovered_rule_candidates(
+            [c for c in model_candidates if 'task_input' not in c.scope],
+            [r for r in rule_candidates if r.memory_type != 'task'])
+        return _dedupe([*task_direct, *rest, *uncovered])
 
     direct = [c for c in model_candidates if 'preference_detail' in c.scope]
     if direct:
@@ -1460,6 +1483,7 @@ def extract_candidates(
     *,
     previous_messages: list[dict[str, Any]] | None = None,
     allow_llm_failure_fallback: bool = True,
+    message_time: str | None = None,
 ) -> list[MemoryCandidate]:
     """函数功能：`extract_candidates` 负责抽取 candidates，服务于本文件职责：Memory 候选抽取。
     传参：
@@ -1490,12 +1514,13 @@ def extract_candidates(
             classification,
             hints=_rule_hints(note_id, text, classification) if mode == "hybrid" else None,
             previous_messages=previous_messages,
+            **({"message_time": message_time} if settings.TASK_CARDS_ENABLED else {}),
         )
     except Exception as exc:
         # Production keeps the deterministic Rules degradation path.  The
         # independent evaluator can opt out to measure actual LLM
         # availability/quality instead of silently scoring a fallback.
-        if not allow_llm_failure_fallback:
+        if not allow_llm_failure_fallback or settings.TASK_CARDS_ENABLED:
             raise
         if "connection_error" in str(exc).casefold():
             # One unavailable provider must not make every inbox message wait

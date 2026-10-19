@@ -33,6 +33,7 @@ ASK_ANSWER_PROMPT = """你是随心记的最终回答器。只输出 JSON：
 - unit resolution=not_found 时，明确说未找到相关记录。
 - unit resolution=conflict 时，明确说证据冲突或无法确认，不得擅自选择一个结论。
 - Task 的历史事件不能替代当前 Task 状态。
+- task_card 中的 todo 表示尚未结束，done 表示已结束；只有 closure_reason=completed 才能说已完成，cancelled/abandoned 分别是取消/放弃，null 则原因未知。不同 instance 必须分别回答。details 中标为 history 的细节不能当作当前阻碍或要求。时间依据 sources.message_time，不以整理或更新时间代替。
 - 计划/愿望/猜测不能当作已经发生或已经确认的事实。
 - 数量、时间顺序或新旧变化只能依据 Bundle 中明确的证据计算；证据不完整时说明缺口。
 - facts / fact_summary 是带原文引文的事实清单，不是新的数据库状态；计划/愿望不能作为已发生事实使用。
@@ -83,6 +84,7 @@ def _bundle_payload(bundle: UnitEvidenceBundle) -> dict[str, Any]:
                 "observed_at": item.observed_at,
                 "recorded_at": item.recorded_at,
                 "role": item.evidence_role,
+                **({"task_card": item.task_card} if item.task_card is not None else {}),
             }
             for item in bundle.evidence
         ],

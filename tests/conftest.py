@@ -14,6 +14,7 @@ os.environ["SUIXINJI_AGENT_HOOKS_ENABLED"] = "false"
 os.environ["SUIXINJI_MEMORY_EXTRACTOR_MODE"] = "rules"
 # Legacy suites exercise the default protocol; card suites opt in explicitly.
 os.environ["SUIXINJI_PREFERENCE_CARDS_ENABLED"] = "false"
+os.environ["SUIXINJI_TASK_CARDS_ENABLED"] = "false"
 
 import pytest
 

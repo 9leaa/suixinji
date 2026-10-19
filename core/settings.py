@@ -292,6 +292,8 @@ if TASK_QUEUE_BACKEND == "redis_streams":
         )
 
 # Opt in only after the card migration and evidence replay have been checked.
+TASK_CARDS_ENABLED = _bool_env('SUIXINJI_TASK_CARDS_ENABLED', False)
+
 PREFERENCE_CARDS_ENABLED = _bool_env('SUIXINJI_PREFERENCE_CARDS_ENABLED', False)
 PREFERENCE_CARD_SOFT_LIMIT = _int_env('SUIXINJI_PREFERENCE_CARD_SOFT_LIMIT', 10)
 PREFERENCE_CARD_HARD_LIMIT = _int_env('SUIXINJI_PREFERENCE_CARD_HARD_LIMIT', 20)

@@ -650,6 +650,8 @@ def _archive_terminal_task_duplicates(
     返回结果说明：
         返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
+    if candidate.memory_key_version == "task-card-v1":
+        return []
     if target.memory_type != "task" or target.task_status != "done":
         return []
     from memory.canonicalizer import task_identity_compatible
@@ -2280,6 +2282,10 @@ def apply_memory_decision(
                 if ids:
                     replay["memory_id"] = ids[0]
                 return replay
+            if candidate.memory_key_version == "task-card-v1" and not decision.target_memory_ids:
+                from memory.task_cards import TaskVersionConflict
+                if session.execute(select(Memory.id).where(Memory.space_id == space_id, Memory.memory_key == candidate.memory_key)).first():
+                    raise TaskVersionConflict("task card concurrently created")
             if candidate.memory_key_version == "preference-card-v1" and not decision.target_memory_ids:
                 from memory.preference_cards import CardVersionConflict
                 if session.execute(select(Memory.id).where(Memory.space_id == space_id, Memory.memory_key == candidate.memory_key)).first():
@@ -2292,6 +2298,9 @@ def apply_memory_decision(
                 target = session.execute(select(Memory).where(Memory.id == target_id).with_for_update()).scalar_one_or_none()
                 if target is None:
                     raise ValueError(f"decision target memory not found: {target_id}")
+                if candidate.memory_key_version == "task-card-v1" and (target.space_id != space_id or target.current_version != decision.target_snapshot_version):
+                    from memory.task_cards import TaskVersionConflict
+                    raise TaskVersionConflict("task card version changed")
                 if candidate.memory_key_version == "preference-card-v1" and target.current_version != decision.target_snapshot_version:
                     from memory.preference_cards import CardVersionConflict
                     raise CardVersionConflict("card version changed")
@@ -2421,7 +2430,8 @@ def apply_memory_decision(
             return result
     except Exception as exc:
         from memory.preference_cards import CardVersionConflict
-        if isinstance(exc, CardVersionConflict):
+        from memory.task_cards import TaskVersionConflict
+        if isinstance(exc, (CardVersionConflict, TaskVersionConflict)):
             raise
         try:
             with session_scope() as session:
@@ -3637,6 +3647,10 @@ def get_memory_timeline(
         result: list[dict[str, Any]] = []
         for row in rows:
             if access_context is not None and not memory_access_allowed(row, access_context):
+                continue
+            if row.memory_key_version == 'task-card-v1':
+                from memory.task_cards import evidence
+                result.append({**evidence(_record(session, row, include_versions=False), include_history=True), 'versions': [v.__dict__ for v in _versions(session, row.id)]})
                 continue
             if row.memory_key_version == 'preference-card-v1':
                 from memory.preference_cards import evidence

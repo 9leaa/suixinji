@@ -475,6 +475,10 @@ class MemoryRecord:
             "sources": [source.__dict__ for source in self.sources],
             "versions": [version.__dict__ for version in self.versions],
         }
+        if self.memory_key_version == 'task-card-v1':
+            from memory.task_cards import evidence
+            data['scope'] = {k: v for k, v in self.scope.items() if k != 'task_card'}
+            data.update(evidence(self))
         if self.memory_key_version == 'preference-card-v1':
             card = self.scope['preference_card']
             details = [d for d in card['details'] if d['status'] in {'active', 'history'}]

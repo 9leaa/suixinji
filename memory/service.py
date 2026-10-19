@@ -90,6 +90,8 @@ _HISTORY_QUERY_MARKERS = (
 
 def _coverage_identity(item: dict[str, Any]) -> str:
     """Return a stable business identity for diversity, never an evaluator id."""
+    if item.get("memory_key_version") == "task-card-v1":
+        return str(item["id"])
     scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
     return str(
         scope.get("task_family_key")
@@ -290,6 +292,8 @@ def _process_note_memory_impl(
         extraction_kwargs: dict[str, Any] = {"classification": classification}
         if previous_messages:
             extraction_kwargs["previous_messages"] = previous_messages
+        if settings.TASK_CARDS_ENABLED:
+            extraction_kwargs["message_time"] = _note_value(note, "ts", None) or _note_value(note, "created_at", None)
         extracted_candidates = extract_candidates(note_id, text, **extraction_kwargs)
         shadow_report = build_shadow_report(extracted_candidates)
         if shadow_report is not None:
@@ -321,7 +325,7 @@ def _process_note_memory_impl(
             )
             for candidate in extracted_candidates
         ]
-        if settings.PREFERENCE_CARDS_ENABLED:
+        if settings.PREFERENCE_CARDS_ENABLED or settings.TASK_CARDS_ENABLED:
             from memory.workflow import stable_id
             enriched_candidates = [replace(candidate, candidate_id='revision:' + stable_id(
                 candidate.candidate_id, text, previous_messages)) for candidate in enriched_candidates]
@@ -348,7 +352,7 @@ def _process_note_memory_impl(
         candidates, rejections = validate_candidates(enriched_candidates, note_text=text)
         for rejection in rejections:
             mark_memory_candidate(rejection.candidate_id, "discarded", error=rejection.reason)
-            if settings.PREFERENCE_CARDS_ENABLED and rejection.reason in {
+            if (settings.PREFERENCE_CARDS_ENABLED or settings.TASK_CARDS_ENABLED) and rejection.reason in {
                 'evidence_span_not_grounded', 'confidence_below_minimum', 'task_identity_incomplete', 'preference_unresolved',
             }:
                 from memory.workflow import create_pending
@@ -430,13 +434,16 @@ def _process_note_memory_impl(
                     KEYS.lock_memory_key(tenant_id, space_id, candidate.effective_memory_key),
                     critical=True,
                 ):
-                    if settings.PREFERENCE_CARDS_ENABLED and candidate.memory_type == 'preference':
+                    if settings.TASK_CARDS_ENABLED and candidate.memory_type == 'task':
+                        from memory.task_cards import apply_task
+                        results.append(apply_task(candidate, note))
+                    elif settings.PREFERENCE_CARDS_ENABLED and candidate.memory_type == 'preference':
                         from memory.preference_cards import apply_preference
                         results.append(apply_preference(candidate, note))
                     else:
                         results.append(consolidate_candidate(space_id, note_id, candidate, trace=trace))
                 result = results[-1]
-                if settings.PREFERENCE_CARDS_ENABLED and result.get('action') == 'pending_review' and not result.get('pending_id'):
+                if (settings.PREFERENCE_CARDS_ENABLED or settings.TASK_CARDS_ENABLED) and result.get('action') == 'pending_review' and not result.get('pending_id'):
                     from memory.workflow import create_pending
                     pending = create_pending(space_id, note, result.get('reason') or '无法确定记忆更新对象，需要补充说明',
                                              code='target_ambiguous', candidate=asdict(candidate))
@@ -567,7 +574,7 @@ def process_note_memory(
                 lambda: _process_note_memory_impl(note, classification, force=force),
             ),
         )
-    if not settings.PREFERENCE_CARDS_ENABLED:
+    if not (settings.PREFERENCE_CARDS_ENABLED or settings.TASK_CARDS_ENABLED):
         return run()
     from memory import workflow_state
     from memory.preference_cards import handle_command, mask_note
@@ -585,8 +592,8 @@ def process_note_memory(
     if prior and prior['revision'] != revision:
         force = True
     try:
-        command = handle_command(note)
-        if not command:
+        command = handle_command(note) if settings.PREFERENCE_CARDS_ENABLED or note['text'].startswith('/pending ') else None
+        if not command and settings.PREFERENCE_CARDS_ENABLED:
             note = mask_note(space_id, note)
         result = {'note_id': note_id, 'space_id': space_id, 'results': [command], 'candidates': 0,
                   'extraction_status': 'completed'} if command else run()
