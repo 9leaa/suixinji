@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 import json
 import hashlib
 import logging
@@ -33,7 +35,9 @@ from memory.field_contracts import (
 )
 from memory.models import MEMORY_TYPES, TASK_STATUSES, MemoryCandidate, candidate_id_for, candidate_id_for_evidence, memory_key_for, normalize_content
 from memory.policies.preference import preference_polarity, preference_signature, scopes_compatible, topic_compatibility
-from memory.prompts import MEMORY_EXTRACTOR_PROMPT, MEMORY_EXTRACTOR_V3_PROMPT
+from memory.prompts import MEMORY_CARD_EXTRACTOR_PROMPT, MEMORY_EXTRACTOR_PROMPT, MEMORY_EXTRACTOR_V3_PROMPT
+from memory.preference_schema import DetailInput, PreferenceCandidateInput
+from pydantic import ValidationError
 from memory.task_state import infer_task_status
 
 LOGGER = logging.getLogger(__name__)
@@ -48,7 +52,7 @@ _LLM_CONNECTION_CIRCUIT_OPEN_UNTIL = 0.0
 _ERROR_PREVIEW_RE = re.compile(r"\b(text_preview|output_preview)=('(?:\\'|[^'])*'|\"(?:\\\"|[^\"])*\")")
 _DIAGNOSTIC_PREFIX_RE = re.compile(r"^\[MemoryV3-E2E-[^\]\n]{1,80}\]\s*")
 _REFERENCE_SIGNAL_RE = re.compile(
-    r"(?:这个|那个|它|这件事|上面那个|继续做|也(?:做完|完成)|取消它|就按这个|又|再次|仍然|后续|后来)"
+    r"(?:这个|那个|这部|那部|(?<![其吉])他|她|它|这件事|上面那个|继续做|也(?:做完|完成)|取消它|就按这个|又|再次|仍然|后续|后来)"
 )
 
 LOW_VALUE_PATTERNS = {
@@ -184,6 +188,8 @@ def may_contain_memory(text: str, classification: dict[str, Any] | None = None) 
         返回 `bool`，表示判断、写入或处理是否成功。
     """
     raw = str(text or "").strip()
+    if settings.PREFERENCE_CARDS_ENABLED and (raw.startswith(('/pending ', '请忘记', '忘记')) or '无所谓' in raw):
+        return True
     if _should_skip_text(raw):
         return False
     metadata = classification or {}
@@ -364,6 +370,7 @@ def _candidate(
     return normalize_candidate_v3(candidate, evidence_span or content) if settings.MEMORY_CANONICAL_KEY_V3_ENABLED else candidate
 
 
+@traced('规则记忆提取', 'memory')
 def extract_rule_candidates(note_id: str, text: str, classification: dict[str, Any] | None = None) -> list[MemoryCandidate]:
     """函数功能：`extract_rule_candidates` 负责抽取 rule candidates，服务于本文件职责：Memory 候选抽取。
     传参：
@@ -464,6 +471,8 @@ def _extract_rule_candidates_for_clause(note_id: str, raw: str, clause_index: in
     task_markers = ("记得", "需要", "待办", "todo", "跟进", "修", "改", "实现", "完成", "提交", "上线", "取消", "不做了", "不用做", "放弃", "等待", "还在等", "提醒", "准备", "计划", "报名", "开始", "处理", "继续做", "补充", "卡住", "阻塞", "暂停")
     semantic_markers = ("正在", "重点", "学习", "研究", "开发", "负责", "住在", "搬到", "使用", "采用")
 
+    if settings.PREFERENCE_CARDS_ENABLED:
+        preference_markers = (*preference_markers, '无所谓')
     if any(marker in raw for marker in preference_markers):
         preference_spans = _preference_evidence_spans(raw)
         clause_polarity = preference_polarity(raw)
@@ -668,6 +677,47 @@ def _log_llm_failure(note_id: str, exc: Exception, *, mode: str) -> None:
     )
 
 
+def _preference_card_candidate(note_id, raw, row, prompt):
+    """Adapt the new extraction contract to the shared candidate transport only.
+
+    Never re-interpret a preference through the legacy canonicalizer. Invalid
+    model rows remain visible as pending, instead of triggering a second LLM.
+    """
+    error = None
+    try:
+        parsed = PreferenceCandidateInput.model_validate(row)
+        detail = DetailInput(**parsed.model_dump()).model_dump()
+        confidence, importance = parsed.confidence, parsed.importance
+        should_store = parsed.should_store
+    except ValidationError as exc:
+        fields = ', '.join('.'.join(map(str, e['loc'])) for e in exc.errors())
+        error = '偏好结构化输出不符合字段要求：' + fields
+        LAST_EXTRACTION_DIAGNOSTICS['llm_schema_rejected_count'] += 1
+        detail = {key: row[key] for key in DetailInput.model_fields if key in row}
+        confidence, importance, should_store = .9, .6, True
+    content = str(detail.get('description') or row.get('content') or raw)
+    evidence = str(detail.get('evidence_span') or raw)
+    subject = str(detail.get('subject') or '用户')
+    target = str(detail.get('preference_object') or '')
+    identity = memory_key_for('preference', subject=subject, predicate='preference', object_value=target, content=content)
+    scope = {'preference_detail': detail}
+    if error:
+        scope['preference_error'] = error
+    return MemoryCandidate(
+        'preference', content, importance, confidence, should_store=should_store,
+        note_id=note_id, subject=subject, predicate='preference', object_value=target,
+        evidence_span=evidence, memory_key=identity, scope=scope,
+        candidate_id=candidate_id_for_evidence(note_id, 'preference', content,
+            memory_key=identity, evidence_span=evidence, clause_index=None),
+        polarity={'喜欢': 'positive', '不喜欢': 'negative', '无所谓': 'neutral', '不确定': 'unknown'}.get(detail.get('attitude')),
+        extractor_type='llm', extractor_version='preference-extractor-v1',
+        model=get_chat_config('fast').model,
+        prompt_hash=hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16],
+        reason=str(row.get('extraction_reason') or 'direct_preference_extraction'),
+    )
+
+
+@traced('模型记忆提取', 'memory')
 def extract_llm_candidates(
     note_id: str,
     text: str,
@@ -704,8 +754,11 @@ def extract_llm_candidates(
         ],
         "previous_messages": [item for item, _offset in reference_messages],
     }
+    prompt = MEMORY_EXTRACTOR_V3_PROMPT if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED else MEMORY_EXTRACTOR_PROMPT
+    if settings.PREFERENCE_CARDS_ENABLED:
+        prompt = MEMORY_CARD_EXTRACTOR_PROMPT
     data = complete_json(
-        system_prompt=MEMORY_EXTRACTOR_V3_PROMPT if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED else MEMORY_EXTRACTOR_PROMPT,
+        system_prompt=prompt,
         user_prompt=json.dumps(payload, ensure_ascii=False),
         llm_task="memory_extraction",
     )
@@ -717,7 +770,11 @@ def extract_llm_candidates(
     for row_index, row in enumerate(rows):
         if not isinstance(row, dict):
             continue
-        if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED:
+        if settings.PREFERENCE_CARDS_ENABLED and row.get('memory_type') == 'preference':
+            candidates.append(_preference_card_candidate(note_id, raw, row, prompt))
+            LAST_EXTRACTION_DIAGNOSTICS['llm_candidate_count'] += 1
+            continue
+        if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED or settings.PREFERENCE_CARDS_ENABLED:
             structured = parse_extracted_candidate(_validate_llm_reference_row(row, previous_messages), raw)
             if structured is None:
                 LAST_EXTRACTION_DIAGNOSTICS["llm_schema_rejected_count"] = int(LAST_EXTRACTION_DIAGNOSTICS.get("llm_schema_rejected_count") or 0) + 1
@@ -815,7 +872,7 @@ def extract_llm_candidates(
             )
         )
         LAST_EXTRACTION_DIAGNOSTICS["llm_candidate_count"] = int(LAST_EXTRACTION_DIAGNOSTICS.get("llm_candidate_count") or 0) + 1
-    return _dedupe(candidates)
+    return _dedupe([replace(c, prompt_hash=hashlib.sha256(prompt.encode('utf-8')).hexdigest()[:16]) for c in candidates])
 
 
 def _rule_hints(note_id: str, text: str, classification: dict[str, Any] | None = None) -> list[dict[str, Any]]:
@@ -847,6 +904,7 @@ def _recent_reference_messages(previous_messages: list[dict[str, Any]] | None) -
         and str(item.get("role") or "user").casefold() == "user"
         and not bool(item.get("sensitive"))
         and str(item.get("text") or "").strip()
+        and not str(item.get("text") or "").lstrip().startswith("/")
     ]
     usable.sort(key=lambda item: int(item.get("sequence_no") or 0), reverse=True)
     resolved: list[tuple[dict[str, Any], int]] = []
@@ -1134,6 +1192,30 @@ def _merge_uncovered_rule_candidates(
 ) -> list[MemoryCandidate]:
     """Fill atom/type coverage gaps without blindly unioning both extractors."""
 
+    direct = [c for c in model_candidates if 'preference_detail' in c.scope]
+    if direct:
+        preference_rules = [c for c in rule_candidates if c.memory_type == 'preference']
+        uncovered = []
+        for rule in preference_rules:
+            evidence = str(rule.evidence_span or '')
+            matches = [c for c in direct if evidence and c.evidence_span
+                       and (evidence in c.evidence_span or c.evidence_span in evidence)]
+            # One source span may contain several objects. A broad span alone
+            # cannot claim coverage when the rule engine found several atoms.
+            peers = [r for r in preference_rules if any(
+                r.evidence_span and (r.evidence_span in c.evidence_span or c.evidence_span in r.evidence_span)
+                for c in matches)]
+            covered = bool(matches) and (len(peers) == 1 or any(
+                str(rule.object_value or '') and str(rule.object_value) in
+                (str(c.object_value or '') + c.content) for c in matches))
+            if not covered:
+                uncovered.append(replace(rule, scope={**rule.scope,
+                    'preference_error': '第一阶段可能遗漏了这条偏好，需要补充或重新处理'}))
+        other = _merge_uncovered_rule_candidates(
+            [c for c in model_candidates if 'preference_detail' not in c.scope],
+            [c for c in rule_candidates if c.memory_type != 'preference'])
+        return _dedupe([*direct, *other, *uncovered])
+
     def same_evidence(model_candidate: MemoryCandidate, rule_candidate: MemoryCandidate) -> bool:
         model_evidence = re.sub(r"\s+", " ", str(model_candidate.evidence_span or "").strip())
         rule_evidence = re.sub(r"\s+", " ", str(rule_candidate.evidence_span or "").strip())
@@ -1370,6 +1452,7 @@ def _merge_uncovered_rule_candidates(
     return _dedupe([*model_candidates, *additions])
 
 
+@traced('记忆候选提取', 'memory')
 def extract_candidates(
     note_id: str,
     text: str,

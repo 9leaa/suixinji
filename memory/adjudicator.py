@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 import hashlib
 import re
 
@@ -350,6 +352,7 @@ def _adjudicate_v3(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> 
     return _decision(candidate, guarded.relation, guarded.action, confidence, guarded.reason, [best])
 
 
+@traced('记忆冲突与更新裁决', 'memory')
 def adjudicate_memory(candidate: MemoryCandidate, memories: list[MemoryRecord]) -> MemoryDecision:
     """函数功能：`adjudicate_memory` 负责处理 adjudicate memory，服务于本文件职责：最终裁决。
     传参：

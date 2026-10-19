@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 from datetime import datetime, timedelta
 from typing import Any
 import uuid
@@ -100,6 +102,7 @@ def update_task_status(task_id: str, status: str, **updates: Any) -> None:
         session.execute(update(Task).where(Task.id == task_id).values(**values))
 
 
+@traced('PostgreSQL · 认领与租约', 'database')
 def claim_task(task_id: str, worker_id: str, *, stale_after_seconds: int = TASK_LEASE_SECONDS) -> dict[str, Any] | None:
     """函数功能：`claim_task` 负责认领 task，服务于本文件职责：Task 与 attempt 数据访问。
     传参：
@@ -421,7 +424,7 @@ def _complete_task_with_inbox_outcome(
                           ) <= updated_space.memory_watermark
                       )
                   )
-                RETURNING task.id, task.task_type, task.attempt_count
+                RETURNING task.id, task.task_type, task.attempt_count, task.payload_json
             ), published AS (
                 INSERT INTO outbox_events(
                     id, event_type, aggregate_type, aggregate_id, payload_json,
@@ -434,7 +437,9 @@ def _complete_task_with_inbox_outcome(
                        jsonb_build_object(
                            'task_id', activated.id,
                            'task_type', activated.task_type,
-                           'attempt', activated.attempt_count + 1
+                           'attempt', activated.attempt_count + 1,
+                           '_trace', COALESCE(activated.payload_json -> '_trace', '{}'::jsonb),
+                           'requested_at', :now
                        ),
                        'pending',
                        0,
@@ -460,6 +465,7 @@ def _complete_task_with_inbox_outcome(
     return completed is not None
 
 
+@traced('PostgreSQL · 完成任务与水位线', 'database')
 def complete_task(
     task_id: str,
     *,
@@ -624,6 +630,7 @@ def _cancel_blocked_dependents(session: Any, parent_task_id: str, error: str, no
         dependent.last_error = f"parent task failed: {error}"[:2000]
 
 
+@traced('PostgreSQL · 失败与重试', 'database')
 def fail_task(
     task_id: str,
     error: str,
@@ -762,7 +769,7 @@ def enqueue_due_retries(*, limit: int = 50, task_ids: list[str] | None = None) -
                     event_type="task.requested",
                     aggregate_type="task",
                     aggregate_id=row.id,
-                    payload_json={"task_id": row.id, "task_type": row.task_type, "attempt": row.attempt_count + 1},
+                    payload_json={"task_id": row.id, "task_type": row.task_type, "attempt": row.attempt_count + 1, "_trace": dict((row.payload_json or {}).get("_trace") or {}), "requested_at": now.isoformat()},
                 )
             )
             row.status = "queued"

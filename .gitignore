@@ -7,7 +7,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
-.venv/
+.venv
 data/cache/*.jsonl
 data/notes/
 eval/results/
@@ -22,3 +22,6 @@ data/pids/
 data/suixinji.pid
 data/logs/runtime.log
 backups/
+
+# Local message console credential
+/data/console.token

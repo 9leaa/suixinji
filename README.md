@@ -6,6 +6,8 @@
 
 ## 项目能力
 
+本分支新增可选的[偏好卡片、定期整理和问题数据集](docs/preference-cards-implementation.md)，设计见[技术方案](docs/preference-cards-design.md)。默认关闭，迁移后设置 `SUIXINJI_PREFERENCE_CARDS_ENABLED=true` 启用；不会自动改动线上数据。
+
 | 能力 | 说明 |
 | --- | --- |
 | 可靠记录 | 消息先进入 Inbox/WAL，再异步完成分类、向量、关联和记忆处理。 |
@@ -128,6 +130,10 @@ make start
 
 `.env` 至少需要飞书应用配置。真实 LLM 与 embedding 调用还需要 OpenAI 或 OpenAI-compatible 服务配置；测试和 dry-run 评测不调用真实 API。
 
+## 后端架构可视化
+
+打开 [后端交互画布](docs/backend-explorer/canvas.html) 拖拽、缩放和逐步播放；[完整说明页](docs/backend-explorer/index.html) 可阅读详细解释，交互查看 PostgreSQL 表结构、Redis Streams、消息生命周期、分布式可靠性与本机运行快照。使用说明见 [页面 README](docs/backend-explorer/README.md)。
+
 ## 存储与部署
 
 本地学习或单实例使用：
@@ -187,3 +193,7 @@ make eval-dry-run
 
 - 扩充真实反馈集，持续评测复杂查询和多子句记忆抽取。
 - 为语音、图片和文件提供可审计的多模态记录路径。
+
+### 消息实验室（本地链路可视化）
+
+当前分支新增 FastAPI 消息入口和可视化页面，支持普通消息及现有全部命令族，展示实际 PostgreSQL/Redis/Worker、记忆处理、召回/RRF/重排、模型输入输出和耗时。启动：`.venv/bin/python scripts/run_console.py`，访问 `http://127.0.0.1:18080/console`；使用当前分支后台 Worker。详见 [使用与架构说明](docs/message-console/README.md)。

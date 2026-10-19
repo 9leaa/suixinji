@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -38,6 +40,7 @@ class InboxCommand:
     received_at: str = field(default_factory=lambda: datetime.now().astimezone().isoformat())
 
 
+@traced('接收与幂等检查', 'ingress')
 def receive(command: InboxCommand) -> DispatchResult:
     """函数功能：`receive` 负责接收，服务于本文件职责：平台无关的接收适配层。
     传参：

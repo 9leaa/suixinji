@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 import threading
 import time
 
@@ -41,6 +43,7 @@ class IdempotencyStore:
         self.client = client or get_redis()
         self.ttl_seconds = max(1, int(ttl_seconds))
 
+    @traced("Redis · 占用幂等键", "queue")
     def begin(self, key: str) -> bool:
         """函数功能：`IdempotencyStore.begin` 在类 `IdempotencyStore` 中负责处理 begin，服务于本文件职责：Redis 幂等锁/结果。
         传参：
@@ -50,6 +53,7 @@ class IdempotencyStore:
         """
         return bool(self.client.eval(_BEGIN_LUA, 1, key, self.ttl_seconds))
 
+    @traced("Redis · 完成幂等登记", "queue")
     def complete(self, key: str) -> None:
         """函数功能：`IdempotencyStore.complete` 在类 `IdempotencyStore` 中负责完成，服务于本文件职责：Redis 幂等锁/结果。
         传参：
@@ -68,6 +72,7 @@ class IdempotencyStore:
         """
         self.client.set(key, "failed", ex=min(self.ttl_seconds, 60))
 
+    @traced("Redis · 读取幂等状态", "queue")
     def get(self, key: str) -> str | None:
         """函数功能：`IdempotencyStore.get` 在类 `IdempotencyStore` 中负责获取，服务于本文件职责：Redis 幂等锁/结果。
         传参：

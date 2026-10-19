@@ -7,9 +7,13 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 import logging
+from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from typing import Any
+from core import settings
 
 from core.classifier import classify_text, classify_text_local
 from core.sensitive import assess_sensitive_text
@@ -37,6 +41,25 @@ from storage.vector_store import (
 )
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _process_memory_with_route(note, record, classification=None):
+    if not settings.PREFERENCE_CARDS_ENABLED:
+        return process_note_memory(note, classification=classification) if classification is not None else process_note_memory(note)
+    data = asdict(note) if is_dataclass(note) else dict(note)
+    data.update(chat_id=record.get('chat_id'), tenant_id=record.get('tenant_id') or 'default')
+    sender = record.get('sender') or {}
+    data['user_id'] = next((sender[key] for key in ('user_id', 'open_id', 'union_id', 'source_user_id', 'id') if sender.get(key)), 'owner')
+    data['previous_messages'] = [{'note_id': n['id'], 'text': n['text'], 'role': 'user'}
+        for n in load_index(data['space_id']) if n['id'] != data['id']][-3:]
+    try:
+        return process_note_memory(data, classification=classification)
+    finally:
+        from memory.runtime_workflow import flush_notifications
+        try:
+            flush_notifications(data['space_id'])
+        except Exception:
+            LOGGER.warning('Memory notifications remain queued', exc_info=True)
 
 
 def _find_note_by_message_id(space_id: str, message_id: str) -> dict[str, Any] | None:
@@ -102,6 +125,7 @@ def backfill_vector_if_missing(space_id: str, message_id: str) -> bool:
         )
 
 
+@traced('笔记处理与保存', 'stage')
 def process_record(
     record: dict[str, Any],
     *,
@@ -148,7 +172,7 @@ def process_record(
                 if state is None or state.status in {"pending", "failed", "partial"}:
                     try:
                         with observe("worker.recover_memory", extra={"note_id": note_id}, **ctx):
-                            process_note_memory(note)
+                            _process_memory_with_route(note, record)
                         recovered_memory = True
                     except Exception:
                         LOGGER.exception(
@@ -201,7 +225,7 @@ def process_record(
         if not defer_memory:
             try:
                 with observe("worker.write_memory", extra={"note_id": record_id}, **ctx):
-                    process_note_memory(note, classification={
+                    _process_memory_with_route(note, record, classification={
                         "title": classification.title,
                         "tags": classification.tags,
                         "type": classification.type,
@@ -221,6 +245,7 @@ def process_record(
         return note
 
 
+@traced('笔记向量与关联补全', 'stage')
 def enrich_note(space_id: str, note_id: str) -> bool:
     """函数功能：`enrich_note` 负责处理 enrich note，服务于本文件职责：本地记录处理流程。
     传参：

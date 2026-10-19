@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 import json
 import re
 from datetime import datetime, timedelta
@@ -15,6 +17,7 @@ from agent.query_intent import classify_query_intent, is_task_inventory_question
 from agent.query_planner import build_query_plan
 from agent.query_route_features import should_call_query_intent_llm, structural_route
 from core import settings
+from core.answer_grounding import IDENTITY_EVIDENCE_RULES, identity_for_run
 from core.llm_client import complete_json, embed_text
 from core.observability import log_event, observe
 from core.sensitive import mentions_sensitive_topic
@@ -91,6 +94,9 @@ FINAL_SYSTEM_PROMPT = """
 必须输出 JSON object：
 {"final_answer":"..."}
 """
+
+REACT_SYSTEM_PROMPT += IDENTITY_EVIDENCE_RULES
+FINAL_SYSTEM_PROMPT += IDENTITY_EVIDENCE_RULES
 
 _COMPLEX_QUERY_MARKERS = ("比较", "为什么", "结合", "关联", "之间", "变化", "趋势", "总结", "归纳", "多次")
 _CURRENT_PREFERENCE_MARKERS = ("喜欢", "讨厌", "偏好", "习惯", "过敏", "避开")
@@ -762,6 +768,9 @@ def _note_brief(note: dict[str, Any], *, text_limit: int = 500) -> dict[str, Any
     返回结果说明：
         返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
+    if settings.PREFERENCE_CARDS_ENABLED and note.get('space_id'):
+        from memory.preference_cards import mask_note
+        note = mask_note(note['space_id'], note)
     return {
         "id": note.get("id"),
         "time": note.get("ts"),
@@ -782,7 +791,11 @@ def _safe_notes(space_id: str) -> list[dict[str, Any]]:
     返回结果说明：
         返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
-    return [note for note in load_index(space_id) if is_note_queryable(note)]
+    notes = [note for note in load_index(space_id) if is_note_queryable(note)]
+    if settings.PREFERENCE_CARDS_ENABLED:
+        from memory.preference_cards import mask_note
+        notes = [mask_note(space_id, note) for note in notes]
+    return notes
 
 
 def _find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
@@ -799,6 +812,7 @@ def _find_note(space_id: str, note_id: str) -> dict[str, Any] | None:
     return None
 
 
+@traced('按条件筛选笔记', 'retrieval')
 def filter_notes(
     space_id: str,
     note_type: str | None = None,
@@ -867,6 +881,7 @@ def filter_notes(
     return [_note_brief(note) for note in results[:limit]]
 
 
+@traced('按类型查询', 'retrieval')
 def by_type(space_id: str, note_type: str, limit: int = 30) -> list[dict[str, Any]]:
     """函数功能：`by_type` 负责处理 by type，服务于本文件职责：问答主编排。
     传参：
@@ -883,6 +898,7 @@ def by_type(space_id: str, note_type: str, limit: int = 30) -> list[dict[str, An
     )
 
 
+@traced('按标签查询', 'retrieval')
 def by_tag(space_id: str, tag: str, limit: int = 10) -> list[dict[str, Any]]:
     """函数功能：`by_tag` 负责处理 by tag，服务于本文件职责：问答主编排。
     传参：
@@ -950,7 +966,7 @@ def semantic_search(
         min_score=min_score,
     )
 
-    return [
+    rows = [
         {
             "id": result.note_id,
             "message_id": result.message_id,
@@ -960,10 +976,14 @@ def semantic_search(
             "tags": result.metadata.get("tags", []),
             "summary": result.metadata.get("summary"),
             "time": result.metadata.get("ts"),
-            "text": _clip(result.text),
+            "text": result.text,
         }
         for result in results
     ]
+    if settings.PREFERENCE_CARDS_ENABLED:
+        from memory.preference_cards import mask_note
+        rows = [mask_note(space_id, row) for row in rows]
+    return [{**row, 'text': _clip(row['text'])} for row in rows]
 
 
 _QUERY_FILLERS = (
@@ -1098,6 +1118,9 @@ def get_note_for_evidence(space_id: str, note_id: str) -> dict[str, Any]:
         note = None
     if note is None:
         return {"error": f"note not found: {note_id}"}
+    if settings.PREFERENCE_CARDS_ENABLED:
+        from memory.preference_cards import mask_note
+        note = mask_note(space_id, note)
     return {
         "id": note.get("id"),
         "ts": note.get("ts"),
@@ -2268,6 +2291,7 @@ def search_tasks(
     return current_rows[:bounded_limit]
 
 
+@traced('工具调用与观察', 'tool')
 def _execute_tool(space_id: str, action: str, args: dict[str, Any], *, access_context: Any = None) -> Any:
     """函数功能：`_execute_tool` 负责执行 tool，服务于本文件职责：问答主编排。
     传参：
@@ -2606,6 +2630,7 @@ def _memory_still_updating_answer(notes: list[dict[str, Any]]) -> str:
     return prefix + "\n\n" + _provisional_answer(notes)
 
 
+@traced('Agent 模型决策', 'agent')
 def _complete_json_with_hooks(
     context: AgentRunContext | None,
     *,
@@ -2656,6 +2681,7 @@ def _complete_json_with_hooks(
     )
 
 
+@traced('根据观察合成回答', 'agent')
 def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hook_context: AgentRunContext | None = None) -> str:
     """函数功能：`_synthesize_answer` 负责处理 synthesize answer，服务于本文件职责：问答主编排。
     传参：
@@ -2668,6 +2694,7 @@ def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hoo
     payload = {
         "question": question,
         "observations": observations,
+        "current_user": identity_for_run(hook_context),
     }
 
     try:
@@ -3085,6 +3112,7 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     "question": question,
                     "step": step + 1,
                     "observations": observations,
+                    "current_user": identity_for_run(hook_context),
                 }
 
                 try:
@@ -3225,6 +3253,7 @@ def _run_answer_question_with_context(
     return answer, context
 
 
+@traced('Ask 完整回答', 'agent')
 def answer_question(
     space_id: str,
     question: str,

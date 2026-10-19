@@ -11,6 +11,8 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from core.answer_grounding import IDENTITY_EVIDENCE_RULES, current_user_identity
+
 from core.settings import (
     SEMANTIC_PROFILE_FINAL_INPUT_CHAR_BUDGET,
     SEMANTIC_PROFILE_PROJECTION_DEBOUNCE_SECONDS,
@@ -50,9 +52,20 @@ _FINAL_PROFILE_PROMPT = """你是随心记的用户画像汇总器。输入是�
 """
 
 
+_FACET_PROJECTION_PROMPT += IDENTITY_EVIDENCE_RULES
+_FINAL_PROFILE_PROMPT += IDENTITY_EVIDENCE_RULES
+
+
+def _profile_identity(space_id, memories):
+    owners = {memory.scope.get('owner_id') for memory in memories if memory.scope.get('owner_id')}
+    return current_user_identity(next(iter(owners)) if len(owners) == 1 else None, space_id=space_id)
+
+
 def _memory_payload(memory: MemoryRecord) -> dict[str, Any]:
     return {
         "id": memory.id,
+        "subject": memory.subject,
+        "owner_id": memory.scope.get('owner_id'),
         "facet": memory.predicate or "other",
         "observed_at": memory.updated_at,
         "content": memory.content,
@@ -149,7 +162,8 @@ def refresh_semantic_profile_projection(space_id: str, facet: str, memories: lis
         from core.llm_client import complete_json
         data = complete_json(
             system_prompt=_FACET_PROJECTION_PROMPT,
-            user_prompt=json.dumps({"facet": facet, "facts": packed_facts, "truncated_fact_count": truncated_fact_count}, ensure_ascii=False),
+            user_prompt=json.dumps({"current_user": _profile_identity(space_id, facts), "facet": facet,
+                                    "facts": packed_facts, "truncated_fact_count": truncated_fact_count}, ensure_ascii=False),
             model_role="fast",
             llm_task="summary_draft",
         )
@@ -257,7 +271,7 @@ def semantic_profile_lines(space_id: str, memories: list[MemoryRecord]) -> tuple
         from core.llm_client import complete_json
         data = complete_json(
             system_prompt=_FINAL_PROFILE_PROMPT,
-            user_prompt=json.dumps({"facets": inputs}, ensure_ascii=False),
+            user_prompt=json.dumps({"current_user": _profile_identity(space_id, semantic), "facets": inputs}, ensure_ascii=False),
             model_role="fast",
             llm_task="summary_draft",
         )

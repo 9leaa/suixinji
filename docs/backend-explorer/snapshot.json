@@ -1,0 +1,2941 @@
+{
+  "sampled_at": "2026-10-14T15:09:26+08:00",
+  "services": [
+    {
+      "role": "receiver",
+      "pid": 25299,
+      "running": true,
+      "pool": [
+        1,
+        0
+      ]
+    },
+    {
+      "role": "api",
+      "pid": 25250,
+      "running": true,
+      "pool": [
+        1,
+        0
+      ]
+    },
+    {
+      "role": "outbox-relay",
+      "pid": 25240,
+      "running": true,
+      "pool": [
+        1,
+        0
+      ]
+    },
+    {
+      "role": "scheduler",
+      "pid": 25249,
+      "running": true,
+      "pool": [
+        1,
+        0
+      ]
+    },
+    {
+      "role": "worker-ingest",
+      "pid": 25241,
+      "running": true,
+      "pool": [
+        3,
+        1
+      ]
+    },
+    {
+      "role": "worker-query",
+      "pid": 25242,
+      "running": true,
+      "pool": [
+        1,
+        0
+      ]
+    },
+    {
+      "role": "worker-summary",
+      "pid": 25243,
+      "running": true,
+      "pool": [
+        1,
+        0
+      ]
+    },
+    {
+      "role": "worker-memory",
+      "pid": 25244,
+      "running": true,
+      "pool": [
+        1,
+        0
+      ]
+    },
+    {
+      "role": "worker-memory-embedding",
+      "pid": 25245,
+      "running": true,
+      "pool": [
+        1,
+        0
+      ]
+    },
+    {
+      "role": "worker-semantic-profile-projection",
+      "pid": 25246,
+      "running": true,
+      "pool": [
+        1,
+        0
+      ]
+    },
+    {
+      "role": "worker-enrichment",
+      "pid": 25247,
+      "running": true,
+      "pool": [
+        1,
+        0
+      ]
+    },
+    {
+      "role": "worker-delivery",
+      "pid": 25248,
+      "running": true,
+      "pool": [
+        1,
+        0
+      ]
+    }
+  ],
+  "tables": [
+    {
+      "name": "agent_runs",
+      "count": 0,
+      "columns": [
+        {
+          "name": "run_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "message_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "run_type",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "started_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "finished_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "error_type",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        },
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "agent_steps",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "run_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "step_no",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "step_type",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "duration_ms",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "safe_input_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "safe_output_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "error_type",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "run_id"
+          ],
+          "target": "agent_runs"
+        }
+      ],
+      "indexes": [
+        "uq_agent_step_no"
+      ]
+    },
+    {
+      "name": "deliveries",
+      "count": 0,
+      "columns": [
+        {
+          "name": "delivery_key",
+          "type": "VARCHAR(512)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "delivery_type",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "message_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "reserved_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "lease_expires_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "attempt_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        },
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "delivery_attempts",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "delivery_key",
+          "type": "VARCHAR(512)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "attempt_no",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "started_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "finished_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "delivery_key"
+          ],
+          "target": "deliveries"
+        }
+      ],
+      "indexes": [
+        "uq_delivery_attempt_no"
+      ]
+    },
+    {
+      "name": "inbox_messages",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "source",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "source_message_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "source_event_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "chat_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "chat_type",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "sender_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "text",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "received_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "sensitivity",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "sequence_no",
+          "type": "BIGINT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "note_status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "memory_status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "note_completed_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "memory_completed_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        },
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        }
+      ],
+      "indexes": [
+        "ix_inbox_space_memory_sequence",
+        "ix_inbox_space_note_sequence",
+        "ix_inbox_space_status_sequence",
+        "ix_inbox_tenant_source_message",
+        "uq_inbox_space_sequence",
+        "uq_inbox_tenant_source_message"
+      ]
+    },
+    {
+      "name": "llm_usage",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "run_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "model",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "request_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "input_tokens",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "output_tokens",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "total_tokens",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "estimated_cost",
+          "type": "NUMERIC(14, 6)",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "run_id"
+          ],
+          "target": "agent_runs"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "memories",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "memory_type",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "content",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "normalized_content",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "importance",
+          "type": "FLOAT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "confidence",
+          "type": "FLOAT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "task_status",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "subject",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "predicate",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "object_value",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "memory_key",
+          "type": "VARCHAR(512)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "memory_key_version",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "polarity",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "scope_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "valid_from",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "valid_until",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "last_confirmed_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "last_accessed_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "access_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "current_version",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "search_document",
+          "type": "TSVECTOR",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        },
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        }
+      ],
+      "indexes": [
+        "ix_memories_content_trgm",
+        "ix_memories_object_value_trgm",
+        "ix_memories_search_document",
+        "ix_memories_space_key_status",
+        "ix_memories_space_status_type",
+        "ix_memories_space_status_updated",
+        "ix_memories_space_type_status_key",
+        "ix_memories_task_family_active"
+      ]
+    },
+    {
+      "name": "memory_candidates",
+      "count": 0,
+      "columns": [
+        {
+          "name": "candidate_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "note_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "memory_type",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "content",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "normalized_content",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "memory_key",
+          "type": "VARCHAR(512)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "memory_key_version",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "subject",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "predicate",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "object_value",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "task_status",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "polarity",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "scope_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "entities_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "valid_from",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "valid_until",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "confidence",
+          "type": "FLOAT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "importance",
+          "type": "FLOAT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "evidence_span",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "clause_index",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "should_store",
+          "type": "BOOLEAN",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "extractor_type",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "extractor_version",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "model",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "prompt_hash",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "attempt_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "last_error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "decision_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "applied_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        },
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        }
+      ],
+      "indexes": [
+        "ix_memory_candidates_space_status",
+        "uq_memory_candidate_note"
+      ]
+    },
+    {
+      "name": "memory_consolidation_runs",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "cadence",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "period_key",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "started_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "result_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        }
+      ],
+      "indexes": [
+        "uq_memory_consolidation_period"
+      ]
+    },
+    {
+      "name": "memory_decisions",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "note_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "candidate_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "relation",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "target_memory_ids_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "confidence",
+          "type": "FLOAT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "reason",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "evidence_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "recommended_action",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "result_memory_ids_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "policy_version",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "adjudicator_version",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "model",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "prompt_hash",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "input_hash",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "target_snapshot_version",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "retry_of_decision_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "applied_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        }
+      ],
+      "indexes": [
+        "uq_memory_decision_space_candidate"
+      ]
+    },
+    {
+      "name": "memory_extraction_states",
+      "count": 0,
+      "columns": [
+        {
+          "name": "note_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "candidate_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "processed_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "attempt_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "last_error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "started_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "memory_relations",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "source_memory_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "target_memory_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "relation",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "decision_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "source_memory_id"
+          ],
+          "target": "memories"
+        },
+        {
+          "columns": [
+            "target_memory_id"
+          ],
+          "target": "memories"
+        },
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        }
+      ],
+      "indexes": [
+        "uq_memory_relation"
+      ]
+    },
+    {
+      "name": "memory_sources",
+      "count": 0,
+      "columns": [
+        {
+          "name": "memory_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "note_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "relation",
+          "type": "VARCHAR(64)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "memory_id"
+          ],
+          "target": "memories"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "memory_traces",
+      "count": 0,
+      "columns": [
+        {
+          "name": "trace_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "note_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "trace_type",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "payload_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "started_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "finished_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "memory_vectors",
+      "count": 0,
+      "columns": [
+        {
+          "name": "memory_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "embedding",
+          "type": "VECTOR(1024)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "model",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "dimension",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "content_hash",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "embedding_version",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "attempt_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "next_retry_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "last_error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "memory_id"
+          ],
+          "target": "memories"
+        }
+      ],
+      "indexes": [
+        "ix_memory_vectors_ready_embedding",
+        "ix_memory_vectors_retryable"
+      ]
+    },
+    {
+      "name": "memory_version_sources",
+      "count": 0,
+      "columns": [
+        {
+          "name": "version_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "note_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "version_id"
+          ],
+          "target": "memory_versions"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "memory_versions",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "memory_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "version",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "content",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "task_status",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "confidence",
+          "type": "FLOAT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "importance",
+          "type": "FLOAT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "valid_from",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "valid_until",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "reason",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "source_note_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "memory_id"
+          ],
+          "target": "memories"
+        }
+      ],
+      "indexes": [
+        "uq_memory_version"
+      ]
+    },
+    {
+      "name": "note_embeddings",
+      "count": 0,
+      "columns": [
+        {
+          "name": "note_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "model",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "dimensions",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "embedding",
+          "type": "VECTOR(1024)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "text",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "metadata_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "note_id"
+          ],
+          "target": "notes"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "note_relations",
+      "count": 0,
+      "columns": [
+        {
+          "name": "source_note_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "target_note_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "relation",
+          "type": "VARCHAR(64)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "source_note_id"
+          ],
+          "target": "notes"
+        }
+      ],
+      "indexes": [
+        "ix_note_relations_target"
+      ]
+    },
+    {
+      "name": "note_tags",
+      "count": 0,
+      "columns": [
+        {
+          "name": "note_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "tag",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "note_id"
+          ],
+          "target": "notes"
+        }
+      ],
+      "indexes": [
+        "ix_note_tags_tag_note"
+      ]
+    },
+    {
+      "name": "notes",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "message_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "title",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "note_type",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "summary",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "text",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "metadata_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "enrichment_status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "enrichment_attempts",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "enrichment_error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "enrichment_started_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "enrichment_updated_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "sensitivity",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        },
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        }
+      ],
+      "indexes": [
+        "ix_notes_space_created",
+        "ix_notes_space_enrichment_created",
+        "ix_notes_space_type_created",
+        "uq_notes_space_message"
+      ]
+    },
+    {
+      "name": "outbox_events",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "event_type",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "aggregate_type",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "aggregate_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "payload_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "published_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "publish_attempt_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "last_error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "claimed_by",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "lease_token",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "lease_expires_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "next_attempt_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "max_attempts",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "last_attempt_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "failed_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [],
+      "indexes": [
+        "ix_outbox_status_next_created",
+        "ix_outbox_unpublished"
+      ]
+    },
+    {
+      "name": "semantic_profile_projections",
+      "count": 0,
+      "columns": [
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "facet",
+          "type": "VARCHAR(64)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "projection_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "source_memory_ids_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "processed_revision",
+          "type": "BIGINT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "target_revision",
+          "type": "BIGINT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "dirty_since",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "last_error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        },
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        }
+      ],
+      "indexes": [
+        "ix_semantic_profile_projection_dirty"
+      ]
+    },
+    {
+      "name": "space_members",
+      "count": 0,
+      "columns": [
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "role",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        },
+        {
+          "columns": [
+            "user_id"
+          ],
+          "target": "users"
+        },
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "spaces",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "source",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "source_space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "space_type",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "metadata_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "processed_sequence_no",
+          "type": "BIGINT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "note_watermark",
+          "type": "BIGINT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "memory_watermark",
+          "type": "BIGINT",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "memory_gap_sequence_no",
+          "type": "BIGINT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        }
+      ],
+      "indexes": [
+        "uq_spaces_source_identity"
+      ]
+    },
+    {
+      "name": "summary_runs",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "range_key",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "period_key",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "result_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "started_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        },
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        }
+      ],
+      "indexes": [
+        "uq_summary_run_period"
+      ]
+    },
+    {
+      "name": "summary_subscriptions",
+      "count": 0,
+      "columns": [
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "chat_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "enabled",
+          "type": "BOOLEAN",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "time",
+          "type": "VARCHAR(5)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "range_key",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "last_sent_date",
+          "type": "VARCHAR(10)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "updated_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        },
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "task_attempts",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "BIGINT",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "task_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "worker_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "attempt_no",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "started_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "finished_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "error_type",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "error_summary",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "task_id"
+          ],
+          "target": "tasks"
+        }
+      ],
+      "indexes": [
+        "uq_task_attempt_no"
+      ]
+    },
+    {
+      "name": "tasks",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "task_type",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "space_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "source_message_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "idempotency_key",
+          "type": "VARCHAR(512)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(32)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "priority",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "attempt_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "failure_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "defer_count",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "max_attempts",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "payload_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "next_retry_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "started_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "completed_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "last_error",
+          "type": "TEXT",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "claimed_by",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "lease_token",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "lease_expires_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "claim_version",
+          "type": "INTEGER",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "space_id"
+          ],
+          "target": "spaces"
+        },
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        }
+      ],
+      "indexes": [
+        "ix_tasks_space_status_created",
+        "ix_tasks_status_lease",
+        "ix_tasks_tenant_space_status_created",
+        "tasks_idempotency_key_key"
+      ]
+    },
+    {
+      "name": "tenants",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(128)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "name",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [],
+      "indexes": []
+    },
+    {
+      "name": "users",
+      "count": 0,
+      "columns": [
+        {
+          "name": "id",
+          "type": "VARCHAR(255)",
+          "pk": true,
+          "nullable": false
+        },
+        {
+          "name": "tenant_id",
+          "type": "VARCHAR(128)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "source",
+          "type": "VARCHAR(64)",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "source_user_id",
+          "type": "VARCHAR(255)",
+          "pk": false,
+          "nullable": true
+        },
+        {
+          "name": "profile_json",
+          "type": "JSONB",
+          "pk": false,
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "DATETIME",
+          "pk": false,
+          "nullable": false
+        }
+      ],
+      "fks": [
+        {
+          "columns": [
+            "tenant_id"
+          ],
+          "target": "tenants"
+        }
+      ],
+      "indexes": [
+        "uq_users_source_identity"
+      ]
+    }
+  ],
+  "streams": [
+    {
+      "type": "ingest",
+      "key": "sxj:stage6fresh:stream:ingest",
+      "length": 0,
+      "groups": [
+        {
+          "name": "ingest-workers",
+          "pending": 0,
+          "consumers": 1,
+          "lag": 0
+        }
+      ]
+    },
+    {
+      "type": "query",
+      "key": "sxj:stage6fresh:stream:query",
+      "length": 0,
+      "groups": [
+        {
+          "name": "query-workers",
+          "pending": 0,
+          "consumers": 1,
+          "lag": 0
+        }
+      ]
+    },
+    {
+      "type": "summary",
+      "key": "sxj:stage6fresh:stream:summary",
+      "length": 0,
+      "groups": [
+        {
+          "name": "summary-workers",
+          "pending": 0,
+          "consumers": 1,
+          "lag": 0
+        }
+      ]
+    },
+    {
+      "type": "memory",
+      "key": "sxj:stage6fresh:stream:memory",
+      "length": 0,
+      "groups": [
+        {
+          "name": "memory-workers",
+          "pending": 0,
+          "consumers": 1,
+          "lag": 0
+        }
+      ]
+    },
+    {
+      "type": "memory_embedding",
+      "key": "sxj:stage6fresh:stream:memory_embedding",
+      "length": 0,
+      "groups": [
+        {
+          "name": "memory-embedding-workers",
+          "pending": 0,
+          "consumers": 1,
+          "lag": 0
+        }
+      ]
+    },
+    {
+      "type": "semantic_profile_projection",
+      "key": "sxj:stage6fresh:stream:semantic_profile_projection",
+      "length": 0,
+      "groups": [
+        {
+          "name": "semantic-profile-projection-workers",
+          "pending": 0,
+          "consumers": 1,
+          "lag": 0
+        }
+      ]
+    },
+    {
+      "type": "enrichment",
+      "key": "sxj:stage6fresh:stream:enrichment",
+      "length": 0,
+      "groups": [
+        {
+          "name": "enrichment-workers",
+          "pending": 0,
+          "consumers": 1,
+          "lag": 0
+        }
+      ]
+    },
+    {
+      "type": "delivery",
+      "key": "sxj:stage6fresh:stream:delivery",
+      "length": 0,
+      "groups": [
+        {
+          "name": "delivery-workers",
+          "pending": 0,
+          "consumers": 1,
+          "lag": 0
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "STORAGE_BACKEND": "postgres",
+    "COORDINATION_BACKEND": "redis",
+    "TASK_QUEUE_BACKEND": "redis_streams",
+    "API_HOST": "127.0.0.1",
+    "API_PORT": 18000,
+    "STREAM_BLOCK_MS": 5000,
+    "STREAM_BATCH_SIZE": 10,
+    "STREAM_CLAIM_IDLE_MS": 60000,
+    "STREAM_MAXLEN": 100000,
+    "OUTBOX_BATCH_SIZE": 50,
+    "OUTBOX_POLL_INTERVAL_SECONDS": 1.0,
+    "TASK_LEASE_SECONDS": 60,
+    "OUTBOX_LEASE_SECONDS": 30,
+    "WORKER_MAX_ATTEMPTS": 5,
+    "WORKER_RETRY_BASE_SECONDS": 2.0,
+    "OUTBOX_MAX_ATTEMPTS": 10,
+    "SCHEDULER_LEADER_TTL_MS": 30000,
+    "DATABASE_GLOBAL_BUDGET": 40,
+    "IDEMPOTENCY_TTL_SECONDS": 600,
+    "SESSION_TTL_SECONDS": 1800,
+    "CACHE_SEARCH_TTL_SECONDS": 180,
+    "EMBEDDING_CACHE_TTL_SECONDS": 86400,
+    "LLM_CONCURRENCY_LIMIT": 4,
+    "RATE_LIMIT_ASK_PER_MINUTE": 20,
+    "RATE_LIMIT_INGEST_PER_MINUTE": 120,
+    "FAKE_EXTERNALS": false,
+    "TEST_API_ENABLED": false
+  },
+  "revision": "20260815_0014",
+  "extensions": [
+    [
+      "plpgsql",
+      "1.0"
+    ],
+    [
+      "vector",
+      "0.8.5"
+    ],
+    [
+      "pg_trgm",
+      "1.6"
+    ]
+  ],
+  "db_connections": 6,
+  "redis": {
+    "version": "7.4.9",
+    "aof": true,
+    "keys": 8,
+    "prefix": "sxj:stage6fresh"
+  },
+  "api_health": {
+    "status": "ok"
+  }
+}

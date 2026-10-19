@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 import json
 from collections.abc import Mapping
 from typing import Any
@@ -123,6 +125,7 @@ def deterministic_fallback_plan(question: str) -> AskPlan:
     return validate_ask_plan(plan, question=question)
 
 
+@traced('Ask V2 计划', 'planning')
 def plan_ask(
     question: str,
     *,

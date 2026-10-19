@@ -228,3 +228,7 @@ def commands(
         "duplicate": result.duplicate,
         "in_progress": result.in_progress,
     }
+
+# The local console has its own opt-in authentication; /v1/commands stays unchanged.
+from apps.console import router as console_router
+app.include_router(console_router)

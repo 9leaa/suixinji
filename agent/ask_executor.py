@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import submit_with_context, traced
+
 from concurrent.futures import ThreadPoolExecutor, TimeoutError, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -54,7 +56,8 @@ def _as_evidence(item: dict[str, Any], *, tool: str, role: str) -> EvidenceItem:
         memory_id=None if is_note else str(item.get("memory_id") or (None if is_version else item_id)) or None,
         version_id=str(item.get("version_id") or item_id) if is_version else None,
         note_id=item_id if is_note else None,
-        source_note_ids=_source_ids(item),
+        source_note_ids=_source_ids(item)[:12],
+        preference_details=item.get('details', []) if item.get('memory_key_version') == 'preference-card-v1' else [],
         event_time=item.get("event_time") or item.get("valid_from"),
         observed_at=item.get("observed_at") or item.get("source_created_at"),
         recorded_at=item.get("updated_at") or item.get("created_at"),
@@ -338,6 +341,7 @@ def _unit_query_spec(unit: QueryUnit, query: str):
     )
 
 
+@traced('Ask V2 · 单元证据重排', 'rerank')
 def _rerank_unit_records(unit: QueryUnit, records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Rerank candidates without allowing relevance to change domain semantics."""
     if not records or not getattr(settings, "ASK_CROSS_ENCODER_ENABLED", False):
@@ -460,6 +464,8 @@ def _record_is_exportable(item: dict[str, Any], access_context: Any) -> bool:
 
 def _record_relevant_to_unit(unit: QueryUnit, item: dict[str, Any]) -> bool:
     """Hybrid rank makes candidates; identity-bearing overlap authorizes evidence."""
+    if item.get('memory_key_version') == 'preference-card-v1' and item.get('match_kind') in {'exact', 'related'}:
+        return True
     # Facet is a controlled routing label (for example `other`), not user
     # evidence.  Mixing it into lexical matching creates accidental overlaps
     # such as `other` matching the `user` owner prefix in every record.
@@ -532,6 +538,7 @@ def _semantic_history_fallback_records(space_id: str, unit: QueryUnit, *, access
                 })
     return result[:8]
 
+@traced('Ask V2 领域工具', 'tool')
 def _execute_domain_tool(space_id: str, unit: QueryUnit, *, access_context: Any) -> tuple[str, list[dict[str, Any]]]:
     variants = _query_variants(unit)
     if unit.intent == "task_inventory":
@@ -667,6 +674,7 @@ def _ready_units(plan: AskPlan, completed: set[str]) -> list[QueryUnit]:
     ]
 
 
+@traced('Ask V2 执行', 'agent')
 def execute_ask_plan(space_id: str, plan: AskPlan, *, access_context: Any = None) -> AskExecutionResult:
     """Execute independent units concurrently within a bounded response budget.
 
@@ -706,7 +714,7 @@ def execute_ask_plan(space_id: str, plan: AskPlan, *, access_context: Any = None
             break
         pool = ThreadPoolExecutor(max_workers=max_workers)
         futures = {
-            pool.submit(_execute_domain_tool, space_id, unit, access_context=access_context): unit
+            submit_with_context(pool, _execute_domain_tool, space_id, unit, access_context=access_context): unit
             for unit in ready
         }
         consumed: set[Any] = set()
@@ -762,6 +770,7 @@ def _partial_bundle(unit: QueryUnit, records: list[dict[str, Any]], *, tool: str
     )
 
 
+@traced('补充缺失证据', 'retrieval')
 def repair_missing_evidence(
     space_id: str,
     plan: AskPlan,
@@ -814,6 +823,7 @@ def repair_missing_evidence(
     return repaired
 
 
+@traced('加载证据原文', 'retrieval')
 def hydrate_selected_evidence(
     space_id: str,
     plan: AskPlan,

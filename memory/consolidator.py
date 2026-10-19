@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 import logging
 import time
 from dataclasses import dataclass, replace
@@ -473,6 +475,7 @@ def _consolidate_candidate_standard(space_id: str, note_id: str, candidate: Memo
     return result
 
 
+@traced('记忆合并与演化', 'memory')
 def consolidate_candidate(space_id: str, note_id: str, candidate: MemoryCandidate, *, trace: dict[str, Any] | None = None) -> dict[str, Any]:
     """Consolidate every candidate through the same retrieval/adjudication path."""
     return _consolidate_candidate_standard(space_id, note_id, candidate, trace=trace)
@@ -630,7 +633,7 @@ def run_monthly_semantic_consolidation(space_id: str, *, min_cluster_size: int =
     memories = list_memories(space_id, status="active", limit=500)
     groups: dict[tuple[str, str], list[Any]] = {}
     for memory in memories:
-        if memory.memory_type == "task":
+        if memory.memory_type == "task" or memory.memory_key_version == 'preference-card-v1':
             continue
         key = memory.effective_memory_key or memory.predicate or memory.normalized_content[:48]
         groups.setdefault((memory.memory_type, key), []).append(memory)

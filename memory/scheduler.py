@@ -13,6 +13,7 @@ import time
 from datetime import date
 from pathlib import Path
 from typing import Any
+from core import settings
 
 from core.file_lock import safe_space_id
 from memory.consolidator import merge_duplicate_episodic, process_unextracted_notes, run_monthly_semantic_consolidation
@@ -230,6 +231,17 @@ def run_memory_scheduler_tick(last_run_dates: dict[str, str] | None = None, *, t
     state = last_run_dates if last_run_dates is not None else {}
     current_day = today or date.today()
     reports = []
+    if settings.PREFERENCE_CARDS_ENABLED:
+        from memory.preference_cards import run_consolidation
+        from memory.runtime_workflow import daily_issue_digest, flush_notifications
+        for space_id in list_memory_space_ids():
+            if not is_evaluation_space(space_id):
+                run_consolidation(space_id)
+                daily_issue_digest(space_id)
+                try:
+                    flush_notifications(space_id)
+                except Exception:
+                    LOGGER.warning('Memory notifications remain queued', exc_info=True)
     for cadence in due_cadences(current_day, state):
         report = run_memory_consolidation_once(cadence, today=current_day)
         reports.append(report)
@@ -275,7 +287,7 @@ def start_memory_scheduler(interval_seconds: int = DEFAULT_MEMORY_SCHEDULER_INTE
                 run_memory_scheduler_tick(last_run_dates)
             except Exception:
                 LOGGER.exception("Memory scheduler tick failed")
-            time.sleep(max(60, int(interval_seconds)))
+            time.sleep(60 if settings.PREFERENCE_CARDS_ENABLED else max(60, int(interval_seconds)))
 
     thread = threading.Thread(target=_loop, name="memory-scheduler", daemon=True)
     thread.start()

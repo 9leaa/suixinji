@@ -189,6 +189,8 @@ def test_llm_extractor_returns_structured_candidates(monkeypatch):
 
 
 def test_llm_preference_qualifiers_are_grounded_and_separate_from_topic(monkeypatch):
+    # Legacy protocol remains available when preference cards are disabled.
+    monkeypatch.setattr(extractor.settings, "PREFERENCE_CARDS_ENABLED", False)
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
     monkeypatch.setattr(
         extractor,
@@ -268,6 +270,8 @@ def test_hybrid_only_repairs_uncovered_atom_types(monkeypatch):
 
 
 def test_hybrid_repairs_a_second_preference_in_the_same_clause(monkeypatch):
+    # Legacy protocol remains available when preference cards are disabled.
+    monkeypatch.setattr(extractor.settings, "PREFERENCE_CARDS_ENABLED", False)
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
     monkeypatch.setattr(
         extractor,
@@ -291,6 +295,8 @@ def test_hybrid_repairs_a_second_preference_in_the_same_clause(monkeypatch):
 
 
 def test_hybrid_prefers_known_llm_polarity_and_backfills_unknown(monkeypatch):
+    # Legacy protocol remains available when preference cards are disabled.
+    monkeypatch.setattr(extractor.settings, "PREFERENCE_CARDS_ENABLED", False)
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "hybrid")
 
     def extract_with(polarity: str):
@@ -639,6 +645,44 @@ def test_previous_messages_are_only_sent_for_reference_signals(monkeypatch):
 
     assert payloads[0]["previous_messages"] == []
     assert [row["offset"] for row in payloads[1]["previous_messages"]] == [-1, -2, -3]
+
+
+def test_possessive_reference_passes_previous_person_to_model(monkeypatch):
+    import json
+    payloads = []
+    monkeypatch.setattr(extractor, 'complete_json', lambda **kwargs:
+                        payloads.append(json.loads(kwargs['user_prompt'])) or {'candidates': []})
+    previous = [{'note_id': 'actor', 'text': '我好喜欢成龙大哥啊。'}]
+    extractor.extract_llm_candidates('movie', '我喜欢他的电影《十二生肖》', previous_messages=previous)
+    assert payloads[0]['previous_messages'][0]['note_id'] == 'actor'
+
+
+def test_previous_commands_do_not_reach_llm_or_consume_context_slots(monkeypatch):
+    import json
+
+    monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
+    payloads = []
+
+    def fake_complete_json(**kwargs):
+        payloads.append(json.loads(kwargs["user_prompt"]))
+        return {"candidates": []}
+
+    monkeypatch.setattr(extractor, "complete_json", fake_complete_json)
+    previous = [
+        {"note_id": "ask", "sequence_no": 8, "text": "/ask 任务完成了吗"},
+        {"note_id": "status", "sequence_no": 7, "text": " \t/status"},
+        {"note_id": "summary", "sequence_no": 6, "text": "\n/summary 今天"},
+        {"note_id": "unknown", "sequence_no": 5, "text": "/unknown"},
+        {"note_id": "n3", "sequence_no": 3, "text": "记得完成测试报告"},
+        {"note_id": "n2", "sequence_no": 2, "text": "今天参加了复盘会"},
+        {"note_id": "n1", "sequence_no": 1, "text": "我喜欢项目实战"},
+    ]
+    extractor.extract_candidates("reference", "这个也做完了", previous_messages=previous)
+
+    context = payloads[0]["previous_messages"]
+    assert [row["note_id"] for row in context] == ["n3", "n2", "n1"]
+    assert [row["offset"] for row in context] == [-1, -2, -3]
+    assert extractor._recent_reference_messages(previous[:4]) == []
 
 
 def test_resolved_reference_metadata_is_preserved_in_candidate_scope(monkeypatch):

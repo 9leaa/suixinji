@@ -128,7 +128,7 @@ def load_previous_user_messages(
     tenant_id: str,
     limit: int = 3,
 ) -> list[dict[str, Any]]:
-    """Load at most three earlier messages from the same tenant/space/user."""
+    """Load at most three earlier ordinary messages from the same tenant/space/user."""
     identity_keys = ("user_id", "open_id", "union_id", "source_user_id", "id")
     sender_id = next((str(sender.get(key) or "") for key in identity_keys if sender.get(key)), "")
     if not sender_id or sequence_no <= 0:
@@ -143,6 +143,8 @@ def load_previous_user_messages(
                     InboxMessage.space_id == space_id,
                     InboxMessage.sequence_no < sequence_no,
                     InboxMessage.sensitivity == "normal",
+                    func.length(func.btrim(InboxMessage.text, " \t\r\n")) > 0,
+                    func.ltrim(InboxMessage.text, " \t\r\n").not_like("/%"),
                 )
                 .order_by(InboxMessage.sequence_no.desc())
                 .limit(12)

@@ -12,12 +12,14 @@ from alembic import context
 
 from infrastructure.database import get_engine
 from infrastructure.schema import Base
+from repositories.postgres.lifecycle import metadata as lifecycle_metadata
+from memory.workflow_state import metadata as memory_workflow_metadata
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Base.metadata
+target_metadata = [Base.metadata, lifecycle_metadata, memory_workflow_metadata]
 
 
 def run_migrations_offline() -> None:

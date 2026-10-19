@@ -7,6 +7,9 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+from core import settings
+
 import json
 import logging
 import re
@@ -113,6 +116,7 @@ def _has_structured_task_state(item: dict[str, Any]) -> bool:
     return bool(re.search(r"(?:[:：=]|状态(?:是|为)?|当前(?:状态)?(?:是|为)?)\s*" + re.escape(status) + r"\b", text, re.IGNORECASE))
 
 
+@traced('记忆 · 覆盖度策略重排', 'rerank')
 def _coverage_rerank_memory_results(
     results: list[dict[str, Any]],
     *,
@@ -223,9 +227,7 @@ def _process_note_memory_impl(
                 "extraction_status": "empty",
             }
         existing_state = get_extraction_state(note_id) if note_id else None
-        if existing_state is not None and existing_state.status in {"completed", "empty"} and not (
-            force and existing_state.status == "empty"
-        ):
+        if existing_state is not None and existing_state.status in {"completed", "empty"} and not force:
             add_step(
                 trace,
                 "memory_extraction_skipped",
@@ -319,6 +321,10 @@ def _process_note_memory_impl(
             )
             for candidate in extracted_candidates
         ]
+        if settings.PREFERENCE_CARDS_ENABLED:
+            from memory.workflow import stable_id
+            enriched_candidates = [replace(candidate, candidate_id='revision:' + stable_id(
+                candidate.candidate_id, text, previous_messages)) for candidate in enriched_candidates]
         for candidate in enriched_candidates:
             save_memory_candidate(candidate, space_id=space_id, status="extracted")
         # 校验前先持久化原始候选，确保被拒绝的模型输出仍能按模型、prompt 和拒绝原因审计。
@@ -342,6 +348,18 @@ def _process_note_memory_impl(
         candidates, rejections = validate_candidates(enriched_candidates, note_text=text)
         for rejection in rejections:
             mark_memory_candidate(rejection.candidate_id, "discarded", error=rejection.reason)
+            if settings.PREFERENCE_CARDS_ENABLED and rejection.reason in {
+                'evidence_span_not_grounded', 'confidence_below_minimum', 'task_identity_incomplete', 'preference_unresolved',
+            }:
+                from memory.workflow import create_pending
+                rejected_candidate = next(c for c in enriched_candidates if c.candidate_id == rejection.candidate_id)
+                reasons = {'evidence_span_not_grounded': '抽取的证据无法对应原文',
+                           'confidence_below_minimum': '无法可靠确定这条记忆',
+                           'task_identity_incomplete': '缺少定位任务所需的信息',
+                           'preference_unresolved': rejected_candidate.scope.get('preference_detail', {}).get(
+                               'unresolved_reason', '无法确定偏好的主体或对象')}
+                create_pending(space_id, note, reasons[rejection.reason], code=rejection.reason,
+                               candidate=asdict(rejected_candidate))
             add_step(
                 trace,
                 "candidate_rejected",
@@ -400,12 +418,29 @@ def _process_note_memory_impl(
             try:
                 mark_memory_candidate(candidate.candidate_id, "validated")
                 mark_memory_candidate(candidate.candidate_id, "processing")
+                if (settings.PREFERENCE_CARDS_ENABLED and candidate.memory_type != 'preference'
+                        and candidate.scope.get('reference_status') == 'unresolved'):
+                    from memory.workflow import create_pending
+                    pending = create_pending(space_id, note, '无法唯一确定消息指代的对象，请补充对象名称',
+                                             code='target_ambiguous', candidate=asdict(candidate))
+                    results.append({'action': 'pending_review', 'pending_id': pending['id']})
+                    mark_memory_candidate(candidate.candidate_id, 'pending_review')
+                    continue
                 with coordinated_lock(
                     KEYS.lock_memory_key(tenant_id, space_id, candidate.effective_memory_key),
                     critical=True,
                 ):
-                    results.append(consolidate_candidate(space_id, note_id, candidate, trace=trace))
+                    if settings.PREFERENCE_CARDS_ENABLED and candidate.memory_type == 'preference':
+                        from memory.preference_cards import apply_preference
+                        results.append(apply_preference(candidate, note))
+                    else:
+                        results.append(consolidate_candidate(space_id, note_id, candidate, trace=trace))
                 result = results[-1]
+                if settings.PREFERENCE_CARDS_ENABLED and result.get('action') == 'pending_review' and not result.get('pending_id'):
+                    from memory.workflow import create_pending
+                    pending = create_pending(space_id, note, result.get('reason') or '无法确定记忆更新对象，需要补充说明',
+                                             code='target_ambiguous', candidate=asdict(candidate))
+                    result['pending_id'] = pending['id']
                 final_status = "pending_review" if result.get("action") == "pending_review" else "discarded" if result.get("action") == "discard" else "applied"
                 mark_memory_candidate(candidate.candidate_id, final_status, decision_id=result.get("decision_id"))
             except Exception as exc:
@@ -497,6 +532,7 @@ def _process_note_memory_impl(
         raise
 
 
+@traced('记忆处理', 'memory')
 def process_note_memory(
     note: Any,
     classification: dict[str, Any] | None = None,
@@ -521,18 +557,58 @@ def process_note_memory(
         metadata={"note_id": note_id},
     )
     manager = get_default_hook_manager()
-    return manager.run_agent(
-        context,
-        lambda: manager.run_tool(
+    def run():
+        return manager.run_agent(
             context,
-            "process_memory",
-            {"note_id": note_id},
-            lambda: _process_note_memory_impl(note, classification, force=force),
-        ),
-    )
+            lambda: manager.run_tool(
+                context,
+                'process_memory',
+                {'note_id': note_id},
+                lambda: _process_note_memory_impl(note, classification, force=force),
+            ),
+        )
+    if not settings.PREFERENCE_CARDS_ENABLED:
+        return run()
+    from memory import workflow_state
+    from memory.preference_cards import handle_command, mask_note
+    from memory.workflow import create_pending, capture_issue, resolve_pending, stable_id
+    note = asdict(note) if is_dataclass(note) else dict(note)
+    # Persist the reply route with the source, so recovery does not send to another conversation.
+    if note.get('chat_id'):
+        workflow_state.put(space_id, 'reply_route', note_id, {
+            'chat_id': note['chat_id'], 'reply_channel': note.get('reply_channel'),
+            'trace_id': note.get('trace_id'), 'user_id': note.get('user_id'),
+            'tenant_id': note.get('tenant_id') or 'default',
+        })
+    revision = stable_id(note.get('text', ''))
+    prior = workflow_state.get(space_id, 'note_revision', note_id)
+    if prior and prior['revision'] != revision:
+        force = True
+    try:
+        command = handle_command(note)
+        if not command:
+            note = mask_note(space_id, note)
+        result = {'note_id': note_id, 'space_id': space_id, 'results': [command], 'candidates': 0,
+                  'extraction_status': 'completed'} if command else run()
+        if result.get('errors'):
+            create_pending(space_id, note, '部分内容未能可靠处理，请补充说明或重试', code='partial_processing')
+        if result.get('extraction_status') in {'completed', 'empty'}:
+            workflow_state.put(space_id, 'note_revision', note_id, {'revision': revision})
+            for pending in workflow_state.list_items(space_id, 'pending'):
+                if pending['note'].get('id') == note_id and pending['code'] == 'processing_failed' and pending['status'] == 'pending':
+                    resolve_pending(space_id, pending['id'], result='重试成功，消息已处理')
+        return result
+    except Exception as error:
+        create_pending(space_id, note, '记忆处理失败，系统将重试；错误类型：' + type(error).__name__)
+        capture_issue(space_id, stage='write', reason=type(error).__name__, snapshot={'note': note, 'error': str(error)})
+        raise
 
 
 def _memory_is_non_exportable(memory: Any) -> bool:
+    if settings.PREFERENCE_CARDS_ENABLED and getattr(memory, 'memory_type', None) == 'preference':
+        from memory.workflow_state import get
+        if get(memory.space_id, 'migrated_preference', memory.id):
+            return True
     scope = getattr(memory, "scope", None)
     if not isinstance(scope, dict):
         scope = {}
@@ -575,6 +651,7 @@ def build_memory_query_spec(
     )
 
 
+@traced('记忆检索与策略重排', 'retrieval')
 def memory_search(
     space_id: str,
     query: str,
@@ -627,6 +704,15 @@ def memory_search(
         if not _memory_is_non_exportable(memory)
     ]
     results = _coverage_rerank_memory_results(candidates, query=query, limit=requested_limit)
+    if settings.PREFERENCE_CARDS_ENABLED and effective_memory_type in {None, 'preference'}:
+        from memory.preference_cards import expand_query
+        results = expand_query(space_id, query, results, access_context=access_context, limit=requested_limit)
+        from memory.workflow import stable_id
+        from memory.workflow_state import put
+        from memory.models import utc_now_iso
+        put(space_id, 'query_snapshot', stable_id(query), {
+            'query': query, 'results': results, 'trace_id': trace['trace_id'], 'created_at': utc_now_iso(),
+        })
     add_step(
         trace,
         "memory_retrieval_fusion",
@@ -769,6 +855,7 @@ def _format_memory(memory: dict[str, Any]) -> str:
     )
 
 
+@traced('记忆命令 · list', 'command')
 def format_memory_list(space_id: str, *, status: str = "active", limit: int = 20) -> str:
     """函数功能：`format_memory_list` 负责格式化 memory list，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -788,6 +875,7 @@ def format_memory_list(space_id: str, *, status: str = "active", limit: int = 20
     return "长期记忆：\n" + "\n".join(_format_memory(memory) for memory in memories)
 
 
+@traced('记忆命令 · show', 'command')
 def format_memory_show(memory_id: str) -> str:
     """函数功能：`format_memory_show` 负责格式化 memory show，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -818,6 +906,7 @@ def format_memory_show(memory_id: str) -> str:
     return "\n".join(lines)
 
 
+@traced('记忆命令 · search', 'command')
 def format_memory_search(space_id: str, query: str) -> str:
     """函数功能：`format_memory_search` 负责格式化 memory search，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -832,6 +921,7 @@ def format_memory_search(space_id: str, query: str) -> str:
     return "记忆检索结果：\n" + "\n".join(_format_memory(item) for item in results)
 
 
+@traced('记忆命令 · forget', 'command')
 def format_memory_forget(memory_id: str) -> str:
     """函数功能：`format_memory_forget` 负责格式化 memory forget，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -854,6 +944,7 @@ def format_memory_forget(memory_id: str) -> str:
     return f"已软删除记忆：{memory_id}"
 
 
+@traced('记忆命令 · purge', 'command')
 def format_memory_purge(memory_id: str) -> str:
     """函数功能：`format_memory_purge` 负责格式化 memory purge，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -875,6 +966,7 @@ def format_memory_purge(memory_id: str) -> str:
     return f"已彻底删除记忆：{memory_id}"
 
 
+@traced('记忆命令 · correct', 'command')
 def format_memory_correct(memory_id: str, content: str, task_status: str | None = None) -> str:
     """函数功能：`format_memory_correct` 负责格式化 memory correct，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -919,6 +1011,7 @@ def format_memory_correct(memory_id: str, content: str, task_status: str | None 
     return f"已修正记忆：{memory_id}{status_line}\n{memory.content}"
 
 
+@traced('记忆命令 · conflicts', 'command')
 def format_memory_conflicts(space_id: str) -> str:
     """函数功能：`format_memory_conflicts` 负责格式化 memory conflicts，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -932,6 +1025,7 @@ def format_memory_conflicts(space_id: str) -> str:
     return "冲突记忆：\n" + "\n".join(_format_memory(memory) for memory in memories)
 
 
+@traced('记忆命令 · pending', 'command')
 def format_memory_pending(space_id: str) -> str:
     """函数功能：`format_memory_pending` 负责格式化 memory pending，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -945,6 +1039,7 @@ def format_memory_pending(space_id: str) -> str:
     return "待审记忆：\n" + "\n".join(_format_memory(memory) for memory in memories)
 
 
+@traced('记忆命令 · reject', 'command')
 def format_memory_reject(memory_id: str, reason: str = "user_rejected_pending_memory") -> str:
     """函数功能：`format_memory_reject` 负责格式化 memory reject，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -959,6 +1054,7 @@ def format_memory_reject(memory_id: str, reason: str = "user_rejected_pending_me
     return f"已拒绝待审记忆：{memory_id}"
 
 
+@traced('记忆命令 · edit', 'command')
 def format_memory_edit(memory_id: str, content: str) -> str:
     """函数功能：`format_memory_edit` 负责格式化 memory edit，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -975,6 +1071,7 @@ def format_memory_edit(memory_id: str, content: str) -> str:
     return f"已编辑并批准记忆：{memory.id}\n{memory.content}"
 
 
+@traced('记忆命令 · resolve', 'command')
 def format_memory_resolve(memory_id: str, resolution: str, content: str | None = None) -> str:
     """函数功能：`format_memory_resolve` 负责格式化 memory resolve，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -990,6 +1087,7 @@ def format_memory_resolve(memory_id: str, resolution: str, content: str | None =
     return f"已解决冲突：{memory.id}\n{memory.content}"
 
 
+@traced('记忆命令 · approve', 'command')
 def format_memory_approve(memory_id: str) -> str:
     """函数功能：`format_memory_approve` 负责格式化 memory approve，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -1016,6 +1114,7 @@ def format_memory_approve(memory_id: str) -> str:
     return f"已批准待审记忆：{memory_id}\n生效记忆：{memory.id}\n{memory.content}"
 
 
+@traced('记忆命令 · decisions', 'command')
 def format_memory_decisions(space_id: str, *, limit: int = 10) -> str:
     """函数功能：`format_memory_decisions` 负责格式化 memory decisions，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -1097,6 +1196,7 @@ def _project_semantic_profile(memories: list[Any]) -> tuple[list[Any], list[Any]
     return selected, uncertain
 
 
+@traced('记忆命令 · profile', 'command')
 def format_memory_profile(space_id: str) -> str:
     """函数功能：`format_memory_profile` 负责格式化 memory profile，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -1184,6 +1284,7 @@ def format_memory_profile(space_id: str) -> str:
     return "\n".join(lines)
 
 
+@traced('记忆命令 · stats', 'command')
 def format_memory_stats(space_id: str) -> str:
     """函数功能：`format_memory_stats` 负责格式化 memory stats，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：
@@ -1199,6 +1300,7 @@ def format_memory_stats(space_id: str) -> str:
     )
 
 
+@traced('记忆命令 · consolidate', 'command')
 def format_memory_consolidate(space_id: str, cadence: str) -> str:
     """函数功能：`format_memory_consolidate` 负责格式化 memory consolidate，服务于本文件职责：Memory 公共服务与飞书命令格式化。
     传参：

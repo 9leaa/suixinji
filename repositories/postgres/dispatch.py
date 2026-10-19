@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -46,6 +48,9 @@ def _publish_task_request(session: Any, task: Task | str, task_type: str | None 
     """
     task_id = str(task.id if isinstance(task, Task) else task)
     resolved_type = str(task.task_type if isinstance(task, Task) else task_type or "")
+    # Load the durable task context, including retries activated by another process.
+    row = task if isinstance(task, Task) else session.get(Task, task_id)
+    trace_context = dict((row.payload_json or {}).get("_trace") or {}) if row else {}
     event_id = new_id("event")
     session.add(
         OutboxEvent(
@@ -53,7 +58,7 @@ def _publish_task_request(session: Any, task: Task | str, task_type: str | None 
             event_type="task.requested",
             aggregate_type="task",
             aggregate_id=task_id,
-            payload_json={"task_id": task_id, "task_type": resolved_type, "attempt": max(1, int(attempt))},
+            payload_json={"task_id": task_id, "task_type": resolved_type, "attempt": max(1, int(attempt)), "_trace": trace_context, "requested_at": datetime.now().astimezone().isoformat()},
         )
     )
     return event_id
@@ -89,6 +94,10 @@ def _enqueue_task_in_session(
     返回结果说明：
         返回 `tuple[str, bool]`，表示由多个相关值组成的结果。
     """
+    from core.lifecycle import current
+    context = current()
+    if context:
+        payload = {**payload, "_trace": context}
     if publish and initial_status != "queued":
         raise ValueError("only queued tasks may be published")
     task_id = new_id("task")
@@ -120,6 +129,7 @@ def _enqueue_task_in_session(
     return task_id, True
 
 
+@traced('创建后续任务', 'database')
 def enqueue_task(
     *,
     task_type: str,
@@ -165,6 +175,7 @@ def enqueue_task(
         )
 
 
+@traced('PostgreSQL · Inbox / Task / Outbox 事务', 'database')
 def receive_command(
     *,
     source: str,

@@ -14,6 +14,7 @@ from agent.ask_models import AskPlan, AskWorkflowResult, UnitEvidenceBundle
 from agent.ask_planner import plan_ask
 from agent.ask_plan_validator import safe_fallback_plan
 from core import settings
+from core.answer_grounding import IDENTITY_EVIDENCE_RULES, identity_for_run
 from core.llm_client import complete_json
 from memory.consistency import wait_for_memory_barrier
 from memory.trace import add_step
@@ -51,6 +52,10 @@ ASK_ANSWER_CONTRACT_REPAIR_PROMPT = """你是随心记的回答引用修复器�
 - 没有足够证据的 unit 不要输出。
 - 不要输出 claims、final_answer、Markdown 或任何解释。
 """
+
+
+ASK_ANSWER_PROMPT += IDENTITY_EVIDENCE_RULES
+ASK_ANSWER_CONTRACT_REPAIR_PROMPT += IDENTITY_EVIDENCE_RULES
 
 
 def _session_context(hook_context: Any) -> dict[str, Any]:
@@ -308,6 +313,7 @@ def _answer_with_claims_from_bundles(
     question: str,
     plan: AskPlan,
     bundles: list[UnitEvidenceBundle],
+    *, hook_context: Any = None,
 ) -> tuple[str, list[dict[str, Any]]]:
     """Return user-visible Unit answers plus their validated factual claims.
 
@@ -326,6 +332,7 @@ def _answer_with_claims_from_bundles(
         return _fallback_answer(plan, bundles), []
     payload = {
         "question": question,
+        "current_user": identity_for_run(hook_context),
         "answer_mode": plan.answer_mode,
         "units": [unit.model_dump() for unit in plan.units],
         "bundles": [_bundle_payload(bundle) for bundle in answerable_bundles],
@@ -590,7 +597,8 @@ def answer_question_v2(
                 "support_role": "history",
             }]
     else:
-        answer, rendered_claims, answer_contract = _answer_with_claims_from_bundles_detailed(question, plan, execution.bundles)
+        answer, rendered_claims, answer_contract = _answer_with_claims_from_bundles_detailed(
+            question, plan, execution.bundles, hook_context=hook_context)
     # These outcomes do not assert a user-facing factual conclusion.
     if decision.answer_type in {"restricted", "conflict", "clarification", "no_answer"}:
         rendered_claims = []
@@ -738,6 +746,7 @@ def _answer_with_claims_from_bundles_detailed(
     question: str,
     plan: AskPlan,
     bundles: list[UnitEvidenceBundle],
+    *, hook_context: Any = None,
 ) -> tuple[str, list[dict[str, Any]], dict[str, Any]]:
     """Synthesize a citation-bound answer with one bounded contract repair."""
     if plan.answer_mode == "timeline" or any(unit.intent == "memory_history" for unit in plan.units):
@@ -750,6 +759,7 @@ def _answer_with_claims_from_bundles_detailed(
         return _fallback_answer(plan, bundles), [], {"status": "not_applicable", "attempts": 0, "failure_reason": "no_answerable_bundle"}
     payload = {
         "question": question,
+        "current_user": identity_for_run(hook_context),
         "answer_mode": plan.answer_mode,
         "units": [unit.model_dump() for unit in plan.units],
         "bundles": [_bundle_payload(bundle) for bundle in answerable_bundles],

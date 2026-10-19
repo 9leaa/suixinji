@@ -79,6 +79,9 @@ class StreamTaskDispatcher:
         }
         if payload["delivery_type"] == "auto_summary":
             payload["sent_date"] = key.rsplit(":", 1)[-1]
+        if chat_id.startswith("console:"):
+            from apps.console_commands import enqueue_scheduled_summary
+            return enqueue_scheduled_summary(space_id, payload, key, message_id, WORKER_MAX_ATTEMPTS)
         task_id, _ = enqueue_task(
             task_type="summary",
             space_id=space_id,

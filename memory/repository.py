@@ -388,6 +388,7 @@ def _init_db(db_path: str | Path | None = None) -> None:
         _ensure_column(conn, "memories", "object_value", "TEXT")
         _ensure_column(conn, "memories", "memory_key", "TEXT")
         _ensure_column(conn, "memories", "memory_key_version", "TEXT NOT NULL DEFAULT 'memory-key-v2'")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS ix_preference_card_identity ON memories(space_id,memory_key) WHERE memory_key_version = 'preference-card-v1'")
         _ensure_column(conn, "memories", "polarity", "TEXT")
         _ensure_column(conn, "memories", "scope_json", "TEXT NOT NULL DEFAULT '{}'")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_memories_space_key_status ON memories(space_id, memory_key, status)")
@@ -1454,7 +1455,7 @@ def update_memory(
             next_confirmed = last_confirmed_at if last_confirmed_at is not None else row["last_confirmed_at"]
             next_memory_key = (
                 row["memory_key"]
-                if row["memory_key_version"] == "memory-key-v3" and row["memory_key"]
+                if row["memory_key_version"] in {"memory-key-v3", "preference-card-v1"} and row["memory_key"]
                 else memory_key_for(
                     str(row["memory_type"]),
                     subject=row["subject"],
@@ -1740,6 +1741,14 @@ def apply_memory_decision(
                 target_row = conn.execute("SELECT * FROM memories WHERE id = ?", (target_id,)).fetchone()
                 if target_row is None:
                     raise ValueError(f"decision target memory not found: {target_id}")
+            if candidate.memory_key_version == "preference-card-v1":
+                from memory.preference_cards import CardVersionConflict
+                if target_row is not None and int(target_row["current_version"]) != decision.target_snapshot_version:
+                    raise CardVersionConflict("card version changed")
+                if target_row is None and conn.execute(
+                    "SELECT id FROM memories WHERE space_id=? AND memory_key=?", (space_id, candidate.memory_key)
+                ).fetchone():
+                    raise CardVersionConflict("card concurrently created")
             decision_to_write = decision
             if target_row is not None and decision.target_snapshot_version is not None and int(target_row["current_version"] or 1) != int(decision.target_snapshot_version):
                 same_identity = candidate.effective_memory_key == str(target_row["memory_key"] or "")
@@ -1953,6 +1962,9 @@ def apply_memory_decision(
     try:
         return _run_write(_operation)
     except Exception as exc:
+        from memory.preference_cards import CardVersionConflict
+        if isinstance(exc, CardVersionConflict):
+            raise
         error_type = type(exc).__name__
 
         def _record_failure() -> None:
@@ -3189,8 +3201,20 @@ def get_memory_timeline(
         result = []
         for row in rows:
             scope = json.loads(row["scope_json"] or "{}")
+            from core import settings
+            if settings.PREFERENCE_CARDS_ENABLED and row['memory_type'] == 'preference':
+                from memory.workflow_state import get
+                if get(space_id, 'migrated_preference', row['id']):
+                    continue
             from memory.access import memory_access_allowed
             if access_context is not None and not memory_access_allowed({"scope": scope}, access_context):
+                continue
+            if row['memory_key_version'] == 'preference-card-v1':
+                from memory.preference_cards import evidence
+                record = _memory_from_row(row)
+                data = evidence(record, include_history=True)
+                if data['details']:
+                    result.append({**data, 'versions': []})
                 continue
             sources = conn.execute("SELECT * FROM memory_sources WHERE memory_id = ? ORDER BY created_at", (row["id"],)).fetchall()
             result.append({

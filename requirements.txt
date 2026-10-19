@@ -1,5 +1,6 @@
 python-dotenv==1.1.1
 openai==1.93.0
+socksio==1.0.0
 lark-oapi==1.4.22
 pydantic==2.11.7
 SQLAlchemy==2.0.41

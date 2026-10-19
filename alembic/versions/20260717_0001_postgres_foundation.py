@@ -16,10 +16,11 @@ down_revision = None
 branch_labels = None
 depends_on = None
 
-# Explicitly re-frozen after revision 20260806_0011 added complete version
-# provenance. Fresh installs create the complete current metadata; existing
+# Explicitly re-frozen against the current schema, including semantic
+# profile projections (20260815_0013). Fresh installs create the complete current metadata; existing
 # databases advance through the incremental migration.
-FROZEN_SCHEMA_FINGERPRINT = "550eeff02834f2fa8172652280dd7f3090c2270a5adbfbfec7db57357f3f5085"
+# Includes the preference card partial unique index (20261018_0016).
+FROZEN_SCHEMA_FINGERPRINT = "e2a45d4c6491116651529714110e7f65433b37f7cbea6ad70ef6631f4877ae67"
 
 
 def _metadata_fingerprint() -> str:

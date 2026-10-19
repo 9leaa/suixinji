@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import time
 from datetime import date
+from core import settings
 
 from core.observability import log_event, log_process_started
 from core.settings import SCHEDULER_LEADER_TTL_MS, STAGE4_MODE
@@ -60,6 +61,12 @@ def run_once() -> bool:
             return True
         run_scheduler_tick_safely(lambda _chat_id, _text: False, executor=StreamTaskDispatcher())
         today = date.today()
+        if settings.PREFERENCE_CARDS_ENABLED:
+            for space_id in list_memory_space_ids():
+                if not is_evaluation_space(space_id):
+                    enqueue_task(task_type='memory', space_id=space_id,
+                                 idempotency_key=f'preference-maintenance:{space_id}:{int(time.time() // 60)}',
+                                 payload={'operation': 'preference_maintenance'})
         for cadence in due_cadences(today, {}):
             period_key = consolidation_period_key(cadence, today)
             for space_id in list_memory_space_ids():

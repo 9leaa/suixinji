@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
+from core import settings
 from typing import Any
 
 from agent.query_agent import answer_question
@@ -57,6 +58,16 @@ def _enqueue_delivery(task: dict[str, Any], *, text: str, payload: dict[str, Any
     返回结果说明：
         无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
+    from core.lifecycle import current, span
+    context = current()
+    if context and (payload.get("reply_channel") == "console" or str(payload.get("chat_id") or "").startswith("console:")):
+        from repositories.postgres.lifecycle import update_run
+        with span("回答返回页面", "delivery", {"text": text}) as observation:
+            update_run(context["trace_id"], answer=text)
+            observation["output"] = {"destination": "console", "answer": text}
+            if payload.get("delivery_type") == "auto_summary" and payload.get("sent_date"):
+                mark_summary_sent(str(task["space_id"]), str(payload["sent_date"]))
+        return
     delivery_key = str(payload["delivery_key"])
     followup = {
         "chat_id": str(payload["chat_id"]),
@@ -101,7 +112,7 @@ def handle_ingest(task: dict[str, Any]) -> TaskOutcome:
                 "type": note_data.get("type"),
                 "summary": note_data.get("summary"),
             }
-            if not may_contain_memory(str(note_data.get("text") or ""), classification=classification):
+            if not settings.PREFERENCE_CARDS_ENABLED and not may_contain_memory(str(note_data.get("text") or ""), classification=classification):
                 process_note_memory(note_data, classification=classification)
             else:
                 critical_task_id, _ = enqueue_task(
@@ -151,7 +162,10 @@ def handle_query(task: dict[str, Any]) -> TaskOutcome:
     """
     payload = _payload(task)
     inbox_id = str(payload.get("inbox_id") or "")
-    if FAKE_EXTERNALS:
+    if payload.get("console_command"):
+        from apps.console_commands import execute_command
+        answer = execute_command(str(task["space_id"]), str(payload["console_command"]), tenant_id=_tenant_id(task), message_id=task.get("source_message_id"))
+    elif FAKE_EXTERNALS:
         answer = f"[stage4 fake answer] {str(payload['question'])[:120]}"
     else:
         answer = answer_question(
@@ -162,8 +176,15 @@ def handle_query(task: dict[str, Any]) -> TaskOutcome:
             message_id=task.get("source_message_id"),
             task_id=str(task["id"]),
         )
+    if settings.PREFERENCE_CARDS_ENABLED:
+        from memory.workflow_state import put
+        from memory.models import utc_now_iso
+        put(str(task['space_id']), 'answer_snapshot', str(task['id']), {
+            'question': payload.get('question') or payload.get('console_command'), 'answer': answer,
+            'created_at': utc_now_iso(), 'message_id': task.get('source_message_id'),
+        })
     _enqueue_delivery(task, text=answer, payload=payload)
-    return TaskOutcome(release_inbox_id=inbox_id)
+    return TaskOutcome(release_inbox_id=inbox_id or None)
 
 
 def handle_summary(task: dict[str, Any]) -> TaskOutcome:
@@ -188,7 +209,7 @@ def handle_summary(task: dict[str, Any]) -> TaskOutcome:
         )
         summary_text = result.markdown
     _enqueue_delivery(task, text=summary_text, payload=payload)
-    return TaskOutcome(release_inbox_id=inbox_id)
+    return TaskOutcome(release_inbox_id=inbox_id or None)
 
 
 def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
@@ -206,6 +227,12 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
 
         run_memory_consolidation_once(str(payload["cadence"]), space_ids=[str(task["space_id"])])
         return None
+    if operation == 'preference_maintenance':
+        from memory.preference_cards import run_consolidation
+        from memory.runtime_workflow import daily_issue_digest
+        run_consolidation(str(task['space_id']))
+        daily_issue_digest(str(task['space_id']))
+        return None
     if operation == "memory_embedding":
         return handle_memory_embedding(task)
     note = find_note_content(str(task["space_id"]), note_id)
@@ -216,6 +243,10 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
         return None
     current_inbox = load_inbox_record(str(payload.get("barrier_inbox_id") or "")) if payload.get("barrier_inbox_id") else None
     if current_inbox is not None:
+        from core.lifecycle import current
+        note['chat_id'] = current_inbox.get('chat_id')
+        note['trace_id'] = (current() or {}).get('trace_id')
+        note['tenant_id'] = _tenant_id(task)
         note["sequence_no"] = int(current_inbox.get("sequence_no") or 0)
         note["user_id"] = next(
             (
@@ -370,3 +401,6 @@ HANDLERS = {
     "enrichment": handle_enrichment,
     "delivery": handle_delivery,
 }
+
+from memory.runtime_workflow import guarded_handler
+HANDLERS = {name: guarded_handler(handler) if name != 'delivery' else handler for name, handler in HANDLERS.items()}

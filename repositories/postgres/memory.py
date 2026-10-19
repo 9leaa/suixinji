@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced, recall_channel, annotate
+
 import json
 import logging
 import re
@@ -479,6 +481,7 @@ def _add_version(
         session.add(MemoryVersionSourceRow(version_id=version.id, note_id=note_id, created_at=_dt(utc_now_iso())))
 
 
+@traced('PostgreSQL · 新增记忆', 'database')
 def _insert_memory(
     session: Any,
     space_id: str,
@@ -542,6 +545,7 @@ def _insert_memory(
     return row
 
 
+@traced('PostgreSQL · 更新记忆版本', 'database', output_arg='row')
 def _versioned_update(
     session: Any,
     row: Memory,
@@ -588,7 +592,7 @@ def _versioned_update(
     if content_changed:
         row.content = content
         row.normalized_content = normalize_content(content)
-        if row.memory_key_version != "memory-key-v3":
+        if row.memory_key_version not in {"memory-key-v3", "preference-card-v1"}:
             row.memory_key = memory_key_for(
                 row.memory_type,
                 subject=row.subject,
@@ -699,6 +703,7 @@ def _add_relation(session: Any, space_id: str, source_id: str, target_id: str, r
     )
 
 
+@traced('PostgreSQL · 保存裁决', 'database')
 def _save_decision(
     session: Any,
     space_id: str,
@@ -1354,6 +1359,7 @@ def _task_read_precedence_authorized(
     )
 
 
+@traced('记忆 · 加权 RRF 融合', 'rrf')
 def _rrf_hits(
     channels: list[tuple[str, list[Memory]]],
     *,
@@ -1376,6 +1382,7 @@ def _rrf_hits(
     ranks: dict[str, dict[str, int]] = {}
     contributions: dict[str, dict[str, float]] = {}
     rrf_k = max(1, int(MEMORY_HYBRID_RRF_K))
+    annotate(rrf_k=rrf_k, weighted=RETRIEVAL_WEIGHTED_RRF_ENABLED, channel_weights=_RRF_CHANNEL_WEIGHTS, formula="sum(weight / (k + rank))")
 
     # Merge repeated labels before scoring. A candidate can therefore receive
     # at most one contribution from one logical channel.
@@ -2273,6 +2280,10 @@ def apply_memory_decision(
                 if ids:
                     replay["memory_id"] = ids[0]
                 return replay
+            if candidate.memory_key_version == "preference-card-v1" and not decision.target_memory_ids:
+                from memory.preference_cards import CardVersionConflict
+                if session.execute(select(Memory.id).where(Memory.space_id == space_id, Memory.memory_key == candidate.memory_key)).first():
+                    raise CardVersionConflict("card concurrently created")
             action = decision.recommended_action
             now = utc_now_iso()
             target_id = decision.target_memory_ids[0] if decision.target_memory_ids else None
@@ -2281,6 +2292,9 @@ def apply_memory_decision(
                 target = session.execute(select(Memory).where(Memory.id == target_id).with_for_update()).scalar_one_or_none()
                 if target is None:
                     raise ValueError(f"decision target memory not found: {target_id}")
+                if candidate.memory_key_version == "preference-card-v1" and target.current_version != decision.target_snapshot_version:
+                    from memory.preference_cards import CardVersionConflict
+                    raise CardVersionConflict("card version changed")
                 if decision.target_snapshot_version is not None and target.current_version != decision.target_snapshot_version:
                     same_identity = candidate.effective_memory_key == str(target.memory_key or "")
                     same_state = same_identity and (
@@ -2406,6 +2420,9 @@ def apply_memory_decision(
             )
             return result
     except Exception as exc:
+        from memory.preference_cards import CardVersionConflict
+        if isinstance(exc, CardVersionConflict):
+            raise
         try:
             with session_scope() as session:
                 _save_decision(session, space_id, note_id, decision, status="failed", error=type(exc).__name__)
@@ -3186,6 +3203,7 @@ def mark_consolidation_failed(run_id: str, error: str, db_path: Any = None) -> N
             row.status, row.completed_at, row.error = "failed", _dt(utc_now_iso()), error
 
 
+@traced('记忆 · 多路召回', 'retrieval')
 def hybrid_search_memory_hits(
     space_id: str,
     query: str,
@@ -3249,13 +3267,13 @@ def hybrid_search_memory_hits(
                     Memory.memory_key.op("~*")(identifier_pattern),
                 ]
             )
-        exact_rows = list(
+        exact_rows = recall_channel('exact', query, lambda: list(
             session.execute(
                 base.where(or_(*exact_filters))
                 .order_by(Memory.updated_at.desc(), Memory.id.desc())
                 .limit(min(retrieval_limit, 30))
             ).scalars()
-        )
+        ))
         if exact_rows:
             channels.append(("exact", exact_rows))
 
@@ -3288,13 +3306,13 @@ def hybrid_search_memory_hits(
             )
             channels.append((
                 "structured_slot",
-                list(
+                recall_channel('structured_slot', query, lambda: list(
                     session.execute(
                         base.where(or_(*identity_filters))
                         .order_by(identity_priority, Memory.updated_at.desc(), Memory.id.desc())
                         .limit(retrieval_limit)
                     ).scalars()
-                ),
+                )),
             ))
 
         if spec.family_key:
@@ -3306,13 +3324,13 @@ def hybrid_search_memory_hits(
             ]
             channels.append((
                 "family",
-                list(
+                recall_channel('family', query, lambda: list(
                     session.execute(
                         base.where(or_(*family_filters))
                         .order_by(Memory.updated_at.desc(), Memory.id.desc())
                         .limit(min(20, retrieval_limit))
                     ).scalars()
-                ),
+                )),
             ))
 
         lexical_terms = _strong_lexical_terms(
@@ -3336,13 +3354,13 @@ def hybrid_search_memory_hits(
             )
             channels.append((
                 "lexical",
-                list(
+                recall_channel('lexical', query, lambda: list(
                     session.execute(
                         base.where(or_(*structured_filters))
                         .order_by(lexical_priority, Memory.updated_at.desc(), Memory.id.desc())
                         .limit(retrieval_limit)
                     ).scalars()
-                )
+                ))
             ))
 
         query_text = " ".join(terms) or query
@@ -3351,20 +3369,20 @@ def hybrid_search_memory_hits(
             tsquery = _fts_query(terms, query_text)
             channels.append((
                 "fts",
-                list(
+                recall_channel('fts', query, lambda: list(
                     session.execute(
                         base.where(document.op("@@")(tsquery))
                         .order_by(func.ts_rank_cd(document, tsquery).desc(), Memory.updated_at.desc())
                         .limit(retrieval_limit)
                     ).scalars()
-                )
+                ))
             ))
             if MEMORY_TRIGRAM_ENABLED and terms:
                 trigram_filters = [Memory.content.op("%")(term[:120]) for term in terms[:8]]
                 trigram_filters.extend(Memory.object_value.op("%")(term[:120]) for term in terms[:8])
                 channels.append((
                     "trigram",
-                    list(
+                    recall_channel('trigram', query, lambda: list(
                         session.execute(
                             base.where(or_(*trigram_filters))
                             .order_by(
@@ -3376,14 +3394,14 @@ def hybrid_search_memory_hits(
                             )
                             .limit(retrieval_limit)
                         ).scalars()
-                    ),
+                    )),
                 ))
 
         if embedding and len(embedding) == embedding_dimension:
             model, dimension, version = current_embedding_contract()
             channels.append((
                 "vector",
-                list(
+                recall_channel('vector', query, lambda: list(
                     session.execute(
                         base.join(MemoryVector, MemoryVector.memory_id == Memory.id)
                         .where(
@@ -3396,7 +3414,7 @@ def hybrid_search_memory_hits(
                         .order_by(MemoryVector.embedding.cosine_distance(embedding), Memory.updated_at.desc())
                         .limit(retrieval_limit)
                     ).scalars()
-                )
+                ))
             ))
 
         # Apply ACL to every channel before RRF fusion.
@@ -3620,6 +3638,17 @@ def get_memory_timeline(
         for row in rows:
             if access_context is not None and not memory_access_allowed(row, access_context):
                 continue
+            if row.memory_key_version == 'preference-card-v1':
+                from memory.preference_cards import evidence
+                data = evidence(_record(session, row, include_versions=False), include_history=True)
+                if data['details']:
+                    result.append({**data, 'versions': []})
+                continue
+            from core import settings
+            if settings.PREFERENCE_CARDS_ENABLED and row.memory_type == 'preference':
+                from memory.workflow_state import get
+                if get(space_id, 'migrated_preference', row.id):
+                    continue
             versions = _versions(session, row.id)
             result.append({
                 "id": row.id,

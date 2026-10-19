@@ -201,9 +201,9 @@ def score_memory(query: str, memory: MemoryRecord) -> float:
     if memory.memory_type == "preference":
         query_polarity = preference_query_polarity(query)
         memory_polarity = memory.polarity or preference_polarity(memory.content)
-        if query_polarity == "positive" and memory_polarity == "negative":
+        if memory.memory_key_version != 'preference-card-v1' and query_polarity == "positive" and memory_polarity == "negative":
             return 0.0
-        if query_polarity == "negative" and memory_polarity == "positive":
+        if memory.memory_key_version != 'preference-card-v1' and query_polarity == "negative" and memory_polarity == "positive":
             return 0.0
 
     searchable_fields = (
@@ -218,7 +218,7 @@ def score_memory(query: str, memory: MemoryRecord) -> float:
     if (
         memory.memory_type == "preference"
         and query_polarity in {"positive", "negative"}
-        and query_polarity == memory_polarity
+        and (query_polarity == memory_polarity or memory.memory_key_version == 'preference-card-v1')
         and intent_similarity > 0
     ):
         # “我不喜欢喝什么”会刻意省略具体对象；保留 polarity 和 type 匹配，让相关负偏好越过检索阈值，同时避免相反偏好被误命中。

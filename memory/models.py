@@ -447,7 +447,7 @@ class MemoryRecord:
         返回结果说明：
             返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
         """
-        return {
+        data = {
             "id": self.id,
             "space_id": self.space_id,
             "memory_type": self.memory_type,
@@ -475,3 +475,9 @@ class MemoryRecord:
             "sources": [source.__dict__ for source in self.sources],
             "versions": [version.__dict__ for version in self.versions],
         }
+        if self.memory_key_version == 'preference-card-v1':
+            card = self.scope['preference_card']
+            details = [d for d in card['details'] if d['status'] in {'active', 'history'}]
+            data['scope'] = {key: value for key, value in self.scope.items() if key != 'preference_card'}
+            data.update(details=details, sources=[s for d in details for s in d['sources']], versions=[])
+        return data

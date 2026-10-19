@@ -12,6 +12,8 @@ os.environ["TASK_QUEUE_BACKEND"] = "local"
 os.environ["SUIXINJI_AGENT_HOOKS_ENABLED"] = "false"
 # 即使开发者本地 .env 启用了 LLM，也保持测试确定性，并避免正在运行的飞书服务触发真实抽取。
 os.environ["SUIXINJI_MEMORY_EXTRACTOR_MODE"] = "rules"
+# Legacy suites exercise the default protocol; card suites opt in explicitly.
+os.environ["SUIXINJI_PREFERENCE_CARDS_ENABLED"] = "false"
 
 import pytest
 

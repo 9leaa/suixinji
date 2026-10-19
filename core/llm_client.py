@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import span, traced
+
 import inspect
 import json
 import re
@@ -252,15 +254,20 @@ def _chat_completion_with_key_pool(
     while True:
         attempt += 1
         try:
-            response = client.chat.completions.create(
-                model=config.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                temperature=0,
-                **_structured_json_completion_options(config),
-            )
+            with span("LLM · " + config.model, "llm", {
+                "messages": [{"role":"system", "content":system_prompt}, {"role":"user", "content":user_prompt}],
+                "temperature": 0, **_structured_json_completion_options(config),
+            }, model=config.model, role=route.role.value, task=route.task.value, route_reason=route.reason, attempt=attempt) as observation:
+                response = client.chat.completions.create(
+                    model=config.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    temperature=0,
+                    **_structured_json_completion_options(config),
+                )
+                observation["output"] = response
             pool.report_success(current_key)
             return response, attempt
         except APITimeoutError as exc:
@@ -320,6 +327,7 @@ def _chat_completion_with_key_pool(
                 continue
             raise
 
+@traced('模型路由与结构化输出', 'generation')
 def complete_json(
     system_prompt: str,
     user_prompt: str,
@@ -473,12 +481,14 @@ def _embedding_request_with_key_pool(config: EmbeddingConfig, normalized_text: s
     client, current_key = _client_from_key_pool(config, pool, used_keys)
     while True:
         try:
-            response = client.embeddings.create(
-                model=config.model,
-                input=normalized_text,
-                dimensions=config.dimension,
-                encoding_format="float",
-            )
+            with span("Embedding · " + config.model, "embedding", {"text":normalized_text}, model=config.model, dimensions=config.dimension) as observation:
+                response = client.embeddings.create(
+                    model=config.model,
+                    input=normalized_text,
+                    dimensions=config.dimension,
+                    encoding_format="float",
+                )
+                observation["output"] = response
             pool.report_success(current_key)
             return response
         except Exception as exc:
@@ -496,6 +506,7 @@ def _embedding_request_with_key_pool(config: EmbeddingConfig, normalized_text: s
                 continue
             raise
 
+@traced('文本向量化', 'embedding')
 def embed_text(text: str) -> list[float]:
     """函数功能：`embed_text` 负责生成向量 text，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
     传参：

@@ -8,6 +8,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 import json
 from collections import Counter
 from dataclasses import dataclass
@@ -158,6 +160,7 @@ def _parse_ts(value: str | None) -> datetime | None:
     return ts
 
 
+@traced('总结 · 读取范围内笔记', 'retrieval')
 def load_notes_in_range(space_id: str, start: datetime, end: datetime) -> list[dict[str, Any]]:
     """函数功能：`load_notes_in_range` 负责加载 notes in range，服务于本文件职责：时间范围总结生成。
     传参：
@@ -176,6 +179,10 @@ def load_notes_in_range(space_id: str, start: datetime, end: datetime) -> list[d
             notes.append(note)
 
     notes.sort(key=lambda item: item.get("ts", ""))
+    from core import settings
+    if settings.PREFERENCE_CARDS_ENABLED:
+        from memory.preference_cards import mask_note
+        notes = [mask_note(space_id, note) for note in notes]
     return notes
 
 
@@ -213,6 +220,7 @@ def _brief_notes(notes: list[dict[str, Any]], limit: int = 120) -> list[dict[str
     ]
 
 
+@traced('总结 · 读取记忆变化', 'retrieval')
 def load_memory_changes(space_id: str, start: datetime, end: datetime) -> list[dict[str, Any]]:
     """函数功能：`load_memory_changes` 负责加载 memory changes，服务于本文件职责：时间范围总结生成。
     传参：
@@ -324,6 +332,7 @@ def _summary_path(space_id: str, range_key: str, start: datetime, end: datetime)
     return directory / f"{start.date()}_{end.date()}_{range_key}.md"
 
 
+@traced('保存总结', 'database')
 def save_summary(space_id: str, result: SummaryResult) -> None:
     """函数功能：`save_summary` 负责保存 summary，服务于本文件职责：时间范围总结生成。
     传参：
@@ -472,6 +481,7 @@ def _generate_summary_impl(space_id: str, range_key: str, context: AgentRunConte
     return result
 
 
+@traced('生成总结', 'agent')
 def generate_summary(
     space_id: str,
     range_key: str,

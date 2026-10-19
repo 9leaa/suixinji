@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 
@@ -34,6 +36,7 @@ def _subscription(row: SummarySubscriptionRow):
     )
 
 
+@traced('自动总结 · get_summary_subscription', 'database')
 def get_summary_subscription(space_id: str):
     """函数功能：`get_summary_subscription` 负责获取 summary subscription，服务于本文件职责：Summary 数据访问。
     传参：
@@ -89,6 +92,7 @@ def _upsert(space_id: str, chat_id: str, **updates):
     return get_summary_subscription(space_id)
 
 
+@traced('自动总结 · enable_summary_subscription', 'database')
 def enable_summary_subscription(space_id: str, chat_id: str):
     """函数功能：`enable_summary_subscription` 负责处理 enable summary subscription，服务于本文件职责：Summary 数据访问。
     传参：
@@ -100,6 +104,7 @@ def enable_summary_subscription(space_id: str, chat_id: str):
     return _upsert(space_id, chat_id, enabled=True)
 
 
+@traced('自动总结 · disable_summary_subscription', 'database')
 def disable_summary_subscription(space_id: str):
     """函数功能：`disable_summary_subscription` 负责处理 disable summary subscription，服务于本文件职责：Summary 数据访问。
     传参：
@@ -113,6 +118,7 @@ def disable_summary_subscription(space_id: str):
     return _upsert(space_id, old.chat_id, enabled=False)
 
 
+@traced('自动总结 · update_summary_time', 'database')
 def update_summary_time(space_id: str, chat_id: str, time_value: str):
     """函数功能：`update_summary_time` 负责更新 summary time，服务于本文件职责：Summary 数据访问。
     传参：
@@ -129,6 +135,7 @@ def update_summary_time(space_id: str, chat_id: str, time_value: str):
     return _upsert(space_id, chat_id, time=parsed)
 
 
+@traced('自动总结 · mark_summary_sent', 'database')
 def mark_summary_sent(space_id: str, sent_date: str) -> None:
     """函数功能：`mark_summary_sent` 负责标记 summary sent，服务于本文件职责：Summary 数据访问。
     传参：

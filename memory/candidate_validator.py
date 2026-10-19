@@ -53,12 +53,14 @@ def validate_candidate(candidate: MemoryCandidate, *, note_text: str = "") -> tu
     """
     content = " ".join(str(candidate.content or "").split()).strip()
     normalized = normalize_content(content)
-    if not candidate.should_store:
-        return None, CandidateRejection(candidate.candidate_id, candidate.effective_reason or "candidate_should_not_store")
-    if not content or len(normalized) <= 2 or normalized in {normalize_content(item) for item in LOW_VALUE_TEXTS}:
-        return None, CandidateRejection(candidate.candidate_id, "low_value_content")
     if contains_sensitive_data(note_text) or contains_sensitive_data(content):
         return None, CandidateRejection(candidate.candidate_id, "sensitive_data")
+    if not candidate.should_store and candidate.scope.get('preference_detail', {}).get('unresolved_reason'):
+        return None, CandidateRejection(candidate.candidate_id, 'preference_unresolved')
+    if not candidate.should_store:
+        return None, CandidateRejection(candidate.candidate_id, candidate.effective_reason or "candidate_should_not_store")
+    if (not content or len(normalized) <= 2 or normalized in {normalize_content(item) for item in LOW_VALUE_TEXTS}) and not candidate.scope.get("preference_error"):
+        return None, CandidateRejection(candidate.candidate_id, "low_value_content")
 
     confidence = _safe_score(candidate.confidence)
     importance = _safe_score(candidate.importance)
@@ -80,7 +82,7 @@ def validate_candidate(candidate: MemoryCandidate, *, note_text: str = "") -> tu
         predicate=(str(candidate.predicate).strip()[:80] if candidate.predicate else None),
         object_value=(str(candidate.object_value).strip()[:240] if candidate.object_value else None),
         evidence_span=(evidence_span[:500] or None),
-        memory_key=memory_key_for(
+        memory_key=candidate.memory_key if 'preference_detail' in candidate.scope else memory_key_for(
             candidate.memory_type,
             subject=candidate.subject,
             predicate=candidate.predicate,
@@ -88,7 +90,7 @@ def validate_candidate(candidate: MemoryCandidate, *, note_text: str = "") -> tu
             content=content[:1000],
         ),
     )
-    if settings.MEMORY_CANONICAL_KEY_V3_ENABLED:
+    if settings.MEMORY_CANONICAL_KEY_V3_ENABLED and 'preference_detail' not in candidate.scope:
         validated = canonicalize_candidate(validated)
         if validated.memory_type == "task" and not all(
             (

@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 from core.settings import MEMORY_ADJUDICATION_TOP_K, MEMORY_RETRIEVAL_MODE
 from memory.canonicalizer import task_family_compatible, task_instance_authorized
 from memory.models import MemoryCandidate, MemoryRecord, normalize_content
@@ -227,6 +229,7 @@ def retrieval_signals(candidate: MemoryCandidate, memory: MemoryRecord) -> dict[
     }
 
 
+@traced('查找已有记忆候选', 'retrieval')
 def retrieve_candidates(space_id: str, candidate: MemoryCandidate, *, limit: int | None = None) -> list[MemoryRecord]:
     """函数功能：`retrieve_candidates` 负责处理 retrieve candidates，服务于本文件职责：候选相关记忆召回。
     传参：

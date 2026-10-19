@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 import json
 import uuid
 from dataclasses import asdict, dataclass
@@ -81,6 +83,7 @@ def append_feedback(record: FeedbackRecord) -> None:
             f.write(json.dumps(asdict(record), ensure_ascii=False) + "\n")
 
 
+@traced('保存反馈', 'database')
 def save_feedback(
     *,
     space_id: str,
@@ -101,6 +104,19 @@ def save_feedback(
         message_id=message_id,
     )
     append_feedback(record)
+    from core import settings
+    if settings.PREFERENCE_CARDS_ENABLED:
+        from memory.workflow import capture_issue
+        from memory.trace import latest_trace
+        trace = latest_trace()
+        if trace and trace.get('space_id') != space_id:
+            trace = None
+        from memory.workflow_state import list_items
+        queries = sorted(list_items(space_id, 'query_snapshot'), key=lambda x: x['created_at'], reverse=True)[:3]
+        answers = sorted(list_items(space_id, 'answer_snapshot'), key=lambda x: x['created_at'], reverse=True)[:1]
+        capture_issue(space_id, stage='user_feedback', reason='user_reported',
+                      snapshot={'feedback': asdict(record), 'trace': trace, 'recent_queries': queries, 'recent_answers': answers},
+                      trace_id=(trace or {}).get('trace_id'))
     return record
 
 

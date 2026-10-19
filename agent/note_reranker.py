@@ -6,6 +6,8 @@ memory, infers a fact, or reads outside the provided candidate set.
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 from collections import defaultdict
 from dataclasses import dataclass
 import math
@@ -121,6 +123,7 @@ def _record_timestamp(record: Mapping[str, Any]) -> str:
     )
 
 
+@traced('查询变体 · RRF 融合', 'rrf')
 def fuse_note_variants(
     groups: Sequence[Sequence[Mapping[str, Any]]],
     *,
@@ -171,6 +174,7 @@ def _max_jaccard(terms: set[str], selected: Sequence[set[str]]) -> float:
     return max(len(terms & other) / max(1, len(terms | other)) for other in selected)
 
 
+@traced('笔记 · 规则重排', 'rerank')
 def rerank_note_records(
     query: str,
     records: Sequence[Mapping[str, Any]],
@@ -240,6 +244,7 @@ def rerank_note_records(
     return [item for _score, item, _terms in selected]
 
 
+@traced('选择回答证据', 'retrieval')
 def select_answer_evidence(
     query: str,
     records: Sequence[Mapping[str, Any]],

@@ -342,6 +342,8 @@ class Memory(Base):
     __table_args__ = (
         Index("ix_memories_space_status_type", "space_id", "status", "memory_type"),
         Index("ix_memories_space_key_status", "space_id", "memory_key", "status"),
+        Index('ix_preference_card_identity', 'space_id', 'memory_key', unique=True,
+              postgresql_where=text("memory_key_version = 'preference-card-v1'")),
         Index("ix_memories_space_status_updated", "space_id", "status", "updated_at"),
         Index(
             "ix_memories_task_family_active",

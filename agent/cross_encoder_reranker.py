@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 import math
 import os
 from threading import Lock
@@ -119,6 +121,7 @@ _RERANKER: AskCrossEncoderReranker | None = None
 _RERANKER_KEY: tuple[str, str] | None = None
 
 
+@traced('Cross Encoder 重排', 'rerank')
 def rerank_ask_records(query: str, records: list[dict[str, Any]], *, model_name: str, proxy: str | None, alpha: float) -> list[dict[str, Any]]:
     global _RERANKER, _RERANKER_KEY
     key = (str(model_name or ""), str(proxy or ""))

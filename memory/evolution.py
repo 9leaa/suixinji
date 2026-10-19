@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 import time
 from typing import Any
 
@@ -29,6 +31,7 @@ TRACE_STEPS = {
 }
 
 
+@traced('执行记忆更新与冲突策略', 'memory')
 def evolve_memory(
     *,
     space_id: str,

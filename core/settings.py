@@ -197,6 +197,9 @@ def database_pool_budget(role: str | None = None) -> tuple[int, int]:
         返回 `tuple[int, int]`，表示由多个相关值组成的结果。
     """
     resolved = (role or PROCESS_ROLE or "default").lower()
+    if resolved == "lifecycle":
+        # Observability must not wait on the business transaction holding its sole connection.
+        return 1, 0
     if resolved == "worker-heartbeat":
         return 1, 0
     if resolved == "receiver":
@@ -287,3 +290,11 @@ if TASK_QUEUE_BACKEND == "redis_streams":
             "SUIXINJI_REDIS_BLOCKING_SOCKET_TIMEOUT_SECONDS must be at least "
             "SUIXINJI_STREAM_BLOCK_MS / 1000 + 1 second"
         )
+
+# Opt in only after the card migration and evidence replay have been checked.
+PREFERENCE_CARDS_ENABLED = _bool_env('SUIXINJI_PREFERENCE_CARDS_ENABLED', False)
+PREFERENCE_CARD_SOFT_LIMIT = _int_env('SUIXINJI_PREFERENCE_CARD_SOFT_LIMIT', 10)
+PREFERENCE_CARD_HARD_LIMIT = _int_env('SUIXINJI_PREFERENCE_CARD_HARD_LIMIT', 20)
+PREFERENCE_CARD_CHANGE_LIMIT = _int_env('SUIXINJI_PREFERENCE_CARD_CHANGE_LIMIT', 30)
+PREFERENCE_CARD_INTERVAL_SECONDS = _int_env('SUIXINJI_PREFERENCE_CARD_INTERVAL_SECONDS', 86400)
+PREFERENCE_CARD_RELATED_SECONDS = _int_env('SUIXINJI_PREFERENCE_CARD_RELATED_SECONDS', 604800)

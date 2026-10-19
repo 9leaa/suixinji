@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import event
+
 import json
 import logging
 import re
@@ -112,6 +114,7 @@ def add_step(
     返回结果说明：
         无返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
+    event(step, inputs=input_summary, output=output_summary, status=status, reason=reason, reported_duration_ms=duration_ms, error=error)
     if trace is None:
         return
     trace.setdefault("steps", []).append(

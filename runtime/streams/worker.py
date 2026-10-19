@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import trace_message
+
 import logging
 import hashlib
 import os
@@ -249,6 +251,7 @@ class StreamWorker:
         """
         self.running = False
 
+    @trace_message
     def _handle(self, message: StreamMessage) -> None:
         """函数功能：`StreamWorker._handle` 在类 `StreamWorker` 中负责处理，服务于本文件职责：Redis Stream 消费器。
         传参：

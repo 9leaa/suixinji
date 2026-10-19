@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced, recall_channel, annotate
+
 from dataclasses import asdict
 import os
 from datetime import datetime
@@ -317,6 +319,7 @@ def _note_query_terms(text: str) -> list[str]:
     return terms[:18]
 
 
+@traced('笔记 · 加权 RRF 融合', 'rrf')
 def _weighted_note_rrf(
     channels: list[tuple[str, list[Note]]],
     *,
@@ -337,6 +340,7 @@ def _weighted_note_rrf(
         "vector": float(os.getenv("SUIXINJI_NOTE_WEIGHT_VECTOR", "1.35")),
     }
     rrf_k = max(1, int(NOTE_HYBRID_RRF_K))
+    annotate(rrf_k=rrf_k, weighted=RETRIEVAL_WEIGHTED_RRF_ENABLED, channel_weights=weights, formula="sum(weight / (k + rank))")
     rows: dict[str, Note] = {}
     scores: dict[str, float] = {}
     channels_by_id: dict[str, list[str]] = {}
@@ -357,6 +361,7 @@ def _weighted_note_rrf(
     ]
 
 
+@traced('笔记 · 多路召回', 'retrieval')
 def hybrid_search_notes(
     space_id: str,
     query: str,
@@ -384,20 +389,20 @@ def hybrid_search_notes(
     base = select(Note).where(Note.space_id == space_id, Note.sensitivity == "normal")
 
     with session_scope() as session:
-        exact = list(
+        exact = recall_channel('exact', query, lambda: list(
             session.execute(
                 base.where(document.ilike(f"%{cleaned[:120]}%"))
                 .order_by(Note.created_at.desc(), Note.id.desc())
                 .limit(retrieval_limit)
             ).scalars()
-        )
+        ))
         if exact:
             channels.append(("exact", exact))
 
         # FTS 适合空格分词文本，尤其是英文；中文场景可能为空，因此下方有界词法通道始终可作为补充。
         fts_query = " ".join(terms) or cleaned
         tsquery = func.websearch_to_tsquery("simple", fts_query[:500])
-        fts = list(
+        fts = recall_channel('fts', query, lambda: list(
             session.execute(
                 base.where(func.to_tsvector("simple", document).op("@@")(tsquery))
                 .order_by(
@@ -406,45 +411,45 @@ def hybrid_search_notes(
                 )
                 .limit(retrieval_limit)
             ).scalars()
-        )
+        ))
         if fts:
             channels.append(("fts", fts))
 
         if terms:
             conditions = [document.ilike(f"%{term[:80]}%") for term in terms]
             lexical_hits = sum(case((condition, 1), else_=0) for condition in conditions)
-            lexical = list(
+            lexical = recall_channel('lexical', query, lambda: list(
                 session.execute(
                     base.where(or_(*conditions))
                     .order_by(lexical_hits.desc(), Note.created_at.desc(), Note.id.desc())
                     .limit(retrieval_limit)
                 ).scalars()
-            )
+            ))
             if lexical:
                 channels.append(("lexical", lexical))
 
             if NOTE_TRIGRAM_ENABLED:
                 trigram_conditions = [Note.text.op("%") (term[:120]) for term in terms[:8]]
-                trigram = list(
+                trigram = recall_channel('trigram', query, lambda: list(
                     session.execute(
                         base.where(or_(*trigram_conditions))
                         .order_by(Note.created_at.desc(), Note.id.desc())
                         .limit(retrieval_limit)
                     ).scalars()
-                )
+                ))
                 if trigram:
                     channels.append(("trigram", trigram))
 
         if query_embedding and len(query_embedding) == 1024:
             distance = NoteEmbedding.embedding.cosine_distance(query_embedding)
-            vector = list(
+            vector = recall_channel('vector', query, lambda: list(
                 session.execute(
                     base.join(NoteEmbedding, NoteEmbedding.note_id == Note.id)
                     .where(NoteEmbedding.dimensions == len(query_embedding))
                     .order_by(distance, Note.created_at.desc())
                     .limit(retrieval_limit)
                 ).scalars()
-            )
+            ))
             if vector:
                 channels.append(("vector", vector))
 

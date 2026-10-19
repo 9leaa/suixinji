@@ -7,7 +7,10 @@
 
 from __future__ import annotations
 
+from core.lifecycle import current, resume, span, traced, wait_node
+
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from redis import Redis
@@ -86,6 +89,14 @@ class StreamClient:
         return stream, group
 
     def publish_task(self, event_id: str, payload: dict[str, Any]) -> str:
+        with resume(payload.get("_trace")):
+            context = wait_node("PostgreSQL · Outbox 等待", payload.get("requested_at"), {"event_id": event_id})
+        with resume(context), span("Outbox Relay → Redis XADD", "queue", {"event_id": event_id, **payload}) as observation:
+            result = self._publish_task(event_id, payload)
+            observation["output"] = {"redis_message_id": result}
+            return result
+
+    def _publish_task(self, event_id: str, payload: dict[str, Any]) -> str:
         """函数功能：`StreamClient.publish_task` 在类 `StreamClient` 中负责发布 task，服务于本文件职责：Redis Streams 客户端。
         传参：
             event_id: 事件标识，用于外部事件幂等和审计，类型为 `str`。
@@ -101,6 +112,9 @@ class StreamClient:
             "task_type": task_type,
             "attempt": str(payload.get("attempt") or 1),
         }
+        context = current()
+        if context:
+            fields.update(trace_id=context["trace_id"], parent_span_id=context.get("span_id", ""), published_at=datetime.now(timezone.utc).isoformat())
         return str(self.client.xadd(stream, fields, maxlen=max(1000, STREAM_MAXLEN), approximate=True))
 
     def read(self, task_type: str, consumer: str, *, count: int = STREAM_BATCH_SIZE, block_ms: int = STREAM_BLOCK_MS) -> list[StreamMessage]:
@@ -202,6 +216,7 @@ class StreamClient:
         """
         return self._reclaim_cursors.get((task_type, consumer), "0-0")
 
+    @traced("Redis · XACK", "queue")
     def ack(self, task_type: str, message_id: str) -> int:
         """函数功能：`StreamClient.ack` 在类 `StreamClient` 中负责处理 ack，服务于本文件职责：Redis Streams 客户端。
         传参：

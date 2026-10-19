@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 from dataclasses import dataclass
 import re
 from typing import Any, Mapping
@@ -191,6 +193,7 @@ def _merge_model_plan(base: QueryPlan, model_plan: Mapping[str, Any] | None) -> 
     )
 
 
+@traced('查询改写与拆解', 'planning')
 def build_query_plan(question: str, *, model_plan: Mapping[str, Any] | None = None) -> QueryPlan:
     """函数功能：`build_query_plan` 负责构建 query plan，服务于本文件职责：查询计划。
     传参：

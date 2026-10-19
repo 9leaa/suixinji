@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core.lifecycle import traced
+
 from pydantic import BaseModel, Field
 
 from core.llm_client import complete_json
@@ -68,6 +70,7 @@ tags 规则：
 """
 
 
+@traced('消息分类', 'classification')
 def classify_text(text: str) -> NoteClassification:
     """函数功能：`classify_text` 负责分类 text，服务于本文件职责：Note 分类。
     传参：
@@ -80,6 +83,7 @@ def classify_text(text: str) -> NoteClassification:
     return NoteClassification.model_validate(data)
 
 
+@traced('本地规则分类', 'classification')
 def classify_text_local(text: str) -> NoteClassification:
     """函数功能：`classify_text_local` 负责分类 text local，服务于本文件职责：Note 分类。
     传参：
