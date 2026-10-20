@@ -1,0 +1,3088 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="data:,"><title>任务记忆 · 100 场景问题分类汇总</title><style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#1e2e43;font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}main{max-width:1180px;margin:auto;padding:36px 24px}h1{font-size:30px;margin:0 0 8px}h2{font-size:23px;margin:36px 0 8px}h3{font-size:18px;margin:8px 0}p{margin:8px 0}a{color:#245a9b}table{width:100%;border-collapse:collapse;background:white;margin:20px 0}td,th{padding:13px;text-align:left;border-bottom:1px solid #dce3ec}th{background:#223f65;color:white}td:last-child{max-width:290px}.muted,small{color:#60728a}.banner{padding:17px 20px;background:#e7eef8;border-left:4px solid #456c9e;margin:20px 0}.metrics{display:flex;gap:14px;flex-wrap:wrap}.metric{flex:1;min-width:180px;background:white;padding:16px;border-radius:10px}.metric strong{display:block;font-size:28px}.filter{position:sticky;top:0;background:#f4f6faf2;padding:14px 0;z-index:2;display:flex;gap:10px;flex-wrap:wrap}input,select{padding:10px;border:1px solid #bccbdc;border-radius:6px;font-size:14px}input{flex:1;min-width:200px}article{background:white;border:1px solid #dce3ec;border-radius:10px;padding:19px 22px;margin:14px 0}.tags{font-size:13px;color:#466785;font-weight:600}.evidence{background:#f0f4fa;padding:8px 12px}details{border-top:1px solid #edf0f5;padding-top:7px;margin-top:9px}summary{cursor:pointer;color:#456582}pre{font:14px/1.7 -apple-system,"PingFang SC",sans-serif;white-space:pre-wrap;overflow-wrap:anywhere;background:#f7f9fc;padding:13px}h2 span{font-size:14px;font-weight:400;color:#61748b}section{scroll-margin-top:80px}footer{margin-top:30px;font-size:13px;color:#61748b}@media(max-width:650px){main{padding:20px 12px}td,th{padding:8px;font-size:12px}h1{font-size:25px}}
+
+[hidden]{display:none!important}html{scroll-behavior:smooth}.table-wrap{overflow-x:auto}td{overflow-wrap:anywhere}.table-wrap td:first-child{min-width:160px}.table-wrap td:nth-child(2){white-space:nowrap}button{padding:9px 13px;border:1px solid #bccbdc;border-radius:6px;background:#fff;color:#284f7e;font:inherit;cursor:pointer}button:hover{background:#e7eef8}a:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid #7da8de;outline-offset:3px}#count{align-self:center;white-space:nowrap}article{scroll-margin-top:90px}.tags{overflow-wrap:anywhere}#empty{padding:30px;text-align:center;background:white;border:1px solid #dce3ec;border-radius:10px}section{scroll-margin-top:100px}footer details pre{font-size:13px}@media(max-width:650px){.table-wrap table{min-width:710px}.filter{gap:8px}.filter input{flex-basis:100%}.filter select{min-width:0;max-width:100%;flex:1}.metric{min-width:135px}.tags{font-size:12px}article{padding:16px}section{scroll-margin-top:185px}}@media print{.filter{position:static}details{break-inside:avoid}article{break-inside:avoid}.table-wrap{overflow:visible}body{background:white}}
+</style></head><body><main>
+<h1>任务记忆 · 100 场景问题分类汇总</h1><p class="muted">2026-10-20 · 100 个场景 / 222 轮消息 · 真实模型 deepseek-v4-flash · 沿用既有评分与人工复核口径</p>
+<div class="metrics"><div class="metric">自动检查通过<strong>197 / 222</strong>88.7%；77 / 100 场景全部通过</div><div class="metric">当前自动未通过<strong>25 条</strong>23 条实现/契约问题 + 2 条规则误报</div><div class="metric">通过项的附加问题<strong>3 条</strong>同义要求、阻碍重复；未计入自动失败</div></div>
+<div class="banner">本页列出 <b>30 条复核记录</b>：25 条自动未通过 + 3 条通过项附加问题 + 2 条已修正的评分误报。已观察到实现/质量问题为 26 条、涉及 24 个场景，包含连锁影响，不等于 26 个独立故障。自动通过率也不等于完整语义准确率。状态仍只有 <b>todo / done</b>。</div>
+<div class="table-wrap"><table><thead><tr><th>主分类</th><th>条数</th><th>直白解释</th><th>消息序号</th></tr></thead><tbody><tr><td><a data-category-target="任务身份关联不稳定" href="#T1">任务身份关联不稳定</a></td><td>9</td><td>同一人、同一次任务换个说法，就找不到或重复建卡。</td><td>69、74、135、147、169、170、173、179、213</td></tr><tr><td><a data-category-target="抽取输出违反结构契约" href="#T2">抽取输出违反结构契约</a></td><td>2</td><td>内容看懂了，但多输出一个不允许的字段，整条更新就被拒绝。</td><td>12、146</td></tr><tr><td><a data-category-target="阻碍语义与细节替换错误" href="#T3">阻碍语义与细节替换错误</a></td><td>4</td><td>问题已经解决，系统仍说被阻碍；或者只解决一个问题，却无法更新。</td><td>49、51、53、57</td></tr><tr><td><a data-category-target="任务抽取边界与多任务覆盖错误" href="#T4">任务抽取边界与多任务覆盖错误</a></td><td>3</td><td>该更新的任务漏了，不是任务的话却被当成任务。</td><td>91、138、222</td></tr><tr><td><a data-category-target="周期时间未规范化" href="#T5">周期时间未规范化</a></td><td>2</td><td>本周、下周没有稳定落到约定的日期范围。</td><td>132、133</td></tr><tr><td><a data-category-target="明确纠正与责任转交更新路径缺失" href="#T6">明确纠正与责任转交更新路径缺失</a></td><td>3</td><td>用户明确说刚才记错了，或换个人负责，系统仍改不过来。</td><td>78、216、220</td></tr><tr><td><a data-category-target="同义细节去重不足" href="#T7">同义细节去重不足</a></td><td>3</td><td>同一条要求或阻碍换个说法，被重复记了。</td><td>31、37、162</td></tr><tr><td><a data-category-target="评分规则误报（仍计入自动失败）" href="#E23">评分规则误报（仍计入自动失败）</a></td><td>2</td><td>保存内容语义可接受，但检查规则扣了分；本页不改分。</td><td>23、27</td></tr><tr><td><a data-category-target="已修正的评分误报" href="#E1">已修正的评分误报</a></td><td>2</td><td>数据库已有待确认，旧评分器却没有读到；现已纠正。</td><td>116、124</td></tr></tbody></table></div>
+<p><b>建议先处理：</b>冻结评分口径 → 统一抽取结构与任务身份 → 修复阻碍解除、多任务更新、明确纠正和转交 → 细节去重，再跑完整回归。</p>
+<div class="filter"><input id="search" aria-label="搜索问题" placeholder="搜索场景编号、人物、原因或原文"><select id="category" aria-label="问题分类"><option value="">全部分类</option><option>任务身份关联不稳定</option><option>抽取输出违反结构契约</option><option>阻碍语义与细节替换错误</option><option>任务抽取边界与多任务覆盖错误</option><option>周期时间未规范化</option><option>明确纠正与责任转交更新路径缺失</option><option>同义细节去重不足</option><option>评分规则误报（仍计入自动失败）</option><option>已修正的评分误报</option></select><select id="scope" aria-label="评分范围"><option value="">全部范围</option><option>当前自动未通过</option><option>自动通过的附加问题</option><option>已修正的评分误报</option></select><button id="reset" type="button">重置</button><span id="count" role="status" aria-live="polite">30 / 30 条</span></div>
+<p id="empty" hidden>没有匹配记录。可调整关键词、分类或评分范围。</p><section class="issue-section" id="T1"><h2>任务身份关联不稳定 <span class="group-count">9 条</span></h2><p class="muted">专业：任务身份关联不稳定<br>直白：同一人、同一次任务换个说法，就找不到或重复建卡。</p><article id="case-subjects_04-2" data-category="任务身份关联不稳定" data-scope="当前自动未通过">
+<div class="tags">#69 · subjects_04 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>明确全名和简称同一人</h3><p>卡片数：期望 1，实际 2；状态不符：[&#x27;done&#x27;, &#x27;todo&#x27;]；结束原因不符：[&#x27;completed&#x27;, None]；应更新原卡片，但卡片 ID 改变；执行人不符：[&#x27;若宁&#x27;, &#x27;李若宁&#x27;]</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>优先用来源指向的既有卡片 ID 定位；为有明确证据的同人称谓和同轮次建立稳定映射。展示文字与身份判定分离，仍保留不同人、不同轮次的隔离。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>若宁已经清点完摄影设备。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;done&quot;
+  ],
+  &quot;closures&quot;: [
+    &quot;completed&quot;
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;subjects&quot;: [
+    &quot;同事李若宁&quot;
+  ],
+  &quot;subject_aliases&quot;: {
+    &quot;李若宁&quot;: &quot;同事李若宁&quot;,
+    &quot;若宁&quot;: &quot;同事李若宁&quot;
+  }
+}
+
+场景整体判定说明（可能包含后续步骤）：
+消息明确同一人后，简称可匹配原卡，不可新增。</pre></details><details><summary>实际保存结果</summary><pre>若宁 · 清点摄影设备
+卡片 ID：mem_5b4916eff465
+轮次：未指定
+状态：done；结束原因：completed
+  · 结果：已经清点完摄影设备
+
+李若宁 · 清点摄影设备
+卡片 ID：mem_2848a5061a94
+轮次：未指定
+状态：todo；结束原因：无</pre></details><details><summary>本步之前的卡片</summary><pre>李若宁 · 清点摄影设备
+卡片 ID：mem_2848a5061a94
+轮次：未指定
+状态：todo；结束原因：无</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:88f2f06e194a2fd40d532b688750cda3&quot;,
+      &quot;candidate_id&quot;: &quot;revision:a5ce01e1ffed04425d4a82304e1af558&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_5b4916eff465&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;卡片数：期望 1，实际 2&quot;,
+    &quot;状态不符：[&#x27;done&#x27;, &#x27;todo&#x27;]&quot;,
+    &quot;结束原因不符：[&#x27;completed&#x27;, None]&quot;,
+    &quot;应更新原卡片，但卡片 ID 改变&quot;,
+    &quot;执行人不符：[&#x27;若宁&#x27;, &#x27;李若宁&#x27;]&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;若宁&quot;,
+          &quot;task&quot;: &quot;清点摄影设备&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;done&quot;,
+          &quot;closure_reason&quot;: &quot;completed&quot;,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;outcome&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;已经清点完摄影设备&quot;,
+              &quot;evidence_span&quot;: &quot;若宁已经清点完摄影设备&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;若宁已经清点完摄影设备&quot;,
+          &quot;intent&quot;: &quot;auto&quot;,
+          &quot;antecedent_note_id&quot;: &quot;subjects_04-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;同事李若宁要清点摄影设备&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确任务完成状态，指代若宁由前文解析&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：records 先按主体字符串筛选，retrieve 又按 instance 字符串筛选；这会在关联模型判断前排除正确卡片。无匹配时 auto 可走新建，update/reopen 则待确认。
+
+验收标准：简称、同义标题、同轮次改写和重复提醒均更新原卡；明确另一轮仍新增；多候选歧义仍待确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 同事李若宁要清点摄影设备，后面简称若宁，指的都是同一个人。
+第 2 步 [2026-10-20T09:01:00+08:00] 若宁已经清点完摄影设备。</pre></details><details><summary>来源位置</summary><pre>场景：subjects_04
+步骤：2
+Trace ID：trace_4a98c62f2e6f
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/subjects_04/steps.jsonl（第 2 行）</pre></details></article><article id="case-subjects_07-2" data-category="任务身份关联不稳定" data-scope="当前自动未通过">
+<div class="tags">#74 · subjects_07 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>用户代号明确绑定</h3><p>状态不符：[&#x27;todo&#x27;]；结束原因不符：[None]；不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>优先用来源指向的既有卡片 ID 定位；为有明确证据的同人称谓和同轮次建立稳定映射。展示文字与身份判定分离，仍保留不同人、不同轮次的隔离。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>小舟的应用图标已经绘制完成。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;done&quot;
+  ],
+  &quot;closures&quot;: [
+    &quot;completed&quot;
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;subjects&quot;: [
+    &quot;用户&quot;
+  ],
+  &quot;subject_aliases&quot;: {
+    &quot;小舟&quot;: &quot;用户&quot;
+  }
+}
+
+场景整体判定说明（可能包含后续步骤）：
+小舟明确为用户本人，不生成第二执行人。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 绘制应用图标
+卡片 ID：mem_1954a5791633
+轮次：未指定
+状态：todo；结束原因：无</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 绘制应用图标
+卡片 ID：mem_1954a5791633
+轮次：未指定
+状态：todo；结束原因：无</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;ccc26f139cfe31681213026b4735abed&quot;,
+      &quot;reason&quot;: &quot;找不到要修改的任务，请补充任务或轮次&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;状态不符：[&#x27;todo&#x27;]&quot;,
+    &quot;结束原因不符：[None]&quot;,
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;小舟&quot;,
+          &quot;task&quot;: &quot;绘制应用图标&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;done&quot;,
+          &quot;closure_reason&quot;: &quot;completed&quot;,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;outcome&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;应用图标已经绘制完成&quot;,
+              &quot;evidence_span&quot;: &quot;小舟的应用图标已经绘制完成&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;小舟的应用图标已经绘制完成&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;subjects_07-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要绘制应用图标&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;前文明确任务为绘制应用图标，当前消息表明该任务已完成，小舟为用户本人称谓&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：records 先按主体字符串筛选，retrieve 又按 instance 字符串筛选；这会在关联模型判断前排除正确卡片。无匹配时 auto 可走新建，update/reopen 则待确认。
+
+验收标准：简称、同义标题、同轮次改写和重复提醒均更新原卡；明确另一轮仍新增；多候选歧义仍待确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我在团队里叫小舟，小舟就是我本人。我要绘制应用图标。
+第 2 步 [2026-10-20T09:01:00+08:00] 小舟的应用图标已经绘制完成。</pre></details><details><summary>来源位置</summary><pre>场景：subjects_07
+步骤：2
+Trace ID：trace_1d1d1fa3c3ee
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/subjects_07/steps.jsonl（第 2 行）</pre></details></article><article id="case-temporal_03-2" data-category="任务身份关联不稳定" data-scope="当前自动未通过">
+<div class="tags">#135 · temporal_03 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>截止延期不换周实例</h3><p>不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>优先用来源指向的既有卡片 ID 定位；为有明确证据的同人称谓和同轮次建立稳定映射。展示文字与身份判定分离，仍保留不同人、不同轮次的隔离。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>本周项目周记录延期到下周一提交，仍是本周这一份。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;instance_date_ranges&quot;: [
+    [
+      &quot;2026-10-19&quot;,
+      &quot;2026-10-25&quot;
+    ]
+  ],
+  &quot;kinds&quot;: [
+    &quot;time&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+周实例固定，延期到下周一也不变成下周实例。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 提交项目周记录
+卡片 ID：mem_8a3bf160a822
+轮次：2026-10-19至2026-10-25的项目周记录
+状态：todo；结束原因：无
+  · 时间：原定本周五（2026-10-23）提交</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 提交项目周记录
+卡片 ID：mem_8a3bf160a822
+轮次：2026-10-19至2026-10-25的项目周记录
+状态：todo；结束原因：无
+  · 时间：原定本周五（2026-10-23）提交</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;1a3b0d73597a2fcfa1b571c9770fa09e&quot;,
+      &quot;reason&quot;: &quot;找不到要修改的任务，请补充任务或轮次&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;提交项目周记录&quot;,
+          &quot;instance&quot;: &quot;2026-10-19至2026-10-25这一周&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;time&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;延期到下周一提交&quot;,
+              &quot;evidence_span&quot;: &quot;延期到下周一提交&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;note&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;仍是本周这一份&quot;,
+              &quot;evidence_span&quot;: &quot;仍是本周这一份&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;本周项目周记录延期到下周一提交，仍是本周这一份。&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;temporal_03-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要提交本周项目周记录，原定本周五交。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;用户明确说明本周项目周记录延期至下周一提交，且仍是同一份，属于对已有任务的更新&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：records 先按主体字符串筛选，retrieve 又按 instance 字符串筛选；这会在关联模型判断前排除正确卡片。无匹配时 auto 可走新建，update/reopen 则待确认。
+
+验收标准：简称、同义标题、同轮次改写和重复提醒均更新原卡；明确另一轮仍新增；多候选歧义仍待确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要提交本周项目周记录，原定本周五交。
+第 2 步 [2026-10-20T09:01:00+08:00] 本周项目周记录延期到下周一提交，仍是本周这一份。</pre></details><details><summary>来源位置</summary><pre>场景：temporal_03
+步骤：2
+Trace ID：trace_e2c3437bcb11
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_03/steps.jsonl（第 2 行）</pre></details></article><article id="case-temporal_10-3" data-category="任务身份关联不稳定" data-scope="当前自动未通过">
+<div class="tags">#147 · temporal_10 · 第 3 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>具体日期两次任务</h3><p>卡片数：期望 2，实际 1；状态不符：[&#x27;todo&#x27;]；结束原因不符：[None]；不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p><p class='evidence'><b>连锁影响：</b>包含上一步未建成28日任务的连锁影响，同时21日任务仍存在instance文本关联失败。</p>
+<p><b>建议：</b>优先用来源指向的既有卡片 ID 定位；为有明确证据的同人称谓和同轮次建立稳定映射。展示文字与身份判定分离，仍保留不同人、不同轮次的隔离。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>2026-10-21 航班值机完成，28 日的还未办理。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 2,
+  &quot;statuses&quot;: [
+    &quot;done&quot;,
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    &quot;completed&quot;,
+    null
+  ],
+  &quot;same_as&quot;: 1,
+  &quot;distinct_instances&quot;: true
+}
+
+场景整体判定说明（可能包含后续步骤）：
+日期明确对应两次值机，不互相覆盖。 最终 2026-10-21 航班值机为 done/completed，2026-10-28 航班值机为 todo。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 办理航班值机
+卡片 ID：mem_99fdb48dd0c1
+轮次：2026-10-21 的航班
+状态：todo；结束原因：无
+  · 时间：航班日期为 2026-10-21</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 办理航班值机
+卡片 ID：mem_99fdb48dd0c1
+轮次：2026-10-21 的航班
+状态：todo；结束原因：无
+  · 时间：航班日期为 2026-10-21</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;af41a75943dbdd39137ab0978eb7bc8a&quot;,
+      &quot;reason&quot;: &quot;找不到要修改的任务，请补充任务或轮次&quot;
+    },
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;7fb75c43ff9e5c66a6343864ff379926&quot;,
+      &quot;reason&quot;: &quot;找不到要修改的任务，请补充任务或轮次&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;卡片数：期望 2，实际 1&quot;,
+    &quot;状态不符：[&#x27;todo&#x27;]&quot;,
+    &quot;结束原因不符：[None]&quot;,
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;办理航班值机&quot;,
+          &quot;instance&quot;: &quot;2026-10-21 航班&quot;,
+          &quot;task_status&quot;: &quot;done&quot;,
+          &quot;closure_reason&quot;: &quot;completed&quot;,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;outcome&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;值机完成&quot;,
+              &quot;evidence_span&quot;: &quot;2026-10-21 航班值机完成&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;2026-10-21 航班值机完成&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;temporal_10-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要为 2026-10-21 的航班办理值机。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.95,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确说明 2026-10-21 航班值机已完成，对应前文同一任务&quot;
+        },
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;办理航班值机&quot;,
+          &quot;instance&quot;: &quot;2026-10-28 航班&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;还未办理&quot;,
+              &quot;evidence_span&quot;: &quot;28 日的还未办理&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;28 日的还未办理&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;temporal_10-1&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;另一个任务：为 2026-10-28 的航班办理值机。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.95,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确说明 2026-10-28 航班值机尚未办理，对应前文同一任务&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：records 先按主体字符串筛选，retrieve 又按 instance 字符串筛选；这会在关联模型判断前排除正确卡片。无匹配时 auto 可走新建，update/reopen 则待确认。
+
+验收标准：简称、同义标题、同轮次改写和重复提醒均更新原卡；明确另一轮仍新增；多候选歧义仍待确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要为 2026-10-21 的航班办理值机。
+第 2 步 [2026-10-20T09:01:00+08:00] 另一个任务：为 2026-10-28 的航班办理值机。
+第 3 步 [2026-10-20T09:02:00+08:00] 2026-10-21 航班值机完成，28 日的还未办理。</pre></details><details><summary>来源位置</summary><pre>场景：temporal_10
+步骤：3
+Trace ID：trace_c6a4e947b5c6
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_10/steps.jsonl（第 3 行）</pre></details></article><article id="case-history_duplicates_09-2" data-category="任务身份关联不稳定" data-scope="当前自动未通过">
+<div class="tags">#169 · history_duplicates_09 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>重复计划和显式新任务有别</h3><p>卡片数：期望 1，实际 2；状态不符：[&#x27;todo&#x27;, &#x27;todo&#x27;]；结束原因不符：[None, None]；应更新原卡片，但卡片 ID 改变</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>优先用来源指向的既有卡片 ID 定位；为有明确证据的同人称谓和同轮次建立稳定映射。展示文字与身份判定分离，仍保留不同人、不同轮次的隔离。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>刚才那次水质采样记得去做。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0
+}
+
+场景整体判定说明（可能包含后续步骤）：
+第三步明确另一次新增，不能继续幂等合并。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 做水质采样
+卡片 ID：mem_515584524ae8
+轮次：刚才那次
+状态：todo；结束原因：无
+  · 要求：记得去做
+
+用户 · 做水质采样
+卡片 ID：mem_26e43f12dae8
+轮次：一次
+状态：todo；结束原因：无</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 做水质采样
+卡片 ID：mem_26e43f12dae8
+轮次：一次
+状态：todo；结束原因：无</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:0af20e8f09882662bfbb133baad0847a&quot;,
+      &quot;candidate_id&quot;: &quot;revision:eb6738841bacf7e7793381a884f8ee3b&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_515584524ae8&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;卡片数：期望 1，实际 2&quot;,
+    &quot;状态不符：[&#x27;todo&#x27;, &#x27;todo&#x27;]&quot;,
+    &quot;结束原因不符：[None, None]&quot;,
+    &quot;应更新原卡片，但卡片 ID 改变&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;做水质采样&quot;,
+          &quot;instance&quot;: &quot;刚才那次&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;记得去做&quot;,
+              &quot;evidence_span&quot;: &quot;记得去做&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;刚才那次水质采样记得去做&quot;,
+          &quot;intent&quot;: &quot;auto&quot;,
+          &quot;antecedent_note_id&quot;: &quot;history_duplicates_09-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要做一次水质采样。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确提醒执行此前提出的水质采样任务，指代可由前一条消息唯一解析&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：records 先按主体字符串筛选，retrieve 又按 instance 字符串筛选；这会在关联模型判断前排除正确卡片。无匹配时 auto 可走新建，update/reopen 则待确认。
+
+验收标准：简称、同义标题、同轮次改写和重复提醒均更新原卡；明确另一轮仍新增；多候选歧义仍待确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要做一次水质采样。
+第 2 步 [2026-10-20T09:01:00+08:00] 刚才那次水质采样记得去做。</pre></details><details><summary>来源位置</summary><pre>场景：history_duplicates_09
+步骤：2
+Trace ID：trace_24b81936cb55
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/history_duplicates_09/steps.jsonl（第 2 行）</pre></details></article><article id="case-history_duplicates_09-3" data-category="任务身份关联不稳定" data-scope="当前自动未通过">
+<div class="tags">#170 · history_duplicates_09 · 第 3 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>重复计划和显式新任务有别</h3><p>卡片数：期望 2，实际 3；状态不符：[&#x27;todo&#x27;, &#x27;todo&#x27;, &#x27;todo&#x27;]；结束原因不符：[None, None, None]</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p><p class='evidence'><b>连锁影响：</b>前一步重复卡片导致本步卡片数继续超标，本步明确新增动作本身合理。</p>
+<p><b>建议：</b>优先用来源指向的既有卡片 ID 定位；为有明确证据的同人称谓和同轮次建立稳定映射。展示文字与身份判定分离，仍保留不同人、不同轮次的隔离。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>另外再安排一次独立的水质采样，不是刚才那次。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 2,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;,
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null,
+    null
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+第三步明确另一次新增，不能继续幂等合并。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 安排水质采样
+卡片 ID：mem_1ab76538d694
+轮次：另一次独立采样（非刚才那次）
+状态：todo；结束原因：无
+  · 要求：独立的一次，不是刚才那次
+
+用户 · 做水质采样
+卡片 ID：mem_515584524ae8
+轮次：刚才那次
+状态：todo；结束原因：无
+  · 要求：记得去做
+
+用户 · 做水质采样
+卡片 ID：mem_26e43f12dae8
+轮次：一次
+状态：todo；结束原因：无</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 做水质采样
+卡片 ID：mem_515584524ae8
+轮次：刚才那次
+状态：todo；结束原因：无
+  · 要求：记得去做
+
+用户 · 做水质采样
+卡片 ID：mem_26e43f12dae8
+轮次：一次
+状态：todo；结束原因：无</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:4b35cfc883e8052833282142902aca71&quot;,
+      &quot;candidate_id&quot;: &quot;revision:c4399bead1b8eaee2e75c21fcfa777eb&quot;,
+      &quot;confidence&quot;: 0.85,
+      &quot;memory_id&quot;: &quot;mem_1ab76538d694&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;卡片数：期望 2，实际 3&quot;,
+    &quot;状态不符：[&#x27;todo&#x27;, &#x27;todo&#x27;, &#x27;todo&#x27;]&quot;,
+    &quot;结束原因不符：[None, None, None]&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;安排水质采样&quot;,
+          &quot;instance&quot;: &quot;另一次独立采样（非刚才那次）&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;独立的一次，不是刚才那次&quot;,
+              &quot;evidence_span&quot;: &quot;不是刚才那次&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;再安排一次独立的水质采样，不是刚才那次&quot;,
+          &quot;intent&quot;: &quot;new&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.85,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;用户明确要求再安排一次独立的水质采样，并排除刚才那次，属于新建任务&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：records 先按主体字符串筛选，retrieve 又按 instance 字符串筛选；这会在关联模型判断前排除正确卡片。无匹配时 auto 可走新建，update/reopen 则待确认。
+
+验收标准：简称、同义标题、同轮次改写和重复提醒均更新原卡；明确另一轮仍新增；多候选歧义仍待确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要做一次水质采样。
+第 2 步 [2026-10-20T09:01:00+08:00] 刚才那次水质采样记得去做。
+第 3 步 [2026-10-20T09:02:00+08:00] 另外再安排一次独立的水质采样，不是刚才那次。</pre></details><details><summary>来源位置</summary><pre>场景：history_duplicates_09
+步骤：3
+Trace ID：trace_72cda1210748
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/history_duplicates_09/steps.jsonl（第 3 行）</pre></details></article><article id="case-history_duplicates_10-3" data-category="任务身份关联不稳定" data-scope="当前自动未通过">
+<div class="tags">#173 · history_duplicates_10 · 第 3 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>完成后重述同一历史完成</h3><p>卡片数：期望 1，实际 2；状态不符：[&#x27;done&#x27;, &#x27;done&#x27;]；结束原因不符：[&#x27;completed&#x27;, &#x27;completed&#x27;]；应更新原卡片，但卡片 ID 改变</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>优先用来源指向的既有卡片 ID 定位；为有明确证据的同人称谓和同轮次建立稳定映射。展示文字与身份判定分离，仍保留不同人、不同轮次的隔离。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>再记录一次：之前那张比赛奖状已经装裱完成，是同一次任务。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;done&quot;
+  ],
+  &quot;closures&quot;: [
+    &quot;completed&quot;
+  ],
+  &quot;same_as&quot;: 0
+}
+
+场景整体判定说明（可能包含后续步骤）：
+跨会话重述同一次已完成任务，不重建。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 装裱比赛奖状
+卡片 ID：mem_f6e4d759eda7
+轮次：之前那张比赛奖状
+状态：done；结束原因：completed
+  · 结果：比赛奖状已经装裱完成
+
+用户 · 装裱比赛奖状
+卡片 ID：mem_00a58fa71e83
+轮次：这张比赛奖状
+状态：done；结束原因：completed
+  · 结果：已经装裱完成</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 装裱比赛奖状
+卡片 ID：mem_00a58fa71e83
+轮次：这张比赛奖状
+状态：done；结束原因：completed
+  · 结果：已经装裱完成</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:3901518657ea45af00ec549cf7bc22ef&quot;,
+      &quot;candidate_id&quot;: &quot;revision:67797618cc85b18ab6ae32e6076b2bf5&quot;,
+      &quot;confidence&quot;: 0.85,
+      &quot;memory_id&quot;: &quot;mem_f6e4d759eda7&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;卡片数：期望 1，实际 2&quot;,
+    &quot;状态不符：[&#x27;done&#x27;, &#x27;done&#x27;]&quot;,
+    &quot;结束原因不符：[&#x27;completed&#x27;, &#x27;completed&#x27;]&quot;,
+    &quot;应更新原卡片，但卡片 ID 改变&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;装裱比赛奖状&quot;,
+          &quot;instance&quot;: &quot;之前那张比赛奖状&quot;,
+          &quot;task_status&quot;: &quot;done&quot;,
+          &quot;closure_reason&quot;: &quot;completed&quot;,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;outcome&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;比赛奖状已经装裱完成&quot;,
+              &quot;evidence_span&quot;: &quot;之前那张比赛奖状已经装裱完成&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;之前那张比赛奖状已经装裱完成&quot;,
+          &quot;intent&quot;: &quot;auto&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.85,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确的装裱任务已完成，属于既成状态&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：records 先按主体字符串筛选，retrieve 又按 instance 字符串筛选；这会在关联模型判断前排除正确卡片。无匹配时 auto 可走新建，update/reopen 则待确认。
+
+验收标准：简称、同义标题、同轮次改写和重复提醒均更新原卡；明确另一轮仍新增；多候选歧义仍待确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要装裱这张比赛奖状。
+第 2 步 [2026-10-20T09:01:00+08:00] 这张比赛奖状已经装裱完成。
+第 3 步 [2026-10-20T09:02:00+08:00] 再记录一次：之前那张比赛奖状已经装裱完成，是同一次任务。</pre></details><details><summary>来源位置</summary><pre>场景：history_duplicates_10
+步骤：3
+Trace ID：trace_258748731dd7
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/history_duplicates_10/steps.jsonl（第 3 行）</pre></details></article><article id="case-reopen_new_round_02-3" data-category="任务身份关联不稳定" data-scope="当前自动未通过">
+<div class="tags">#179 · reopen_new_round_02 · 第 3 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>取消后明确重开</h3><p>状态不符：[&#x27;done&#x27;]；结束原因不符：[&#x27;cancelled&#x27;]；不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>优先用来源指向的既有卡片 ID 定位；为有明确证据的同人称谓和同轮次建立稳定映射。展示文字与身份判定分离，仍保留不同人、不同轮次的隔离。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>我改变主意，重开原来这次夜校报名任务，继续报名。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0
+}
+
+场景整体判定说明（可能包含后续步骤）：
+同一次任务恢复；不是新卡。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 报名夜校
+卡片 ID：mem_697482c59d46
+轮次：本次
+状态：done；结束原因：cancelled
+  · 结果：本次夜校报名取消</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 报名夜校
+卡片 ID：mem_697482c59d46
+轮次：本次
+状态：done；结束原因：cancelled
+  · 结果：本次夜校报名取消</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;f87158a196b1f2ee6a67055bbda6e95c&quot;,
+      &quot;reason&quot;: &quot;找不到要修改的任务，请补充任务或轮次&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;状态不符：[&#x27;done&#x27;]&quot;,
+    &quot;结束原因不符：[&#x27;cancelled&#x27;]&quot;,
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;报名夜校&quot;,
+          &quot;instance&quot;: &quot;本次夜校&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;note&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;用户改变主意，重开原来这次夜校报名任务并继续报名&quot;,
+              &quot;evidence_span&quot;: &quot;我改变主意，重开原来这次夜校报名任务，继续报名&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;我改变主意，重开原来这次夜校报名任务，继续报名&quot;,
+          &quot;intent&quot;: &quot;reopen&quot;,
+          &quot;antecedent_note_id&quot;: &quot;reopen_new_round_02-1&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;本次夜校报名取消。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;用户明确要求重开此前已取消的夜校报名任务，任务状态恢复为待办&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：records 先按主体字符串筛选，retrieve 又按 instance 字符串筛选；这会在关联模型判断前排除正确卡片。无匹配时 auto 可走新建，update/reopen 则待确认。
+
+验收标准：简称、同义标题、同轮次改写和重复提醒均更新原卡；明确另一轮仍新增；多候选歧义仍待确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要报名本次夜校。
+第 2 步 [2026-10-20T09:01:00+08:00] 本次夜校报名取消。
+第 3 步 [2026-10-20T09:02:00+08:00] 我改变主意，重开原来这次夜校报名任务，继续报名。</pre></details><details><summary>来源位置</summary><pre>场景：reopen_new_round_02
+步骤：3
+Trace ID：trace_32616eb98ae4
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/reopen_new_round_02/steps.jsonl（第 3 行）</pre></details></article><article id="case-nonfacts_corrections_06-2" data-category="任务身份关联不稳定" data-scope="当前自动未通过">
+<div class="tags">#213 · nonfacts_corrections_06 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>否定完成保留待办</h3><p>缺少细节类型：progress；不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>优先用来源指向的既有卡片 ID 定位；为有明确证据的同人称谓和同轮次建立稳定映射。展示文字与身份判定分离，仍保留不同人、不同轮次的隔离。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>本月水费不是已经交完了，我还没有缴纳。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;kinds&quot;: [
+    &quot;progress&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+明确还没交，不可只匹配交完关键词。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 缴纳水费
+卡片 ID：mem_8a82d5cb3115
+轮次：本月
+状态：todo；结束原因：无
+  · 时间：本月</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 缴纳水费
+卡片 ID：mem_8a82d5cb3115
+轮次：本月
+状态：todo；结束原因：无
+  · 时间：本月</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;f6008cd81bd09c7231f054f86215315b&quot;,
+      &quot;reason&quot;: &quot;找不到要修改的任务，请补充任务或轮次&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;缺少细节类型：progress&quot;,
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;缴纳本月水费&quot;,
+          &quot;instance&quot;: &quot;2026年10月&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;用户表示还没有缴纳本月水费&quot;,
+              &quot;evidence_span&quot;: &quot;我还没有缴纳&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;我还没有缴纳&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;nonfacts_corrections_06-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要缴纳本月水费。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;用户纠正此前“已交完”的说法，明确本月水费尚未缴纳，任务仍为待办&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：records 先按主体字符串筛选，retrieve 又按 instance 字符串筛选；这会在关联模型判断前排除正确卡片。无匹配时 auto 可走新建，update/reopen 则待确认。
+
+验收标准：简称、同义标题、同轮次改写和重复提醒均更新原卡；明确另一轮仍新增；多候选歧义仍待确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要缴纳本月水费。
+第 2 步 [2026-10-20T09:01:00+08:00] 本月水费不是已经交完了，我还没有缴纳。</pre></details><details><summary>来源位置</summary><pre>场景：nonfacts_corrections_06
+步骤：2
+Trace ID：trace_83637ccc5d16
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/nonfacts_corrections_06/steps.jsonl（第 2 行）</pre></details></article></section><section class="issue-section" id="T2"><h2>抽取输出违反结构契约 <span class="group-count">2 条</span></h2><p class="muted">专业：抽取输出违反结构契约<br>直白：内容看懂了，但多输出一个不允许的字段，整条更新就被拒绝。</p><article id="case-lifecycle_06-3" data-category="抽取输出违反结构契约" data-scope="当前自动未通过">
+<div class="tags">#12 · lifecycle_06 · 第 3 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>暂停后恢复</h3><p>不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>让任务抽取只有一套明确契约；优先约束模型输出。不要直接取消字段校验；若采用有限修正重试，应保留原输出与修正记录。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>手腕恢复了，继续誊写之前那份乐谱。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0
+}
+
+场景整体判定说明（可能包含后续步骤）：
+暂停、恢复均是 todo，卡片身份不变。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 誊写乐谱
+卡片 ID：mem_566c7c041c17
+轮次：未指定
+状态：todo；结束原因：无
+  · 阻碍：先暂停，等手腕恢复</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 誊写乐谱
+卡片 ID：mem_566c7c041c17
+轮次：未指定
+状态：todo；结束原因：无
+  · 阻碍：先暂停，等手腕恢复</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;be39a5dbb6dc7400dd2f1d3fcdb41cca&quot;,
+      &quot;reason&quot;: &quot;任务结构化字段无效：entities&quot;
+    },
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;decision_1a5e15a228d6&quot;,
+      &quot;candidate_id&quot;: &quot;revision:b74bf90742513d913473dc11cd0dfeb4&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_49b216f4925f&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;episodic&quot;,
+          &quot;attribute&quot;: &quot;event&quot;,
+          &quot;operation&quot;: null,
+          &quot;task_status&quot;: null,
+          &quot;canonical_topic&quot;: null,
+          &quot;polarity&quot;: null,
+          &quot;scope&quot;: null,
+          &quot;qualifiers&quot;: [],
+          &quot;old_value&quot;: null,
+          &quot;new_value&quot;: null,
+          &quot;content&quot;: &quot;用户的手腕已恢复。&quot;,
+          &quot;evidence_span&quot;: &quot;手腕恢复了&quot;,
+          &quot;valid_from&quot;: null,
+          &quot;valid_until&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确的既成状态变化，值得长期保存&quot;,
+          &quot;entities&quot;: [
+            &quot;手腕&quot;
+          ],
+          &quot;reference_status&quot;: &quot;not_applicable&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_offset&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;resolution_confidence&quot;: null
+        },
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;誊写乐谱&quot;,
+          &quot;instance&quot;: &quot;之前那份乐谱&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;手腕恢复后继续誊写&quot;,
+              &quot;evidence_span&quot;: &quot;继续誊写之前那份乐谱&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;继续誊写之前那份乐谱&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;lifecycle_06-1&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;誊写乐谱先暂停，等手腕恢复。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;指代前文暂停的誊写乐谱任务，现恢复继续，状态仍为 todo&quot;,
+          &quot;entities&quot;: [
+            &quot;乐谱&quot;
+          ]
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：原始输出有额外字段，TaskInput/TaskDetailInput 使用 extra=forbid，候选保留校验错误并停止写入。旧提示后追加新任务提示是可能诱因，但未做对照实验，不能断言是唯一原因。
+
+验收标准：相同语义能产出合法结构并保存；非法字段不会静默混入业务卡片；重试失败仍可追溯。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要誊写这份乐谱。
+第 2 步 [2026-10-20T09:01:00+08:00] 誊写乐谱先暂停，等手腕恢复。
+第 3 步 [2026-10-20T09:02:00+08:00] 手腕恢复了，继续誊写之前那份乐谱。</pre></details><details><summary>来源位置</summary><pre>场景：lifecycle_06
+步骤：3
+Trace ID：trace_14fc5c0b8919
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/lifecycle_06/steps.jsonl（第 3 行）</pre></details></article><article id="case-temporal_10-2" data-category="抽取输出违反结构契约" data-scope="当前自动未通过">
+<div class="tags">#146 · temporal_10 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>具体日期两次任务</h3><p>卡片数：期望 2，实际 1；状态不符：[&#x27;todo&#x27;]；结束原因不符：[None]；不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>让任务抽取只有一套明确契约；优先约束模型输出。不要直接取消字段校验；若采用有限修正重试，应保留原输出与修正记录。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>另一个任务：为 2026-10-28 的航班办理值机。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 2,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;,
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null,
+    null
+  ],
+  &quot;distinct_instances&quot;: true
+}
+
+场景整体判定说明（可能包含后续步骤）：
+日期明确对应两次值机，不互相覆盖。 最终 2026-10-21 航班值机为 done/completed，2026-10-28 航班值机为 todo。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 办理航班值机
+卡片 ID：mem_99fdb48dd0c1
+轮次：2026-10-21 的航班
+状态：todo；结束原因：无
+  · 时间：航班日期为 2026-10-21</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 办理航班值机
+卡片 ID：mem_99fdb48dd0c1
+轮次：2026-10-21 的航班
+状态：todo；结束原因：无
+  · 时间：航班日期为 2026-10-21</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;6d0a7cdcc610804047a8c700fd3f3c89&quot;,
+      &quot;reason&quot;: &quot;任务结构化字段无效：details.0.description_note&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;卡片数：期望 2，实际 1&quot;,
+    &quot;状态不符：[&#x27;todo&#x27;]&quot;,
+    &quot;结束原因不符：[None]&quot;,
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;办理航班值机&quot;,
+          &quot;instance&quot;: &quot;2026-10-28 的航班&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;time&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;航班日期为 2026-10-28&quot;,
+              &quot;evidence_span&quot;: &quot;2026-10-28 的航班&quot;,
+              &quot;description_note&quot;: null
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;另一个任务：为 2026-10-28 的航班办理值机&quot;,
+          &quot;intent&quot;: &quot;new&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;用户明确提出另一项待办任务，指定了航班日期作为实例&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：原始输出有额外字段，TaskInput/TaskDetailInput 使用 extra=forbid，候选保留校验错误并停止写入。旧提示后追加新任务提示是可能诱因，但未做对照实验，不能断言是唯一原因。
+
+验收标准：相同语义能产出合法结构并保存；非法字段不会静默混入业务卡片；重试失败仍可追溯。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要为 2026-10-21 的航班办理值机。
+第 2 步 [2026-10-20T09:01:00+08:00] 另一个任务：为 2026-10-28 的航班办理值机。</pre></details><details><summary>来源位置</summary><pre>场景：temporal_10
+步骤：2
+Trace ID：trace_b7e0a1f0e690
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_10/steps.jsonl（第 2 行）</pre></details></article></section><section class="issue-section" id="T3"><h2>阻碍语义与细节替换错误 <span class="group-count">4 条</span></h2><p class="muted">专业：阻碍语义与细节替换错误<br>直白：问题已经解决，系统仍说被阻碍；或者只解决一个问题，却无法更新。</p><article id="case-progress_blockers_04-2" data-category="阻碍语义与细节替换错误" data-scope="当前自动未通过">
+<div class="tags">#49 · progress_blockers_04 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>解除唯一阻碍</h3><p>过期细节仍然有效：blocker</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>明确 blocker 只表达当前阻止执行的原因；解除动作退役旧 blocker 并记录 progress/outcome。关联计划须验证替换下标及细节类型。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;no_active_kinds&quot;: [
+    &quot;blocker&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+设备修好只解除 blocker，不能认为合同已经打印。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 打印采购合同
+卡片 ID：mem_b4565e67896a
+轮次：未指定
+状态：todo；结束原因：无
+  · 进展：打印机已修好，设备故障阻碍已解除
+  · 阻碍：之前设备故障的阻碍已解除
+  · 进展：合同还没打印</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 打印采购合同
+卡片 ID：mem_b4565e67896a
+轮次：未指定
+状态：todo；结束原因：无
+  · 阻碍：打印机坏了，暂时无法打印</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;update_task&quot;,
+      &quot;relation&quot;: &quot;update_task&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:0e83796b84d2c3e55c82b558986564aa&quot;,
+      &quot;candidate_id&quot;: &quot;revision:01654d214ce57e4640ddd3bddf71225b&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_b4565e67896a&quot;,
+      &quot;task_status&quot;: &quot;todo&quot;,
+      &quot;source_added&quot;: true
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;过期细节仍然有效：blocker&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;打印采购合同&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;打印机已修好，设备故障阻碍已解除&quot;,
+              &quot;evidence_span&quot;: &quot;采购合同打印所用的打印机修好了&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;blocker&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;之前设备故障的阻碍已解除&quot;,
+              &quot;evidence_span&quot;: &quot;之前设备故障的阻碍已解除&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;合同还没打印&quot;,
+              &quot;evidence_span&quot;: &quot;但合同还没打印&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;progress_blockers_04-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要打印采购合同，但打印机坏了，暂时无法打印。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;延续前文的打印采购合同任务，阻碍解除但尚未完成，状态仍为 todo&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_b4565e67896a&quot;,
+      &quot;replacements&quot;: [],
+      &quot;retire_ids&quot;: [
+        &quot;td:eea80808287972d4ce5c896850585bd9&quot;
+      ],
+      &quot;reason&quot;: &quot;同一打印采购合同任务，打印机已修好，原设备故障阻碍解除；合同仍未打印，任务保持 todo，新进展细节追加。&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：模型混淆“未完成”“曾经的阻碍”“当前阻碍”；部分关联计划把进展替换到阻碍细节。merge 会将新增细节设为 active，故即使旧阻碍已退役，错误的新 blocker 仍有效。
+
+验收标准：解除唯一阻碍后没有有效 blocker；解除部分阻碍只保留未解决的一项；未开始/未完成本身不自动成为 blocker。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要打印采购合同，但打印机坏了，暂时无法打印。
+第 2 步 [2026-10-20T09:01:00+08:00] 采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。</pre></details><details><summary>来源位置</summary><pre>场景：progress_blockers_04
+步骤：2
+Trace ID：trace_a12e6d0b24b7
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/progress_blockers_04/steps.jsonl（第 2 行）</pre></details></article><article id="case-progress_blockers_05-2" data-category="阻碍语义与细节替换错误" data-scope="当前自动未通过">
+<div class="tags">#51 · progress_blockers_05 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>解除部分阻碍</h3><p>不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>明确 blocker 只表达当前阻止执行的原因；解除动作退役旧 blocker 并记录 progress/outcome。关联计划须验证替换下标及细节类型。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;kinds&quot;: [
+    &quot;blocker&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+只解除网络故障，麦克风故障仍有效。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 录制线上课程
+卡片 ID：mem_bee38c729f65
+轮次：未指定
+状态：todo；结束原因：无
+  · 阻碍：网络断了
+  · 阻碍：麦克风坏了</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 录制线上课程
+卡片 ID：mem_bee38c729f65
+轮次：未指定
+状态：todo；结束原因：无
+  · 阻碍：网络断了
+  · 阻碍：麦克风坏了</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;315f672b1654957daa7863b405f76364&quot;,
+      &quot;reason&quot;: &quot;不同类型细节不能相互覆盖；解除阻碍应保留进展并将旧阻碍设为历史&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;录制线上课程&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;网络已恢复&quot;,
+              &quot;evidence_span&quot;: &quot;线上课程录制的网络恢复了&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;blocker&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;麦克风仍然坏着&quot;,
+              &quot;evidence_span&quot;: &quot;麦克风仍然坏着&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;继续等待维修&quot;,
+              &quot;evidence_span&quot;: &quot;继续等维修&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;progress_blockers_05-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要录制线上课程，但网络断了而且麦克风坏了。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;承接前文录制线上课程任务，补充网络恢复、麦克风仍坏、等待维修的进展与阻碍&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_bee38c729f65&quot;,
+      &quot;replacements&quot;: [
+        {
+          &quot;index&quot;: 0,
+          &quot;detail_id&quot;: &quot;td:1b3f1a82e3674fa8c1fb03e3d10be95d&quot;
+        }
+      ],
+      &quot;retire_ids&quot;: [],
+      &quot;reason&quot;: &quot;同一录制线上课程任务，网络已恢复替代原网络断阻碍；麦克风仍坏保留，等待维修为进展补充&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：模型混淆“未完成”“曾经的阻碍”“当前阻碍”；部分关联计划把进展替换到阻碍细节。merge 会将新增细节设为 active，故即使旧阻碍已退役，错误的新 blocker 仍有效。
+
+验收标准：解除唯一阻碍后没有有效 blocker；解除部分阻碍只保留未解决的一项；未开始/未完成本身不自动成为 blocker。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要录制线上课程，但网络断了而且麦克风坏了。
+第 2 步 [2026-10-20T09:01:00+08:00] 线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。</pre></details><details><summary>来源位置</summary><pre>场景：progress_blockers_05
+步骤：2
+Trace ID：trace_60ecfda04343
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/progress_blockers_05/steps.jsonl（第 2 行）</pre></details></article><article id="case-progress_blockers_06-2" data-category="阻碍语义与细节替换错误" data-scope="当前自动未通过">
+<div class="tags">#53 · progress_blockers_06 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>解除阻碍保留要求</h3><p>过期细节仍然有效：blocker</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>明确 blocker 只表达当前阻止执行的原因；解除动作退役旧 blocker 并记录 progress/outcome。关联计划须验证替换下标及细节类型。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;kinds&quot;: [
+    &quot;requirement&quot;
+  ],
+  &quot;no_active_kinds&quot;: [
+    &quot;blocker&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+拿到工资单后，翻译要求仍需满足。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 递交签证材料
+卡片 ID：mem_34289c681719
+轮次：未指定
+状态：todo；结束原因：无
+  · 要求：必须附英文翻译
+  · 进展：工资单已拿到
+  · 阻碍：缺材料的阻碍已解除
+  · 要求：必须附英文翻译，该要求保留</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 递交签证材料
+卡片 ID：mem_34289c681719
+轮次：未指定
+状态：todo；结束原因：无
+  · 要求：必须附英文翻译
+  · 阻碍：目前缺工资单</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;update_task&quot;,
+      &quot;relation&quot;: &quot;update_task&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:2fd8f6cc8946a7ac335c2f67578524d9&quot;,
+      &quot;candidate_id&quot;: &quot;revision:4c66d41fa9570381e175baf8f84ca238&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_34289c681719&quot;,
+      &quot;task_status&quot;: &quot;todo&quot;,
+      &quot;source_added&quot;: true
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;过期细节仍然有效：blocker&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;递交签证材料&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;工资单已拿到&quot;,
+              &quot;evidence_span&quot;: &quot;签证材料的工资单拿到了&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;blocker&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;缺材料的阻碍已解除&quot;,
+              &quot;evidence_span&quot;: &quot;缺材料的阻碍解除了&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;必须附英文翻译，该要求保留&quot;,
+              &quot;evidence_span&quot;: &quot;英文翻译要求保留&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;progress_blockers_06-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要递交签证材料，必须附英文翻译，目前缺工资单。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;承接前文同一签证材料递交任务，补充进展、阻碍解除与保留要求&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_34289c681719&quot;,
+      &quot;replacements&quot;: [],
+      &quot;retire_ids&quot;: [
+        &quot;td:9d143652513c5ddf02805d1835301c0c&quot;
+      ],
+      &quot;reason&quot;: &quot;同一签证材料递交任务：新增工资单已拿到进展，缺工资单阻碍已解除故标记旧阻碍，英文翻译要求保留&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：模型混淆“未完成”“曾经的阻碍”“当前阻碍”；部分关联计划把进展替换到阻碍细节。merge 会将新增细节设为 active，故即使旧阻碍已退役，错误的新 blocker 仍有效。
+
+验收标准：解除唯一阻碍后没有有效 blocker；解除部分阻碍只保留未解决的一项；未开始/未完成本身不自动成为 blocker。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要递交签证材料，必须附英文翻译，目前缺工资单。
+第 2 步 [2026-10-20T09:01:00+08:00] 签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。</pre></details><details><summary>来源位置</summary><pre>场景：progress_blockers_06
+步骤：2
+Trace ID：trace_b62909cb2bd5
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/progress_blockers_06/steps.jsonl（第 2 行）</pre></details></article><article id="case-progress_blockers_08-2" data-category="阻碍语义与细节替换错误" data-scope="当前自动未通过">
+<div class="tags">#57 · progress_blockers_08 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>阻碍重新出现</h3><p>过期细节仍然有效：blocker</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>明确 blocker 只表达当前阻止执行的原因；解除动作退役旧 blocker 并记录 progress/outcome。关联计划须验证替换下标及细节类型。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>门禁适配器到了，缺件问题解决，尚未安装。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;no_active_kinds&quot;: [
+    &quot;blocker&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+新故障可重新形成 blocker，任务一直 todo。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 安装新门禁
+卡片 ID：mem_1722c43a47e6
+轮次：未指定
+状态：todo；结束原因：无
+  · 进展：门禁适配器已到货
+  · 进展：缺件问题已解决
+  · 阻碍：尚未安装</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 安装新门禁
+卡片 ID：mem_1722c43a47e6
+轮次：未指定
+状态：todo；结束原因：无
+  · 阻碍：缺少电源适配器</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;update_task&quot;,
+      &quot;relation&quot;: &quot;update_task&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:a660bef7f36af195ee7a28cf5f0e8b8d&quot;,
+      &quot;candidate_id&quot;: &quot;revision:c11a5368c76e8626b337751a1831100e&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_1722c43a47e6&quot;,
+      &quot;task_status&quot;: &quot;todo&quot;,
+      &quot;source_added&quot;: true
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;过期细节仍然有效：blocker&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;安装新门禁&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;门禁适配器已到货&quot;,
+              &quot;evidence_span&quot;: &quot;门禁适配器到了&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;缺件问题已解决&quot;,
+              &quot;evidence_span&quot;: &quot;缺件问题解决&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;blocker&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;尚未安装&quot;,
+              &quot;evidence_span&quot;: &quot;尚未安装&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;门禁适配器到了，缺件问题解决，尚未安装。&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;progress_blockers_08-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要安装新门禁，但缺少电源适配器。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;承接前文安装新门禁任务，补充进展与未完成状态&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_1722c43a47e6&quot;,
+      &quot;replacements&quot;: [],
+      &quot;retire_ids&quot;: [
+        &quot;td:4af701a55b128fba53cea376f5f2ae5f&quot;
+      ],
+      &quot;reason&quot;: &quot;同一安装新门禁任务，缺件问题已解决，旧阻碍“缺少电源适配器”被明确解除；新增进展与未安装状态追加。&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：模型混淆“未完成”“曾经的阻碍”“当前阻碍”；部分关联计划把进展替换到阻碍细节。merge 会将新增细节设为 active，故即使旧阻碍已退役，错误的新 blocker 仍有效。
+
+验收标准：解除唯一阻碍后没有有效 blocker；解除部分阻碍只保留未解决的一项；未开始/未完成本身不自动成为 blocker。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要安装新门禁，但缺少电源适配器。
+第 2 步 [2026-10-20T09:01:00+08:00] 门禁适配器到了，缺件问题解决，尚未安装。</pre></details><details><summary>来源位置</summary><pre>场景：progress_blockers_08
+步骤：2
+Trace ID：trace_edd609df9b1b
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/progress_blockers_08/steps.jsonl（第 2 行）</pre></details></article></section><section class="issue-section" id="T4"><h2>任务抽取边界与多任务覆盖错误 <span class="group-count">3 条</span></h2><p class="muted">专业：任务抽取边界与多任务覆盖错误<br>直白：该更新的任务漏了，不是任务的话却被当成任务。</p><article id="case-identity_instances_04-3" data-category="任务抽取边界与多任务覆盖错误" data-scope="当前自动未通过">
+<div class="tags">#91 · identity_instances_04 · 第 3 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>同对象审核和发送</h3><p>状态不符：[&#x27;todo&#x27;, &#x27;todo&#x27;]；结束原因不符：[None, None]</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>先区分实际行动、记忆管理表达、否定和引用；再逐项覆盖消息中每个已有任务的变化。用漏抽与多抽两类断言共同验证。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>客户演示文稿审核完了，但还未发送。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 2,
+  &quot;statuses&quot;: [
+    &quot;done&quot;,
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    &quot;completed&quot;,
+    null
+  ],
+  &quot;same_as&quot;: 1
+}
+
+场景整体判定说明（可能包含后续步骤）：
+审核不等于发送。 最终审核客户演示文稿为 done/completed，向客户发送演示文稿为 todo。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 向客户发送演示文稿
+卡片 ID：mem_9496357c4416
+轮次：未指定
+状态：todo；结束原因：无
+  · 进展：演示文稿已审核完
+  · 阻碍：还未发送
+
+用户 · 审核客户演示文稿
+卡片 ID：mem_2585b823437b
+轮次：未指定
+状态：todo；结束原因：无</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 向客户发送演示文稿
+卡片 ID：mem_9496357c4416
+轮次：未指定
+状态：todo；结束原因：无
+
+用户 · 审核客户演示文稿
+卡片 ID：mem_2585b823437b
+轮次：未指定
+状态：todo；结束原因：无</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;update_task&quot;,
+      &quot;relation&quot;: &quot;update_task&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:8d3d56a379827f15571317d2f1b43766&quot;,
+      &quot;candidate_id&quot;: &quot;revision:4d1df8612a1c45d452e24529b63c4c1e&quot;,
+      &quot;confidence&quot;: 0.85,
+      &quot;memory_id&quot;: &quot;mem_9496357c4416&quot;,
+      &quot;task_status&quot;: &quot;todo&quot;,
+      &quot;source_added&quot;: true
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;状态不符：[&#x27;todo&#x27;, &#x27;todo&#x27;]&quot;,
+    &quot;结束原因不符：[None, None]&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;向客户发送演示文稿&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;演示文稿已审核完&quot;,
+              &quot;evidence_span&quot;: &quot;客户演示文稿审核完了&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;blocker&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;还未发送&quot;,
+              &quot;evidence_span&quot;: &quot;但还未发送&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;客户演示文稿审核完了，但还未发送。&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;identity_instances_04-1&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;新增独立任务：向客户发送这份演示文稿。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.85,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;承接前一条发送任务，补充审核完成与尚未发送的进展&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_9496357c4416&quot;,
+      &quot;replacements&quot;: [],
+      &quot;retire_ids&quot;: [],
+      &quot;reason&quot;: &quot;新信息承接同一发送演示文稿任务，补充审核完成进展和尚未发送的阻碍，未替代旧细节&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：抽取遗漏独立审核任务的完成候选；另外两例将记录指令、否定计划或引用内容输出为业务任务。后续关联校验只能拦住部分写入，仍造成额外卡片或待确认。
+
+验收标准：审核 done/发送 todo 分别更新；“分别记录”不增加业务任务；否定计划和引用既不建卡，也不无故要求用户确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要审核客户演示文稿。
+第 2 步 [2026-10-20T09:01:00+08:00] 新增独立任务：向客户发送这份演示文稿。
+第 3 步 [2026-10-20T09:02:00+08:00] 客户演示文稿审核完了，但还未发送。</pre></details><details><summary>来源位置</summary><pre>场景：identity_instances_04
+步骤：3
+Trace ID：trace_f2638817a058
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/identity_instances_04/steps.jsonl（第 3 行）</pre></details></article><article id="case-temporal_05-1" data-category="任务抽取边界与多任务覆盖错误" data-scope="当前自动未通过">
+<div class="tags">#138 · temporal_05 · 第 1 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>星期日边界</h3><p>卡片数：期望 2，实际 3；状态不符：[&#x27;todo&#x27;, &#x27;todo&#x27;, &#x27;todo&#x27;]；结束原因不符：[None, None, None]；不同轮次未明确区分；周期日期不符：[[], [], []]</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>先区分实际行动、记忆管理表达、否定和引用；再逐项覆盖消息中每个已有任务的变化。用漏抽与多抽两类断言共同验证。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>我要做本周清洁检查，还要做下周清洁检查，两次分别记录。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 2,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;,
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null,
+    null
+  ],
+  &quot;distinct_instances&quot;: true,
+  &quot;instance_date_ranges&quot;: [
+    [
+      &quot;2026-10-19&quot;,
+      &quot;2026-10-25&quot;
+    ],
+    [
+      &quot;2026-10-26&quot;,
+      &quot;2026-11-01&quot;
+    ]
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+2026-10-25 是周日；下周从 26 日起。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 做清洁检查
+卡片 ID：mem_bfbfee32930f
+轮次：本周
+状态：todo；结束原因：无
+  · 时间：本周
+
+用户 · 做清洁检查
+卡片 ID：mem_5b28030e9fa9
+轮次：下周
+状态：todo；结束原因：无
+  · 时间：下周
+
+用户 · 记录清洁检查
+卡片 ID：mem_8af18461e569
+轮次：未指定
+状态：todo；结束原因：无
+  · 要求：两次分别记录</pre></details><details><summary>本步之前的卡片</summary><pre>场景开始前没有任务卡片。</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:6f3066a512e752581019c2d2493cd63f&quot;,
+      &quot;candidate_id&quot;: &quot;revision:51eb9625ef494e080a7b7a87f8d1c2b4&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_bfbfee32930f&quot;
+    },
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:c3261c70deb7cf38c0351231620a1827&quot;,
+      &quot;candidate_id&quot;: &quot;revision:ab763f6c06636857ed7bc6575dfc67f7&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_5b28030e9fa9&quot;
+    },
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:1f7c5c5da56db2a760b19b78636ed9a4&quot;,
+      &quot;candidate_id&quot;: &quot;revision:c3d53a0ed2300dc60ceb62e63188247f&quot;,
+      &quot;confidence&quot;: 0.75,
+      &quot;memory_id&quot;: &quot;mem_8af18461e569&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;卡片数：期望 2，实际 3&quot;,
+    &quot;状态不符：[&#x27;todo&#x27;, &#x27;todo&#x27;, &#x27;todo&#x27;]&quot;,
+    &quot;结束原因不符：[None, None, None]&quot;,
+    &quot;不同轮次未明确区分&quot;,
+    &quot;周期日期不符：[[], [], []]&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;做清洁检查&quot;,
+          &quot;instance&quot;: &quot;本周&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;time&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;本周&quot;,
+              &quot;evidence_span&quot;: &quot;本周清洁检查&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;我要做本周清洁检查&quot;,
+          &quot;intent&quot;: &quot;new&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确任务，本周清洁检查&quot;
+        },
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;做清洁检查&quot;,
+          &quot;instance&quot;: &quot;下周&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;time&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;下周&quot;,
+              &quot;evidence_span&quot;: &quot;下周清洁检查&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;要做下周清洁检查&quot;,
+          &quot;intent&quot;: &quot;new&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确任务，下周清洁检查，与本周为不同实例&quot;
+        },
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;记录清洁检查&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;两次分别记录&quot;,
+              &quot;evidence_span&quot;: &quot;两次分别记录&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;两次分别记录&quot;,
+          &quot;intent&quot;: &quot;new&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.75,
+          &quot;importance&quot;: 0.5,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确要求两次清洁检查分别记录&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：抽取遗漏独立审核任务的完成候选；另外两例将记录指令、否定计划或引用内容输出为业务任务。后续关联校验只能拦住部分写入，仍造成额外卡片或待确认。
+
+验收标准：审核 done/发送 todo 分别更新；“分别记录”不增加业务任务；否定计划和引用既不建卡，也不无故要求用户确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-25T09:00:00+08:00] 我要做本周清洁检查，还要做下周清洁检查，两次分别记录。</pre></details><details><summary>来源位置</summary><pre>场景：temporal_05
+步骤：1
+Trace ID：trace_10de11f6a4d6
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_05/steps.jsonl（第 1 行）</pre></details></article><article id="case-nonfacts_corrections_10-2" data-category="任务抽取边界与多任务覆盖错误" data-scope="当前自动未通过">
+<div class="tags">#222 · nonfacts_corrections_10 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>正反事实混合拆分</h3><p>不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>先区分实际行动、记忆管理表达、否定和引用；再逐项覆盖消息中每个已有任务的变化。用漏抽与多抽两类断言共同验证。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>实习申请提交完成，租车仍没有计划，体检仍只是引用。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;done&quot;
+  ],
+  &quot;closures&quot;: [
+    &quot;completed&quot;
+  ],
+  &quot;same_as&quot;: 0
+}
+
+场景整体判定说明（可能包含后续步骤）：
+只建真实提交申请，否定租车与引用体检均不建。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 提交实习申请
+卡片 ID：mem_975d766fc75e
+轮次：未指定
+状态：done；结束原因：completed</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 提交实习申请
+卡片 ID：mem_975d766fc75e
+轮次：未指定
+状态：todo；结束原因：无</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;update_task&quot;,
+      &quot;relation&quot;: &quot;update_task&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:0463167a22df05f05085d4e3e13478d0&quot;,
+      &quot;candidate_id&quot;: &quot;revision:f5aa97f44afa259bb0834748a80d4e27&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_975d766fc75e&quot;,
+      &quot;task_status&quot;: &quot;done&quot;,
+      &quot;source_added&quot;: true
+    },
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;a4309260260d9a8c6c8c7f9d48183a84&quot;,
+      &quot;reason&quot;: &quot;修改已有任务不能改为新建任务&quot;
+    },
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;2c48f7c3d6f0d22455fd62d3a2edea51&quot;,
+      &quot;reason&quot;: &quot;修改已有任务不能改为新建任务&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;提交实习申请&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;done&quot;,
+          &quot;closure_reason&quot;: &quot;completed&quot;,
+          &quot;details&quot;: [],
+          &quot;evidence_span&quot;: &quot;实习申请提交完成&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;nonfacts_corrections_10-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我决定提交实习申请&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;前文决定提交实习申请，本条明确提交完成，任务结束&quot;
+        },
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;租车&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;仍没有计划&quot;,
+              &quot;evidence_span&quot;: &quot;租车仍没有计划&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;租车仍没有计划&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;nonfacts_corrections_10-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我没有租车计划&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.75,
+          &quot;importance&quot;: 0.4,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;延续前文租车无计划的状态，任务未结束&quot;
+        },
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;预约体检&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;note&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;仍只是引用，尚未实际预约&quot;,
+              &quot;evidence_span&quot;: &quot;体检仍只是引用&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;体检仍只是引用&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;nonfacts_corrections_10-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;“我要预约体检”只是表格里的示例文字&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.6,
+          &quot;importance&quot;: 0.4,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;体检预约仍停留在引用示例文字，未实际执行，任务未结束&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;new&quot;,
+      &quot;target_id&quot;: null,
+      &quot;replacements&quot;: [],
+      &quot;retire_ids&quot;: [],
+      &quot;reason&quot;: &quot;候选卡片为“提交实习申请”，与“租车”不是同一任务；租车无计划是独立任务，故新建。&quot;
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;new&quot;,
+      &quot;target_id&quot;: null,
+      &quot;replacements&quot;: [],
+      &quot;retire_ids&quot;: [],
+      &quot;reason&quot;: &quot;候选卡片为“提交实习申请”，与“预约体检”不是同一任务；体检预约仍停留在引用示例文字，尚未实际执行，属于新任务。&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：抽取遗漏独立审核任务的完成候选；另外两例将记录指令、否定计划或引用内容输出为业务任务。后续关联校验只能拦住部分写入，仍造成额外卡片或待确认。
+
+验收标准：审核 done/发送 todo 分别更新；“分别记录”不增加业务任务；否定计划和引用既不建卡，也不无故要求用户确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我决定提交实习申请；我没有租车计划；“我要预约体检”只是表格里的示例文字。
+第 2 步 [2026-10-20T09:01:00+08:00] 实习申请提交完成，租车仍没有计划，体检仍只是引用。</pre></details><details><summary>来源位置</summary><pre>场景：nonfacts_corrections_10
+步骤：2
+Trace ID：trace_de3077c7a4c1
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/nonfacts_corrections_10/steps.jsonl（第 2 行）</pre></details></article></section><section class="issue-section" id="T5"><h2>周期时间未规范化 <span class="group-count">2 条</span></h2><p class="muted">专业：周期时间未规范化<br>直白：本周、下周没有稳定落到约定的日期范围。</p><article id="case-temporal_01-1" data-category="周期时间未规范化" data-scope="当前自动未通过">
+<div class="tags">#132 · temporal_01 · 第 1 步 · 自动未通过 · 实现或契约问题 · P2</div>
+<h3>本周下周自然周</h3><p>周期日期不符：[[&#x27;2026-10-20&#x27;], [&#x27;2026-10-27&#x27;]]</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>按消息时间及时区，使用确定的周一至周日规则生成标准周期身份；保留原始时间表达供溯源。截止时间与任务轮次分别处理。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>我要提交本周运营周报，还要提交下周运营周报，这是两次任务。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 2,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;,
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null,
+    null
+  ],
+  &quot;distinct_instances&quot;: true,
+  &quot;instance_date_ranges&quot;: [
+    [
+      &quot;2026-10-19&quot;,
+      &quot;2026-10-25&quot;
+    ],
+    [
+      &quot;2026-10-26&quot;,
+      &quot;2026-11-01&quot;
+    ]
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+自然周周一至周日；本周与下周为不同实例。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 提交运营周报
+卡片 ID：mem_9d07dd2db4e8
+轮次：2026-10-20所在周的运营周报
+状态：todo；结束原因：无
+  · 时间：本周提交
+
+用户 · 提交运营周报
+卡片 ID：mem_6d3a4019b664
+轮次：2026-10-27所在周的运营周报
+状态：todo；结束原因：无
+  · 时间：下周提交</pre></details><details><summary>本步之前的卡片</summary><pre>场景开始前没有任务卡片。</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:61e2ef99b6098650b715182f99aa9925&quot;,
+      &quot;candidate_id&quot;: &quot;revision:3c69f0b3ccc865835c399b2a00f59cef&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_9d07dd2db4e8&quot;
+    },
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:de6ae623fff1c9e7ee10425bbcf9b98a&quot;,
+      &quot;candidate_id&quot;: &quot;revision:b3c378ac7ccda8fd1ad2c3d31119b951&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_6d3a4019b664&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;周期日期不符：[[&#x27;2026-10-20&#x27;], [&#x27;2026-10-27&#x27;]]&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;提交运营周报&quot;,
+          &quot;instance&quot;: &quot;2026-10-20所在周的运营周报&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;time&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;本周提交&quot;,
+              &quot;evidence_span&quot;: &quot;我要提交本周运营周报&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;我要提交本周运营周报&quot;,
+          &quot;intent&quot;: &quot;new&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确任务，本周运营周报，与下周为两次独立任务&quot;
+        },
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;提交运营周报&quot;,
+          &quot;instance&quot;: &quot;2026-10-27所在周的运营周报&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;time&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;下周提交&quot;,
+              &quot;evidence_span&quot;: &quot;还要提交下周运营周报&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;还要提交下周运营周报&quot;,
+          &quot;intent&quot;: &quot;new&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确任务，下周运营周报，用户明确说明是两次任务&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：专属提示要求将相对轮次转为绝对范围，但 instance 是自由文本，缺少可验证的统一表示。这里是格式/规范化缺陷，不能把“某日所在周”直接说成日期算错。
+
+验收标准：周二、周日、周一及跨年得到正确范围；延期不改变原任务轮次；日期表达变化不会引起关联失败。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要提交本周运营周报，还要提交下周运营周报，这是两次任务。</pre></details><details><summary>来源位置</summary><pre>场景：temporal_01
+步骤：1
+Trace ID：trace_f15b67dc1fb7
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_01/steps.jsonl（第 1 行）</pre></details></article><article id="case-temporal_02-1" data-category="周期时间未规范化" data-scope="当前自动未通过">
+<div class="tags">#133 · temporal_02 · 第 1 步 · 自动未通过 · 实现或契约问题 · P2</div>
+<h3>上周补交与本周</h3><p>周期日期不符：[[], []]</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>按消息时间及时区，使用确定的周一至周日规则生成标准周期身份；保留原始时间表达供溯源。截止时间与任务轮次分别处理。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>我要补交上周排班周表，并且另交本周排班周表，分别记录两次。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 2,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;,
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null,
+    null
+  ],
+  &quot;distinct_instances&quot;: true,
+  &quot;instance_date_ranges&quot;: [
+    [
+      &quot;2026-10-12&quot;,
+      &quot;2026-10-18&quot;
+    ],
+    [
+      &quot;2026-10-19&quot;,
+      &quot;2026-10-25&quot;
+    ]
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+上周未交仍为 todo，不因过去日期自动结束。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 提交排班周表
+卡片 ID：mem_9a33fb2fa41d
+轮次：上周
+状态：todo；结束原因：无
+  · 要求：补交上周排班周表
+
+用户 · 提交排班周表
+卡片 ID：mem_e09a588555b9
+轮次：本周
+状态：todo；结束原因：无
+  · 要求：另交本周排班周表</pre></details><details><summary>本步之前的卡片</summary><pre>场景开始前没有任务卡片。</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:84435d11bcf28589cf736531c306b6f1&quot;,
+      &quot;candidate_id&quot;: &quot;revision:d91ce38e93a147533f35d3f473c47090&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_9a33fb2fa41d&quot;
+    },
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:24e6311aa69c680680cad1a2c7c2d102&quot;,
+      &quot;candidate_id&quot;: &quot;revision:5700153b226ea91d63b2f47527217089&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_e09a588555b9&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;周期日期不符：[[], []]&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;提交排班周表&quot;,
+          &quot;instance&quot;: &quot;上周&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;补交上周排班周表&quot;,
+              &quot;evidence_span&quot;: &quot;我要补交上周排班周表&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;我要补交上周排班周表&quot;,
+          &quot;intent&quot;: &quot;new&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确任务：补交上周排班周表，独立一次&quot;
+        },
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;提交排班周表&quot;,
+          &quot;instance&quot;: &quot;本周&quot;,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;另交本周排班周表&quot;,
+              &quot;evidence_span&quot;: &quot;另交本周排班周表&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;另交本周排班周表&quot;,
+          &quot;intent&quot;: &quot;new&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确任务：另交本周排班周表，独立一次&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：专属提示要求将相对轮次转为绝对范围，但 instance 是自由文本，缺少可验证的统一表示。这里是格式/规范化缺陷，不能把“某日所在周”直接说成日期算错。
+
+验收标准：周二、周日、周一及跨年得到正确范围；延期不改变原任务轮次；日期表达变化不会引起关联失败。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要补交上周排班周表，并且另交本周排班周表，分别记录两次。</pre></details><details><summary>来源位置</summary><pre>场景：temporal_02
+步骤：1
+Trace ID：trace_98617f53bf18
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_02/steps.jsonl（第 1 行）</pre></details></article></section><section class="issue-section" id="T6"><h2>明确纠正与责任转交更新路径缺失 <span class="group-count">3 条</span></h2><p class="muted">专业：明确纠正与责任转交更新路径缺失<br>直白：用户明确说刚才记错了，或换个人负责，系统仍改不过来。</p><article id="case-subjects_09-2" data-category="明确纠正与责任转交更新路径缺失" data-scope="当前自动未通过">
+<div class="tags">#78 · subjects_09 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>明确换执行人</h3><p>状态不符：[&#x27;done&#x27;]；结束原因不符：[&#x27;cancelled&#x27;]；执行人不符：[&#x27;用户&#x27;]；不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>将明确纠正、重开、转交区分为更新动作，并验证原卡及证据；转交应完整更新负责人，避免只关闭旧责任。对象纠正需同步卡片身份、检索文字及历史。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>团队车票购买这同一项任务改由哥哥负责，我不再负责，任务继续。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;subjects&quot;: [
+    &quot;哥哥&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+换负责人是原任务主体修正，不生成两个待办。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 购买团队车票
+卡片 ID：mem_114dada7f4ea
+轮次：未指定
+状态：done；结束原因：cancelled
+  · 备注：原计划由用户购买
+  · 备注：用户不再负责该任务</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 购买团队车票
+卡片 ID：mem_114dada7f4ea
+轮次：未指定
+状态：todo；结束原因：无
+  · 备注：原计划由用户购买</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;152224fe8af7ef2415f3b8662244dd73&quot;,
+      &quot;reason&quot;: &quot;找不到要修改的任务，请补充任务或轮次&quot;
+    },
+    {
+      &quot;action&quot;: &quot;update_task&quot;,
+      &quot;relation&quot;: &quot;update_task&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:1fa47561bf10d15b540fd024003c9702&quot;,
+      &quot;candidate_id&quot;: &quot;revision:b0ec14f541ab3ee7a2b0424b6dd5e56f&quot;,
+      &quot;confidence&quot;: 0.85,
+      &quot;memory_id&quot;: &quot;mem_114dada7f4ea&quot;,
+      &quot;task_status&quot;: &quot;done&quot;,
+      &quot;source_added&quot;: true
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;状态不符：[&#x27;done&#x27;]&quot;,
+    &quot;结束原因不符：[&#x27;cancelled&#x27;]&quot;,
+    &quot;执行人不符：[&#x27;用户&#x27;]&quot;,
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;哥哥&quot;,
+          &quot;task&quot;: &quot;购买团队车票&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;note&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;原由用户负责，现改由哥哥负责，任务继续&quot;,
+              &quot;evidence_span&quot;: &quot;团队车票购买这同一项任务改由哥哥负责&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;团队车票购买这同一项任务改由哥哥负责&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;subjects_09-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;原计划由我购买团队车票。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确任务负责人变更，任务仍在进行&quot;
+        },
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;购买团队车票&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;done&quot;,
+          &quot;closure_reason&quot;: &quot;cancelled&quot;,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;note&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;用户不再负责该任务&quot;,
+              &quot;evidence_span&quot;: &quot;我不再负责&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;我不再负责&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;subjects_09-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;原计划由我购买团队车票。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.85,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;用户原负责的购票任务已移交，本人职责结束&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_114dada7f4ea&quot;,
+      &quot;replacements&quot;: [],
+      &quot;retire_ids&quot;: [],
+      &quot;reason&quot;: &quot;同一购票任务，用户不再负责，任务状态更新为已取消结束；原细节保留，新增职责移交说明&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：主体筛选阻断转交；done→todo 只允许 reopen，未区分事实纠正；会议室案例关联计划把 requirement 的 index 0 指向旧 time 细节。代码检查还发现 merge 不更新已有卡片的 task/subject，后者是潜在后续障碍，未追加到观测数量。
+
+验收标准：明确口误纠正恢复原卡 todo；301→302 保持同一任务且原时间不丢；转交后仍有一张正确负责人名下的 todo；普通补充不重开 done。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 原计划由我购买团队车票。
+第 2 步 [2026-10-20T09:01:00+08:00] 团队车票购买这同一项任务改由哥哥负责，我不再负责，任务继续。</pre></details><details><summary>来源位置</summary><pre>场景：subjects_09
+步骤：2
+Trace ID：trace_68d960f19f77
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/subjects_09/steps.jsonl（第 2 行）</pre></details></article><article id="case-nonfacts_corrections_07-3" data-category="明确纠正与责任转交更新路径缺失" data-scope="当前自动未通过">
+<div class="tags">#216 · nonfacts_corrections_07 · 第 3 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>纠正误报完成</h3><p>状态不符：[&#x27;done&#x27;]；结束原因不符：[&#x27;completed&#x27;]；不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>将明确纠正、重开、转交区分为更新动作，并验证原卡及证据；转交应完整更新负责人，避免只关闭旧责任。对象纠正需同步卡片身份、检索文字及历史。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>纠正上一条：我说导出完成是口误，宣传视频实际尚未导出，原任务继续待办。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0
+}
+
+场景整体判定说明（可能包含后续步骤）：
+用户明确更正刚才完成事实为错误，应恢复原任务 todo，非另建。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 导出宣传视频
+卡片 ID：mem_f9000502187c
+轮次：未指定
+状态：done；结束原因：completed
+  · 结果：宣传视频已经导出完成</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 导出宣传视频
+卡片 ID：mem_f9000502187c
+轮次：未指定
+状态：done；结束原因：completed
+  · 结果：宣传视频已经导出完成</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;564f3fa0f8e29d537850286c79294d74&quot;,
+      &quot;reason&quot;: &quot;任务已经结束，需要明确是重开原任务还是创建新任务&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;状态不符：[&#x27;done&#x27;]&quot;,
+    &quot;结束原因不符：[&#x27;completed&#x27;]&quot;,
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;导出宣传视频&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;progress&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;实际尚未导出&quot;,
+              &quot;evidence_span&quot;: &quot;宣传视频实际尚未导出&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;note&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;此前说导出完成是口误，原任务继续待办&quot;,
+              &quot;evidence_span&quot;: &quot;我说导出完成是口误，宣传视频实际尚未导出，原任务继续待办&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;宣传视频实际尚未导出，原任务继续待办&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;nonfacts_corrections_07-1&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;宣传视频已经导出完成。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.95,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;用户纠正上一条口误，明确宣传视频导出任务尚未完成，需将任务状态改回待办&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_f9000502187c&quot;,
+      &quot;replacements&quot;: [
+        {
+          &quot;index&quot;: 0,
+          &quot;detail_id&quot;: &quot;td:82c287738bc733fef990a696d514d705&quot;
+        }
+      ],
+      &quot;retire_ids&quot;: [],
+      &quot;reason&quot;: &quot;用户明确纠正此前“导出完成”为口误，同一宣传视频导出任务实际尚未完成，需将完成结果替换为待办进展并保留原任务。&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：主体筛选阻断转交；done→todo 只允许 reopen，未区分事实纠正；会议室案例关联计划把 requirement 的 index 0 指向旧 time 细节。代码检查还发现 merge 不更新已有卡片的 task/subject，后者是潜在后续障碍，未追加到观测数量。
+
+验收标准：明确口误纠正恢复原卡 todo；301→302 保持同一任务且原时间不丢；转交后仍有一张正确负责人名下的 todo；普通补充不重开 done。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要导出宣传视频。
+第 2 步 [2026-10-20T09:01:00+08:00] 宣传视频已经导出完成。
+第 3 步 [2026-10-20T09:02:00+08:00] 纠正上一条：我说导出完成是口误，宣传视频实际尚未导出，原任务继续待办。</pre></details><details><summary>来源位置</summary><pre>场景：nonfacts_corrections_07
+步骤：3
+Trace ID：trace_117c8cd7dc74
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/nonfacts_corrections_07/steps.jsonl（第 3 行）</pre></details></article><article id="case-nonfacts_corrections_09-2" data-category="明确纠正与责任转交更新路径缺失" data-scope="当前自动未通过">
+<div class="tags">#220 · nonfacts_corrections_09 · 第 2 步 · 自动未通过 · 实现或契约问题 · P1</div>
+<h3>纠正对象和保留要求</h3><p>不应进入待确认</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>将明确纠正、重开、转交区分为更新动作，并验证原卡及证据；转交应完整更新负责人，避免只关闭旧责任。对象纠正需同步卡片身份、检索文字及历史。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>纠正刚才的房间号，是预约 302 会议室，不是 301，还是同一个预约任务，周五下午不变。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;kinds&quot;: [
+    &quot;time&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+更正同一任务对象，原卡不变，不留下错误对象待办。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 预约301会议室
+卡片 ID：mem_3508d3f2540d
+轮次：未指定
+状态：todo；结束原因：无
+  · 时间：周五下午</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 预约301会议室
+卡片 ID：mem_3508d3f2540d
+轮次：未指定
+状态：todo；结束原因：无
+  · 时间：周五下午</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;pending_review&quot;,
+      &quot;pending_id&quot;: &quot;cc4020893b14390da1b70b4325779bec&quot;,
+      &quot;reason&quot;: &quot;不同类型细节不能相互覆盖；解除阻碍应保留进展并将旧阻碍设为历史&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;不应进入待确认&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;预约会议室&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;预约302会议室&quot;,
+              &quot;evidence_span&quot;: &quot;是预约 302 会议室&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;不是301会议室&quot;,
+              &quot;evidence_span&quot;: &quot;不是 301&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;time&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;周五下午不变&quot;,
+              &quot;evidence_span&quot;: &quot;周五下午不变&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;纠正刚才的房间号，是预约 302 会议室，不是 301，还是同一个预约任务，周五下午不变。&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;nonfacts_corrections_09-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要预约 301 会议室，时间定在周五下午。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.92,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;用户明确纠正同一预约任务的会议室号，任务仍为待办，需更新已有任务&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_3508d3f2540d&quot;,
+      &quot;replacements&quot;: [
+        {
+          &quot;index&quot;: 0,
+          &quot;detail_id&quot;: &quot;td:edf7d84823fe2e02babdc3afeee21b5c&quot;
+        }
+      ],
+      &quot;retire_ids&quot;: [],
+      &quot;reason&quot;: &quot;同一预约任务，用户明确纠正会议室为302而非301，周五下午时间不变；原时间细节被新时间细节替代，任务仍为待办。&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：主体筛选阻断转交；done→todo 只允许 reopen，未区分事实纠正；会议室案例关联计划把 requirement 的 index 0 指向旧 time 细节。代码检查还发现 merge 不更新已有卡片的 task/subject，后者是潜在后续障碍，未追加到观测数量。
+
+验收标准：明确口误纠正恢复原卡 todo；301→302 保持同一任务且原时间不丢；转交后仍有一张正确负责人名下的 todo；普通补充不重开 done。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要预约 301 会议室，时间定在周五下午。
+第 2 步 [2026-10-20T09:01:00+08:00] 纠正刚才的房间号，是预约 302 会议室，不是 301，还是同一个预约任务，周五下午不变。</pre></details><details><summary>来源位置</summary><pre>场景：nonfacts_corrections_09
+步骤：2
+Trace ID：trace_c07b3ba0a9a2
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/nonfacts_corrections_09/steps.jsonl（第 2 行）</pre></details></article></section><section class="issue-section" id="T7"><h2>同义细节去重不足 <span class="group-count">3 条</span></h2><p class="muted">专业：同义细节去重不足<br>直白：同一条要求或阻碍换个说法，被重复记了。</p><article id="case-details_05-2" data-category="同义细节去重不足" data-scope="自动通过的附加问题">
+<div class="tags">#31 · details_05 · 第 2 步 · 自动通过 · 人工发现重复 · P2</div>
+<h3>移除指定要求</h3><p>当前细节同时存在“控制在十分钟内”和“十分钟的限制仍保留”，同义要求重复。</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>对明确“仍然/不变/重复”的信息复用旧细节 ID、追加来源；对同义细节做有条件的合并，不能合并条件不同的要求。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>软件演示不再要求离线可用，十分钟的限制仍保留。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;kinds&quot;: [
+    &quot;requirement&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+只移除离线要求，保留演示任务和其他要求。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 准备软件演示
+卡片 ID：mem_5cd8a2b44765
+轮次：未指定
+状态：todo；结束原因：无
+  · 要求：控制在十分钟内
+  · 要求：不再要求离线可用
+  · 要求：十分钟的限制仍保留</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 准备软件演示
+卡片 ID：mem_5cd8a2b44765
+轮次：未指定
+状态：todo；结束原因：无
+  · 要求：离线可用
+  · 要求：控制在十分钟内</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;update_task&quot;,
+      &quot;relation&quot;: &quot;update_task&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:f1d7c4315763bf71b8604608162d861a&quot;,
+      &quot;candidate_id&quot;: &quot;revision:cc8f86d37e28dd12d5006a81d7eb6f1e&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_5cd8a2b44765&quot;,
+      &quot;task_status&quot;: &quot;todo&quot;,
+      &quot;source_added&quot;: true
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: []
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;准备软件演示&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;不再要求离线可用&quot;,
+              &quot;evidence_span&quot;: &quot;软件演示不再要求离线可用&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;十分钟的限制仍保留&quot;,
+              &quot;evidence_span&quot;: &quot;十分钟的限制仍保留&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;软件演示不再要求离线可用，十分钟的限制仍保留&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;details_05-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要准备软件演示，要求离线可用并且控制在十分钟内。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;对已有软件演示任务的约束更新：取消离线可用要求，保留十分钟时限&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_5cd8a2b44765&quot;,
+      &quot;replacements&quot;: [
+        {
+          &quot;index&quot;: 0,
+          &quot;detail_id&quot;: &quot;td:1cd3da965c2b5ef13f12979e38cb6a56&quot;
+        }
+      ],
+      &quot;retire_ids&quot;: [],
+      &quot;reason&quot;: &quot;新信息明确取消离线可用要求，替换原细节；十分钟时限保留，未提及的旧要求不清除。&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：signature 用 kind、condition、description 的完全一致判断重复。语义相同但文字不同的新细节会追加；本次三条都通过了原自动断言。
+
+验收标准：重复说明后有效细节数量不增加、来源可追加；低温与避光各保留一条；条件不同的相似细节仍独立。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要准备软件演示，要求离线可用并且控制在十分钟内。
+第 2 步 [2026-10-20T09:01:00+08:00] 软件演示不再要求离线可用，十分钟的限制仍保留。</pre></details><details><summary>来源位置</summary><pre>场景：details_05
+步骤：2
+Trace ID：trace_47e2c8a72c2d
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/details_05/steps.jsonl（第 2 行）</pre></details></article><article id="case-details_08-2" data-category="同义细节去重不足" data-scope="自动通过的附加问题">
+<div class="tags">#37 · details_08 · 第 2 步 · 自动通过 · 人工发现重复 · P2</div>
+<h3>多个要求分别修正</h3><p>低温与避光各被保存两次：原要求及“要求不变”新细节。</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>对明确“仍然/不变/重复”的信息复用旧细节 ID、追加来源；对同义细节做有条件的合并，不能合并条件不同的要求。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>实验样品封装改成每盒 8 管，其余低温和避光要求不变。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;kinds&quot;: [
+    &quot;requirement&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+仅改封装数量，低温和避光仍是要求。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 封装实验样品
+卡片 ID：mem_4734b091a1a5
+轮次：未指定
+状态：todo；结束原因：无
+  · 要求：需要低温运输
+  · 要求：需要避光
+  · 要求：每盒 8 管
+  · 要求：低温要求不变
+  · 要求：避光要求不变</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 封装实验样品
+卡片 ID：mem_4734b091a1a5
+轮次：未指定
+状态：todo；结束原因：无
+  · 要求：每盒 12 管
+  · 要求：需要低温运输
+  · 要求：需要避光</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;update_task&quot;,
+      &quot;relation&quot;: &quot;update_task&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:f77201aed3d1012d60df51943221a693&quot;,
+      &quot;candidate_id&quot;: &quot;revision:ff701e80b3c261fbfb55d67b5cff4d0c&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_4734b091a1a5&quot;,
+      &quot;task_status&quot;: &quot;todo&quot;,
+      &quot;source_added&quot;: true
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: []
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;封装实验样品&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;每盒 8 管&quot;,
+              &quot;evidence_span&quot;: &quot;实验样品封装改成每盒 8 管&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;低温要求不变&quot;,
+              &quot;evidence_span&quot;: &quot;其余低温和避光要求不变&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;避光要求不变&quot;,
+              &quot;evidence_span&quot;: &quot;其余低温和避光要求不变&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;实验样品封装改成每盒 8 管，其余低温和避光要求不变。&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;details_08-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要封装实验样品，每盒 12 管，需要低温运输并避光。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;用户修改已有封装任务的每盒数量要求，并确认低温、避光要求不变&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_4734b091a1a5&quot;,
+      &quot;replacements&quot;: [
+        {
+          &quot;index&quot;: 0,
+          &quot;detail_id&quot;: &quot;td:d9dcb915024ef8ac552b67b3c6dac5c1&quot;
+        }
+      ],
+      &quot;retire_ids&quot;: [],
+      &quot;reason&quot;: &quot;同一封装实验样品任务，新信息将每盒数量由12管改为8管，低温与避光要求不变，保留原细节。&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：signature 用 kind、condition、description 的完全一致判断重复。语义相同但文字不同的新细节会追加；本次三条都通过了原自动断言。
+
+验收标准：重复说明后有效细节数量不增加、来源可追加；低温与避光各保留一条；条件不同的相似细节仍独立。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要封装实验样品，每盒 12 管，需要低温运输并避光。
+第 2 步 [2026-10-20T09:01:00+08:00] 实验样品封装改成每盒 8 管，其余低温和避光要求不变。</pre></details><details><summary>来源位置</summary><pre>场景：details_08
+步骤：2
+Trace ID：trace_5c76bf950cec
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/details_08/steps.jsonl（第 2 行）</pre></details></article><article id="case-history_duplicates_06-2" data-category="同义细节去重不足" data-scope="自动通过的附加问题">
+<div class="tags">#162 · history_duplicates_06 · 第 2 步 · 自动通过 · 人工发现重复 · P2</div>
+<h3>重复阻碍信息</h3><p>明确重复同一个阻碍后，保存“目前缺少营业执照扫描件”和“缺少营业执照扫描件”两条有效阻碍；oracle要求不堆积重复细节，现有断言漏检。</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>对明确“仍然/不变/重复”的信息复用旧细节 ID、追加来源；对同义细节做有条件的合并，不能合并条件不同的要求。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>企业账户验证仍缺少营业执照扫描件，重复说明同一个阻碍。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;kinds&quot;: [
+    &quot;blocker&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+重复同一阻碍不新增任务；人工核对不应堆积重复细节。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 完成企业账户验证
+卡片 ID：mem_bfbffd0b5ce2
+轮次：未指定
+状态：todo；结束原因：无
+  · 阻碍：目前缺少营业执照扫描件
+  · 阻碍：缺少营业执照扫描件</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 完成企业账户验证
+卡片 ID：mem_bfbffd0b5ce2
+轮次：未指定
+状态：todo；结束原因：无
+  · 阻碍：目前缺少营业执照扫描件</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;update_task&quot;,
+      &quot;relation&quot;: &quot;update_task&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:09783e5def2a3b9247053a3294391a13&quot;,
+      &quot;candidate_id&quot;: &quot;revision:4fe73f34749b4abc19e7519daa017330&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_bfbffd0b5ce2&quot;,
+      &quot;task_status&quot;: &quot;todo&quot;,
+      &quot;source_added&quot;: true
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: []
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;完成企业账户验证&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;blocker&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;缺少营业执照扫描件&quot;,
+              &quot;evidence_span&quot;: &quot;企业账户验证仍缺少营业执照扫描件&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;企业账户验证仍缺少营业执照扫描件&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;history_duplicates_06-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要完成企业账户验证，目前缺少营业执照扫描件。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;延续前一条企业账户验证任务，补充同一阻碍的进展说明&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_bfbffd0b5ce2&quot;,
+      &quot;replacements&quot;: [],
+      &quot;retire_ids&quot;: [],
+      &quot;reason&quot;: &quot;新信息与已有卡片主体、任务一致，均为完成企业账户验证且缺少营业执照扫描件，属同一任务进展说明，无细节被替代或阻碍解除。&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>已确认：signature 用 kind、condition、description 的完全一致判断重复。语义相同但文字不同的新细节会追加；本次三条都通过了原自动断言。
+
+验收标准：重复说明后有效细节数量不增加、来源可追加；低温与避光各保留一条；条件不同的相似细节仍独立。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要完成企业账户验证，目前缺少营业执照扫描件。
+第 2 步 [2026-10-20T09:01:00+08:00] 企业账户验证仍缺少营业执照扫描件，重复说明同一个阻碍。</pre></details><details><summary>来源位置</summary><pre>场景：history_duplicates_06
+步骤：2
+Trace ID：trace_b18ae7c0fe51
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/history_duplicates_06/steps.jsonl（第 2 行）</pre></details></article></section><section class="issue-section" id="E23"><h2>评分规则误报（仍计入自动失败） <span class="group-count">2 条</span></h2><p class="muted">专业：评分规则误报（仍计入自动失败）<br>直白：保存内容语义可接受，但检查规则扣了分；本页不改分。</p><article id="case-details_01-1" data-category="评分规则误报（仍计入自动失败）" data-scope="当前自动未通过">
+<div class="tags">#23 · details_01 · 第 1 步 · 自动未通过 · 规则误报 · 评分复核</div>
+<h3>已承诺的条件计划</h3><p>条件“周日不下雨”已完整保存在time.condition；预期强制requirement过严，不能当作条件丢失。</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>检查事实和条件是否完整，区分当前有效要求与否定说明。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>我已经决定：只要周日不下雨，就去购买野餐食材。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;kinds&quot;: [
+    &quot;requirement&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+条件计划已经决定执行；天气条件不等于假设提问。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 购买野餐食材
+卡片 ID：mem_c3632fb57f0c
+轮次：未指定
+状态：todo；结束原因：无
+  · 时间（条件：周日不下雨）：只要周日不下雨</pre></details><details><summary>本步之前的卡片</summary><pre>场景开始前没有任务卡片。</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;insert&quot;,
+      &quot;relation&quot;: &quot;new&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:3ad5e2ec5501bf64575b8f34c390d624&quot;,
+      &quot;candidate_id&quot;: &quot;revision:c053938564fb226cb1b92377ddffb221&quot;,
+      &quot;confidence&quot;: 0.85,
+      &quot;memory_id&quot;: &quot;mem_c3632fb57f0c&quot;
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;缺少细节类型：requirement&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;购买野餐食材&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;time&quot;,
+              &quot;condition&quot;: &quot;周日不下雨&quot;,
+              &quot;description&quot;: &quot;只要周日不下雨&quot;,
+              &quot;evidence_span&quot;: &quot;只要周日不下雨&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;只要周日不下雨，就去购买野餐食材&quot;,
+          &quot;intent&quot;: &quot;auto&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.85,
+          &quot;importance&quot;: 0.6,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;用户明确决定在周日不下雨的条件下购买野餐食材，属于未结束任务，条件写入 details&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>条件类型断言过严；对全部细节做字面禁词检查，没有区分有效要求与撤销说明。
+
+验收标准：允许合理的条件表达；“A4已作废”不再被判为A4要求仍有效。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我已经决定：只要周日不下雨，就去购买野餐食材。</pre></details><details><summary>来源位置</summary><pre>场景：details_01
+步骤：1
+Trace ID：trace_9f46ab7f5d2f
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/details_01/steps.jsonl（第 1 行）</pre></details></article><article id="case-details_03-2" data-category="评分规则误报（仍计入自动失败）" data-scope="当前自动未通过">
+<div class="tags">#27 · details_03 · 第 2 步 · 自动未通过 · 规则误报 · 评分复核</div>
+<h3>替换输出格式</h3><p>有效requirement已改为A5；A4仅出现在“原来的A4要求作废”备注中，absent_current纯字面判断误报。</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>检查事实和条件是否完整，区分当前有效要求与否定说明。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>培训讲义纸张改成 A5，原来的 A4 要求作废。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 1,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;contains_current&quot;: [
+    &quot;A5&quot;
+  ],
+  &quot;absent_current&quot;: [
+    &quot;A4&quot;
+  ]
+}
+
+场景整体判定说明（可能包含后续步骤）：
+A4 改为 A5，只替换格式要求。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 排版培训讲义
+卡片 ID：mem_990d682e2563
+轮次：未指定
+状态：todo；结束原因：无
+  · 要求：成品纸张改成 A5
+  · 备注：原来的 A4 要求作废</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 排版培训讲义
+卡片 ID：mem_990d682e2563
+轮次：未指定
+状态：todo；结束原因：无
+  · 要求：成品纸张用 A4</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;completed&quot;,
+  &quot;操作&quot;: [
+    {
+      &quot;action&quot;: &quot;update_task&quot;,
+      &quot;relation&quot;: &quot;update_task&quot;,
+      &quot;decision_id&quot;: &quot;task-decision:a0ff17fbe0d9eb57aae58ed6e3295eb7&quot;,
+      &quot;candidate_id&quot;: &quot;revision:aa9e7c54c7ac1a69772cacb8f056aade&quot;,
+      &quot;confidence&quot;: 0.9,
+      &quot;memory_id&quot;: &quot;mem_990d682e2563&quot;,
+      &quot;task_status&quot;: &quot;todo&quot;,
+      &quot;source_added&quot;: true
+    }
+  ],
+  &quot;修正评分器后的错误&quot;: [
+    &quot;已替换细节仍然有效：A4&quot;
+  ]
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;排版培训讲义&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;todo&quot;,
+          &quot;closure_reason&quot;: null,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;requirement&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;成品纸张改成 A5&quot;,
+              &quot;evidence_span&quot;: &quot;培训讲义纸张改成 A5&quot;
+            },
+            {
+              &quot;kind&quot;: &quot;note&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;原来的 A4 要求作废&quot;,
+              &quot;evidence_span&quot;: &quot;原来的 A4 要求作废&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;培训讲义纸张改成 A5&quot;,
+          &quot;intent&quot;: &quot;update&quot;,
+          &quot;antecedent_note_id&quot;: &quot;details_03-0&quot;,
+          &quot;antecedent_evidence_span&quot;: &quot;我要排版培训讲义，成品纸张用 A4。&quot;,
+          &quot;unresolved_reason&quot;: null,
+          &quot;confidence&quot;: 0.9,
+          &quot;importance&quot;: 0.7,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;对已有排版任务的纸张要求更新，任务未结束&quot;
+        }
+      ]
+    }
+  },
+  {
+    &quot;阶段&quot;: &quot;association&quot;,
+    &quot;输出&quot;: {
+      &quot;action&quot;: &quot;update&quot;,
+      &quot;target_id&quot;: &quot;mem_990d682e2563&quot;,
+      &quot;replacements&quot;: [
+        {
+          &quot;index&quot;: 0,
+          &quot;detail_id&quot;: &quot;td:116f76c6d082d67df38d660172a0fabc&quot;
+        }
+      ],
+      &quot;retire_ids&quot;: [],
+      &quot;reason&quot;: &quot;新信息将培训讲义成品纸张由 A4 改为 A5，明确替代原 A4 要求，任务仍为待办&quot;
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>条件类型断言过严；对全部细节做字面禁词检查，没有区分有效要求与撤销说明。
+
+验收标准：允许合理的条件表达；“A4已作废”不再被判为A4要求仍有效。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要排版培训讲义，成品纸张用 A4。
+第 2 步 [2026-10-20T09:01:00+08:00] 培训讲义纸张改成 A5，原来的 A4 要求作废。</pre></details><details><summary>来源位置</summary><pre>场景：details_03
+步骤：2
+Trace ID：trace_5ca12e32710e
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/details_03/steps.jsonl（第 2 行）</pre></details></article></section><section class="issue-section" id="E1"><h2>已修正的评分误报 <span class="group-count">2 条</span></h2><p class="muted">专业：已修正的评分误报<br>直白：数据库已有待确认，旧评分器却没有读到；现已纠正。</p><article id="case-references_04-2" data-category="已修正的评分误报" data-scope="已修正的评分误报">
+<div class="tags">#116 · references_04 · 第 2 步 · 评分已修正 · 自动通过 · 已修复</div>
+<h3>同人多个对象的那个</h3><p>数据库有当前消息生成的低置信度待确认，service.results为空；评分器v3按note_id读取记录，纠正误报。</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>已按原消息 ID 核对数据库待确认，并保存当步 pending_items；仅重评原输出，没有重跑模型。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>刚才说的那个上传任务完成了，但我没说明是哪个附件。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 2,
+  &quot;statuses&quot;: [
+    &quot;todo&quot;,
+    &quot;todo&quot;
+  ],
+  &quot;closures&quot;: [
+    null,
+    null
+  ],
+  &quot;same_as&quot;: 0,
+  &quot;pending&quot;: true
+}
+
+场景整体判定说明（可能包含后续步骤）：
+两个对象都可指代，不更新任何卡。</pre></details><details><summary>实际保存结果</summary><pre>用户 · 上传预算附件
+卡片 ID：mem_39a4461dc384
+轮次：未指定
+状态：todo；结束原因：无
+
+用户 · 上传技术附件
+卡片 ID：mem_b6deebdedcc6
+轮次：未指定
+状态：todo；结束原因：无</pre></details><details><summary>本步之前的卡片</summary><pre>用户 · 上传预算附件
+卡片 ID：mem_39a4461dc384
+轮次：未指定
+状态：todo；结束原因：无
+
+用户 · 上传技术附件
+卡片 ID：mem_b6deebdedcc6
+轮次：未指定
+状态：todo；结束原因：无</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;empty&quot;,
+  &quot;操作&quot;: [],
+  &quot;修正评分器后的错误&quot;: []
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;上传附件&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;done&quot;,
+          &quot;closure_reason&quot;: &quot;completed&quot;,
+          &quot;details&quot;: [
+            {
+              &quot;kind&quot;: &quot;outcome&quot;,
+              &quot;condition&quot;: &quot;&quot;,
+              &quot;description&quot;: &quot;上传任务已完成&quot;,
+              &quot;evidence_span&quot;: &quot;刚才说的那个上传任务完成了&quot;
+            }
+          ],
+          &quot;evidence_span&quot;: &quot;刚才说的那个上传任务完成了&quot;,
+          &quot;intent&quot;: &quot;auto&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: &quot;前文提到预算附件和技术附件两个独立上传任务，无法唯一确定“那个上传任务”指哪一个&quot;,
+          &quot;confidence&quot;: 0.4,
+          &quot;importance&quot;: 0.5,
+          &quot;should_store&quot;: true,
+          &quot;extraction_reason&quot;: &quot;明确报告任务完成，但指代对象不唯一，按未解析处理&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>服务 results 为空，但相同 note_id 已在数据库生成待确认。旧评分器只检查返回结果。
+
+验收标准：歧义消息不建错卡，并正确识别其已生成的待确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 我要上传预算附件，也要上传技术附件，这是两个独立任务。
+第 2 步 [2026-10-20T09:01:00+08:00] 刚才说的那个上传任务完成了，但我没说明是哪个附件。</pre></details><details><summary>来源位置</summary><pre>场景：references_04
+步骤：2
+Trace ID：trace_91e7a4280a6e
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/references_04/steps.jsonl（第 2 行）</pre></details></article><article id="case-references_07-1" data-category="已修正的评分误报" data-scope="已修正的评分误报">
+<div class="tags">#124 · references_07 · 第 1 步 · 评分已修正 · 自动通过 · 已修复</div>
+<h3>无前文孤立指代</h3><p>同上；孤立指代没有建卡，已生成待确认。</p>
+<p class="evidence"><b>证据程度：</b>已核对原始模型输出、处理记录与保存快照；评分/实现问题分别标注。</p>
+<p><b>建议：</b>已按原消息 ID 核对数据库待确认，并保存当步 pending_items；仅重评原输出，没有重跑模型。</p><small>同一条消息只计一个主分类；完整证据可在下方展开。</small><details><summary>原消息</summary><pre>那个已经完成了，我没有提供过它是什么。</pre></details><details><summary>本步预期与场景说明</summary><pre>{
+  &quot;cards&quot;: 0,
+  &quot;statuses&quot;: [],
+  &quot;closures&quot;: [],
+  &quot;pending&quot;: true
+}
+
+场景整体判定说明（可能包含后续步骤）：
+没有候选不虚构任务。</pre></details><details><summary>实际保存结果</summary><pre>没有已保存的任务卡片。</pre></details><details><summary>本步之前的卡片</summary><pre>场景开始前没有任务卡片。</pre></details><details><summary>处理结果与自动检查</summary><pre>{
+  &quot;处理状态&quot;: &quot;empty&quot;,
+  &quot;操作&quot;: [],
+  &quot;修正评分器后的错误&quot;: []
+}</pre></details><details><summary>模型原始输出</summary><pre>[
+  {
+    &quot;阶段&quot;: &quot;extraction&quot;,
+    &quot;输出&quot;: {
+      &quot;candidates&quot;: [
+        {
+          &quot;memory_type&quot;: &quot;task&quot;,
+          &quot;subject&quot;: &quot;用户&quot;,
+          &quot;task&quot;: &quot;那个&quot;,
+          &quot;instance&quot;: null,
+          &quot;task_status&quot;: &quot;done&quot;,
+          &quot;closure_reason&quot;: &quot;completed&quot;,
+          &quot;details&quot;: [],
+          &quot;evidence_span&quot;: &quot;那个已经完成了&quot;,
+          &quot;intent&quot;: &quot;auto&quot;,
+          &quot;antecedent_note_id&quot;: null,
+          &quot;antecedent_evidence_span&quot;: null,
+          &quot;unresolved_reason&quot;: &quot;前文无可用消息，无法确定“那个”指代的具体任务&quot;,
+          &quot;confidence&quot;: 0.3,
+          &quot;importance&quot;: 0.3,
+          &quot;should_store&quot;: false,
+          &quot;extraction_reason&quot;: &quot;指代无法解析，且用户明确表示未提供任务内容，不保存&quot;
+        }
+      ]
+    }
+  }
+]</pre></details><details><summary>已有排查记录与验收标准</summary><pre>服务 results 为空，但相同 note_id 已在数据库生成待确认。旧评分器只检查返回结果。
+
+验收标准：歧义消息不建错卡，并正确识别其已生成的待确认。</pre></details><details><summary>可见会话原文（截至本步）</summary><pre>第 1 步 [2026-10-20T09:00:00+08:00] 那个已经完成了，我没有提供过它是什么。</pre></details><details><summary>来源位置</summary><pre>场景：references_07
+步骤：1
+Trace ID：trace_0a096805f85f
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/references_07/steps.jsonl（第 1 行）</pre></details></article></section>
+<footer><b>统计与验证边界：</b># 为数据集中222条消息的顺序号，另附场景与步骤用于定位。每条记录只计一个主分类，交叉问题保留在说明中。原分195/222因补读两条数据库待确认修正为197/222，没有重跑模型挑选结果。剩余两处规则误报仍保留原分；通过项仅做抽查。271份快照的状态约束和来源可追溯检查通过，无处理/查询运行时异常。未验证最终自然语言回答、飞书送达、查询排名和完整召回。业务代码、原始测试输出及线上数据未修改。
+<details><summary>尚未证实发生的测试覆盖缺口</summary><pre>状态和结束原因多数按整体集合比较，可能漏掉任务间归属互换；查询只检查非空。这是代码可见的测试盲区，不作为已发生故障计数。</pre></details>
+<details><summary>报告来源与版本</summary><pre>/Users/zhangchengjie/Projects/suixinji/task-memory-cards/docs/task-memory-issues-report-20261020.md
+/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/reports/task-cards-100-issue-taxonomy-20261020.json
+被测业务版本：bb95406；评分器及测试结果：9accd89；问题分类：7085510。</pre></details></footer></main><script>
+const cards=[...document.querySelectorAll('article')],query=document.getElementById('search'),cat=document.getElementById('category'),scope=document.getElementById('scope');
+function filter(){let n=0;const term=query.value.trim().toLowerCase();for(const c of cards){const show=(!term||c.textContent.toLowerCase().includes(term))&&(!cat.value||c.dataset.category===cat.value)&&(!scope.value||c.dataset.scope===scope.value);c.hidden=!show;if(show)n++}for(const s of document.querySelectorAll('.issue-section')){const all=[...s.querySelectorAll('article')],visible=all.filter(c=>!c.hidden).length;s.hidden=!visible;s.querySelector('.group-count').textContent=visible===all.length?all.length+' 条':visible+' / '+all.length+' 条'}document.getElementById('count').textContent=n+' / '+cards.length+' 条';document.getElementById('empty').hidden=n!==0}
+[query,cat,scope].forEach(e=>e.addEventListener('input',filter));
+document.getElementById('reset').addEventListener('click',()=>{query.value='';cat.value='';scope.value='';filter()});
+document.querySelectorAll('[data-category-target]').forEach(a=>a.addEventListener('click',()=>{query.value='';scope.value='';cat.value=a.dataset.categoryTarget;filter()}));filter();
+</script></body></html>
