@@ -83,3 +83,19 @@ def test_query_limit_counts_distinct_evidence_not_fact_card_duplicates(monkeypat
     } for f in facts]})
     rows = fm.query_hits("s", "甲型材料编号", limit=2)
     assert len({row["content"] for row in rows}) == 2
+
+
+def test_new_read_adapter_semantically_recalls_existing_typed_memory_without_rewriting(monkeypatch):
+    from memory import service, repository, fact_retrieval
+    from memory.models import MemoryCandidate
+    monkeypatch.setattr(settings, "FACT_MEMORY_ENABLED", True)
+    monkeypatch.setattr(settings, "FACT_MEMORY_SEMANTIC_SEARCH_ENABLED", True)
+    monkeypatch.setattr(settings, "PREFERENCE_CARDS_ENABLED", False)
+    monkeypatch.setattr(service, "search_memories", lambda *args, **kwargs: [])
+    monkeypatch.setattr(fact_retrieval, "embed_text", lambda text: [1., 0.])
+    row = repository.insert_memory(
+        "s", MemoryCandidate("preference", "低糖的食物", .8, .9), source_note_id="n1")
+    before = row.to_dict()
+    hits = service.memory_search("s", "甜度习惯", memory_type="preference", limit=1)
+    assert [h["id"] for h in hits] == [row.id]
+    assert repository.get_memory(row.id).to_dict() == before

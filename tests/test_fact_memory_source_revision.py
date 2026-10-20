@@ -33,3 +33,23 @@ def test_model_failure_cannot_be_marked_empty(monkeypatch):
     with pytest.raises(RuntimeError):
         service.process_note_memory({"id": "failed-note", "space_id": "s", "text": "这条值得保存。"})
     assert service.get_extraction_state("failed-note").status == "failed"
+
+
+def test_task_candidate_does_not_skip_independent_current_state_extraction(monkeypatch):
+    from memory import extractor
+    from unittest.mock import Mock
+    monkeypatch.setattr(settings, "FACT_MEMORY_ENABLED", True)
+    monkeypatch.setattr(settings, "PREFERENCE_CARDS_ENABLED", False)
+    monkeypatch.setattr(settings, "MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED", False)
+    model = Mock(side_effect=[
+        {"candidates": [{"memory_type": "task", "content": "明天联系供应商",
+                         "evidence_span": "明天联系供应商", "task_status": "todo",
+                         "importance": .8, "confidence": .9}]},
+        {"candidates": [{"memory_type": "semantic", "content": "当前还没有收到样品",
+                         "evidence_span": "当前还没有收到样品", "importance": .8, "confidence": .9}]},
+    ])
+    monkeypatch.setattr(extractor, "complete_json", model)
+    rows = extractor.extract_llm_candidates("n", "明天联系供应商，当前还没有收到样品")
+    assert model.call_count == 2
+    assert {r.memory_type for r in rows} == {"task", "semantic"}
+    assert any(r.content == "当前还没有收到样品" for r in rows)

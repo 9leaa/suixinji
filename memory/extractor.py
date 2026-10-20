@@ -766,8 +766,7 @@ def extract_llm_candidates(
     rows = data.get("candidates") or []
     if not isinstance(rows, list):
         raise ValueError("memory extractor candidates must be a list")
-    if settings.FACT_MEMORY_ENABLED and (not rows or any(
-            r.get("memory_type") in {"semantic", "episodic"} for r in rows if isinstance(r, dict))):
+    if settings.FACT_MEMORY_ENABLED:
         from memory.fact_extraction import INSTRUCTIONS
         fact_data = complete_json(
             system_prompt='你提取语义事实和情景事件。只输出JSON {"candidates":[{"memory_type":"semantic或episodic",'

@@ -720,27 +720,26 @@ def memory_search(
         if not _memory_is_non_exportable(memory)
     ]
     results = _coverage_rerank_memory_results(candidates, query=query, limit=requested_limit)
-    if settings.FACT_MEMORY_ENABLED and memory_type is None:
-        # A mixed question must not lose existing task/preference evidence
-        # because a structured hint or a Chinese phrase index was too narrow.
-        from memory.fact_memory import score as fact_score
+    if settings.FACT_MEMORY_ENABLED:
+        # The new read adapter also covers existing memories, without changing
+        # their extraction or storage. Rank both stores on the same scale.
+        from memory.fact_retrieval import rank as fact_rank
         from memory.access import memory_access_allowed
-        lexical = []
+        legacy = []
         for record in list_memories(space_id, status="active", limit=200):
             value = record.to_dict()
-            relevance = fact_score(query, value["content"])
-            if relevance > .12 and memory_access_allowed(value, access_context) and not _memory_is_non_exportable(record):
-                lexical.append({**value, "score": relevance, "retrieval_channels": ["lexical_coverage"]})
+            if (not effective_memory_type or value["memory_type"] == effective_memory_type
+                    ) and memory_access_allowed(value, access_context) and not _memory_is_non_exportable(record):
+                legacy.append(value)
         merged = {r["id"]: r for r in results}
-        for row in lexical:
-            if row["id"] not in merged:
-                merged[row["id"]] = row
-        results = list(merged.values())
+        for row in fact_rank(space_id, query, legacy, fetch_limit):
+            merged[row["id"]] = row
+        results = fact_rank(space_id, query, list(merged.values()), requested_limit)
     if settings.FACT_MEMORY_ENABLED and effective_memory_type in {None, "semantic", "episodic"}:
         from memory.fact_memory import query_hits
         fact_hits = query_hits(space_id, query, memory_type=memory_type,
                                limit=requested_limit, access_context=access_context)
-        results = sorted(results + fact_hits, key=lambda item: item.get("score", 0), reverse=True)[:requested_limit]
+        results = fact_rank(space_id, query, results + fact_hits, requested_limit)
     if settings.PREFERENCE_CARDS_ENABLED and effective_memory_type in {None, 'preference'}:
         from memory.preference_cards import expand_query
         results = expand_query(space_id, query, results, access_context=access_context, limit=requested_limit)

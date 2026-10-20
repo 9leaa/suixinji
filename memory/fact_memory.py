@@ -217,9 +217,12 @@ def search_memory(space, query, *, kind=None, limit=30, access_context=None, ded
     represented = {(fid, r["memory_type"], normalized(r))
                    for r in rows if r.get("assertion_kind") == "stated"
                    for fid in r.get("source_fact_ids", [])}
+    edited_sources = {fid for r in rows if r.get("review_status") == "edited"
+                      for fid in r.get("source_fact_ids", [])}
     if deduplicate:
         rows = [r for r in rows if "source_fact_ids" in r
-                or (r["id"], r["memory_type"], normalized(r)) not in represented]
+                or (r["id"] not in edited_sources
+                    and (r["id"], r["memory_type"], normalized(r)) not in represented)]
     from memory.fact_retrieval import rank
     return [model_evidence(space, r) for r in rank(space, query, rows, limit)]
 
@@ -277,7 +280,8 @@ def enqueue_due(space, *, now=None):
 
 def _snapshot(space, kind):
     with store.transaction(space) as tx:
-        facts = [f for f in tx.list("fm_fact") if f["status"] == "active"]
+        facts = sorted((f for f in tx.list("fm_fact") if f["status"] == "active"),
+                       key=lambda f: (f.get("mentioned_at", ""), f["ingested_at"], f["id"]))
         memories = [c for c in tx.list("fm_card") if c["status"] == "active"]
         pending = [q for q in tx.list("fm_question") if q["status"] == "open"]
         return {"revision": _meta(tx)["revision"], "facts": facts, "memories": memories,
@@ -365,6 +369,8 @@ def apply_plan(space, plan, *, snapshot, run_id, batch_ids, preview=False):
         lease = tx.get("fm_lease", "consolidation")
         if not lease or lease["run_id"] != run_id or datetime.fromisoformat(lease["until"]) <= datetime.now(timezone.utc):
             raise ValueError("consolidation lease expired or replaced")
+        edited = [c for c in tx.list("fm_card")
+                  if c["status"] == "active" and c.get("review_status") == "edited"]
         # New facts arriving during the call are allowed; referenced evidence and targets
         # are checked individually. A parallel user edit must not be overwritten.
         for action in actions:
@@ -379,6 +385,15 @@ def apply_plan(space, plan, *, snapshot, run_id, batch_ids, preview=False):
                 if not current or current["status"] != "active" or current["source_revision"] != available_facts[source]["source_revision"]:
                     raise ValueError("source changed or forgotten")
             targets = action.get("target_ids", [])
+            if op in {"create", "revise", "merge", "split", "add_evidence"}:
+                protected = [c for c in edited if set(sources) & set(c["source_fact_ids"])]
+                if protected and not (op == "add_evidence" and targets
+                                      and set(targets) <= {c["id"] for c in protected}):
+                    raise ValueError("user-edited evidence cannot derive another card; keep the edited card "
+                                     "and organize only new sources separately: "
+                                     + json.dumps([{"id": c["id"], "content": c["content"],
+                                                    "protected_source_ids": c["source_fact_ids"]}
+                                                   for c in protected], ensure_ascii=False))
             selected = []
             if op == "link":
                 # Relations connect facts and/or cards. A new fact does not
@@ -398,12 +413,12 @@ def apply_plan(space, plan, *, snapshot, run_id, batch_ids, preview=False):
                        relation=action.get("relation", "related"), reason=action["reason"], created_at=now_iso()))
                 continue
             for ident in targets:
+                if ident in touched:
+                    raise ValueError(f"duplicate target {ident}; combine its changes into one action")
                 old = available_cards.get(ident)
                 current = tx.get("fm_card", ident)
                 if not old or not current or current["status"] != "active" or current["version"] != old["version"]:
                     raise ValueError("target version changed")
-                if ident in touched:
-                    raise ValueError("one write per target per plan")
                 if current.get("user_locked") and op not in {"add_evidence", "link"}:
                     raise ValueError("user-reviewed memory cannot be automatically rewritten")
                 selected.append(deepcopy(current))
@@ -518,7 +533,23 @@ def review_memory(space, ident, *, decision, content=None, expected_version):
             if not content or not content.strip():
                 raise ValueError("edited content is required")
             card["content"] = content.strip()
-        card.update(review_status={"confirm": "confirmed", "edit": "edited", "reject": "rejected"}[decision],
+            protected = set(card["source_fact_ids"])
+            for derived in tx.list("fm_card"):
+                if (derived["id"] != ident and derived["status"] == "active"
+                        and not derived.get("user_locked")
+                        and protected & set(derived["source_fact_ids"])):
+                    derived.update(status="superseded", review_superseded_by=ident)
+                    _save_card(tx, derived, "shared_evidence_user_edited")
+                    for fid in set(derived["source_fact_ids"]) - protected:
+                        source = tx.get("fm_fact", fid)
+                        if source and source["status"] == "active":
+                            source["processed_at"] = None
+                            tx.put("fm_fact", fid, source)
+        # Confirming a correction must not turn its original sources back into
+        # current evidence for another derived card.
+        review_status = ("edited" if decision == "confirm" and card.get("review_status") == "edited"
+                         else {"confirm": "confirmed", "edit": "edited", "reject": "rejected"}[decision])
+        card.update(review_status=review_status,
                     reviewed_at=now_iso(), user_locked=True)
         if decision == "reject":
             card["status"] = "rejected"

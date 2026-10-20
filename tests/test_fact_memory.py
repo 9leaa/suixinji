@@ -41,6 +41,61 @@ def test_missing_proposal_feedback_identifies_uncovered_evidence():
     assert first["id"] not in errors[0]
 
 
+def test_user_edit_blocks_rederiving_old_evidence_in_another_card():
+    old = fact("设备的保养间隔是12个月")
+    run([create(old)])
+    card = fm.cards("s")[0]
+    fm.review_memory("s", card["id"], decision="edit",
+                     content="设备的保养间隔是6个月，原12个月有误", expected_version=1)
+    extra = fact("设备的外壳是金属", note="n2")
+    with pytest.raises(ValueError, match="edited"):
+        run([{**create(extra), "source_fact_ids": [old["id"], extra["id"]],
+              "content": "设备的外壳是金属，保养间隔12个月"}])
+    assert old["id"] not in {r["id"] for r in fm.query_hits("s", "设备保养")}
+    assert fm.get("s", "fact", old["id"])["content"] == old["content"]
+
+
+def test_confirming_an_edited_card_does_not_remove_its_source_protection():
+    old = fact("设备每12个月保养")
+    run([create(old)])
+    card = fm.cards("s")[0]
+    edited = fm.review_memory("s", card["id"], decision="edit",
+                              content="设备每6个月保养", expected_version=1)
+    fm.review_memory("s", card["id"], decision="confirm", expected_version=edited["version"])
+    extra = fact("设备外壳为金属", note="n2")
+    with pytest.raises(ValueError, match="edited"):
+        run([{**create(extra), "source_fact_ids": [old["id"], extra["id"]],
+              "content": "设备外壳为金属，每12个月保养"}])
+
+
+def test_user_edit_invalidates_other_derived_cards_but_requeues_unaffected_sources():
+    old, extra = fact("设备每12个月保养"), fact("设备外壳为金属", note="n2")
+    run([create(old), {**create(extra), "source_fact_ids": [old["id"], extra["id"]],
+                      "content": "设备是金属外壳，每12个月保养"}])
+    original = next(c for c in fm.cards("s") if c["source_fact_ids"] == [old["id"]])
+    fm.review_memory("s", original["id"], decision="edit", content="设备每6个月保养",
+                     expected_version=1)
+    assert len(fm.cards("s")) == 1
+    assert fm.get("s", "fact", extra["id"])["processed_at"] is None
+    assert fm.get("s", "fact", old["id"])["processed_at"] is not None
+
+
+def test_proposal_feedback_names_duplicate_targets():
+    from memory.fact_agent import proposal_errors
+    f = fact()
+    seen = {f["id"]: f, "card_a": {"id": "card_a", "source_fact_ids": [f["id"]]}}
+    actions = [{"action": op, "source_fact_ids": [f["id"]],
+                "target_ids": ["card_a"], "reason": "支持"} for op in ["add_evidence", "revise"]]
+    errors = proposal_errors(actions, [f], seen)
+    assert any("card_a" in error and "合并" in error for error in errors)
+
+
+def test_consolidation_batch_preserves_source_message_order():
+    later = fact("次日的记录", note="later", mentioned_at="2026-01-02T09:00:00+00:00")
+    earlier = fact("最初的记录", note="earlier", mentioned_at="2026-01-01T09:00:00+00:00")
+    assert [f["id"] for f in fm._snapshot("s", "semantic")["new_facts"]] == [earlier["id"], later["id"]]
+
+
 def test_threshold_counts_each_type_and_retries_are_idempotent():
     for i in range(29):
         fact(f"事件{i}", "episodic", f"e{i}")
