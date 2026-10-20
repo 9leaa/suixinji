@@ -1,0 +1,587 @@
+{
+  "scope": "100-case run only; primary attribution is exclusive; secondary symptoms are not counted again",
+  "evaluated_commit": "bb95406165129c0f68325b1182d04f1c6096333f",
+  "source_run": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020",
+  "counts": {
+    "cases": 100,
+    "messages": 222,
+    "automatic_passed_messages": 197,
+    "automatic_passed_cases": 77,
+    "automatic_failed_messages": 25,
+    "remaining_scoring_false_positives": 2,
+    "implementation_or_contract_failed_messages": 23,
+    "additional_quality_issues_in_automatic_passes": 3,
+    "observed_affected_messages": 26,
+    "observed_affected_cases": 24
+  },
+  "groups": [
+    {
+      "id": "T1",
+      "name": "任务身份关联不稳定",
+      "plain": "同一人、同一次任务换个说法，就找不到或重复建卡。",
+      "priority": "P1",
+      "members": [
+        {
+          "case": "subjects_04",
+          "step": 2
+        },
+        {
+          "case": "subjects_07",
+          "step": 2
+        },
+        {
+          "case": "temporal_03",
+          "step": 2
+        },
+        {
+          "case": "temporal_10",
+          "step": 3
+        },
+        {
+          "case": "history_duplicates_09",
+          "step": 2
+        },
+        {
+          "case": "history_duplicates_09",
+          "step": 3
+        },
+        {
+          "case": "history_duplicates_10",
+          "step": 3
+        },
+        {
+          "case": "reopen_new_round_02",
+          "step": 3
+        },
+        {
+          "case": "nonfacts_corrections_06",
+          "step": 2
+        }
+      ],
+      "example": "李若宁改称若宁，原 todo 保留，又建了一张 done；周报延期后，日期范围相同但 instance 文字不同，更新失败。",
+      "cause": "已确认：records 先按主体字符串筛选，retrieve 又按 instance 字符串筛选；这会在关联模型判断前排除正确卡片。无匹配时 auto 可走新建，update/reopen 则待确认。",
+      "code": [
+        [
+          "memory/task_cards.py",
+          108
+        ],
+        [
+          "memory/task_cards.py",
+          146
+        ],
+        [
+          "memory/task_cards.py",
+          165
+        ]
+      ],
+      "fix": "优先用来源指向的既有卡片 ID 定位；为有明确证据的同人称谓和同轮次建立稳定映射。展示文字与身份判定分离，仍保留不同人、不同轮次的隔离。",
+      "accept": "简称、同义标题、同轮次改写和重复提醒均更新原卡；明确另一轮仍新增；多候选歧义仍待确认。",
+      "count": 9,
+      "evidence": [
+        {
+          "case": "subjects_04",
+          "step": 2,
+          "text": "若宁已经清点完摄影设备。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/subjects_04/steps.jsonl",
+          "line": 2,
+          "note": ""
+        },
+        {
+          "case": "subjects_07",
+          "step": 2,
+          "text": "小舟的应用图标已经绘制完成。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/subjects_07/steps.jsonl",
+          "line": 2,
+          "note": ""
+        },
+        {
+          "case": "temporal_03",
+          "step": 2,
+          "text": "本周项目周记录延期到下周一提交，仍是本周这一份。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_03/steps.jsonl",
+          "line": 2,
+          "note": ""
+        },
+        {
+          "case": "temporal_10",
+          "step": 3,
+          "text": "2026-10-21 航班值机完成，28 日的还未办理。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_10/steps.jsonl",
+          "line": 3,
+          "note": "包含上一步未建成28日任务的连锁影响，同时21日任务仍存在instance文本关联失败。"
+        },
+        {
+          "case": "history_duplicates_09",
+          "step": 2,
+          "text": "刚才那次水质采样记得去做。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/history_duplicates_09/steps.jsonl",
+          "line": 2,
+          "note": ""
+        },
+        {
+          "case": "history_duplicates_09",
+          "step": 3,
+          "text": "另外再安排一次独立的水质采样，不是刚才那次。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/history_duplicates_09/steps.jsonl",
+          "line": 3,
+          "note": "前一步重复卡片导致本步卡片数继续超标，本步明确新增动作本身合理。"
+        },
+        {
+          "case": "history_duplicates_10",
+          "step": 3,
+          "text": "再记录一次：之前那张比赛奖状已经装裱完成，是同一次任务。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/history_duplicates_10/steps.jsonl",
+          "line": 3,
+          "note": ""
+        },
+        {
+          "case": "reopen_new_round_02",
+          "step": 3,
+          "text": "我改变主意，重开原来这次夜校报名任务，继续报名。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/reopen_new_round_02/steps.jsonl",
+          "line": 3,
+          "note": ""
+        },
+        {
+          "case": "nonfacts_corrections_06",
+          "step": 2,
+          "text": "本月水费不是已经交完了，我还没有缴纳。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/nonfacts_corrections_06/steps.jsonl",
+          "line": 2,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "T2",
+      "name": "抽取输出违反结构契约",
+      "plain": "内容看懂了，但多输出一个不允许的字段，整条更新就被拒绝。",
+      "priority": "P1",
+      "members": [
+        {
+          "case": "lifecycle_06",
+          "step": 3
+        },
+        {
+          "case": "temporal_10",
+          "step": 2
+        }
+      ],
+      "example": "恢复誊写乐谱时输出 entities；新航班值机输出 details.0.description_note，两条都进入待确认。",
+      "cause": "已确认：原始输出有额外字段，TaskInput/TaskDetailInput 使用 extra=forbid，候选保留校验错误并停止写入。旧提示后追加新任务提示是可能诱因，但未做对照实验，不能断言是唯一原因。",
+      "code": [
+        [
+          "memory/task_schema.py",
+          7
+        ],
+        [
+          "memory/task_cards.py",
+          61
+        ],
+        [
+          "memory/extractor.py",
+          758
+        ]
+      ],
+      "fix": "让任务抽取只有一套明确契约；优先约束模型输出。不要直接取消字段校验；若采用有限修正重试，应保留原输出与修正记录。",
+      "accept": "相同语义能产出合法结构并保存；非法字段不会静默混入业务卡片；重试失败仍可追溯。",
+      "count": 2,
+      "evidence": [
+        {
+          "case": "lifecycle_06",
+          "step": 3,
+          "text": "手腕恢复了，继续誊写之前那份乐谱。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/lifecycle_06/steps.jsonl",
+          "line": 3,
+          "note": ""
+        },
+        {
+          "case": "temporal_10",
+          "step": 2,
+          "text": "另一个任务：为 2026-10-28 的航班办理值机。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_10/steps.jsonl",
+          "line": 2,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "T3",
+      "name": "阻碍语义与细节替换错误",
+      "plain": "问题已经解决，系统仍说被阻碍；或者只解决一个问题，却无法更新。",
+      "priority": "P1",
+      "members": [
+        {
+          "case": "progress_blockers_04",
+          "step": 2
+        },
+        {
+          "case": "progress_blockers_05",
+          "step": 2
+        },
+        {
+          "case": "progress_blockers_06",
+          "step": 2
+        },
+        {
+          "case": "progress_blockers_08",
+          "step": 2
+        }
+      ],
+      "example": "“缺材料的阻碍已解除”被新增为 active blocker；“尚未安装”也被分成 blocker；网络恢复时跨类型替换被校验拒绝。",
+      "cause": "已确认：模型混淆“未完成”“曾经的阻碍”“当前阻碍”；部分关联计划把进展替换到阻碍细节。merge 会将新增细节设为 active，故即使旧阻碍已退役，错误的新 blocker 仍有效。",
+      "code": [
+        [
+          "memory/task_cards.py",
+          194
+        ],
+        [
+          "memory/task_cards.py",
+          238
+        ]
+      ],
+      "fix": "明确 blocker 只表达当前阻止执行的原因；解除动作退役旧 blocker 并记录 progress/outcome。关联计划须验证替换下标及细节类型。",
+      "accept": "解除唯一阻碍后没有有效 blocker；解除部分阻碍只保留未解决的一项；未开始/未完成本身不自动成为 blocker。",
+      "count": 4,
+      "evidence": [
+        {
+          "case": "progress_blockers_04",
+          "step": 2,
+          "text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/progress_blockers_04/steps.jsonl",
+          "line": 2,
+          "note": ""
+        },
+        {
+          "case": "progress_blockers_05",
+          "step": 2,
+          "text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/progress_blockers_05/steps.jsonl",
+          "line": 2,
+          "note": ""
+        },
+        {
+          "case": "progress_blockers_06",
+          "step": 2,
+          "text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/progress_blockers_06/steps.jsonl",
+          "line": 2,
+          "note": ""
+        },
+        {
+          "case": "progress_blockers_08",
+          "step": 2,
+          "text": "门禁适配器到了，缺件问题解决，尚未安装。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/progress_blockers_08/steps.jsonl",
+          "line": 2,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "T4",
+      "name": "任务抽取边界与多任务覆盖错误",
+      "plain": "该更新的任务漏了，不是任务的话却被当成任务。",
+      "priority": "P1",
+      "members": [
+        {
+          "case": "identity_instances_04",
+          "step": 3
+        },
+        {
+          "case": "temporal_05",
+          "step": 1
+        },
+        {
+          "case": "nonfacts_corrections_10",
+          "step": 2
+        }
+      ],
+      "example": "“审核完成、发送未完成”只更新发送卡；“两次分别记录”生成第三个“记录清洁检查”任务；“没有租车计划”和引用体检文字产生无谓待确认。",
+      "cause": "已确认：抽取遗漏独立审核任务的完成候选；另外两例将记录指令、否定计划或引用内容输出为业务任务。后续关联校验只能拦住部分写入，仍造成额外卡片或待确认。",
+      "code": [
+        [
+          "memory/task_schema.py",
+          58
+        ],
+        [
+          "memory/extractor.py",
+          765
+        ]
+      ],
+      "fix": "先区分实际行动、记忆管理表达、否定和引用；再逐项覆盖消息中每个已有任务的变化。用漏抽与多抽两类断言共同验证。",
+      "accept": "审核 done/发送 todo 分别更新；“分别记录”不增加业务任务；否定计划和引用既不建卡，也不无故要求用户确认。",
+      "count": 3,
+      "evidence": [
+        {
+          "case": "identity_instances_04",
+          "step": 3,
+          "text": "客户演示文稿审核完了，但还未发送。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/identity_instances_04/steps.jsonl",
+          "line": 3,
+          "note": ""
+        },
+        {
+          "case": "temporal_05",
+          "step": 1,
+          "text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_05/steps.jsonl",
+          "line": 1,
+          "note": ""
+        },
+        {
+          "case": "nonfacts_corrections_10",
+          "step": 2,
+          "text": "实习申请提交完成，租车仍没有计划，体检仍只是引用。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/nonfacts_corrections_10/steps.jsonl",
+          "line": 2,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "T5",
+      "name": "周期时间未规范化",
+      "plain": "本周、下周没有稳定落到约定的日期范围。",
+      "priority": "P2",
+      "members": [
+        {
+          "case": "temporal_01",
+          "step": 1
+        },
+        {
+          "case": "temporal_02",
+          "step": 1
+        }
+      ],
+      "example": "保存“2026-10-20所在周”或直接保存“上周/本周”，没有输出明确起止日期。",
+      "cause": "已确认：专属提示要求将相对轮次转为绝对范围，但 instance 是自由文本，缺少可验证的统一表示。这里是格式/规范化缺陷，不能把“某日所在周”直接说成日期算错。",
+      "code": [
+        [
+          "memory/task_schema.py",
+          22
+        ],
+        [
+          "memory/task_schema.py",
+          57
+        ]
+      ],
+      "fix": "按消息时间及时区，使用确定的周一至周日规则生成标准周期身份；保留原始时间表达供溯源。截止时间与任务轮次分别处理。",
+      "accept": "周二、周日、周一及跨年得到正确范围；延期不改变原任务轮次；日期表达变化不会引起关联失败。",
+      "count": 2,
+      "evidence": [
+        {
+          "case": "temporal_01",
+          "step": 1,
+          "text": "我要提交本周运营周报，还要提交下周运营周报，这是两次任务。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_01/steps.jsonl",
+          "line": 1,
+          "note": ""
+        },
+        {
+          "case": "temporal_02",
+          "step": 1,
+          "text": "我要补交上周排班周表，并且另交本周排班周表，分别记录两次。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/temporal_02/steps.jsonl",
+          "line": 1,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "T6",
+      "name": "明确纠正与责任转交更新路径缺失",
+      "plain": "用户明确说刚才记错了，或换个人负责，系统仍改不过来。",
+      "priority": "P1",
+      "members": [
+        {
+          "case": "subjects_09",
+          "step": 2
+        },
+        {
+          "case": "nonfacts_corrections_07",
+          "step": 3
+        },
+        {
+          "case": "nonfacts_corrections_09",
+          "step": 2
+        }
+      ],
+      "example": "转交哥哥后旧任务被取消，哥哥未接上；纠正误报完成后仍是 done；301 改 302 的纠正被错误的细节替换计划拒绝。",
+      "cause": "已确认：主体筛选阻断转交；done→todo 只允许 reopen，未区分事实纠正；会议室案例关联计划把 requirement 的 index 0 指向旧 time 细节。代码检查还发现 merge 不更新已有卡片的 task/subject，后者是潜在后续障碍，未追加到观测数量。",
+      "code": [
+        [
+          "memory/task_cards.py",
+          207
+        ],
+        [
+          "memory/task_cards.py",
+          220
+        ],
+        [
+          "memory/task_cards.py",
+          225
+        ]
+      ],
+      "fix": "将明确纠正、重开、转交区分为更新动作，并验证原卡及证据；转交应完整更新负责人，避免只关闭旧责任。对象纠正需同步卡片身份、检索文字及历史。",
+      "accept": "明确口误纠正恢复原卡 todo；301→302 保持同一任务且原时间不丢；转交后仍有一张正确负责人名下的 todo；普通补充不重开 done。",
+      "count": 3,
+      "evidence": [
+        {
+          "case": "subjects_09",
+          "step": 2,
+          "text": "团队车票购买这同一项任务改由哥哥负责，我不再负责，任务继续。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/subjects_09/steps.jsonl",
+          "line": 2,
+          "note": ""
+        },
+        {
+          "case": "nonfacts_corrections_07",
+          "step": 3,
+          "text": "纠正上一条：我说导出完成是口误，宣传视频实际尚未导出，原任务继续待办。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/nonfacts_corrections_07/steps.jsonl",
+          "line": 3,
+          "note": ""
+        },
+        {
+          "case": "nonfacts_corrections_09",
+          "step": 2,
+          "text": "纠正刚才的房间号，是预约 302 会议室，不是 301，还是同一个预约任务，周五下午不变。",
+          "automatic_failed": true,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/nonfacts_corrections_09/steps.jsonl",
+          "line": 2,
+          "note": ""
+        }
+      ]
+    },
+    {
+      "id": "T7",
+      "name": "同义细节去重不足",
+      "plain": "同一条要求或阻碍换个说法，被重复记了。",
+      "priority": "P2",
+      "members": [
+        {
+          "case": "details_05",
+          "step": 2
+        },
+        {
+          "case": "details_08",
+          "step": 2
+        },
+        {
+          "case": "history_duplicates_06",
+          "step": 2
+        }
+      ],
+      "example": "“需要低温运输”和“低温要求不变”同时有效；营业执照缺件被保存两条有效阻碍。",
+      "cause": "已确认：signature 用 kind、condition、description 的完全一致判断重复。语义相同但文字不同的新细节会追加；本次三条都通过了原自动断言。",
+      "code": [
+        [
+          "memory/task_cards.py",
+          142
+        ],
+        [
+          "memory/task_cards.py",
+          242
+        ]
+      ],
+      "fix": "对明确“仍然/不变/重复”的信息复用旧细节 ID、追加来源；对同义细节做有条件的合并，不能合并条件不同的要求。",
+      "accept": "重复说明后有效细节数量不增加、来源可追加；低温与避光各保留一条；条件不同的相似细节仍独立。",
+      "count": 3,
+      "evidence": [
+        {
+          "case": "details_05",
+          "step": 2,
+          "text": "软件演示不再要求离线可用，十分钟的限制仍保留。",
+          "automatic_failed": false,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/details_05/steps.jsonl",
+          "line": 2,
+          "note": ""
+        },
+        {
+          "case": "details_08",
+          "step": 2,
+          "text": "实验样品封装改成每盒 8 管，其余低温和避光要求不变。",
+          "automatic_failed": false,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/details_08/steps.jsonl",
+          "line": 2,
+          "note": ""
+        },
+        {
+          "case": "history_duplicates_06",
+          "step": 2,
+          "text": "企业账户验证仍缺少营业执照扫描件，重复说明同一个阻碍。",
+          "automatic_failed": false,
+          "path": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-cards-100-live-20261020/history_duplicates_06/steps.jsonl",
+          "line": 2,
+          "note": ""
+        }
+      ]
+    }
+  ],
+  "scoring_issues": [
+    {
+      "id": "E1",
+      "status": "fixed_in_9accd89",
+      "cases": [
+        "references_04:2",
+        "references_07:1"
+      ],
+      "issue": "只读取results，遗漏数据库里的待确认记录；已按note_id读取，分数由195变197。"
+    },
+    {
+      "id": "E2",
+      "status": "open",
+      "cases": [
+        "details_01:1"
+      ],
+      "issue": "条件已保留在time.condition，却强制要求requirement，语义误报。"
+    },
+    {
+      "id": "E3",
+      "status": "open",
+      "cases": [
+        "details_03:2"
+      ],
+      "issue": "对全部细节做A4字面禁词，未区分“旧要求作废”的备注。"
+    },
+    {
+      "id": "E4",
+      "status": "open",
+      "cases": [
+        "details_05:2",
+        "details_08:2",
+        "history_duplicates_06:2"
+      ],
+      "issue": "缺少语义重复及细节数量断言，已有观测漏检。"
+    },
+    {
+      "id": "E5",
+      "status": "coverage_gap_not_observed_failure",
+      "cases": [],
+      "issue": "多数statuses/closures只比较整体集合，可能漏掉状态归属互换；查询只检查非空。此为代码可见覆盖缺口，本次未证明发生。"
+    }
+  ]
+}
