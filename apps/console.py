@@ -97,7 +97,7 @@ def config(tenant=Depends(authorize)):
             dependencies[name]=type(exc).__name__
     return {'tenant_id':tenant, 'dependencies':dependencies, 'fake_externals':s.FAKE_EXTERNALS,
             'ask_v2':s.ASK_V2_ENABLED, 'ask_v2_shadow':s.ASK_V2_SHADOW, 'extractor':s.MEMORY_EXTRACTOR_MODE, 'storage':s.STORAGE_BACKEND,
-            'queue':s.TASK_QUEUE_BACKEND, 'preference_cards':s.PREFERENCE_CARDS_ENABLED}
+            'queue':s.TASK_QUEUE_BACKEND, 'preference_cards':s.PREFERENCE_CARDS_ENABLED, 'fact_memory':s.FACT_MEMORY_ENABLED}
 
 
 @router.post('/api/console/messages', status_code=202)
@@ -160,5 +160,5 @@ def trace(trace_id:str,tenant=Depends(authorize)):
 
 @router.get('/api/console/commands')
 def commands(tenant=Depends(authorize)):
-    from apps.console_commands import COMMANDS
-    return COMMANDS
+    from apps.console_commands import available_commands
+    return available_commands()

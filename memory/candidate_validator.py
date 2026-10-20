@@ -90,7 +90,8 @@ def validate_candidate(candidate: MemoryCandidate, *, note_text: str = "") -> tu
             content=content[:1000],
         ),
     )
-    if settings.MEMORY_CANONICAL_KEY_V3_ENABLED and 'preference_detail' not in candidate.scope:
+    if (settings.MEMORY_CANONICAL_KEY_V3_ENABLED and 'preference_detail' not in candidate.scope
+            and not (settings.FACT_MEMORY_ENABLED and candidate.memory_type in {"semantic", "episodic"})):
         validated = canonicalize_candidate(validated)
         if validated.memory_type == "task" and not all(
             (

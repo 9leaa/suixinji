@@ -199,6 +199,11 @@ def _process_note_memory_impl(
     tenant_id = str(_note_value(note, "tenant_id", "default") or "default")
     text = str(_note_value(note, "text", "") or "")
 
+    if settings.FACT_MEMORY_ENABLED:
+        from memory.fact_memory import sync_source
+        if sync_source(space_id, note_id, text):
+            force = True
+
     trace = start_trace("memory_write", space_id, note_id=note_id)
     add_step(trace, "note_saved", output_summary={"note_id": note_id, "text_len": len(text)})
     add_step(
@@ -290,6 +295,10 @@ def _process_note_memory_impl(
         extraction_kwargs: dict[str, Any] = {"classification": classification}
         if previous_messages:
             extraction_kwargs["previous_messages"] = previous_messages
+        if settings.FACT_MEMORY_ENABLED and MEMORY_EXTRACTOR_MODE != "rules":
+            from memory.fact_extraction import context as fact_context
+            extraction_kwargs["fact_context"] = fact_context(space_id, note_id, text)
+            extraction_kwargs["allow_llm_failure_fallback"] = False
         extracted_candidates = extract_candidates(note_id, text, **extraction_kwargs)
         shadow_report = build_shadow_report(extracted_candidates)
         if shadow_report is not None:
@@ -418,6 +427,11 @@ def _process_note_memory_impl(
             try:
                 mark_memory_candidate(candidate.candidate_id, "validated")
                 mark_memory_candidate(candidate.candidate_id, "processing")
+                if settings.FACT_MEMORY_ENABLED and candidate.memory_type in {"semantic", "episodic"}:
+                    from memory.fact_memory import ingest_candidate
+                    results.append(ingest_candidate(candidate, note))
+                    mark_memory_candidate(candidate.candidate_id, "applied")
+                    continue
                 if (settings.PREFERENCE_CARDS_ENABLED and candidate.memory_type != 'preference'
                         and candidate.scope.get('reference_status') == 'unresolved'):
                     from memory.workflow import create_pending
@@ -673,6 +687,8 @@ def memory_search(
         返回 `list[dict[str, Any]]`，表示按条件筛选、构造或查询得到的列表。
     """
     spec = query_spec or build_memory_query_spec(query, memory_type=memory_type)
+    if settings.FACT_MEMORY_ENABLED and memory_type is None and query_spec is None:
+        spec = replace(spec, memory_type=None)
     effective_memory_type = memory_type or spec.memory_type
     trace = start_trace("memory_query", space_id, query_len=len(query))
     add_step(
@@ -704,6 +720,27 @@ def memory_search(
         if not _memory_is_non_exportable(memory)
     ]
     results = _coverage_rerank_memory_results(candidates, query=query, limit=requested_limit)
+    if settings.FACT_MEMORY_ENABLED and memory_type is None:
+        # A mixed question must not lose existing task/preference evidence
+        # because a structured hint or a Chinese phrase index was too narrow.
+        from memory.fact_memory import score as fact_score
+        from memory.access import memory_access_allowed
+        lexical = []
+        for record in list_memories(space_id, status="active", limit=200):
+            value = record.to_dict()
+            relevance = fact_score(query, value["content"])
+            if relevance > .12 and memory_access_allowed(value, access_context) and not _memory_is_non_exportable(record):
+                lexical.append({**value, "score": relevance, "retrieval_channels": ["lexical_coverage"]})
+        merged = {r["id"]: r for r in results}
+        for row in lexical:
+            if row["id"] not in merged:
+                merged[row["id"]] = row
+        results = list(merged.values())
+    if settings.FACT_MEMORY_ENABLED and effective_memory_type in {None, "semantic", "episodic"}:
+        from memory.fact_memory import query_hits
+        fact_hits = query_hits(space_id, query, memory_type=memory_type,
+                               limit=requested_limit, access_context=access_context)
+        results = sorted(results + fact_hits, key=lambda item: item.get("score", 0), reverse=True)[:requested_limit]
     if settings.PREFERENCE_CARDS_ENABLED and effective_memory_type in {None, 'preference'}:
         from memory.preference_cards import expand_query
         results = expand_query(space_id, query, results, access_context=access_context, limit=requested_limit)
@@ -1205,7 +1242,15 @@ def format_memory_profile(space_id: str) -> str:
         返回 `str`，通常是格式化后的文本、标识或路径。
     """
     memories = list_memories(space_id, status="active", limit=100)
-    if not memories:
+    fact_profile = []
+    if settings.FACT_MEMORY_ENABLED:
+        from memory.fact_memory import cards as fact_cards, active_facts
+        fact_profile = [
+            ("【系统归纳】" if c.get("assertion_kind") == "inferred" else "") + c["content"]
+            for c in fact_cards(space_id)
+        ]
+        fact_profile += ["【待整理】" + f["content"] for f in active_facts(space_id) if not f["processed_at"]]
+    if not memories and not fact_profile:
         return "还没有足够的长期记忆生成用户画像。"
     # The profile is a current-state projection, not an audit log. Older
     # active V2/V3 rows can coexist with a newer terminal row after a key or
@@ -1267,6 +1312,8 @@ def format_memory_profile(space_id: str) -> str:
         ("近期事件", [memory for memory in profile_memories if memory.memory_type == "episodic"][:5]),
     ]
     lines = ["动态用户画像："]
+    if fact_profile:
+        lines.append("\n事实与事件（系统归纳有单独标识）：\n" + "\n".join("- " + text for text in fact_profile[:20]))
     for title, items in sections:
         if not items:
             continue

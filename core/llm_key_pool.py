@@ -167,7 +167,9 @@ class APIKeyPool:
                 if state.key != key:
                     continue
                 state.failures += 1
-                if category == "rate_limit":
+                if category == "insufficient_balance":
+                    state.cooldown_until = max(state.cooldown_until, time.monotonic() + 1800)
+                elif category == "rate_limit":
                     cooldown = retry_after if retry_after is not None else self.default_cooldown_seconds
                     # Avoid synchronized retries when several workers receive
                     # the same provider 429 at once.

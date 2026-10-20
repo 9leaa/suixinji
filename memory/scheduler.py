@@ -29,7 +29,7 @@ from storage.note_storage import NOTES_DIR, list_note_space_ids
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_MEMORY_SCHEDULER_INTERVAL_SECONDS = 3600
-_EVALUATION_SPACE_PREFIXES = ("l1_eval_", "l2_eval_", "l3_eval_")
+_EVALUATION_SPACE_PREFIXES = ("l1_eval_", "l2_eval_", "l3_eval_", "fmeval_")
 
 
 def is_evaluation_space(space_id: str) -> bool:
@@ -61,6 +61,8 @@ def run_memory_consolidation(space_id: str, cadence: str) -> dict[str, Any]:
         返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
     cadence = cadence.strip().lower()
+    if settings.FACT_MEMORY_ENABLED and cadence in {"weekly", "monthly"}:
+        return {"space_id": space_id, "status": "skipped", "reason": "fact_memory_uses_daily_and_threshold"}
     if cadence == "daily":
         return {**process_unextracted_notes(space_id), "expired_count": run_expiry_once(space_id=space_id)["expired_count"]}
     if cadence == "weekly":

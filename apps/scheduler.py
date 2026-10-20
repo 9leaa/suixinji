@@ -60,6 +60,11 @@ def run_once() -> bool:
             log_event("runtime.scheduler_leader", status="completed", extra={"stage4_mode": True})
             return True
         run_scheduler_tick_safely(lambda _chat_id, _text: False, executor=StreamTaskDispatcher())
+        if settings.FACT_MEMORY_ENABLED:
+            from memory.fact_memory import enqueue_due
+            for space_id in list_memory_space_ids():
+                if not is_evaluation_space(space_id):
+                    enqueue_due(space_id)
         today = date.today()
         if settings.PREFERENCE_CARDS_ENABLED:
             for space_id in list_memory_space_ids():

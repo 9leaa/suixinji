@@ -222,6 +222,18 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
     payload = _payload(task)
     operation = str(payload.get("operation") or "extract")
     note_id = str(payload.get("note_id") or "")
+    if operation == "fact_consolidate":
+        from core import settings
+        from memory.scheduler import is_evaluation_space
+        if is_evaluation_space(str(task["space_id"])):
+            return None  # Evaluation controls its own frozen run boundaries.
+        if settings.FACT_MEMORY_ENABLED:
+            from memory.fact_memory import consolidate
+            result = consolidate(str(task["space_id"]), str(payload["memory_type"]),
+                                 trigger=str(payload.get("trigger", "threshold")))
+            if result["status"] == "busy":
+                raise RetryLater("fact memory consolidation busy", delay_seconds=30)
+        return None
     if operation == "consolidate":
         from memory.scheduler import run_memory_consolidation_once
 

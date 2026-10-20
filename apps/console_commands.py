@@ -25,11 +25,28 @@ COMMANDS = [
     {'command':'/help','example':'/help','description':'显示完整命令列表'},
 ]
 
+FACT_COMMANDS = [
+    {"command": "/memory facts consolidate", "example": "/memory facts consolidate",
+     "description": "整理语义和情景记忆，立即汇总待确认问题"},
+    {"command": "/memory facts questions", "example": "/memory facts questions",
+     "description": "查看整理中发现的疑问"},
+    {"command": "/memory facts forget", "example": "/memory facts forget 示例主题",
+     "description": "预览相关记忆，逐条或批量审批后才删除"},
+]
+
+
+def available_commands():
+    from core import settings
+    return COMMANDS + (FACT_COMMANDS if settings.FACT_MEMORY_ENABLED else [])
+
 
 @traced('命令识别与路由', 'planning')
 def route_message(text: str, mode='auto'):
     text=text.strip()
     from core import settings
+    if mode == "auto":
+        from memory.fact_commands import natural_command
+        text = natural_command(text) or text
     if settings.PREFERENCE_CARDS_ENABLED and text.startswith('/pending '):
         return {'task_type': 'ingest', 'mode': 'ingest', 'payload': {}}
     if mode=='ask' and not text.startswith('/'):
@@ -58,11 +75,15 @@ def _check_memory_scope(space_id, memory_id):
 
 @traced('命令执行', 'command')
 def execute_command(space_id, text, *, tenant_id='default', message_id=None):
+    from memory.fact_commands import execute
+    fact_result = execute(space_id, text)
+    if fact_result is not None:
+        return fact_result
     from bot import feishu_bot as existing
     parts=text.strip().split(maxsplit=1)
     head,tail=parts[0], parts[1] if len(parts)>1 else ''
     if head=='/help':
-        return '\n'.join(c['example']+' — '+c['description'] for c in COMMANDS)
+        return '\n'.join(c['example']+' — '+c['description'] for c in available_commands())
     if head in {'/type','/tag','/filter'}:
         return existing._handle_direct_query_command(space_id,text)
     if head=='/memory':
