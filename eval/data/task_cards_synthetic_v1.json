@@ -1,0 +1,592 @@
+{
+  "version": 1,
+  "description": "手工构造的任务记忆开发用例；期望在运行前确定，不是独立留出评测集。",
+  "cases": [
+    {
+      "id": "lifecycle",
+      "name": "要求、延期、解除阻碍、部分完成和最终完成",
+      "query": "项目周报",
+      "steps": [
+        {
+          "text": "我要提交项目周报，周五前交，必须包含收入数据，目前还在等小明提供销售数据。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "kinds": [
+              "requirement",
+              "time",
+              "blocker"
+            ]
+          }
+        },
+        {
+          "text": "项目周报改成周六交，其他要求不变。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "same_as": 0,
+            "absent_current": [
+              "周五"
+            ],
+            "contains_current": [
+              "收入",
+              "周六"
+            ]
+          }
+        },
+        {
+          "text": "项目周报的销售数据已经拿到了，之前等数据的阻碍解除了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "same_as": 0,
+            "no_active_kinds": [
+              "blocker"
+            ]
+          }
+        },
+        {
+          "text": "项目周报初稿写完了，但还没提交。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "项目周报已经提交给领导，整个任务完成了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "same_as": 0,
+            "closures": [
+              "completed"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "closure",
+      "name": "取消、补充结果和明确重开",
+      "query": "摄影课程",
+      "steps": [
+        {
+          "text": "我要报名这次周末摄影课程。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "这次摄影课程我不报了，取消报名任务。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "same_as": 0,
+            "closures": [
+              "cancelled"
+            ]
+          }
+        },
+        {
+          "text": "补充一下，取消摄影课程报名是因为周末要出差。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "same_as": 0,
+            "closures": [
+              "cancelled"
+            ],
+            "contains_current": [
+              "出差"
+            ]
+          }
+        },
+        {
+          "text": "我改变主意了，重开之前那次摄影课程报名任务，我要继续报名。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "same_as": 0,
+            "closures": [
+              null
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "instances",
+      "name": "同名不同轮次分别结束",
+      "query": "验收报告",
+      "steps": [
+        {
+          "text": "我要提交第一轮验收报告。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "另外新建一个任务：提交第二轮验收报告。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "第一轮验收报告提交完成了，第二轮还没交。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ]
+          }
+        },
+        {
+          "text": "验收报告做完了。",
+          "reset_context": true,
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "pending": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "subjects",
+      "name": "执行人隔离",
+      "query": "采购清单",
+      "steps": [
+        {
+          "text": "我要整理采购清单。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "subject_aliases": {
+              "小明": "同事小明"
+            }
+          }
+        },
+        {
+          "text": "同事小明也要整理采购清单。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "subjects": [
+              "用户",
+              "同事小明"
+            ],
+            "subject_aliases": {
+              "小明": "同事小明"
+            }
+          }
+        },
+        {
+          "text": "同事小明的采购清单整理完了，我的还没整理完。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "subjects": [
+              "用户",
+              "同事小明"
+            ],
+            "subject_status": {
+              "同事小明": "done",
+              "用户": "todo"
+            },
+            "subject_aliases": {
+              "小明": "同事小明"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "reference",
+      "name": "唯一指代继承任务",
+      "query": "数据库备份",
+      "steps": [
+        {
+          "text": "我要完成今晚的数据库备份。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "这个已经完成了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "same_as": 0,
+            "closures": [
+              "completed"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "ambiguous_person",
+      "name": "多人指代不猜测",
+      "query": "合同",
+      "steps": [
+        {
+          "text": "同事小明要审核甲方合同。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "同事小王要审核乙方合同。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "他们两个人刚刚都和我聊过，他说合同已经审完了，但我没说这里的他是哪位。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "pending": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "repeat",
+      "name": "重复消息和明确新的一次",
+      "query": "测试报告",
+      "steps": [
+        {
+          "text": "记得编写接口测试报告。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "再提醒一遍，记得编写接口测试报告，就是刚才那份。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "刚才那份接口测试报告已经编写完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "另外再新建一项，编写另一份接口测试报告。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "split",
+      "name": "同消息独立任务拆分",
+      "query": "报销",
+      "steps": [
+        {
+          "text": "我需要提交差旅报销，还要预约汽车保养，这两件事互不相关。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporal",
+      "name": "相对周期区别于截止日期",
+      "query": "周报",
+      "steps": [
+        {
+          "text": "本周要提交项目周报，下周也要提交一份项目周报，这是两次任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "distinct_instances": true,
+            "instance_date_ranges": [
+              [
+                "2026-10-19",
+                "2026-10-25"
+              ],
+              [
+                "2026-10-26",
+                "2026-11-01"
+              ]
+            ]
+          }
+        },
+        {
+          "text": "本周这份项目周报的截止时间改为周日，下周那份不变。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "same_as": 0,
+            "instance_date_ranges": [
+              [
+                "2026-10-19",
+                "2026-10-25"
+              ],
+              [
+                "2026-10-26",
+                "2026-11-01"
+              ]
+            ],
+            "contains_current": [
+              "周日"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "nonfacts",
+      "name": "问题、假设、引用不产生任务",
+      "query": "迁移",
+      "steps": [
+        {
+          "text": "如果将来换服务器，也许可以考虑迁移数据库，现在还没决定做。",
+          "expect": {
+            "cards": 0,
+            "statuses": []
+          }
+        },
+        {
+          "text": "你觉得我是不是应该迁移数据库？这只是问问，不是我的计划。",
+          "expect": {
+            "cards": 0,
+            "statuses": []
+          }
+        },
+        {
+          "text": "文档里有一句示例：“我要迁移数据库”，这是演示文字，不是我要做的事。",
+          "expect": {
+            "cards": 0,
+            "statuses": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "actions",
+      "name": "同对象不同动作不能合并",
+      "query": "设计稿",
+      "steps": [
+        {
+          "text": "我要审核首页设计稿。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "另外还有一项独立任务：把首页设计稿发送给客户。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "首页设计稿审核完成了，但还没有发送给客户。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "condition",
+      "name": "条件保留、暂停仍为todo",
+      "query": "部署",
+      "steps": [
+        {
+          "text": "等测试全部通过后，再部署支付服务；部署前必须备份数据库。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "contains_current": [
+              "测试",
+              "备份"
+            ]
+          }
+        },
+        {
+          "text": "支付服务部署先暂停，等安全审批，这个任务没有取消。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "abandoned",
+      "name": "放弃与完成不同",
+      "query": "演讲稿",
+      "steps": [
+        {
+          "text": "我要写一份年会演讲稿。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "年会演讲取消了，这份演讲稿我放弃写了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "same_as": 0,
+            "closures": [
+              "abandoned"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "history",
+      "name": "迟到的旧消息不能覆盖当前状态",
+      "query": "迁移方案",
+      "steps": [
+        {
+          "text": "我要编写迁移方案。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "迁移方案已经编写完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ]
+          }
+        },
+        {
+          "text": "迁移方案我还没开始写。",
+          "ts": "2026-10-19T09:00:00+08:00",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "pending": true
+          }
+        }
+      ]
+    }
+  ],
+  "scoring_revision": 2,
+  "scoring_note": "复核后允许本案例中的小明/同事小明等价；补充自然周日期断言。原始模型输出及首次评分保留。"
+}

@@ -1,0 +1,199 @@
+{
+  "model": "deepseek-v4-flash",
+  "endpoint": "https://api.deepseek.com",
+  "mode": "real_llm",
+  "storage": "isolated_sqlite",
+  "dataset": "eval/data/task_cards_synthetic_v1.json",
+  "cases": 14,
+  "scope": "真实抽取与关联、保存及查询证据；不含最终自然语言回答或飞书送达",
+  "total_steps": 41,
+  "passed_steps": 35,
+  "passed_cases": 9,
+  "results": [
+    {
+      "id": "lifecycle",
+      "name": "要求、延期、解除阻碍、部分完成和最终完成",
+      "steps": 5,
+      "passed_steps": 4,
+      "failed_steps": [
+        {
+          "step": 3,
+          "text": "项目周报的销售数据已经拿到了，之前等数据的阻碍解除了。",
+          "errors": [
+            "过期细节仍然有效：blocker"
+          ]
+        }
+      ],
+      "model_calls": 9,
+      "pending_count": 0
+    },
+    {
+      "id": "closure",
+      "name": "取消、补充结果和明确重开",
+      "steps": 4,
+      "passed_steps": 4,
+      "failed_steps": [],
+      "model_calls": 7,
+      "pending_count": 0
+    },
+    {
+      "id": "instances",
+      "name": "同名不同轮次分别结束",
+      "steps": 4,
+      "passed_steps": 4,
+      "failed_steps": [],
+      "model_calls": 6,
+      "pending_count": 1
+    },
+    {
+      "id": "subjects",
+      "name": "执行人隔离",
+      "steps": 3,
+      "passed_steps": 2,
+      "failed_steps": [
+        {
+          "step": 3,
+          "text": "同事小明的采购清单整理完了，我的还没整理完。",
+          "errors": [
+            "状态不符：['todo', 'todo']",
+            "同事小明 的任务状态应为 done",
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 4,
+      "pending_count": 1
+    },
+    {
+      "id": "reference",
+      "name": "唯一指代继承任务",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "这个已经完成了。",
+          "errors": [
+            "状态不符：['todo']",
+            "结束原因不符：[None]",
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 2,
+      "pending_count": 1
+    },
+    {
+      "id": "ambiguous_person",
+      "name": "多人指代不猜测",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 1
+    },
+    {
+      "id": "repeat",
+      "name": "重复消息和明确新的一次",
+      "steps": 4,
+      "passed_steps": 4,
+      "failed_steps": [],
+      "model_calls": 6,
+      "pending_count": 0
+    },
+    {
+      "id": "split",
+      "name": "同消息独立任务拆分",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "temporal",
+      "name": "相对周期区别于截止日期",
+      "steps": 2,
+      "passed_steps": 0,
+      "failed_steps": [
+        {
+          "step": 1,
+          "text": "本周要提交项目周报，下周也要提交一份项目周报，这是两次任务。",
+          "errors": [
+            "周期日期不符：[['2026-10-20', '2026-10-26'], ['2026-10-27', '2026-11-02']]"
+          ]
+        },
+        {
+          "step": 2,
+          "text": "本周这份项目周报的截止时间改为周日，下周那份不变。",
+          "errors": [
+            "当前细节遗漏：周日",
+            "不应进入待确认",
+            "周期日期不符：[['2026-10-20', '2026-10-26'], ['2026-10-27', '2026-11-02']]"
+          ]
+        }
+      ],
+      "model_calls": 2,
+      "pending_count": 2
+    },
+    {
+      "id": "nonfacts",
+      "name": "问题、假设、引用不产生任务",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "actions",
+      "name": "同对象不同动作不能合并",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "condition",
+      "name": "条件保留、暂停仍为todo",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 1,
+          "text": "等测试全部通过后，再部署支付服务；部署前必须备份数据库。",
+          "errors": [
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 4,
+      "pending_count": 1
+    },
+    {
+      "id": "abandoned",
+      "name": "放弃与完成不同",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "history",
+      "name": "迟到的旧消息不能覆盖当前状态",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 1
+    }
+  ],
+  "scoring_revision": 2,
+  "scoring_note": "人工复核后接受当前案例中小明与同事小明等价，并增加自然周日期检查；模型输出未改写。",
+  "implementation_commit": "20d2a55",
+  "branch": "codex/task-memory-cards",
+  "raw_results_directory": "eval/results/task-cards-live-20261020-verified",
+  "total_model_calls": 59
+}

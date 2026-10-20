@@ -1,0 +1,39 @@
+{
+  "dataset": "eval/data/task_cards_synthetic_100_v1.json",
+  "sha256": "e274f7cf6fe57ef05c4d6037e222bfe87f647b7ebd32a55c44829e6f82ec7e8d",
+  "generator_model": "gpt-6.1-sol",
+  "reasoning_effort": "medium",
+  "cases": 100,
+  "messages": 222,
+  "category_cases": {
+    "lifecycle": 10,
+    "details": 10,
+    "progress_blockers": 10,
+    "subjects": 10,
+    "identity_instances": 10,
+    "references": 10,
+    "temporal": 10,
+    "history_duplicates": 10,
+    "reopen_new_round": 10,
+    "nonfacts_corrections": 10
+  },
+  "category_messages": {
+    "lifecycle": 22,
+    "details": 19,
+    "progress_blockers": 21,
+    "subjects": 18,
+    "identity_instances": 27,
+    "references": 24,
+    "temporal": 16,
+    "history_duplicates": 26,
+    "reopen_new_round": 32,
+    "nonfacts_corrections": 17
+  },
+  "validation": "JSON, unique IDs, steps, same_as, card counts, binary statuses, closures, supported scoring fields, timestamps and ISO week boundaries passed; primary-agent semantic review completed",
+  "model_evaluation_run": false,
+  "limitations": [
+    "自动检查只覆盖expect列出的断言；多任务状态归属与同义表达还需按oracle人工复核。",
+    "换执行人、纠正误报完成等是预期业务行为，不表示当前实现已支持。",
+    "本数据集用于开发评测，尚无模型通过率。"
+  ]
+}

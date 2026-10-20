@@ -1,0 +1,4088 @@
+{
+  "version": 1,
+  "description": "手工设计的100条任务记忆场景，每个case是独立会话；仅数据设计，未运行模型。默认消息时间为2026-10-20T09:00:00+08:00，每步加1分钟；显式ts用于时间边界和乱序。自然周按周一至周日。每步expect为自动可检验部分，case.oracle补充语义裁决，不能用自动通过替代人工核对。任务字段为subject/task/instance/task_status/closure_reason/details；task_status仅todo或done，pending_review仅表示处理待确认，不是任务状态。结束原因completed/cancelled/abandoned/null；取消和放弃不等于完成。",
+  "cases": [
+    {
+      "id": "lifecycle_01",
+      "category": "lifecycle",
+      "name": "创建并完成明确提交",
+      "query": "报销单",
+      "oracle": "动作是提交；完成提交才结束。",
+      "steps": [
+        {
+          "text": "我要提交杭州出差报销单。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "杭州出差报销单已经提交成功。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "lifecycle_02",
+      "category": "lifecycle",
+      "name": "创建时已完成",
+      "query": "更换电池",
+      "oracle": "已经做完的真实任务记录为 done/completed，不生成待办。",
+      "steps": [
+        {
+          "text": "今天我已经把门锁电池换好了，这项更换任务完成了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "lifecycle_03",
+      "category": "lifecycle",
+      "name": "明确取消未执行任务",
+      "query": "牙科预约",
+      "oracle": "取消计划为 cancelled，不是 completed。",
+      "steps": [
+        {
+          "text": "我要预约洗牙。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "洗牙我不约了，取消这个预约任务。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "cancelled"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "lifecycle_04",
+      "category": "lifecycle",
+      "name": "主动放弃长任务",
+      "query": "手工围巾",
+      "oracle": "放弃执行为 abandoned。",
+      "steps": [
+        {
+          "text": "我打算织一条手工围巾送给妈妈。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "围巾织不下去了，我决定彻底放弃这项任务。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "abandoned"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "lifecycle_05",
+      "category": "lifecycle",
+      "name": "结束原因未知",
+      "query": "旧相册",
+      "oracle": "仅确认任务结束，不能补造完成或取消。",
+      "steps": [
+        {
+          "text": "我要整理旧相册。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "整理旧相册这个任务已经结束，结束原因我没记下。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "lifecycle_06",
+      "category": "lifecycle",
+      "name": "暂停后恢复",
+      "query": "乐谱",
+      "oracle": "暂停、恢复均是 todo，卡片身份不变。",
+      "steps": [
+        {
+          "text": "我要誊写这份乐谱。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "誊写乐谱先暂停，等手腕恢复。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "手腕恢复了，继续誊写之前那份乐谱。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "lifecycle_07",
+      "category": "lifecycle",
+      "name": "删除待办的业务含义",
+      "query": "会员续费",
+      "oracle": "明确不再做且删除待办，保留 done/cancelled 任务历史。",
+      "steps": [
+        {
+          "text": "我要给健身房会员续费。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "把健身房会员续费从待办里删掉，我决定不续了，取消任务。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "cancelled"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "lifecycle_08",
+      "category": "lifecycle",
+      "name": "完成后补充结果",
+      "query": "寄送护照",
+      "oracle": "补充快递单号不重开已完成任务。",
+      "steps": [
+        {
+          "text": "我要寄送护照复印件。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "护照复印件已寄出，寄送任务完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "补充寄送结果：快递单号是 SF000731。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0,
+            "kinds": [
+              "outcome"
+            ],
+            "contains_current": [
+              "SF000731"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "lifecycle_09",
+      "category": "lifecycle",
+      "name": "取消后说明原因",
+      "query": "场地预订",
+      "oracle": "解释取消原因不等于恢复预订。",
+      "steps": [
+        {
+          "text": "我要预订读书会场地。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "这次读书会场地预订取消了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "cancelled"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "补充取消场地预订的原因：参加人数太少。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "cancelled"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "lifecycle_10",
+      "category": "lifecycle",
+      "name": "未开始仍是待办",
+      "query": "海报打印",
+      "oracle": "没有开始只是进展，不能取消任务。",
+      "steps": [
+        {
+          "text": "我需要打印活动海报。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "活动海报还没有开始打印，计划仍然有效。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "progress"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "details_01",
+      "category": "details",
+      "name": "已承诺的条件计划",
+      "query": "野餐",
+      "oracle": "条件计划已经决定执行；天气条件不等于假设提问。",
+      "steps": [
+        {
+          "text": "我已经决定：只要周日不下雨，就去购买野餐食材。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "requirement"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "details_02",
+      "category": "details",
+      "name": "条件尚未满足",
+      "query": "服务器升级",
+      "oracle": "批准是执行条件；未批准仍保留真实待办。",
+      "steps": [
+        {
+          "text": "等负责人批准后，我要升级测试服务器。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "升级测试服务器的批准还没下来，继续等。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "details_03",
+      "category": "details",
+      "name": "替换输出格式",
+      "query": "讲义",
+      "oracle": "A4 改为 A5，只替换格式要求。",
+      "steps": [
+        {
+          "text": "我要排版培训讲义，成品纸张用 A4。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "requirement"
+            ],
+            "contains_current": [
+              "A4"
+            ]
+          }
+        },
+        {
+          "text": "培训讲义纸张改成 A5，原来的 A4 要求作废。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "contains_current": [
+              "A5"
+            ],
+            "absent_current": [
+              "A4"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "details_04",
+      "category": "details",
+      "name": "追加要求不替换旧要求",
+      "query": "展览标签",
+      "oracle": "新增字号要求，双语要求仍有效。",
+      "steps": [
+        {
+          "text": "我要制作展览标签，必须中英双语。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "展览标签再加一条要求：字号至少 18pt，双语要求保留。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "requirement"
+            ],
+            "contains_current": [
+              "18pt"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "details_05",
+      "category": "details",
+      "name": "移除指定要求",
+      "query": "软件演示",
+      "oracle": "只移除离线要求，保留演示任务和其他要求。",
+      "steps": [
+        {
+          "text": "我要准备软件演示，要求离线可用并且控制在十分钟内。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "软件演示不再要求离线可用，十分钟的限制仍保留。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "requirement"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "details_06",
+      "category": "details",
+      "name": "条件修改不产生新实例",
+      "query": "喷漆",
+      "oracle": "把温度条件改为湿度条件，任务身份不变。",
+      "steps": [
+        {
+          "text": "温度超过 15℃ 时，我要给阳台栏杆喷漆。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "栏杆喷漆的条件改为湿度低于 70%，不再以温度为条件。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "requirement"
+            ],
+            "contains_current": [
+              "70%"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "details_07",
+      "category": "details",
+      "name": "补充备注不改状态",
+      "query": "图书归还",
+      "oracle": "书脊磨损为备注，不能推断已归还。",
+      "steps": [
+        {
+          "text": "我要归还借来的古地图集。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "给归还古地图集这项任务补个备注：借来时书脊已有磨损。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "note"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "details_08",
+      "category": "details",
+      "name": "多个要求分别修正",
+      "query": "样品封装",
+      "oracle": "仅改封装数量，低温和避光仍是要求。",
+      "steps": [
+        {
+          "text": "我要封装实验样品，每盒 12 管，需要低温运输并避光。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "实验样品封装改成每盒 8 管，其余低温和避光要求不变。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "requirement"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "details_09",
+      "category": "details",
+      "name": "明确撤销执行前提",
+      "query": "证书下载",
+      "oracle": "取消手机号验证前提不取消下载任务。",
+      "steps": [
+        {
+          "text": "我需要下载培训证书，先通过手机号验证。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "下载培训证书无需手机号验证了，直接下载即可，任务继续。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "details_10",
+      "category": "details",
+      "name": "需求改动不代表执行完成",
+      "query": "广播录制",
+      "oracle": "脚本要求改变，不新增广播录制任务。",
+      "steps": [
+        {
+          "text": "我要录制校园广播，内容包含交通安全提示。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "校园广播内容改为消防提示，原来的交通安全提示不录了，录制任务继续。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "requirement"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_01",
+      "category": "progress_blockers",
+      "name": "初稿不是提交完成",
+      "query": "论文投稿",
+      "oracle": "初稿完成是进展；投稿仍待做。",
+      "steps": [
+        {
+          "text": "我要向期刊提交论文。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "论文初稿写完了，还没有向期刊投稿。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "progress"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_02",
+      "category": "progress_blockers",
+      "name": "部分物品不是整体完成",
+      "query": "仓库盘点",
+      "oracle": "仅 A 区完成，整体盘点继续。",
+      "steps": [
+        {
+          "text": "我要盘点整个仓库，包括 A 区和 B 区。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "仓库 A 区盘点完成，B 区还没盘，整个任务继续。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "progress"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_03",
+      "category": "progress_blockers",
+      "name": "等待中不产生第三状态",
+      "query": "发票",
+      "oracle": "等待盖章仍为 todo。",
+      "steps": [
+        {
+          "text": "我要提交已盖章的发票申请，目前还在等财务盖章。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "blocker"
+            ]
+          }
+        },
+        {
+          "text": "发票申请仍在等盖章，还没提交。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_04",
+      "category": "progress_blockers",
+      "name": "解除唯一阻碍",
+      "query": "打印合同",
+      "oracle": "设备修好只解除 blocker，不能认为合同已经打印。",
+      "steps": [
+        {
+          "text": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "blocker"
+            ]
+          }
+        },
+        {
+          "text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "no_active_kinds": [
+              "blocker"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_05",
+      "category": "progress_blockers",
+      "name": "解除部分阻碍",
+      "query": "线上课程",
+      "oracle": "只解除网络故障，麦克风故障仍有效。",
+      "steps": [
+        {
+          "text": "我要录制线上课程，但网络断了而且麦克风坏了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "blocker"
+            ]
+          }
+        },
+        {
+          "text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "blocker"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_06",
+      "category": "progress_blockers",
+      "name": "解除阻碍保留要求",
+      "query": "签证材料",
+      "oracle": "拿到工资单后，翻译要求仍需满足。",
+      "steps": [
+        {
+          "text": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "requirement",
+              "blocker"
+            ]
+          }
+        },
+        {
+          "text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "requirement"
+            ],
+            "no_active_kinds": [
+              "blocker"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_07",
+      "category": "progress_blockers",
+      "name": "进度数字来自用户",
+      "query": "巡检",
+      "oracle": "百分比仅可沿用明确给出的 60%，不能虚构剩余完成时间。",
+      "steps": [
+        {
+          "text": "我要完成机房巡检。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "机房巡检目前完成了 60%，剩下的还要继续。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "progress"
+            ],
+            "contains_current": [
+              "60%"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_08",
+      "category": "progress_blockers",
+      "name": "阻碍重新出现",
+      "query": "门禁安装",
+      "oracle": "新故障可重新形成 blocker，任务一直 todo。",
+      "steps": [
+        {
+          "text": "我要安装新门禁，但缺少电源适配器。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "blocker"
+            ]
+          }
+        },
+        {
+          "text": "门禁适配器到了，缺件问题解决，尚未安装。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "no_active_kinds": [
+              "blocker"
+            ]
+          }
+        },
+        {
+          "text": "门禁安装又遇到阻碍：墙内供电线路坏了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "blocker"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_09",
+      "category": "progress_blockers",
+      "name": "失败后继续重试",
+      "query": "数据导入",
+      "oracle": "失败且继续尝试为 todo，非 abandoned。",
+      "steps": [
+        {
+          "text": "我要导入上季度库存数据。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "库存数据导入失败了一次，我会修正格式后重试，任务继续。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "progress"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_10",
+      "category": "progress_blockers",
+      "name": "实际完成解除等待",
+      "query": "审批提交",
+      "oracle": "提交是任务边界，提交后等待审批不必使提交任务仍待办。",
+      "steps": [
+        {
+          "text": "我要提交设备采购审批申请。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "设备采购审批申请已经提交成功，提交任务完成，现在只是在等审批结果。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "subjects_01",
+      "category": "subjects",
+      "name": "默认执行人",
+      "query": "照片备份",
+      "oracle": "未说明执行人，默认用户。",
+      "steps": [
+        {
+          "text": "需要备份旅行照片。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "subjects": [
+              "用户"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "subjects_02",
+      "category": "subjects",
+      "name": "项目名不是人",
+      "query": "星河项目",
+      "oracle": "星河是项目，执行人是用户。",
+      "steps": [
+        {
+          "text": "我要整理星河项目的预算表。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "subjects": [
+              "用户"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "subjects_03",
+      "category": "subjects",
+      "name": "不同人相同任务",
+      "query": "培训签到",
+      "oracle": "两人任务分别结束，不能互相覆盖。 最终同事陈悦的整理签到表为 done/completed，用户自己的为 todo。",
+      "steps": [
+        {
+          "text": "我需要整理培训签到表。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "subjects": [
+              "用户"
+            ]
+          }
+        },
+        {
+          "text": "同事陈悦也需要整理培训签到表。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "subjects": [
+              "用户",
+              "同事陈悦"
+            ],
+            "subject_aliases": {
+              "陈悦": "同事陈悦"
+            }
+          }
+        },
+        {
+          "text": "同事陈悦的培训签到表整理完了，我自己的还没整理。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 1,
+            "subject_status": {
+              "同事陈悦": "done",
+              "用户": "todo"
+            },
+            "subject_aliases": {
+              "陈悦": "同事陈悦"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "subjects_04",
+      "category": "subjects",
+      "name": "明确全名和简称同一人",
+      "query": "设备清点",
+      "oracle": "消息明确同一人后，简称可匹配原卡，不可新增。",
+      "steps": [
+        {
+          "text": "同事李若宁要清点摄影设备，后面简称若宁，指的都是同一个人。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "subjects": [
+              "同事李若宁"
+            ],
+            "subject_aliases": {
+              "李若宁": "同事李若宁",
+              "若宁": "同事李若宁"
+            }
+          }
+        },
+        {
+          "text": "若宁已经清点完摄影设备。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0,
+            "subjects": [
+              "同事李若宁"
+            ],
+            "subject_aliases": {
+              "李若宁": "同事李若宁",
+              "若宁": "同事李若宁"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "subjects_05",
+      "category": "subjects",
+      "name": "亲属称谓执行人",
+      "query": "房屋保险",
+      "oracle": "妈妈是执行人；用户只是记录。",
+      "steps": [
+        {
+          "text": "妈妈要续购房屋保险，我只是帮她记一下。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "subjects": [
+              "妈妈"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "subjects_06",
+      "category": "subjects",
+      "name": "同姓不认作同一人",
+      "query": "招标文件",
+      "oracle": "采购王老师与法务王老师为明确不同的人。",
+      "steps": [
+        {
+          "text": "采购部王老师要审核招标文件。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "subjects": [
+              "采购部王老师"
+            ]
+          }
+        },
+        {
+          "text": "法务部王老师是另一个人，他也要审核同一份招标文件。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "subjects": [
+              "采购部王老师",
+              "法务部王老师"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "subjects_07",
+      "category": "subjects",
+      "name": "用户代号明确绑定",
+      "query": "图标绘制",
+      "oracle": "小舟明确为用户本人，不生成第二执行人。",
+      "steps": [
+        {
+          "text": "我在团队里叫小舟，小舟就是我本人。我要绘制应用图标。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "subjects": [
+              "用户"
+            ],
+            "subject_aliases": {
+              "小舟": "用户"
+            }
+          }
+        },
+        {
+          "text": "小舟的应用图标已经绘制完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0,
+            "subjects": [
+              "用户"
+            ],
+            "subject_aliases": {
+              "小舟": "用户"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "subjects_08",
+      "category": "subjects",
+      "name": "委托与执行人区分",
+      "query": "租赁合同",
+      "oracle": "明确由姐姐负责审核，用户负责转发，两项任务。 最终姐姐的审核租赁合同为 done/completed，用户的转发租赁合同为 todo。",
+      "steps": [
+        {
+          "text": "姐姐负责审核租赁合同，我负责把租赁合同转发给房东，这是两个独立任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "subjects": [
+              "姐姐",
+              "用户"
+            ]
+          }
+        },
+        {
+          "text": "姐姐已审核完租赁合同，我还没转发给房东。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 0,
+            "subject_status": {
+              "姐姐": "done",
+              "用户": "todo"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "subjects_09",
+      "category": "subjects",
+      "name": "明确换执行人",
+      "query": "车票购买",
+      "oracle": "换负责人是原任务主体修正，不生成两个待办。",
+      "steps": [
+        {
+          "text": "原计划由我购买团队车票。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "团队车票购买这同一项任务改由哥哥负责，我不再负责，任务继续。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "subjects": [
+              "哥哥"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "subjects_10",
+      "category": "subjects",
+      "name": "昵称未明确绑定",
+      "query": "投标报价",
+      "oracle": "小林与林海不能仅凭字面猜同人，明确另一个人。",
+      "steps": [
+        {
+          "text": "同事林海要制作投标报价。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "subjects": [
+              "同事林海"
+            ],
+            "subject_aliases": {
+              "林海": "同事林海"
+            }
+          }
+        },
+        {
+          "text": "另一位同事小林也要制作投标报价，他不是林海。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "subjects": [
+              "同事林海",
+              "同事小林"
+            ],
+            "subject_aliases": {
+              "林海": "同事林海",
+              "小林": "同事小林"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "identity_instances_01",
+      "category": "identity_instances",
+      "name": "明确两轮验收",
+      "query": "系统验收",
+      "oracle": "轮次不同，不因同名合并；完成指定第一轮。 最终第一轮系统验收为 done/completed，第二轮为 todo。",
+      "steps": [
+        {
+          "text": "我要完成第一轮系统验收。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "再新增第二轮系统验收任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "distinct_instances": true
+          }
+        },
+        {
+          "text": "第一轮系统验收已完成，第二轮还没开始。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 1,
+            "distinct_instances": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "identity_instances_02",
+      "category": "identity_instances",
+      "name": "订单号区分",
+      "query": "商品打包",
+      "oracle": "订单号是实例；只结束 A317。 最终订单 A317 的打包为 done/completed，B902 的打包为 todo。",
+      "steps": [
+        {
+          "text": "我要给订单 A317 打包商品。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "另有订单 B902 也需要打包商品，这是另一项打包任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "distinct_instances": true
+          }
+        },
+        {
+          "text": "订单 A317 商品打包完成，B902 尚未打包。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 1,
+            "distinct_instances": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "identity_instances_03",
+      "category": "identity_instances",
+      "name": "不同对象相同动作",
+      "query": "资料扫描",
+      "oracle": "两份不同资料可独立完成。 最终毕业证扫描为 done/completed，购房合同扫描为 todo。",
+      "steps": [
+        {
+          "text": "我要扫描毕业证，还要扫描购房合同，两项分别处理。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "text": "毕业证扫描完成，购房合同还没扫描。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "identity_instances_04",
+      "category": "identity_instances",
+      "name": "同对象审核和发送",
+      "query": "演示文稿",
+      "oracle": "审核不等于发送。 最终审核客户演示文稿为 done/completed，向客户发送演示文稿为 todo。",
+      "steps": [
+        {
+          "text": "我要审核客户演示文稿。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "新增独立任务：向客户发送这份演示文稿。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "text": "客户演示文稿审核完了，但还未发送。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "identity_instances_05",
+      "category": "identity_instances",
+      "name": "订购和安装独立",
+      "query": "净水器",
+      "oracle": "订购完成只结束订购，安装待办保留。 最终订购净水器为 done/completed，安装净水器为 todo。",
+      "steps": [
+        {
+          "text": "我要订购净水器，还要在到货后安装净水器，这两个任务分别记录。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "text": "净水器已经下单订购完成，安装还未开始。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "identity_instances_06",
+      "category": "identity_instances",
+      "name": "同系列不同章节",
+      "query": "教材校对",
+      "oracle": "章节是任务对象边界，两章不可合并。 最终第三章校对仍为 todo，第四章校对为 done/cancelled。",
+      "steps": [
+        {
+          "text": "我要校对教材第三章。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "另外我要校对教材第四章，单独记录。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "text": "教材第四章不校对了，取消第四章这项任务，第三章继续。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "done"
+            ],
+            "closures": [
+              null,
+              "cancelled"
+            ],
+            "same_as": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "identity_instances_07",
+      "category": "identity_instances",
+      "name": "同名不同地点",
+      "query": "消防检查",
+      "oracle": "地点是明确任务对象，各有独立身份。 最终东仓消防检查为 done/completed，西仓消防检查为 todo。",
+      "steps": [
+        {
+          "text": "我要检查东仓消防设施。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "我还要检查西仓消防设施。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "text": "东仓消防设施检查完毕，西仓尚未检查。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "identity_instances_08",
+      "category": "identity_instances",
+      "name": "相近任务动词不得合并",
+      "query": "访谈录音",
+      "oracle": "转写与翻译可以分别结束。 最终访谈录音转写为 done/completed，英文翻译为 todo。",
+      "steps": [
+        {
+          "text": "我要转写访谈录音。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "另外还要把访谈录音翻译成英文，这是独立任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "text": "访谈录音转写已经完成，英文翻译仍待做。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "identity_instances_09",
+      "category": "identity_instances",
+      "name": "补充实例标签不复制",
+      "query": "安全巡检",
+      "oracle": "给同一次既有任务补轮次信息，沿用原卡。",
+      "steps": [
+        {
+          "text": "我要做一次安全巡检。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "补充刚才那次安全巡检的编号：这是第 7 轮，并非新增巡检。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "identity_instances_10",
+      "category": "identity_instances",
+      "name": "完成后单纯新建另一份",
+      "query": "手册编写",
+      "oracle": "另一份是新任务，不重开原卡。 最终第一份入职手册为 done/completed，新增的另一份入职手册为 todo。",
+      "steps": [
+        {
+          "text": "我要编写入职手册。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "刚才的入职手册编写完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "另外新建一个任务，再编写另一份入职手册。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "references_01",
+      "category": "references",
+      "name": "唯一这个指代",
+      "query": "路由器设置",
+      "oracle": "唯一前文任务可解析这个。",
+      "steps": [
+        {
+          "text": "我要设置客厅路由器。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "这个已经设置好了，任务完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "references_02",
+      "category": "references",
+      "name": "唯一她指代",
+      "query": "账单核对",
+      "oracle": "唯一明确女性前文执行人可解析。",
+      "steps": [
+        {
+          "text": "姐姐要核对水电账单。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "subjects": [
+              "姐姐"
+            ]
+          }
+        },
+        {
+          "text": "她的水电账单已经核对完了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0,
+            "subjects": [
+              "姐姐"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "references_03",
+      "category": "references",
+      "name": "多个候选不选最近",
+      "query": "设备验收",
+      "oracle": "清空会话指代，两个同名轮次不能猜最新一个。",
+      "steps": [
+        {
+          "text": "我要完成第一轮设备验收。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "再新建第二轮设备验收任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "distinct_instances": true
+          }
+        },
+        {
+          "text": "设备验收完成了，哪一轮我还没确认。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "same_as": 1,
+            "pending": true,
+            "distinct_instances": true
+          },
+          "reset_context": true
+        }
+      ]
+    },
+    {
+      "id": "references_04",
+      "category": "references",
+      "name": "同人多个对象的那个",
+      "query": "资料上传",
+      "oracle": "两个对象都可指代，不更新任何卡。",
+      "steps": [
+        {
+          "text": "我要上传预算附件，也要上传技术附件，这是两个独立任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "text": "刚才说的那个上传任务完成了，但我没说明是哪个附件。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "same_as": 0,
+            "pending": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "references_05",
+      "category": "references",
+      "name": "明确指向较早任务",
+      "query": "样机寄出",
+      "oracle": "前面明确对象可跨过中间话题更新。 最终红色样机寄出为 done/completed，蓝色样机寄出为 todo。",
+      "steps": [
+        {
+          "text": "我要寄出红色样机。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "我还要寄出蓝色样机。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "text": "前面说的红色样机寄出了，蓝色的还没有寄。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "references_06",
+      "category": "references",
+      "name": "歧义后用户明确",
+      "query": "合同归档",
+      "oracle": "pending 不是任务状态；补充明确第二轮后仅结束第二轮。 歧义步骤两项都为 todo 且 pending；明确后第二轮归档为 done/completed，第一轮仍为 todo。",
+      "steps": [
+        {
+          "text": "我要归档第一轮合同。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "另建归档第二轮合同任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "distinct_instances": true
+          }
+        },
+        {
+          "text": "合同归档做完了，但我没说明哪一轮。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "same_as": 1,
+            "pending": true
+          },
+          "reset_context": true
+        },
+        {
+          "text": "我现在明确：完成的是第二轮合同归档，第一轮还没归档。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 1,
+            "distinct_instances": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "references_07",
+      "category": "references",
+      "name": "无前文孤立指代",
+      "query": "任务",
+      "oracle": "没有候选不虚构任务。",
+      "steps": [
+        {
+          "text": "那个已经完成了，我没有提供过它是什么。",
+          "expect": {
+            "cards": 0,
+            "statuses": [],
+            "closures": [],
+            "pending": true
+          },
+          "reset_context": true
+        }
+      ]
+    },
+    {
+      "id": "references_08",
+      "category": "references",
+      "name": "多人同对象他不明确",
+      "query": "账目检查",
+      "oracle": "同一动作对象但两个人，不能按最近提及决定。",
+      "steps": [
+        {
+          "text": "同事赵宁要检查公益账目。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "subjects": [
+              "同事赵宁"
+            ],
+            "subject_aliases": {
+              "赵宁": "同事赵宁"
+            }
+          }
+        },
+        {
+          "text": "同事周诚也要检查公益账目。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "text": "他检查完公益账目了，这里的他可能是两人中的任意一人。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "same_as": 1,
+            "pending": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "references_09",
+      "category": "references",
+      "name": "指代带清晰对象约束",
+      "query": "相框购买",
+      "oracle": "对象限定足够唯一，即使有多个待办也能关联。 最终胡桃木相框购买为 done/completed，铝合金相框购买为 todo。",
+      "steps": [
+        {
+          "text": "我要购买胡桃木相框，还要购买铝合金相框，分别记录。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "text": "胡桃木那个已购买完成，铝合金那个还没买。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "references_10",
+      "category": "references",
+      "name": "上下文重置但名字唯一",
+      "query": "礼服取回",
+      "oracle": "无会话上下文也可由明确主体动作对象唯一关联。",
+      "steps": [
+        {
+          "text": "我要从裁缝店取回礼服。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "从裁缝店取回礼服这项任务已经完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          },
+          "reset_context": true
+        }
+      ]
+    },
+    {
+      "id": "temporal_01",
+      "category": "temporal",
+      "name": "本周下周自然周",
+      "query": "运营周报",
+      "oracle": "自然周周一至周日；本周与下周为不同实例。",
+      "steps": [
+        {
+          "text": "我要提交本周运营周报，还要提交下周运营周报，这是两次任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "distinct_instances": true,
+            "instance_date_ranges": [
+              [
+                "2026-10-19",
+                "2026-10-25"
+              ],
+              [
+                "2026-10-26",
+                "2026-11-01"
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporal_02",
+      "category": "temporal",
+      "name": "上周补交与本周",
+      "query": "排班周表",
+      "oracle": "上周未交仍为 todo，不因过去日期自动结束。",
+      "steps": [
+        {
+          "text": "我要补交上周排班周表，并且另交本周排班周表，分别记录两次。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "distinct_instances": true,
+            "instance_date_ranges": [
+              [
+                "2026-10-12",
+                "2026-10-18"
+              ],
+              [
+                "2026-10-19",
+                "2026-10-25"
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporal_03",
+      "category": "temporal",
+      "name": "截止延期不换周实例",
+      "query": "项目周记录",
+      "oracle": "周实例固定，延期到下周一也不变成下周实例。",
+      "steps": [
+        {
+          "text": "我要提交本周项目周记录，原定本周五交。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "instance_date_ranges": [
+              [
+                "2026-10-19",
+                "2026-10-25"
+              ]
+            ]
+          }
+        },
+        {
+          "text": "本周项目周记录延期到下周一提交，仍是本周这一份。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "instance_date_ranges": [
+              [
+                "2026-10-19",
+                "2026-10-25"
+              ]
+            ],
+            "kinds": [
+              "time"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporal_04",
+      "category": "temporal",
+      "name": "明天是截止不是轮次",
+      "query": "护士培训报名",
+      "oracle": "明天对应 2026-10-21；只是截止，不应新增实例。",
+      "steps": [
+        {
+          "text": "我要报名护士培训，明天截止。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "time"
+            ]
+          }
+        },
+        {
+          "text": "护士培训报名截止延后到后天，还是同一次报名。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "time"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporal_05",
+      "category": "temporal",
+      "name": "星期日边界",
+      "query": "清洁周检查",
+      "oracle": "2026-10-25 是周日；下周从 26 日起。",
+      "steps": [
+        {
+          "text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "distinct_instances": true,
+            "instance_date_ranges": [
+              [
+                "2026-10-19",
+                "2026-10-25"
+              ],
+              [
+                "2026-10-26",
+                "2026-11-01"
+              ]
+            ]
+          },
+          "ts": "2026-10-25T09:00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "temporal_06",
+      "category": "temporal",
+      "name": "星期一边界",
+      "query": "园区周巡查",
+      "oracle": "2026-10-26 周一本周范围为 26日至11月1日。",
+      "steps": [
+        {
+          "text": "我要做本周园区巡查。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "instance_date_ranges": [
+              [
+                "2026-10-26",
+                "2026-11-01"
+              ]
+            ]
+          },
+          "ts": "2026-10-26T09:00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "temporal_07",
+      "category": "temporal",
+      "name": "跨年自然周",
+      "query": "设备周报",
+      "oracle": "2026-12-31 所在周跨年，不能按年截断。",
+      "steps": [
+        {
+          "text": "我要提交本周设备周报，再提交下周设备周报，分别记录。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "distinct_instances": true,
+            "instance_date_ranges": [
+              [
+                "2026-12-28",
+                "2027-01-03"
+              ],
+              [
+                "2027-01-04",
+                "2027-01-10"
+              ]
+            ]
+          },
+          "ts": "2026-12-31T09:00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "temporal_08",
+      "category": "temporal",
+      "name": "跨日只改截止",
+      "query": "防汛演练安排",
+      "oracle": "今天明天按原消息时间解析；截止修改仍是同一卡。",
+      "steps": [
+        {
+          "text": "我要安排防汛演练，今天结束前安排好。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "time"
+            ]
+          },
+          "ts": "2026-10-20T23:50:00+08:00"
+        },
+        {
+          "text": "防汛演练安排改为今天下午前做好，仍然是刚才那次。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "time"
+            ]
+          },
+          "ts": "2026-10-21T00:10:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "temporal_09",
+      "category": "temporal",
+      "name": "截止提前",
+      "query": "供应商答复",
+      "oracle": "周五改周三是提前，不能误当完成或新建。",
+      "steps": [
+        {
+          "text": "我要答复供应商的技术问题，本周五前答复。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "time"
+            ]
+          }
+        },
+        {
+          "text": "供应商技术问题答复提前到本周三。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "time"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporal_10",
+      "category": "temporal",
+      "name": "具体日期两次任务",
+      "query": "航班值机",
+      "oracle": "日期明确对应两次值机，不互相覆盖。 最终 2026-10-21 航班值机为 done/completed，2026-10-28 航班值机为 todo。",
+      "steps": [
+        {
+          "text": "我要为 2026-10-21 的航班办理值机。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "另一个任务：为 2026-10-28 的航班办理值机。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ],
+            "distinct_instances": true
+          }
+        },
+        {
+          "text": "2026-10-21 航班值机完成，28 日的还未办理。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "same_as": 1,
+            "distinct_instances": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "history_duplicates_01",
+      "category": "history_duplicates",
+      "name": "迟到未开始不覆盖完成",
+      "query": "迁移清单",
+      "oracle": "旧消息事实时间早于完成，维持 done 并待确认。",
+      "steps": [
+        {
+          "text": "我要编写迁移清单。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "迁移清单编写完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "迁移清单还没开始写。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0,
+            "pending": true
+          },
+          "ts": "2026-10-19T09:00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "history_duplicates_02",
+      "category": "history_duplicates",
+      "name": "迟到旧截止不覆盖延期",
+      "query": "合同寄送",
+      "oracle": "迟到旧证据不能把当前周日截止改回周五。",
+      "steps": [
+        {
+          "text": "我要寄送盖章合同，周五前寄。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "time"
+            ]
+          }
+        },
+        {
+          "text": "盖章合同寄送截止改成周日。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "time"
+            ]
+          }
+        },
+        {
+          "text": "盖章合同要在周五前寄。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "pending": true
+          },
+          "ts": "2026-10-19T10:00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "history_duplicates_03",
+      "category": "history_duplicates",
+      "name": "重复原文不复制",
+      "query": "发票下载",
+      "oracle": "重复同一计划保持同卡。",
+      "steps": [
+        {
+          "text": "我要下载本次采购发票。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "我要下载本次采购发票。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "history_duplicates_04",
+      "category": "history_duplicates",
+      "name": "重复结束不复制",
+      "query": "公章归还",
+      "oracle": "重复完成事实幂等，仍一张 done。",
+      "steps": [
+        {
+          "text": "我要归还借用的公章。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "借用的公章已归还，任务完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "借用的公章已归还，任务完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "history_duplicates_05",
+      "category": "history_duplicates",
+      "name": "改写重复提醒",
+      "query": "车库遥控器",
+      "oracle": "语义同义且明确同一项不能重复建卡。",
+      "steps": [
+        {
+          "text": "我要配一把车库遥控器。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "再提醒一下，刚才那把车库遥控器记得去配，还是同一项。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "history_duplicates_06",
+      "category": "history_duplicates",
+      "name": "重复阻碍信息",
+      "query": "账户验证",
+      "oracle": "重复同一阻碍不新增任务；人工核对不应堆积重复细节。",
+      "steps": [
+        {
+          "text": "我要完成企业账户验证，目前缺少营业执照扫描件。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "blocker"
+            ]
+          }
+        },
+        {
+          "text": "企业账户验证仍缺少营业执照扫描件，重复说明同一个阻碍。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "blocker"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "history_duplicates_07",
+      "category": "history_duplicates",
+      "name": "消息乱序不能取消新计划",
+      "query": "摄影灯租赁",
+      "oracle": "旧取消早于当前创建，不能取消当前任务。",
+      "steps": [
+        {
+          "text": "我要租赁摄影灯，这是今天新确认的计划。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "摄影灯租赁不做了，取消任务。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "pending": true
+          },
+          "ts": "2026-10-19T08:00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "history_duplicates_08",
+      "category": "history_duplicates",
+      "name": "旧进展不覆盖新取消",
+      "query": "手册修订",
+      "oracle": "较早进行中消息不能重开较新 cancelled。",
+      "steps": [
+        {
+          "text": "我要修订设备手册。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "设备手册修订取消了，不做了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "cancelled"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "设备手册正在修订中。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "cancelled"
+            ],
+            "same_as": 0,
+            "pending": true
+          },
+          "ts": "2026-10-19T12:00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "history_duplicates_09",
+      "category": "history_duplicates",
+      "name": "重复计划和显式新任务有别",
+      "query": "水质采样",
+      "oracle": "第三步明确另一次新增，不能继续幂等合并。",
+      "steps": [
+        {
+          "text": "我要做一次水质采样。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "刚才那次水质采样记得去做。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "另外再安排一次独立的水质采样，不是刚才那次。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "history_duplicates_10",
+      "category": "history_duplicates",
+      "name": "完成后重述同一历史完成",
+      "query": "奖状装裱",
+      "oracle": "跨会话重述同一次已完成任务，不重建。",
+      "steps": [
+        {
+          "text": "我要装裱这张比赛奖状。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "这张比赛奖状已经装裱完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "再记录一次：之前那张比赛奖状已经装裱完成，是同一次任务。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          },
+          "reset_context": true
+        }
+      ]
+    },
+    {
+      "id": "reopen_new_round_01",
+      "category": "reopen_new_round",
+      "name": "完成后明确重开",
+      "query": "审计报告",
+      "oracle": "明确重开同一次，done→todo，结束原因为空。",
+      "steps": [
+        {
+          "text": "我要审核内部审计报告。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "内部审计报告审核完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "重开刚才同一次内部审计报告审核，要重新检查。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "reopen_new_round_02",
+      "category": "reopen_new_round",
+      "name": "取消后明确重开",
+      "query": "夜校报名",
+      "oracle": "同一次任务恢复；不是新卡。",
+      "steps": [
+        {
+          "text": "我要报名本次夜校。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "本次夜校报名取消。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "cancelled"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "我改变主意，重开原来这次夜校报名任务，继续报名。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "reopen_new_round_03",
+      "category": "reopen_new_round",
+      "name": "放弃后明确重开",
+      "query": "模型拼装",
+      "oracle": "明确恢复同一次任务清除 abandoned。",
+      "steps": [
+        {
+          "text": "我要拼装这艘船模。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "这艘船模我放弃拼装了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "abandoned"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "重开原来这艘船模拼装任务，我决定继续拼。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "reopen_new_round_04",
+      "category": "reopen_new_round",
+      "name": "结束原因未知后重开",
+      "query": "文件清理",
+      "oracle": "未知结束原因不阻止明确重开。",
+      "steps": [
+        {
+          "text": "我要清理旧项目文件。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "旧项目文件清理这项任务已结束，结束原因不清楚。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "重开原来那次旧项目文件清理，继续清理。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "reopen_new_round_05",
+      "category": "reopen_new_round",
+      "name": "补充结论不自动重开",
+      "query": "测试记录",
+      "oracle": "新增缺陷说明不足以自动改变已结束任务状态。",
+      "steps": [
+        {
+          "text": "我要提交硬件测试记录。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "硬件测试记录已提交，任务完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "给已提交的硬件测试记录补充备注：发现一个待讨论的温度异常，提交任务仍已完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "reopen_new_round_06",
+      "category": "reopen_new_round",
+      "name": "相同任务明确第二次",
+      "query": "门锁检修",
+      "oracle": "新一次检修产生第二张卡，历史完成保留。 最终第一次书房门锁检修为 done/completed，新增第二次检修为 todo。",
+      "steps": [
+        {
+          "text": "我要检修书房门锁。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "书房门锁检修完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "书房门锁又出问题，新增第二次检修任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "reopen_new_round_07",
+      "category": "reopen_new_round",
+      "name": "取消旧轮另建新轮",
+      "query": "展位申请",
+      "oracle": "旧取消保留，新一届申请 todo。 最终第一届市集展位申请为 done/cancelled，第二届申请为 todo。",
+      "steps": [
+        {
+          "text": "我要提交第一届市集展位申请。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "第一届市集展位申请取消。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "cancelled"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "另外新增提交第二届市集展位申请任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "cancelled",
+              null
+            ],
+            "distinct_instances": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "reopen_new_round_08",
+      "category": "reopen_new_round",
+      "name": "重开再完成",
+      "query": "翻译校对",
+      "oracle": "同一卡片完成、重开、再完成，不增任务。",
+      "steps": [
+        {
+          "text": "我要校对展览翻译。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "展览翻译校对完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "重开刚才同一项展览翻译校对，继续检查。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "重开的展览翻译校对也做完了，任务完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "reopen_new_round_09",
+      "category": "reopen_new_round",
+      "name": "新轮不能影响旧轮",
+      "query": "例会纪要",
+      "oracle": "第二次新任务完成，两次都 done，不把旧任务变 todo。 步骤3第一次纪要为 done/completed、第二次为 todo；步骤4两次纪要均为 done/completed。",
+      "steps": [
+        {
+          "text": "我要整理第一次例会纪要。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "第一次例会纪要整理完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "新增整理第二次例会纪要的任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              null
+            ],
+            "distinct_instances": true
+          }
+        },
+        {
+          "text": "第二次例会纪要也整理完成。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "done"
+            ],
+            "closures": [
+              "completed",
+              "completed"
+            ],
+            "same_as": 2,
+            "distinct_instances": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "reopen_new_round_10",
+      "category": "reopen_new_round",
+      "name": "仅改取消说明不重开",
+      "query": "午餐预订",
+      "oracle": "修改取消原因不是重开，结束状态保持。",
+      "steps": [
+        {
+          "text": "我要预订团队午餐。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "团队午餐预订取消了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "cancelled"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "更正团队午餐预订的取消原因：是场地关闭，不是人数不足。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "cancelled"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "nonfacts_corrections_01",
+      "category": "nonfacts_corrections",
+      "name": "未决定的假设",
+      "query": "数据库迁移",
+      "oracle": "可能考虑且未决定，不是已承诺条件计划。",
+      "steps": [
+        {
+          "text": "如果以后业务扩大，也许考虑迁移数据库，现在没有决定做。",
+          "expect": {
+            "cards": 0,
+            "statuses": [],
+            "closures": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "nonfacts_corrections_02",
+      "category": "nonfacts_corrections",
+      "name": "询问建议不建任务",
+      "query": "钢琴课程",
+      "oracle": "单纯问题不得记录成本人计划。",
+      "steps": [
+        {
+          "text": "你觉得我是否应该报名钢琴课程？只是咨询，我还没打算报名。",
+          "expect": {
+            "cards": 0,
+            "statuses": [],
+            "closures": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "nonfacts_corrections_03",
+      "category": "nonfacts_corrections",
+      "name": "引用示例不建任务",
+      "query": "遗产公证",
+      "oracle": "示例引语不是用户事实。",
+      "steps": [
+        {
+          "text": "教程示例写着“我要办理遗产公证”，这只是引语，不是我的事情。",
+          "expect": {
+            "cards": 0,
+            "statuses": [],
+            "closures": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "nonfacts_corrections_04",
+      "category": "nonfacts_corrections",
+      "name": "小说和角色计划",
+      "query": "灯塔修复",
+      "oracle": "虚构角色的任务不是用户真实任务。",
+      "steps": [
+        {
+          "text": "小说里船长说：“明天我要修复灯塔。”这是我摘抄的情节，现实中没人要做。",
+          "expect": {
+            "cards": 0,
+            "statuses": [],
+            "closures": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "nonfacts_corrections_05",
+      "category": "nonfacts_corrections",
+      "name": "提问不把待办变完成",
+      "query": "预算审核",
+      "oracle": "咨询是否完成不是完成事实。",
+      "steps": [
+        {
+          "text": "我要审核年度预算。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "你觉得年度预算审核是不是已经完成了？我只是提问，没有报告完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "nonfacts_corrections_06",
+      "category": "nonfacts_corrections",
+      "name": "否定完成保留待办",
+      "query": "水费缴纳",
+      "oracle": "明确还没交，不可只匹配交完关键词。",
+      "steps": [
+        {
+          "text": "我要缴纳本月水费。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "本月水费不是已经交完了，我还没有缴纳。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "progress"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "nonfacts_corrections_07",
+      "category": "nonfacts_corrections",
+      "name": "纠正误报完成",
+      "query": "视频导出",
+      "oracle": "用户明确更正刚才完成事实为错误，应恢复原任务 todo，非另建。",
+      "steps": [
+        {
+          "text": "我要导出宣传视频。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "宣传视频已经导出完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "纠正上一条：我说导出完成是口误，宣传视频实际尚未导出，原任务继续待办。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "nonfacts_corrections_08",
+      "category": "nonfacts_corrections",
+      "name": "单条三个独立任务",
+      "query": "车票",
+      "oracle": "三个能独立结束的动作拆分，条件与细节不当新任务。 最终购买车票为 done/completed，预订民宿为 done/cancelled，给相机充电为 todo。",
+      "steps": [
+        {
+          "text": "旅行准备有三件独立任务：购买车票、预订民宿、给相机充电。",
+          "expect": {
+            "cards": 3,
+            "statuses": [
+              "todo",
+              "todo",
+              "todo"
+            ],
+            "closures": [
+              null,
+              null,
+              null
+            ]
+          }
+        },
+        {
+          "text": "车票已购买完成，民宿预订取消了，相机还没充电。",
+          "expect": {
+            "cards": 3,
+            "statuses": [
+              "done",
+              "done",
+              "todo"
+            ],
+            "closures": [
+              "completed",
+              "cancelled",
+              null
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "nonfacts_corrections_09",
+      "category": "nonfacts_corrections",
+      "name": "纠正对象和保留要求",
+      "query": "会议室预约",
+      "oracle": "更正同一任务对象，原卡不变，不留下错误对象待办。",
+      "steps": [
+        {
+          "text": "我要预约 301 会议室，时间定在周五下午。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "kinds": [
+              "time"
+            ]
+          }
+        },
+        {
+          "text": "纠正刚才的房间号，是预约 302 会议室，不是 301，还是同一个预约任务，周五下午不变。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ],
+            "same_as": 0,
+            "kinds": [
+              "time"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "nonfacts_corrections_10",
+      "category": "nonfacts_corrections",
+      "name": "正反事实混合拆分",
+      "query": "实习申请",
+      "oracle": "只建真实提交申请，否定租车与引用体检均不建。",
+      "steps": [
+        {
+          "text": "我决定提交实习申请；我没有租车计划；“我要预约体检”只是表格里的示例文字。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "closures": [
+              null
+            ]
+          }
+        },
+        {
+          "text": "实习申请提交完成，租车仍没有计划，体检仍只是引用。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "closures": [
+              "completed"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    }
+  ]
+}
