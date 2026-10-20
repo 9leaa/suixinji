@@ -28,3 +28,26 @@ def test_pending_and_resolved_blocker_are_not_counted_as_success():
     saved['details'] = [{'kind': 'blocker', 'condition': '', 'description': '阻碍已解除'}]
     errors = check(expected, [saved], [], [{'action': 'pending_review'}])
     assert len(errors) == 2
+
+
+def test_persisted_pending_counts_even_when_service_results_are_empty():
+    expected = {'cards': 0, 'pending': True}
+    assert check(expected, [], [], [], pending_for_note=True) == []
+    assert check(expected, [], [], []) == ['预期待确认']
+    assert check({'cards': 0}, [], [], [], pending_for_note=True) == ['不应进入待确认']
+
+
+def test_saved_pending_is_grouped_by_originating_note(tmp_path):
+    import json
+    import sqlite3
+    from scripts.eval_task_cards_live import saved_pending_by_note
+
+    with sqlite3.connect(tmp_path / 'memory.db') as conn:
+        conn.execute('CREATE TABLE memory_workflow_state (kind TEXT, body TEXT)')
+        for note_id in ['earlier-note', 'current-note']:
+            conn.execute('INSERT INTO memory_workflow_state VALUES (?, ?)',
+                         ('pending', json.dumps({'note': {'id': note_id}, 'status': 'pending'})))
+    grouped = saved_pending_by_note(tmp_path)
+    assert len(grouped['current-note']) == 1
+    assert grouped['current-note'][0]['note']['id'] == 'current-note'
+    assert grouped.get('later-note', []) == []

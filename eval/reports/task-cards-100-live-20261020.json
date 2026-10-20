@@ -1,0 +1,1285 @@
+{
+  "model": "deepseek-v4-flash",
+  "endpoint": "https://api.deepseek.com",
+  "mode": "real_llm",
+  "storage": "isolated_sqlite",
+  "dataset": "eval/data/task_cards_synthetic_100_v1.json",
+  "cases": 100,
+  "scoring_revision": 3,
+  "scope": "真实抽取与关联、保存及查询证据；不含最终自然语言回答或飞书送达",
+  "total_steps": 222,
+  "passed_steps": 197,
+  "passed_cases": 77,
+  "results": [
+    {
+      "id": "lifecycle_01",
+      "name": "创建并完成明确提交",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "lifecycle_02",
+      "name": "创建时已完成",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "lifecycle_03",
+      "name": "明确取消未执行任务",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "lifecycle_04",
+      "name": "主动放弃长任务",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "lifecycle_05",
+      "name": "结束原因未知",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "lifecycle_06",
+      "name": "暂停后恢复",
+      "steps": 3,
+      "passed_steps": 2,
+      "failed_steps": [
+        {
+          "step": 3,
+          "text": "手腕恢复了，继续誊写之前那份乐谱。",
+          "errors": [
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 4,
+      "pending_count": 1
+    },
+    {
+      "id": "lifecycle_07",
+      "name": "删除待办的业务含义",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "lifecycle_08",
+      "name": "完成后补充结果",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "lifecycle_09",
+      "name": "取消后说明原因",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "lifecycle_10",
+      "name": "未开始仍是待办",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "details_01",
+      "name": "已承诺的条件计划",
+      "steps": 1,
+      "passed_steps": 0,
+      "failed_steps": [
+        {
+          "step": 1,
+          "text": "我已经决定：只要周日不下雨，就去购买野餐食材。",
+          "errors": [
+            "缺少细节类型：requirement"
+          ]
+        }
+      ],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "details_02",
+      "name": "条件尚未满足",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "details_03",
+      "name": "替换输出格式",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "培训讲义纸张改成 A5，原来的 A4 要求作废。",
+          "errors": [
+            "已替换细节仍然有效：A4"
+          ]
+        }
+      ],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "details_04",
+      "name": "追加要求不替换旧要求",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "details_05",
+      "name": "移除指定要求",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "details_06",
+      "name": "条件修改不产生新实例",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "details_07",
+      "name": "补充备注不改状态",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "details_08",
+      "name": "多个要求分别修正",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "details_09",
+      "name": "明确撤销执行前提",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "details_10",
+      "name": "需求改动不代表执行完成",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "progress_blockers_01",
+      "name": "初稿不是提交完成",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "progress_blockers_02",
+      "name": "部分物品不是整体完成",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "progress_blockers_03",
+      "name": "等待中不产生第三状态",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "progress_blockers_04",
+      "name": "解除唯一阻碍",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+          "errors": [
+            "过期细节仍然有效：blocker"
+          ]
+        }
+      ],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "progress_blockers_05",
+      "name": "解除部分阻碍",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+          "errors": [
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 3,
+      "pending_count": 1
+    },
+    {
+      "id": "progress_blockers_06",
+      "name": "解除阻碍保留要求",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+          "errors": [
+            "过期细节仍然有效：blocker"
+          ]
+        }
+      ],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "progress_blockers_07",
+      "name": "进度数字来自用户",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "progress_blockers_08",
+      "name": "阻碍重新出现",
+      "steps": 3,
+      "passed_steps": 2,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "门禁适配器到了，缺件问题解决，尚未安装。",
+          "errors": [
+            "过期细节仍然有效：blocker"
+          ]
+        }
+      ],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "progress_blockers_09",
+      "name": "失败后继续重试",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "progress_blockers_10",
+      "name": "实际完成解除等待",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "subjects_01",
+      "name": "默认执行人",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "subjects_02",
+      "name": "项目名不是人",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "subjects_03",
+      "name": "不同人相同任务",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "subjects_04",
+      "name": "明确全名和简称同一人",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "若宁已经清点完摄影设备。",
+          "errors": [
+            "卡片数：期望 1，实际 2",
+            "状态不符：['done', 'todo']",
+            "结束原因不符：['completed', None]",
+            "应更新原卡片，但卡片 ID 改变",
+            "执行人不符：['若宁', '李若宁']"
+          ]
+        }
+      ],
+      "model_calls": 2,
+      "pending_count": 0
+    },
+    {
+      "id": "subjects_05",
+      "name": "亲属称谓执行人",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "subjects_06",
+      "name": "同姓不认作同一人",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 2,
+      "pending_count": 0
+    },
+    {
+      "id": "subjects_07",
+      "name": "用户代号明确绑定",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "小舟的应用图标已经绘制完成。",
+          "errors": [
+            "状态不符：['todo']",
+            "结束原因不符：[None]",
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 2,
+      "pending_count": 1
+    },
+    {
+      "id": "subjects_08",
+      "name": "委托与执行人区分",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "subjects_09",
+      "name": "明确换执行人",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "团队车票购买这同一项任务改由哥哥负责，我不再负责，任务继续。",
+          "errors": [
+            "状态不符：['done']",
+            "结束原因不符：['cancelled']",
+            "执行人不符：['用户']",
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 3,
+      "pending_count": 1
+    },
+    {
+      "id": "subjects_10",
+      "name": "昵称未明确绑定",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 2,
+      "pending_count": 0
+    },
+    {
+      "id": "identity_instances_01",
+      "name": "明确两轮验收",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "identity_instances_02",
+      "name": "订单号区分",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "identity_instances_03",
+      "name": "不同对象相同动作",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "identity_instances_04",
+      "name": "同对象审核和发送",
+      "steps": 3,
+      "passed_steps": 2,
+      "failed_steps": [
+        {
+          "step": 3,
+          "text": "客户演示文稿审核完了，但还未发送。",
+          "errors": [
+            "状态不符：['todo', 'todo']",
+            "结束原因不符：[None, None]"
+          ]
+        }
+      ],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "identity_instances_05",
+      "name": "订购和安装独立",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "identity_instances_06",
+      "name": "同系列不同章节",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "identity_instances_07",
+      "name": "同名不同地点",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "identity_instances_08",
+      "name": "相近任务动词不得合并",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "identity_instances_09",
+      "name": "补充实例标签不复制",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "identity_instances_10",
+      "name": "完成后单纯新建另一份",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "references_01",
+      "name": "唯一这个指代",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "references_02",
+      "name": "唯一她指代",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "references_03",
+      "name": "多个候选不选最近",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 4,
+      "pending_count": 1
+    },
+    {
+      "id": "references_04",
+      "name": "同人多个对象的那个",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 2,
+      "pending_count": 1
+    },
+    {
+      "id": "references_05",
+      "name": "明确指向较早任务",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "references_06",
+      "name": "歧义后用户明确",
+      "steps": 4,
+      "passed_steps": 4,
+      "failed_steps": [],
+      "model_calls": 6,
+      "pending_count": 1
+    },
+    {
+      "id": "references_07",
+      "name": "无前文孤立指代",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 1
+    },
+    {
+      "id": "references_08",
+      "name": "多人同对象他不明确",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 1
+    },
+    {
+      "id": "references_09",
+      "name": "指代带清晰对象约束",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "references_10",
+      "name": "上下文重置但名字唯一",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 2,
+      "pending_count": 0
+    },
+    {
+      "id": "temporal_01",
+      "name": "本周下周自然周",
+      "steps": 1,
+      "passed_steps": 0,
+      "failed_steps": [
+        {
+          "step": 1,
+          "text": "我要提交本周运营周报，还要提交下周运营周报，这是两次任务。",
+          "errors": [
+            "周期日期不符：[['2026-10-20'], ['2026-10-27']]"
+          ]
+        }
+      ],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "temporal_02",
+      "name": "上周补交与本周",
+      "steps": 1,
+      "passed_steps": 0,
+      "failed_steps": [
+        {
+          "step": 1,
+          "text": "我要补交上周排班周表，并且另交本周排班周表，分别记录两次。",
+          "errors": [
+            "周期日期不符：[[], []]"
+          ]
+        }
+      ],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "temporal_03",
+      "name": "截止延期不换周实例",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "本周项目周记录延期到下周一提交，仍是本周这一份。",
+          "errors": [
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 2,
+      "pending_count": 1
+    },
+    {
+      "id": "temporal_04",
+      "name": "明天是截止不是轮次",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "temporal_05",
+      "name": "星期日边界",
+      "steps": 1,
+      "passed_steps": 0,
+      "failed_steps": [
+        {
+          "step": 1,
+          "text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+          "errors": [
+            "卡片数：期望 2，实际 3",
+            "状态不符：['todo', 'todo', 'todo']",
+            "结束原因不符：[None, None, None]",
+            "不同轮次未明确区分",
+            "周期日期不符：[[], [], []]"
+          ]
+        }
+      ],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "temporal_06",
+      "name": "星期一边界",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "temporal_07",
+      "name": "跨年自然周",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "temporal_08",
+      "name": "跨日只改截止",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "temporal_09",
+      "name": "截止提前",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "temporal_10",
+      "name": "具体日期两次任务",
+      "steps": 3,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "另一个任务：为 2026-10-28 的航班办理值机。",
+          "errors": [
+            "卡片数：期望 2，实际 1",
+            "状态不符：['todo']",
+            "结束原因不符：[None]",
+            "不应进入待确认"
+          ]
+        },
+        {
+          "step": 3,
+          "text": "2026-10-21 航班值机完成，28 日的还未办理。",
+          "errors": [
+            "卡片数：期望 2，实际 1",
+            "状态不符：['todo']",
+            "结束原因不符：[None]",
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 3,
+      "pending_count": 3
+    },
+    {
+      "id": "history_duplicates_01",
+      "name": "迟到未开始不覆盖完成",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 1
+    },
+    {
+      "id": "history_duplicates_02",
+      "name": "迟到旧截止不覆盖延期",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 1
+    },
+    {
+      "id": "history_duplicates_03",
+      "name": "重复原文不复制",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 2,
+      "pending_count": 0
+    },
+    {
+      "id": "history_duplicates_04",
+      "name": "重复结束不复制",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "history_duplicates_05",
+      "name": "改写重复提醒",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "history_duplicates_06",
+      "name": "重复阻碍信息",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "history_duplicates_07",
+      "name": "消息乱序不能取消新计划",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 1
+    },
+    {
+      "id": "history_duplicates_08",
+      "name": "旧进展不覆盖新取消",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 1
+    },
+    {
+      "id": "history_duplicates_09",
+      "name": "重复计划和显式新任务有别",
+      "steps": 3,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "刚才那次水质采样记得去做。",
+          "errors": [
+            "卡片数：期望 1，实际 2",
+            "状态不符：['todo', 'todo']",
+            "结束原因不符：[None, None]",
+            "应更新原卡片，但卡片 ID 改变"
+          ]
+        },
+        {
+          "step": 3,
+          "text": "另外再安排一次独立的水质采样，不是刚才那次。",
+          "errors": [
+            "卡片数：期望 2，实际 3",
+            "状态不符：['todo', 'todo', 'todo']",
+            "结束原因不符：[None, None, None]"
+          ]
+        }
+      ],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "history_duplicates_10",
+      "name": "完成后重述同一历史完成",
+      "steps": 3,
+      "passed_steps": 2,
+      "failed_steps": [
+        {
+          "step": 3,
+          "text": "再记录一次：之前那张比赛奖状已经装裱完成，是同一次任务。",
+          "errors": [
+            "卡片数：期望 1，实际 2",
+            "状态不符：['done', 'done']",
+            "结束原因不符：['completed', 'completed']",
+            "应更新原卡片，但卡片 ID 改变"
+          ]
+        }
+      ],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "reopen_new_round_01",
+      "name": "完成后明确重开",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "reopen_new_round_02",
+      "name": "取消后明确重开",
+      "steps": 3,
+      "passed_steps": 2,
+      "failed_steps": [
+        {
+          "step": 3,
+          "text": "我改变主意，重开原来这次夜校报名任务，继续报名。",
+          "errors": [
+            "状态不符：['done']",
+            "结束原因不符：['cancelled']",
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 4,
+      "pending_count": 1
+    },
+    {
+      "id": "reopen_new_round_03",
+      "name": "放弃后明确重开",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "reopen_new_round_04",
+      "name": "结束原因未知后重开",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "reopen_new_round_05",
+      "name": "补充结论不自动重开",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "reopen_new_round_06",
+      "name": "相同任务明确第二次",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "reopen_new_round_07",
+      "name": "取消旧轮另建新轮",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 4,
+      "pending_count": 0
+    },
+    {
+      "id": "reopen_new_round_08",
+      "name": "重开再完成",
+      "steps": 4,
+      "passed_steps": 4,
+      "failed_steps": [],
+      "model_calls": 7,
+      "pending_count": 0
+    },
+    {
+      "id": "reopen_new_round_09",
+      "name": "新轮不能影响旧轮",
+      "steps": 4,
+      "passed_steps": 4,
+      "failed_steps": [],
+      "model_calls": 6,
+      "pending_count": 0
+    },
+    {
+      "id": "reopen_new_round_10",
+      "name": "仅改取消说明不重开",
+      "steps": 3,
+      "passed_steps": 3,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "nonfacts_corrections_01",
+      "name": "未决定的假设",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "nonfacts_corrections_02",
+      "name": "询问建议不建任务",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "nonfacts_corrections_03",
+      "name": "引用示例不建任务",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "nonfacts_corrections_04",
+      "name": "小说和角色计划",
+      "steps": 1,
+      "passed_steps": 1,
+      "failed_steps": [],
+      "model_calls": 1,
+      "pending_count": 0
+    },
+    {
+      "id": "nonfacts_corrections_05",
+      "name": "提问不把待办变完成",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 3,
+      "pending_count": 0
+    },
+    {
+      "id": "nonfacts_corrections_06",
+      "name": "否定完成保留待办",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "本月水费不是已经交完了，我还没有缴纳。",
+          "errors": [
+            "缺少细节类型：progress",
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 2,
+      "pending_count": 1
+    },
+    {
+      "id": "nonfacts_corrections_07",
+      "name": "纠正误报完成",
+      "steps": 3,
+      "passed_steps": 2,
+      "failed_steps": [
+        {
+          "step": 3,
+          "text": "纠正上一条：我说导出完成是口误，宣传视频实际尚未导出，原任务继续待办。",
+          "errors": [
+            "状态不符：['done']",
+            "结束原因不符：['completed']",
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 5,
+      "pending_count": 1
+    },
+    {
+      "id": "nonfacts_corrections_08",
+      "name": "单条三个独立任务",
+      "steps": 2,
+      "passed_steps": 2,
+      "failed_steps": [],
+      "model_calls": 5,
+      "pending_count": 0
+    },
+    {
+      "id": "nonfacts_corrections_09",
+      "name": "纠正对象和保留要求",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "纠正刚才的房间号，是预约 302 会议室，不是 301，还是同一个预约任务，周五下午不变。",
+          "errors": [
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 3,
+      "pending_count": 1
+    },
+    {
+      "id": "nonfacts_corrections_10",
+      "name": "正反事实混合拆分",
+      "steps": 2,
+      "passed_steps": 1,
+      "failed_steps": [
+        {
+          "step": 2,
+          "text": "实习申请提交完成，租车仍没有计划，体检仍只是引用。",
+          "errors": [
+            "不应进入待确认"
+          ]
+        }
+      ],
+      "model_calls": 4,
+      "pending_count": 2
+    }
+  ],
+  "scoring_note": "使用当前数据集断言，并按原消息ID核对数据库中已创建的待确认记录；模型输出及原评分未改写。",
+  "run_manifest": {
+    "implementation_commit": "bb95406165129c0f68325b1182d04f1c6096333f",
+    "dataset_sha256": "e274f7cf6fe57ef05c4d6037e222bfe87f647b7ebd32a55c44829e6f82ec7e8d",
+    "expected_cases": 100,
+    "expected_steps": 222,
+    "workers": 3,
+    "dataset_generation_model": "gpt-6.1-sol",
+    "dataset_generation_reasoning": "medium",
+    "evaluation_model": "deepseek-v4-flash",
+    "production_data_modified": false
+  },
+  "raw_score": {
+    "passed_steps": 195,
+    "passed_cases": 75,
+    "total_steps": 222
+  },
+  "total_extraction_association_calls": 324,
+  "category_results": {
+    "lifecycle": {
+      "cases": 10,
+      "passed_cases": 9,
+      "messages": 22,
+      "passed_messages": 21
+    },
+    "details": {
+      "cases": 10,
+      "passed_cases": 8,
+      "messages": 19,
+      "passed_messages": 17
+    },
+    "progress_blockers": {
+      "cases": 10,
+      "passed_cases": 6,
+      "messages": 21,
+      "passed_messages": 17
+    },
+    "subjects": {
+      "cases": 10,
+      "passed_cases": 7,
+      "messages": 18,
+      "passed_messages": 15
+    },
+    "identity_instances": {
+      "cases": 10,
+      "passed_cases": 9,
+      "messages": 27,
+      "passed_messages": 26
+    },
+    "references": {
+      "cases": 10,
+      "passed_cases": 10,
+      "messages": 24,
+      "passed_messages": 24
+    },
+    "temporal": {
+      "cases": 10,
+      "passed_cases": 5,
+      "messages": 16,
+      "passed_messages": 10
+    },
+    "history_duplicates": {
+      "cases": 10,
+      "passed_cases": 8,
+      "messages": 26,
+      "passed_messages": 23
+    },
+    "reopen_new_round": {
+      "cases": 10,
+      "passed_cases": 9,
+      "messages": 32,
+      "passed_messages": 31
+    },
+    "nonfacts_corrections": {
+      "cases": 10,
+      "passed_cases": 6,
+      "messages": 17,
+      "passed_messages": 13
+    }
+  },
+  "invariant_audit": {
+    "card_snapshots": 271,
+    "binary_status_and_todo_closure": "passed",
+    "detail_source_ids_and_evidence_substrings": "passed",
+    "processing_or_query_exceptions": 0
+  },
+  "manual_audit": {
+    "scope": "人工复核失败记录并抽查通过记录；不将局部复核结果换算成整体语义准确率。",
+    "findings": [
+      {
+        "case": "details_01",
+        "step": 1,
+        "finding": "scorer_false_positive",
+        "reason": "条件“周日不下雨”已完整保存在time.condition；预期强制requirement过严，不能当作条件丢失。"
+      },
+      {
+        "case": "details_03",
+        "step": 2,
+        "finding": "scorer_false_positive",
+        "reason": "有效requirement已改为A5；A4仅出现在“原来的A4要求作废”备注中，absent_current纯字面判断误报。"
+      },
+      {
+        "case": "references_04",
+        "step": 2,
+        "finding": "scorer_bug_fixed",
+        "reason": "数据库有当前消息生成的低置信度待确认，service.results为空；评分器v3按note_id读取记录，纠正误报。"
+      },
+      {
+        "case": "references_07",
+        "step": 1,
+        "finding": "scorer_bug_fixed",
+        "reason": "同上；孤立指代没有建卡，已生成待确认。"
+      },
+      {
+        "case": "details_05",
+        "step": 2,
+        "finding": "automatic_pass_quality_issue",
+        "reason": "当前细节同时存在“控制在十分钟内”和“十分钟的限制仍保留”，同义要求重复。"
+      },
+      {
+        "case": "details_08",
+        "step": 2,
+        "finding": "automatic_pass_quality_issue",
+        "reason": "低温与避光各被保存两次：原要求及“要求不变”新细节。"
+      },
+      {
+        "case": "history_duplicates_06",
+        "step": 2,
+        "finding": "automatic_pass_semantic_issue",
+        "reason": "明确重复同一个阻碍后，保存“目前缺少营业执照扫描件”和“缺少营业执照扫描件”两条有效阻碍；oracle要求不堆积重复细节，现有断言漏检。"
+      }
+    ]
+  },
+  "raw_results_directory": "eval/results/task-cards-100-live-20261020",
+  "limitations": [
+    "自动检查分数不是整体语义准确率；两处语义上可接受的结果被规则误报，另有自动通过项细节重复。",
+    "本次为单次真实模型开发评测，无重跑挑选；未验证最终自然语言回答或飞书送达。",
+    "业务实现未修改，仅修复评分器遗漏数据库待确认记录的问题；模型输出、原评分与原数据集全部保留。"
+  ]
+}

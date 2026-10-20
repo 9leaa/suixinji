@@ -6,10 +6,11 @@ import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import time
 
 
-def check(expected, cards, before, reports):
+def check(expected, cards, before, reports, *, pending_for_note=False):
     errors = []
     aliases = expected.get('subject_aliases', {})
     def subject_of(card):
@@ -43,7 +44,7 @@ def check(expected, cards, before, reports):
     for token in expected.get('absent_current', []):
         if token in descriptions:
             errors.append('已替换细节仍然有效：' + token)
-    pending = any(r.get('action') == 'pending_review' for r in reports)
+    pending = pending_for_note or any(r.get('action') == 'pending_review' for r in reports)
     if expected.get('pending', False) != pending:
         errors.append('预期待确认' if expected.get('pending') else '不应进入待确认')
     if expected.get('distinct_instances') and (any(not c['instance'] for c in cards) or len({c['instance'] for c in cards}) != len(cards)):
@@ -57,6 +58,17 @@ def check(expected, cards, before, reports):
     return errors
 
 
+def saved_pending_by_note(case_dir):
+    """Read persisted pending events, including those omitted from service.results."""
+    with sqlite3.connect(f'file:{(case_dir / "memory.db").resolve()}?mode=ro', uri=True) as conn:
+        items = [json.loads(row[0]) for row in conn.execute(
+            "SELECT body FROM memory_workflow_state WHERE kind='pending'")]
+    by_note = {}
+    for item in items:
+        by_note.setdefault(item.get('note', {}).get('id'), []).append(item)
+    return by_note
+
+
 def rescore(cases, output):
     """Audit saved outputs without calling the model or overwriting the original scores."""
     results = []
@@ -64,19 +76,24 @@ def rescore(cases, output):
         rows = [json.loads(line) for line in (output / case['id'] / 'steps.jsonl').read_text().splitlines()]
         identities = []
         failures = []
+        pending_by_note = saved_pending_by_note(output / case['id'])
         for step, row in zip(case['steps'], rows, strict=True):
             # Keep infrastructure/query/source errors from the original run.
-            old_checks = check(row['expected'], row['cards'], identities, row['report'].get('results', []))
+            old_checks = check(row['expected'], row['cards'], identities, row['report'].get('results', []),
+                               pending_for_note=bool(row.get('pending_items')))
             errors = [error for error in row['errors'] if error not in old_checks]
-            errors += check(step['expect'], row['cards'], identities, row['report'].get('results', []))
+            note_id = row['report'].get('note_id', f"{case['id']}-{row['step'] - 1}")
+            pending_items = row.get('pending_items', pending_by_note.get(note_id, []))
+            errors += check(step['expect'], row['cards'], identities, row['report'].get('results', []),
+                            pending_for_note=bool(pending_items))
             if errors:
                 failures.append({'step': row['step'], 'text': row['text'], 'errors': errors})
             identities.append([c['id'] for c in row['cards']])
         original = json.loads((output / case['id'] / 'result.json').read_text())
         results.append({**original, 'passed_steps': len(rows) - len(failures), 'failed_steps': failures})
     original_summary = json.loads((output / 'summary.json').read_text())
-    summary = {**original_summary, 'scoring_revision': 2,
-        'scoring_note': '人工复核后接受当前案例中小明与同事小明等价，并增加自然周日期检查；模型输出未改写。',
+    summary = {**original_summary, 'scoring_revision': 3,
+        'scoring_note': '使用当前数据集断言，并按原消息ID核对数据库中已创建的待确认记录；模型输出及原评分未改写。',
         'passed_steps': sum(r['passed_steps'] for r in results),
         'passed_cases': sum(not r['failed_steps'] for r in results), 'results': results}
     (output / 'rescored-summary.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2) + '\n')
@@ -122,7 +139,10 @@ def run_case(case, run_dir):
             report = {'results': [], 'extraction_status': 'failed'}
         records = list(repo.list_memories(case['id'], status='active', memory_type='task', limit=100))
         cards = [task_cards.evidence(r) for r in records if r.memory_key_version == task_cards.VERSION]
-        errors = check(step['expect'], cards, identities, report.get('results', []))
+        pending_items = [item for item in workflow_state.list_items(case['id'], 'pending')
+                         if item.get('note', {}).get('id') == note['id']]
+        errors = check(step['expect'], cards, identities, report.get('results', []),
+                       pending_for_note=bool(pending_items))
         if error:
             errors.append('处理异常：' + error)
         try:
@@ -137,7 +157,7 @@ def run_case(case, run_dir):
                 errors.append('细节缺少来源')
         row = {'step': index + 1, 'text': step['text'], 'message_time': ts, 'expected': step['expect'],
             'passed': not errors, 'errors': errors, 'report': report, 'cards': cards,
-            'query_hits': hits, 'model_calls': calls[start:]}
+            'query_hits': hits, 'model_calls': calls[start:], 'pending_items': pending_items}
         rows.append(row)
         with (case_dir / 'steps.jsonl').open('a') as f:
             f.write(json.dumps(row, ensure_ascii=False, default=str) + '\n')
@@ -189,7 +209,7 @@ def main():
     (args.output / 'dataset.json').write_text(args.data.read_text())
     metadata = {'model':config.model, 'endpoint':_safe_base_url(config.base_url), 'mode':'real_llm',
         'storage':'isolated_sqlite', 'dataset':str(args.data), 'cases':len(cases),
-        'scoring_revision': 2,
+        'scoring_revision': 3,
         'scope':'真实抽取与关联、保存及查询证据；不含最终自然语言回答或飞书送达'}
     (args.output/'metadata.json').write_text(json.dumps(metadata, ensure_ascii=False, indent=2)+'\n')
     print(json.dumps(metadata, ensure_ascii=False), flush=True)
