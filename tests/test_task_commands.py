@@ -272,3 +272,82 @@ def test_feishu_natural_language_uses_query_and_carries_owner(monkeypatch, text)
     assert calls[0].task_payload["consistency"] == "memory"
     assert calls[0].task_payload["question"] == text
     assert calls[0].text == text
+
+
+def mock_named(monkeypatch, output):
+    from memory import task_reference, task_retrieval
+
+    monkeypatch.setattr(task_retrieval, "vector_rank", lambda *a: [])
+    model = Mock(return_value=output)
+    monkeypatch.setattr(task_reference, "complete_json", model)
+    return model
+
+
+def test_named_without_list_and_retry(monkeypatch):
+    record = seed(1)
+    other = seed(2)
+    model = mock_named(monkeypatch, {"status": "matched", "target_ids": [record.id], "candidate_ids": [], "reason": "明确完成"})
+    answer = answer_question("s", "第一份测试报告提交完成了", message_id="named")
+    assert "已标记完成" in answer
+    assert repo.get_memory(record.id).task_status == "done"
+    assert repo.get_memory(other.id).task_status == "todo"
+    assert answer_question("s", "第一份测试报告提交完成了", message_id="named") == answer
+    assert model.call_count == 1
+
+
+def test_named_keeps_displayed_number_mapping(monkeypatch):
+    seed(1)
+    seed(2)
+    answer_question("s", "列出未完成任务")
+    snapshot = latest()
+    target = snapshot["items"][1]["id"]
+    mock_named(monkeypatch, {"status": "matched", "target_ids": [target], "candidate_ids": [], "reason": "名称匹配"})
+    assert "已标记完成" in answer_question("s", "第二份报告完成了")
+    assert "已标记完成" in answer_question("s", "任务1请标记完成")
+    assert all(r.task_status == "done" for r in repo.list_memories("s", limit=100))
+
+
+def test_named_ambiguous_then_numbered(monkeypatch):
+    first, second = seed(1), seed(2)
+    mock_named(monkeypatch, {"status": "ambiguous", "target_ids": [], "candidate_ids": [first.id, second.id], "reason": "未指定哪份"})
+    answer = answer_question("s", "报告完成了")
+    assert "多个可能" in answer
+    assert all(r.task_status == "todo" for r in repo.list_memories("s", limit=100))
+    assert "已标记完成" in answer_question("s", "任务2请标记完成")
+    assert repo.get_memory(first.id).task_status == "todo"
+    assert repo.get_memory(second.id).task_status == "done"
+
+
+@pytest.mark.parametrize("status", ["not_completion", "not_found"])
+def test_named_nonmatch_no_write(monkeypatch, status):
+    record = seed(1)
+    mock_named(monkeypatch, {"status": status, "target_ids": [], "candidate_ids": [], "reason": "不能完成"})
+    answer_question("s", "报告初稿写完了")
+    assert repo.get_memory(record.id).current_version == 1
+
+
+def test_named_cannot_target_other_owner(monkeypatch):
+    seed(1)
+    foreign = seed(2, owner="someone-else")
+    model = mock_named(monkeypatch, {"status": "matched", "target_ids": [foreign.id], "candidate_ids": [], "reason": "错误ID"})
+    assert "未修改任何" in answer_question("s", "报告完成了")
+    assert foreign.id not in model.call_args.kwargs["user_prompt"]
+    assert repo.get_memory(foreign.id).task_status == "todo"
+
+
+def test_named_concurrent_edit_rejected(monkeypatch):
+    record = seed(1)
+    model = mock_named(monkeypatch, {})
+
+    def response(**kwargs):
+        repo.update_memory(record.id, content="changed during model call", reason="test")
+        return {"status": "matched", "target_ids": [record.id], "candidate_ids": [], "reason": "名称匹配"}
+
+    model.side_effect = response
+    assert "已变化" in answer_question("s", "报告完成了")
+    assert repo.get_memory(record.id).task_status == "todo"
+
+
+@pytest.mark.parametrize("text", ["合同打印好了", "刚才那个发送任务完成了", "演示文稿审核结束了", "把打印合同标记完成"])
+def test_named_routing(text):
+    assert commands.parse_command(text) == {"action": "complete_named"}

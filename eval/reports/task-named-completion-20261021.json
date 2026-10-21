@@ -1,0 +1,1224 @@
+{
+  "model": "deepseek-flash",
+  "storage": "isolated SQLite",
+  "checks": {
+    "name_without_list": true,
+    "context_send_not_review": true,
+    "ambiguous_rounds_no_write": true,
+    "clarification_one_round": true,
+    "named_round_clarification": true,
+    "partial_progress_not_done": true,
+    "unknown_no_new_card": true
+  },
+  "steps": [
+    {
+      "text": "合同打印好了",
+      "answer": "打印采购合同 — 已标记完成（done）。",
+      "states": {
+        "print": "done",
+        "send": "todo",
+        "review": "todo",
+        "week1": "todo",
+        "week2": "todo",
+        "submit": "todo"
+      }
+    },
+    {
+      "text": "列出所有未完成任务",
+      "answer": "当前已保存的未完成任务共 5 项，以下全部列出：\n\n任务 1：审核客户演示文稿\n  审核客户演示文稿\n\n任务 2：提交项目报告\n  提交项目报告\n\n任务 3：向客户发送演示文稿\n  向客户发送演示文稿\n\n任务 4：清洁检查（下周）\n  清洁检查\n\n任务 5：清洁检查（本周）\n  清洁检查\n\n可以按名称说“合同打印好了”，或回复“任务1、任务5请标记完成”。编号对应本次清单；重新列出后以新清单为准。",
+      "states": {
+        "print": "done",
+        "send": "todo",
+        "review": "todo",
+        "week1": "todo",
+        "week2": "todo",
+        "submit": "todo"
+      }
+    },
+    {
+      "text": "刚才那个发送任务完成了",
+      "answer": "向客户发送演示文稿 — 已标记完成（done）。",
+      "states": {
+        "print": "done",
+        "send": "done",
+        "review": "todo",
+        "week1": "todo",
+        "week2": "todo",
+        "submit": "todo"
+      }
+    },
+    {
+      "text": "清洁检查完成了",
+      "answer": "有多个可能的任务，请确认要完成哪项：\n任务 1：清洁检查（下周）\n任务 2：清洁检查（本周）\n可以回复“任务1请标记完成”。本次尚未修改任务。",
+      "states": {
+        "print": "done",
+        "send": "done",
+        "review": "todo",
+        "week1": "todo",
+        "week2": "todo",
+        "submit": "todo"
+      }
+    },
+    {
+      "text": "任务1请标记完成",
+      "answer": "任务 1：清洁检查（下周） — 已标记完成（done）。",
+      "states": {
+        "print": "done",
+        "send": "done",
+        "review": "todo",
+        "week1": "todo",
+        "week2": "done",
+        "submit": "todo"
+      }
+    },
+    {
+      "text": "本周的清洁检查完成了",
+      "answer": "清洁检查（本周） — 已标记完成（done）。",
+      "states": {
+        "print": "done",
+        "send": "done",
+        "review": "todo",
+        "week1": "done",
+        "week2": "done",
+        "submit": "todo"
+      }
+    },
+    {
+      "text": "项目报告初稿写完了",
+      "answer": "这条信息没有明确表示整个任务已完成，未修改任务状态。",
+      "states": {
+        "print": "done",
+        "send": "done",
+        "review": "todo",
+        "week1": "done",
+        "week2": "done",
+        "submit": "todo"
+      }
+    },
+    {
+      "text": "自行车保养完成了",
+      "answer": "没有找到与这句话对应的已有任务，未新建或修改任务。请补充任务名称或先列出未完成任务。",
+      "states": {
+        "print": "done",
+        "send": "done",
+        "review": "todo",
+        "week1": "done",
+        "week2": "done",
+        "submit": "todo"
+      }
+    }
+  ],
+  "resolutions": [
+    {
+      "input": {
+        "text": "项目报告初稿写完了",
+        "current_user": {
+          "id": "owner",
+          "name": null,
+          "name_source": "unknown"
+        },
+        "conversation_ids": [
+          "mem_dff433f330a8"
+        ],
+        "cards": [
+          {
+            "id": "mem_008708dda983",
+            "subject": "用户",
+            "task": "审核客户演示文稿",
+            "instance": null,
+            "task_status": "todo",
+            "description": "审核客户演示文稿"
+          },
+          {
+            "id": "mem_3b3de186813f",
+            "subject": "用户",
+            "task": "提交项目报告",
+            "instance": null,
+            "task_status": "todo",
+            "description": "提交项目报告"
+          },
+          {
+            "id": "mem_c41874561991",
+            "subject": "用户",
+            "task": "向客户发送演示文稿",
+            "instance": null,
+            "task_status": "done",
+            "description": "用户确认：向客户发送演示文稿已完成。"
+          },
+          {
+            "id": "mem_d172aeeca78e",
+            "subject": "用户",
+            "task": "打印采购合同",
+            "instance": null,
+            "task_status": "done",
+            "description": "用户确认：打印采购合同已完成。"
+          },
+          {
+            "id": "mem_d38f14b3850d",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "下周",
+            "task_status": "done",
+            "description": "用户确认：清洁检查已完成。"
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "本周",
+            "task_status": "done",
+            "description": "用户确认：清洁检查已完成。"
+          }
+        ]
+      },
+      "output": {
+        "status": "not_completion",
+        "reason": "用户说“项目报告初稿写完了”，只表示初稿完成，并未完成“提交项目报告”这一整体任务；初稿与提交需严格区分。"
+      },
+      "recall": {
+        "channels": {
+          "source": [],
+          "subject": [
+            [
+              "mem_3b3de186813f",
+              0.3
+            ],
+            [
+              "mem_008708dda983",
+              0.0
+            ],
+            [
+              "mem_c41874561991",
+              0.0
+            ],
+            [
+              "mem_d172aeeca78e",
+              0.0
+            ],
+            [
+              "mem_d38f14b3850d",
+              0.0
+            ],
+            [
+              "mem_dff433f330a8",
+              0.0
+            ]
+          ],
+          "task": [
+            [
+              "mem_3b3de186813f",
+              0.3
+            ]
+          ],
+          "vector": [
+            [
+              "mem_3b3de186813f",
+              0.7283921933940782
+            ],
+            [
+              "mem_008708dda983",
+              0.560136723681695
+            ],
+            [
+              "mem_c41874561991",
+              0.5227272728240528
+            ],
+            [
+              "mem_d172aeeca78e",
+              0.4586150029278256
+            ],
+            [
+              "mem_dff433f330a8",
+              0.40336839347184983
+            ],
+            [
+              "mem_d38f14b3850d",
+              0.3882891340485369
+            ]
+          ]
+        },
+        "vector_status": "ready",
+        "candidates": [
+          {
+            "id": "mem_3b3de186813f",
+            "rrf": 0.04918032786885246,
+            "signals": {
+              "subject": 0.3,
+              "task": 0.3,
+              "vector": 0.7283921933940782
+            }
+          },
+          {
+            "id": "mem_008708dda983",
+            "rrf": 0.03225806451612903,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.560136723681695
+            }
+          },
+          {
+            "id": "mem_c41874561991",
+            "rrf": 0.031746031746031744,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.5227272728240528
+            }
+          },
+          {
+            "id": "mem_d172aeeca78e",
+            "rrf": 0.03125,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.4586150029278256
+            }
+          },
+          {
+            "id": "mem_d38f14b3850d",
+            "rrf": 0.030536130536130537,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.3882891340485369
+            }
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "rrf": 0.030536130536130537,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.40336839347184983
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "text": "本周的清洁检查完成了",
+        "current_user": {
+          "id": "owner",
+          "name": null,
+          "name_source": "unknown"
+        },
+        "conversation_ids": [
+          "mem_d38f14b3850d"
+        ],
+        "cards": [
+          {
+            "id": "mem_008708dda983",
+            "subject": "用户",
+            "task": "审核客户演示文稿",
+            "instance": null,
+            "task_status": "todo",
+            "description": "审核客户演示文稿"
+          },
+          {
+            "id": "mem_3b3de186813f",
+            "subject": "用户",
+            "task": "提交项目报告",
+            "instance": null,
+            "task_status": "todo",
+            "description": "提交项目报告"
+          },
+          {
+            "id": "mem_c41874561991",
+            "subject": "用户",
+            "task": "向客户发送演示文稿",
+            "instance": null,
+            "task_status": "done",
+            "description": "用户确认：向客户发送演示文稿已完成。"
+          },
+          {
+            "id": "mem_d172aeeca78e",
+            "subject": "用户",
+            "task": "打印采购合同",
+            "instance": null,
+            "task_status": "done",
+            "description": "用户确认：打印采购合同已完成。"
+          },
+          {
+            "id": "mem_d38f14b3850d",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "下周",
+            "task_status": "done",
+            "description": "用户确认：清洁检查已完成。"
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "本周",
+            "task_status": "todo",
+            "description": "清洁检查"
+          }
+        ]
+      },
+      "output": {
+        "status": "matched",
+        "target_ids": [
+          "mem_dff433f330a8"
+        ],
+        "reason": "用户明确表示“本周的清洁检查完成了”，与卡片 mem_dff433f330a8（清洁检查，本周）唯一匹配。"
+      },
+      "recall": {
+        "channels": {
+          "source": [],
+          "subject": [
+            [
+              "mem_d38f14b3850d",
+              0.3333333333333333
+            ],
+            [
+              "mem_dff433f330a8",
+              0.3333333333333333
+            ],
+            [
+              "mem_008708dda983",
+              0.0
+            ],
+            [
+              "mem_3b3de186813f",
+              0.0
+            ],
+            [
+              "mem_c41874561991",
+              0.0
+            ],
+            [
+              "mem_d172aeeca78e",
+              0.0
+            ]
+          ],
+          "task": [
+            [
+              "mem_d38f14b3850d",
+              0.3333333333333333
+            ],
+            [
+              "mem_dff433f330a8",
+              0.3333333333333333
+            ]
+          ],
+          "vector": [
+            [
+              "mem_dff433f330a8",
+              0.894752550335795
+            ],
+            [
+              "mem_d38f14b3850d",
+              0.8584403792529168
+            ],
+            [
+              "mem_008708dda983",
+              0.5275664782432694
+            ],
+            [
+              "mem_3b3de186813f",
+              0.5120847998150174
+            ],
+            [
+              "mem_d172aeeca78e",
+              0.46205317598946266
+            ],
+            [
+              "mem_c41874561991",
+              0.45967450354257694
+            ]
+          ]
+        },
+        "vector_status": "ready",
+        "candidates": [
+          {
+            "id": "mem_d38f14b3850d",
+            "rrf": 0.04891591750396616,
+            "signals": {
+              "subject": 0.3333333333333333,
+              "task": 0.3333333333333333,
+              "vector": 0.8584403792529168
+            }
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "rrf": 0.048651507139079855,
+            "signals": {
+              "subject": 0.3333333333333333,
+              "task": 0.3333333333333333,
+              "vector": 0.894752550335795
+            }
+          },
+          {
+            "id": "mem_008708dda983",
+            "rrf": 0.031746031746031744,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.5275664782432694
+            }
+          },
+          {
+            "id": "mem_3b3de186813f",
+            "rrf": 0.03125,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.5120847998150174
+            }
+          },
+          {
+            "id": "mem_c41874561991",
+            "rrf": 0.030536130536130537,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.45967450354257694
+            }
+          },
+          {
+            "id": "mem_d172aeeca78e",
+            "rrf": 0.030536130536130537,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.46205317598946266
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "text": "自行车保养完成了",
+        "current_user": {
+          "id": "owner",
+          "name": null,
+          "name_source": "unknown"
+        },
+        "conversation_ids": [
+          "mem_dff433f330a8"
+        ],
+        "cards": [
+          {
+            "id": "mem_008708dda983",
+            "subject": "用户",
+            "task": "审核客户演示文稿",
+            "instance": null,
+            "task_status": "todo",
+            "description": "审核客户演示文稿"
+          },
+          {
+            "id": "mem_3b3de186813f",
+            "subject": "用户",
+            "task": "提交项目报告",
+            "instance": null,
+            "task_status": "todo",
+            "description": "提交项目报告"
+          },
+          {
+            "id": "mem_c41874561991",
+            "subject": "用户",
+            "task": "向客户发送演示文稿",
+            "instance": null,
+            "task_status": "done",
+            "description": "用户确认：向客户发送演示文稿已完成。"
+          },
+          {
+            "id": "mem_d172aeeca78e",
+            "subject": "用户",
+            "task": "打印采购合同",
+            "instance": null,
+            "task_status": "done",
+            "description": "用户确认：打印采购合同已完成。"
+          },
+          {
+            "id": "mem_d38f14b3850d",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "下周",
+            "task_status": "done",
+            "description": "用户确认：清洁检查已完成。"
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "本周",
+            "task_status": "done",
+            "description": "用户确认：清洁检查已完成。"
+          }
+        ]
+      },
+      "output": {
+        "status": "not_found",
+        "reason": "现有卡片中没有“自行车保养”这一任务，用户所述完成事项与任何已有任务均不对应，不能新建。"
+      },
+      "recall": {
+        "channels": {
+          "source": [],
+          "subject": [
+            [
+              "mem_008708dda983",
+              0.0
+            ],
+            [
+              "mem_3b3de186813f",
+              0.0
+            ],
+            [
+              "mem_c41874561991",
+              0.0
+            ],
+            [
+              "mem_d172aeeca78e",
+              0.0
+            ],
+            [
+              "mem_d38f14b3850d",
+              0.0
+            ],
+            [
+              "mem_dff433f330a8",
+              0.0
+            ]
+          ],
+          "task": [],
+          "vector": [
+            [
+              "mem_008708dda983",
+              0.4945139773600133
+            ],
+            [
+              "mem_dff433f330a8",
+              0.4787153385064609
+            ],
+            [
+              "mem_3b3de186813f",
+              0.4778590263688408
+            ],
+            [
+              "mem_d38f14b3850d",
+              0.47649056540695267
+            ],
+            [
+              "mem_c41874561991",
+              0.4532532011786661
+            ],
+            [
+              "mem_d172aeeca78e",
+              0.4159761527137358
+            ]
+          ]
+        },
+        "vector_status": "ready",
+        "candidates": [
+          {
+            "id": "mem_008708dda983",
+            "rrf": 0.03278688524590164,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.4945139773600133
+            }
+          },
+          {
+            "id": "mem_3b3de186813f",
+            "rrf": 0.03200204813108039,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.4778590263688408
+            }
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "rrf": 0.03128054740957967,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.4787153385064609
+            }
+          },
+          {
+            "id": "mem_c41874561991",
+            "rrf": 0.03125763125763126,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.4532532011786661
+            }
+          },
+          {
+            "id": "mem_d38f14b3850d",
+            "rrf": 0.031009615384615385,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.47649056540695267
+            }
+          },
+          {
+            "id": "mem_d172aeeca78e",
+            "rrf": 0.030776515151515152,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.4159761527137358
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "text": "合同打印好了",
+        "current_user": {
+          "id": "owner",
+          "name": null,
+          "name_source": "unknown"
+        },
+        "conversation_ids": [],
+        "cards": [
+          {
+            "id": "mem_008708dda983",
+            "subject": "用户",
+            "task": "审核客户演示文稿",
+            "instance": null,
+            "task_status": "todo",
+            "description": "审核客户演示文稿"
+          },
+          {
+            "id": "mem_3b3de186813f",
+            "subject": "用户",
+            "task": "提交项目报告",
+            "instance": null,
+            "task_status": "todo",
+            "description": "提交项目报告"
+          },
+          {
+            "id": "mem_c41874561991",
+            "subject": "用户",
+            "task": "向客户发送演示文稿",
+            "instance": null,
+            "task_status": "todo",
+            "description": "向客户发送演示文稿"
+          },
+          {
+            "id": "mem_d172aeeca78e",
+            "subject": "用户",
+            "task": "打印采购合同",
+            "instance": null,
+            "task_status": "todo",
+            "description": "打印采购合同"
+          },
+          {
+            "id": "mem_d38f14b3850d",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "下周",
+            "task_status": "todo",
+            "description": "清洁检查"
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "本周",
+            "task_status": "todo",
+            "description": "清洁检查"
+          }
+        ]
+      },
+      "output": {
+        "status": "matched",
+        "target_ids": [
+          "mem_d172aeeca78e"
+        ],
+        "reason": "用户明确表示“合同打印好了”，对应唯一任务“打印采购合同”，主体为用户，任务整体完成。"
+      },
+      "recall": {
+        "channels": {
+          "source": [],
+          "subject": [
+            [
+              "mem_d172aeeca78e",
+              0.25
+            ],
+            [
+              "mem_008708dda983",
+              0.0
+            ],
+            [
+              "mem_3b3de186813f",
+              0.0
+            ],
+            [
+              "mem_c41874561991",
+              0.0
+            ],
+            [
+              "mem_d38f14b3850d",
+              0.0
+            ],
+            [
+              "mem_dff433f330a8",
+              0.0
+            ]
+          ],
+          "task": [
+            [
+              "mem_d172aeeca78e",
+              0.25
+            ]
+          ],
+          "vector": [
+            [
+              "mem_d172aeeca78e",
+              0.8043112544415506
+            ],
+            [
+              "mem_008708dda983",
+              0.5872214984424324
+            ],
+            [
+              "mem_c41874561991",
+              0.5856904700399262
+            ],
+            [
+              "mem_3b3de186813f",
+              0.5687109997990898
+            ],
+            [
+              "mem_d38f14b3850d",
+              0.45873028060514454
+            ],
+            [
+              "mem_dff433f330a8",
+              0.45693346213475217
+            ]
+          ]
+        },
+        "vector_status": "ready",
+        "candidates": [
+          {
+            "id": "mem_d172aeeca78e",
+            "rrf": 0.04918032786885246,
+            "signals": {
+              "subject": 0.25,
+              "task": 0.25,
+              "vector": 0.8043112544415506
+            }
+          },
+          {
+            "id": "mem_008708dda983",
+            "rrf": 0.03225806451612903,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.5872214984424324
+            }
+          },
+          {
+            "id": "mem_3b3de186813f",
+            "rrf": 0.03149801587301587,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.5687109997990898
+            }
+          },
+          {
+            "id": "mem_c41874561991",
+            "rrf": 0.03149801587301587,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.5856904700399262
+            }
+          },
+          {
+            "id": "mem_d38f14b3850d",
+            "rrf": 0.03076923076923077,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.45873028060514454
+            }
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "rrf": 0.030303030303030304,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.45693346213475217
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "text": "清洁检查完成了",
+        "current_user": {
+          "id": "owner",
+          "name": null,
+          "name_source": "unknown"
+        },
+        "conversation_ids": [
+          "mem_c41874561991"
+        ],
+        "cards": [
+          {
+            "id": "mem_008708dda983",
+            "subject": "用户",
+            "task": "审核客户演示文稿",
+            "instance": null,
+            "task_status": "todo",
+            "description": "审核客户演示文稿"
+          },
+          {
+            "id": "mem_3b3de186813f",
+            "subject": "用户",
+            "task": "提交项目报告",
+            "instance": null,
+            "task_status": "todo",
+            "description": "提交项目报告"
+          },
+          {
+            "id": "mem_c41874561991",
+            "subject": "用户",
+            "task": "向客户发送演示文稿",
+            "instance": null,
+            "task_status": "done",
+            "description": "用户确认：向客户发送演示文稿已完成。"
+          },
+          {
+            "id": "mem_d172aeeca78e",
+            "subject": "用户",
+            "task": "打印采购合同",
+            "instance": null,
+            "task_status": "done",
+            "description": "用户确认：打印采购合同已完成。"
+          },
+          {
+            "id": "mem_d38f14b3850d",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "下周",
+            "task_status": "todo",
+            "description": "清洁检查"
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "本周",
+            "task_status": "todo",
+            "description": "清洁检查"
+          }
+        ]
+      },
+      "output": {
+        "status": "ambiguous",
+        "reason": "用户说“清洁检查完成了”，但存在两个同名任务（本周和下周的清洁检查），无法唯一确定是哪一轮。",
+        "candidate_ids": [
+          "mem_d38f14b3850d",
+          "mem_dff433f330a8"
+        ]
+      },
+      "recall": {
+        "channels": {
+          "source": [],
+          "subject": [
+            [
+              "mem_d38f14b3850d",
+              0.5
+            ],
+            [
+              "mem_dff433f330a8",
+              0.5
+            ],
+            [
+              "mem_008708dda983",
+              0.0
+            ],
+            [
+              "mem_3b3de186813f",
+              0.0
+            ],
+            [
+              "mem_c41874561991",
+              0.0
+            ],
+            [
+              "mem_d172aeeca78e",
+              0.0
+            ]
+          ],
+          "task": [
+            [
+              "mem_d38f14b3850d",
+              0.5
+            ],
+            [
+              "mem_dff433f330a8",
+              0.5
+            ]
+          ],
+          "vector": [
+            [
+              "mem_dff433f330a8",
+              0.8268069884531486
+            ],
+            [
+              "mem_d38f14b3850d",
+              0.8075751902511042
+            ],
+            [
+              "mem_008708dda983",
+              0.545790799600625
+            ],
+            [
+              "mem_3b3de186813f",
+              0.5209844835284086
+            ],
+            [
+              "mem_d172aeeca78e",
+              0.49368623361868297
+            ],
+            [
+              "mem_c41874561991",
+              0.4626311322041579
+            ]
+          ]
+        },
+        "vector_status": "ready",
+        "candidates": [
+          {
+            "id": "mem_d38f14b3850d",
+            "rrf": 0.04891591750396616,
+            "signals": {
+              "subject": 0.5,
+              "task": 0.5,
+              "vector": 0.8075751902511042
+            }
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "rrf": 0.048651507139079855,
+            "signals": {
+              "subject": 0.5,
+              "task": 0.5,
+              "vector": 0.8268069884531486
+            }
+          },
+          {
+            "id": "mem_008708dda983",
+            "rrf": 0.031746031746031744,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.545790799600625
+            }
+          },
+          {
+            "id": "mem_3b3de186813f",
+            "rrf": 0.03125,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.5209844835284086
+            }
+          },
+          {
+            "id": "mem_c41874561991",
+            "rrf": 0.030536130536130537,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.4626311322041579
+            }
+          },
+          {
+            "id": "mem_d172aeeca78e",
+            "rrf": 0.030536130536130537,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.49368623361868297
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "text": "刚才那个发送任务完成了",
+        "current_user": {
+          "id": "owner",
+          "name": null,
+          "name_source": "unknown"
+        },
+        "conversation_ids": [
+          "mem_008708dda983",
+          "mem_3b3de186813f",
+          "mem_c41874561991",
+          "mem_d38f14b3850d",
+          "mem_dff433f330a8"
+        ],
+        "cards": [
+          {
+            "id": "mem_008708dda983",
+            "subject": "用户",
+            "task": "审核客户演示文稿",
+            "instance": null,
+            "task_status": "todo",
+            "description": "审核客户演示文稿"
+          },
+          {
+            "id": "mem_3b3de186813f",
+            "subject": "用户",
+            "task": "提交项目报告",
+            "instance": null,
+            "task_status": "todo",
+            "description": "提交项目报告"
+          },
+          {
+            "id": "mem_c41874561991",
+            "subject": "用户",
+            "task": "向客户发送演示文稿",
+            "instance": null,
+            "task_status": "todo",
+            "description": "向客户发送演示文稿"
+          },
+          {
+            "id": "mem_d172aeeca78e",
+            "subject": "用户",
+            "task": "打印采购合同",
+            "instance": null,
+            "task_status": "done",
+            "description": "用户确认：打印采购合同已完成。"
+          },
+          {
+            "id": "mem_d38f14b3850d",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "下周",
+            "task_status": "todo",
+            "description": "清洁检查"
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "subject": "用户",
+            "task": "清洁检查",
+            "instance": "本周",
+            "task_status": "todo",
+            "description": "清洁检查"
+          }
+        ]
+      },
+      "output": {
+        "status": "matched",
+        "target_ids": [
+          "mem_c41874561991"
+        ],
+        "reason": "用户说“刚才那个发送任务完成了”，在对话记录中唯一相关的发送任务是“向客户发送演示文稿”，主体为用户，明确完成。"
+      },
+      "recall": {
+        "channels": {
+          "source": [],
+          "subject": [
+            [
+              "mem_c41874561991",
+              0.058823529411764705
+            ],
+            [
+              "mem_008708dda983",
+              0.0
+            ],
+            [
+              "mem_3b3de186813f",
+              0.0
+            ],
+            [
+              "mem_d172aeeca78e",
+              0.0
+            ],
+            [
+              "mem_d38f14b3850d",
+              0.0
+            ],
+            [
+              "mem_dff433f330a8",
+              0.0
+            ]
+          ],
+          "task": [
+            [
+              "mem_c41874561991",
+              0.058823529411764705
+            ]
+          ],
+          "vector": [
+            [
+              "mem_3b3de186813f",
+              0.559426707246295
+            ],
+            [
+              "mem_c41874561991",
+              0.5491261906617837
+            ],
+            [
+              "mem_008708dda983",
+              0.4828208917173516
+            ],
+            [
+              "mem_d172aeeca78e",
+              0.4666048956252197
+            ],
+            [
+              "mem_dff433f330a8",
+              0.4623132535816462
+            ],
+            [
+              "mem_d38f14b3850d",
+              0.4451848316274263
+            ]
+          ]
+        },
+        "vector_status": "ready",
+        "candidates": [
+          {
+            "id": "mem_c41874561991",
+            "rrf": 0.04891591750396616,
+            "signals": {
+              "subject": 0.058823529411764705,
+              "task": 0.058823529411764705,
+              "vector": 0.5491261906617837
+            }
+          },
+          {
+            "id": "mem_3b3de186813f",
+            "rrf": 0.032266458495966696,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.559426707246295
+            }
+          },
+          {
+            "id": "mem_008708dda983",
+            "rrf": 0.03200204813108039,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.4828208917173516
+            }
+          },
+          {
+            "id": "mem_d172aeeca78e",
+            "rrf": 0.03125,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.4666048956252197
+            }
+          },
+          {
+            "id": "mem_d38f14b3850d",
+            "rrf": 0.030536130536130537,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.4451848316274263
+            }
+          },
+          {
+            "id": "mem_dff433f330a8",
+            "rrf": 0.030536130536130537,
+            "signals": {
+              "subject": 0.0,
+              "vector": 0.4623132535816462
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
