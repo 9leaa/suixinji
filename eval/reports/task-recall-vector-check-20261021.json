@@ -1,0 +1,20 @@
+{
+  "model": "text-embedding-v4",
+  "dimension": 1024,
+  "vector_status": "ready",
+  "vector_ranking": [
+    [
+      "same",
+      0.6005061169423827
+    ],
+    [
+      "other",
+      0.28412600506053853
+    ]
+  ],
+  "selected": [
+    "same",
+    "other"
+  ],
+  "source_preserved": true
+}

@@ -261,6 +261,8 @@ def _persist(space_id, card, current, source, operation_id, *, reason):
     content = f"{card['subject']}关于{card['preference_object']}的偏好：" + '；'.join(d['description'] for d in active)
     scope = dict(current.scope) if current else {}
     scope.update(preference_card=card, canonical_topic=card['preference_object'], owner_id=card['owner_id'], access_scope='owner')
+    if card['subject'] == '用户':
+        scope['subject_id'] = 'user:' + card['owner_id']
     candidate = MemoryCandidate('preference', content, .8, .95, note_id=source['note_id'], space_id=space_id,
         subject=card['subject'], predicate='preference', object_value=card['preference_object'],
         polarity={'喜欢': 'positive', '不喜欢': 'negative', '无所谓': 'neutral'}.get(card['attitude'], 'unknown'),

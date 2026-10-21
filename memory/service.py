@@ -294,7 +294,10 @@ def _process_note_memory_impl(
             extraction_kwargs["previous_messages"] = previous_messages
         if settings.TASK_CARDS_ENABLED:
             extraction_kwargs["message_time"] = _note_value(note, "ts", None) or _note_value(note, "created_at", None)
-        extracted_candidates = extract_candidates(note_id, text, **extraction_kwargs)
+        from core.subject_identity import identity_context, normalize_candidate
+        identity_note = {key: _note_value(note, key, None) for key in ('user_id', 'tenant_id', 'space_id')}
+        with identity_context(identity_note):
+            extracted_candidates = [normalize_candidate(c) for c in extract_candidates(note_id, text, **extraction_kwargs)]
         shadow_report = build_shadow_report(extracted_candidates)
         if shadow_report is not None:
             add_step(

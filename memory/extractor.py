@@ -743,7 +743,7 @@ def extract_llm_candidates(
     model_text = _strip_diagnostic_prefix(raw)
     if _should_skip_text(model_text):
         return []
-    reference_messages = _recent_reference_messages(previous_messages) if settings.TASK_CARDS_ENABLED or _REFERENCE_SIGNAL_RE.search(model_text) else []
+    reference_messages = _recent_reference_messages(previous_messages)
     payload = {
         "note_id": note_id,
         "message_time": message_time,
@@ -762,6 +762,9 @@ def extract_llm_candidates(
     if settings.TASK_CARDS_ENABLED:
         from memory.task_schema import TASK_EXTRACTION_PROMPT
         prompt += TASK_EXTRACTION_PROMPT
+    from core.subject_identity import SUBJECT_RULES, current_identity
+    prompt += SUBJECT_RULES
+    payload["current_user"] = current_identity()
     data = complete_json(
         system_prompt=prompt,
         user_prompt=json.dumps(payload, ensure_ascii=False),

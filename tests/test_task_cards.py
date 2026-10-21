@@ -295,3 +295,37 @@ def test_task_and_preference_cards_can_be_enabled_together(monkeypatch):
     report = process_note_memory({'id': 'both', 'space_id': 's', 'text': text})
     assert len(report['results']) == 2 and all(r['action'] == 'insert' for r in report['results'])
     assert {r.memory_key_version for r in repo.list_memories('s')} == {cards.VERSION, 'preference-card-v1'}
+
+
+def test_account_alias_updates_self_card_with_stable_identity(monkeypatch):
+    from core import subject_identity
+    monkeypatch.setattr(subject_identity, 'current_user_identity', lambda *a, **kw: {'id':'alice','name':'小舟'})
+    first = result(write(monkeypatch, owner='alice'))
+    done = result(write(monkeypatch, '小舟已提交项目周报', key='n2', owner='alice', data=row('小舟已提交项目周报', subject='小舟', task_status='done', closure_reason='completed')))
+    assert done['memory_id'] == first['memory_id']
+    assert repo.get_memory(first['memory_id']).scope['subject_id'] == 'user:alice'
+
+
+@pytest.mark.parametrize('old_subject,new_subject,old_instance,new_instance,old_status,new_status,intent', [
+    ('李若宁','若宁',None,None,'todo','done','auto'),
+    ('用户','小舟',None,None,'todo','done','update'),
+    ('用户','用户','2026-10-19至2026-10-25的项目周记录','2026-10-19至2026-10-25','todo','todo','update'),
+    ('用户','用户','一次','刚才那次','todo','todo','auto'),
+    ('用户','用户','这张比赛奖状','之前那张比赛奖状','done','done','auto'),
+    ('用户','用户','本次','原来这次','done','todo','reopen'),
+    ('用户','用户','本月','2026年10月','todo','todo','update'),
+])
+def test_identity_rewrite_reaches_original_card_end_to_end(monkeypatch, old_subject,new_subject,old_instance,new_instance,old_status,new_status,intent):
+    from memory import task_retrieval
+    monkeypatch.setattr(task_retrieval,'embed_text',lambda text:[1.,0.])
+    first=result(write(monkeypatch,data=row(subject=old_subject,instance=old_instance,task_status=old_status)))
+    monkeypatch.setattr(cards,'complete_json',Mock(return_value={'action':'update','target_id':first['memory_id'],
+        'subject_relation':'same','instance_relation':'same','reason':'原文明确别名，且新消息引用同一任务来源'}))
+    newtext='刚才的任务更新了'
+    updated=result(write(monkeypatch,newtext,key='n2',data=row(newtext,subject=new_subject,instance=new_instance,
+        task_status=new_status,intent=intent,antecedent_note_id='n1',antecedent_evidence_span='记得提交项目周报'),
+        previous=[{'note_id':'n1','text':'记得提交项目周报'}]))
+    assert updated['memory_id']==first['memory_id']
+    assert updated['task_card']['task_status']==new_status
+    assert len(repo.list_memories('s',memory_type='task'))==1
+    assert any(a['vector_status']=='ready' for a in workflow_state.list_items('s','task_retrieval'))

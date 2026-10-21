@@ -52,9 +52,9 @@ TASK_EXTRACTION_PROMPT = '''
  "evidence_span":"项目周报周五前交","intent":"auto","antecedent_note_id":null,
  "antecedent_evidence_span":null,"unresolved_reason":null,"confidence":0.9,"importance":0.6,"should_store":true,"extraction_reason":"明确任务"}
 - 任务只使用上述字段；不要输出 entity/attribute/operation/canonical_topic/content 等旧字段。
-- subject 是执行人，省略时为用户。项目名属于 task，不是执行人；明确的第三人保留称谓。
+- subject 是执行人，遵循全局主体规则；省略时先解析明确上下文，无指代时为用户。项目名属于 task，不是执行人；明确的第三人保留称谓。
 - task 保留动作和对象，不带状态、截止时间和进展。instance 是哪一次，如明确日期的周报、第一轮、订单号；没有说明则 null。
-- 相对轮次时间（本周、下周）结合 message_time 解析为绝对日期范围；没有消息时间不能猜，保留原始表达并填 unresolved_reason。截止时间不作为 instance，延期不新建任务。
+- 相对轮次时间（本周、下周）结合 message_time 解析为绝对日期范围；没有消息时间不能猜，保留原始表达并填 unresolved_reason。截止时间不作为 instance，延期不新建任务。“刚才那次/原来这次”只作为指代，不是新轮次；沿用可确定的原轮次，不能确定则 null。
 - 同一任务的要求、进展、阻碍、时间、结果放在 details，kind 只能 requirement/progress/blocker/time/outcome/note；条件不明用空字符串。每项 evidence_span 必须逐字来自当前消息。
 - task_status 仅 todo/done；进行、等待、阻塞、暂停为 todo，结束为 done。初稿写完不代表提交任务完成。done 的 closure_reason 为 completed/cancelled/abandoned；不知道原因则 null，todo 必须 null。
 - intent：明确另一轮或另建任务用 new；修改已有任务用 update；明确要求重开同一次已结束任务用 reopen；其余 auto。仅补充说明不能重开任务。
