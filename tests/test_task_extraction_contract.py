@@ -1,4 +1,3 @@
-from copy import deepcopy
 import json
 from unittest.mock import Mock
 
@@ -12,7 +11,7 @@ from memory.task_schema import TaskInput
 
 
 def task():
-    return {'memory_type':'task','subject':'用户','task':'提交周报','task_status':'todo','details':[], 'evidence_span':'提交周报'}
+    return {'memory_type':'task','subject':'用户','task':'提交周报','task_status':'todo','description':'提交周报', 'evidence_span':'提交周报'}
 
 
 @pytest.mark.parametrize('preferences,v3', [(False,False),(False,True),(True,False),(True,True)])
@@ -35,22 +34,12 @@ def test_task_has_one_contract_without_legacy_fields(preferences,v3):
     assert set(strict['$defs']['TaskInput']['required'])==set(TaskInput.model_fields)
 
 
-@pytest.mark.parametrize('nested',[False,True])
-def test_extra_field_repair_preserves_original_and_all_valid_values(nested):
-    original=task()
-    if nested:
-        original['details']=[{'kind':'time','condition':'','description':'周五交','evidence_span':'周五交','description_note':None}]
-    else:
-        original['entities']=['周报']
-    fixed=deepcopy(original)
-    if nested:
-        fixed['details'][0].pop('description_note')
-    else:
-        fixed.pop('entities')
+def test_extra_field_repair_preserves_original_and_all_valid_values():
+    original={**task(), 'entities':['周报']}
+    fixed=task()
     mock=Mock(return_value=fixed)
-    got,audit=repair_task_row(original,complete=mock,context={'text':'提交周报，周五交','previous_messages':[]})
-    assert got==fixed and audit['original']==original and audit['corrected']==fixed
-    assert audit['status']=='repaired'
+    got,audit=repair_task_row(original,complete=mock,context={'text':'提交周报','previous_messages':[]})
+    assert got==fixed and audit['original']==original and audit['status']=='repaired'
     mock.assert_called_once()
 
 
@@ -70,7 +59,7 @@ def test_repair_failure_retains_invalid_candidate_for_pending(failure):
 
 def test_business_errors_do_not_trigger_format_retry():
     mock=Mock()
-    bad={**task(),'task_status':'todo','closure_reason':'completed'}
+    bad={**task(),'task_status':'blocked'}
     got,audit=repair_task_row(bad,complete=mock,context={})
     assert got==bad and audit is None
     mock.assert_not_called()

@@ -33,7 +33,7 @@ def main():
 
     def candidate(source, **kw):
         data = {'subject': '用户', 'task': '提交项目周报', 'instance': '第43周', 'task_status': 'todo',
-            'details': [], 'evidence_span': source['text'], **kw}
+            'description': source['text'], 'evidence_span': source['text'], **kw}
         return cards.candidate_from_row(source['id'], source['text'], data)
 
     first_note = note('第43周提交项目周报')
@@ -59,32 +59,32 @@ def main():
             seen.add(thread_id)
         if first_read:
             gate.wait(timeout=10)
-        return {'action': 'update', 'target_id': card_id}
+        payload = json.loads(kwargs['user_prompt'])
+        prior = next(c for c in payload['cards'] if c['id'] == card_id)
+        return {'action': 'update', 'target_id': card_id, 'description': prior['description'] + '；' + payload['new']['description']}
     jobs = [note('收入数据已核对'), note('客户数据已核对')]
     def append(source):
-        detail = {'kind': 'progress', 'condition': '', 'description': source['text'], 'evidence_span': source['text']}
-        return cards.apply_task(candidate(source, details=[detail]), source)
+        return cards.apply_task(candidate(source), source)
     with patch.object(cards, 'complete_json', association):
         with ThreadPoolExecutor(max_workers=2) as pool:
             results = list(pool.map(append, jobs))
     assert all(r['action'] == 'update_task' for r in results), results
     current = repo.get_memory(card_id)
-    assert len(cards.active_details(current.scope['task_card'])) == 2 and current.current_version == 3
+    assert all(n['text'] in current.scope['task_card']['description'] for n in jobs) and current.current_version == 3
     checks.append('concurrent_progress_keeps_both_changes')
 
     ended_note = note('第43周的周报取消了')
-    ended_candidate = candidate(ended_note, task_status='done', closure_reason='cancelled')
-    ended = cards.apply_task(ended_candidate, ended_note)
-    assert ended['task_card']['closure_reason'] == 'cancelled' and '已完成' not in ended['task_card']['content']
+    ended_candidate = candidate(ended_note, task_status='done')
+    with patch.object(cards, 'complete_json', return_value={'action':'update', 'target_id':card_id, 'description':ended_note['text']}):
+        ended = cards.apply_task(ended_candidate, ended_note)
+    assert ended['task_card']['task_status'] == 'done' and '已完成' not in ended['task_card']['content']
     assert repo.get_memory(second['memory_id']).status == 'active'
     checks.append('cancel_is_done_without_archiving_other_instance')
 
     result_note = note('取消原因是本周无需汇报')
-    with patch.object(cards, 'complete_json', return_value={'action': 'update', 'target_id': card_id}):
-        extra = cards.apply_task(candidate(result_note, task_status='done', details=[
-            {'kind': 'outcome', 'description': result_note['text'], 'evidence_span': result_note['text']}]), result_note)
-    assert extra['task_card']['closure_reason'] == 'cancelled'
-    assert len(extra['task_card']['details']) == 3
+    with patch.object(cards, 'complete_json', return_value={'action': 'update', 'target_id': card_id, 'description': '周报已取消，本周无需汇报'}):
+        extra = cards.apply_task(candidate(result_note, task_status='done'), result_note)
+    assert extra['task_card']['description'] == '周报已取消，本周无需汇报'
     checks.append('closed_task_result_is_not_discarded')
 
     before = repo.get_memory(card_id).current_version
@@ -99,7 +99,7 @@ def main():
     checks.append('ambiguous_instance_has_durable_pending')
 
     timeline = repo.get_memory_timeline(space, memory_id=card_id)
-    assert len(timeline[0]['versions']) >= 4 and timeline[0]['closure_reason'] == 'cancelled'
+    assert len(timeline[0]['versions']) >= 4 and timeline[0]['task_status'] == 'done'
     checks.append('postgres_timeline_keeps_task_structure_and_versions')
     print(json.dumps({'space_id': space, 'passed': checks}, ensure_ascii=False, indent=2))
 

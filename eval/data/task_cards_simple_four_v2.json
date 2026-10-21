@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "description": "手工设计的100条任务记忆场景，每个case是独立会话；仅数据设计，未运行模型。默认消息时间为2026-10-20T09:00:00+08:00，每步加1分钟；显式ts用于时间边界和乱序。自然周按周一至周日。每步expect为自动可检验部分，case.oracle补充语义裁决，不能用自动通过替代人工核对。任务字段为subject/task/instance/task_status/closure_reason/details；task_status仅todo或done，pending_review仅表示处理待确认，不是任务状态。结束原因completed/cancelled/abandoned/null；取消和放弃不等于完成。",
+  "cases": [
+    {
+      "id": "progress_blockers_04",
+      "category": "progress_blockers",
+      "name": "解除唯一阻碍",
+      "query": "打印合同",
+      "oracle": "设备修好只解除 blocker，不能认为合同已经打印。",
+      "steps": [
+        {
+          "text": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_05",
+      "category": "progress_blockers",
+      "name": "解除部分阻碍",
+      "query": "线上课程",
+      "oracle": "只解除网络故障，麦克风故障仍有效。",
+      "steps": [
+        {
+          "text": "我要录制线上课程，但网络断了而且麦克风坏了。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_06",
+      "category": "progress_blockers",
+      "name": "解除阻碍保留要求",
+      "query": "签证材料",
+      "oracle": "拿到工资单后，翻译要求仍需满足。",
+      "steps": [
+        {
+          "text": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "progress_blockers_08",
+      "category": "progress_blockers",
+      "name": "阻碍重新出现",
+      "query": "门禁安装",
+      "oracle": "新故障可重新形成 blocker，任务一直 todo。",
+      "steps": [
+        {
+          "text": "我要安装新门禁，但缺少电源适配器。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "门禁适配器到了，缺件问题解决，尚未安装。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    }
+  ],
+  "contract": "task-card-v2: description replaces typed details; first two messages only"
+}

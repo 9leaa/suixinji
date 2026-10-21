@@ -84,7 +84,7 @@ def capture_issue(space_id, *, stage, reason, snapshot, trace_id=None):
             schema = extraction_schema(preferences=settings.PREFERENCE_CARDS_ENABLED, v3=settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED)
             task_prompt = extraction_prompt(schema, preferences=settings.PREFERENCE_CARDS_ENABLED, v3=settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED) + SUBJECT_RULES
             from memory.task_cards import DECISION_PROMPT as TASK_DECISION_PROMPT
-            row.update(schema_version='task-card-v1', prompt_hash=stable_id(task_prompt, TASK_DECISION_PROMPT))
+            row.update(schema_version='task-card-v2', prompt_hash=stable_id(task_prompt, TASK_DECISION_PROMPT))
         state.put('issue', key, row)
         return row
 

@@ -57,7 +57,7 @@ def _as_evidence(item: dict[str, Any], *, tool: str, role: str) -> EvidenceItem:
         version_id=str(item.get("version_id") or item_id) if is_version else None,
         note_id=item_id if is_note else None,
         source_note_ids=_source_ids(item)[:12],
-        task_card={k: item.get(k) for k in ('subject', 'task', 'instance', 'task_status', 'closure_reason', 'details', 'sources', 'observations')} if item.get('memory_key_version') == 'task-card-v1' else None,
+        task_card={k: item.get(k) for k in ('subject', 'task', 'instance', 'task_status', 'description', 'sources')} if item.get('memory_key_version') in {'task-card-v1', 'task-card-v2'} else None,
         preference_details=item.get('details', []) if item.get('memory_key_version') == 'preference-card-v1' else [],
         event_time=item.get("event_time") or item.get("valid_from"),
         observed_at=item.get("observed_at") or item.get("source_created_at"),
@@ -213,6 +213,8 @@ def _task_source_supports_inventory(space_id: str, item: dict[str, Any]) -> bool
     from agent.query_agent import get_note_for_evidence
 
     if item.get('memory_key_version') == 'task-card-v1' and item.get('closure_reason') in {'cancelled', 'abandoned'}:
+        return True
+    if item.get('memory_key_version') == 'task-card-v2' and item.get('task_status') == 'done':
         return True
     note_ids = _source_ids(item)
     if not note_ids:

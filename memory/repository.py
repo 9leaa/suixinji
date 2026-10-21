@@ -1632,7 +1632,7 @@ def _archive_terminal_task_duplicates_row(
     返回结果说明：
         返回 `list[str]`，表示按条件筛选、构造或查询得到的列表。
     """
-    if candidate.memory_key_version == "task-card-v1":
+    if candidate.memory_key_version in {"task-card-v1", "task-card-v2"}:
         return []
     if candidate.memory_type != "task" or candidate.task_status != "done":
         return []
@@ -1743,7 +1743,7 @@ def apply_memory_decision(
                 target_row = conn.execute("SELECT * FROM memories WHERE id = ?", (target_id,)).fetchone()
                 if target_row is None:
                     raise ValueError(f"decision target memory not found: {target_id}")
-            if candidate.memory_key_version == "task-card-v1":
+            if candidate.memory_key_version in {"task-card-v1", "task-card-v2"}:
                 from memory.task_cards import TaskVersionConflict
                 if target_row is not None and (target_row["space_id"] != space_id or int(target_row["current_version"]) != decision.target_snapshot_version):
                     raise TaskVersionConflict("task card version changed")
@@ -1782,7 +1782,7 @@ def apply_memory_decision(
                     )
                     action = "pending_review"
                     result.update({"action": action, "relation": "conflict", "original_action": decision.recommended_action})
-            if action == "update_task" and candidate.memory_key_version != "task-card-v1" and target_row is not None and candidate.memory_type == "task" and candidate.task_status == "done":
+            if action == "update_task" and candidate.memory_key_version not in {"task-card-v1", "task-card-v2"} and target_row is not None and candidate.memory_type == "task" and candidate.task_status == "done":
                 current_status = normalize_task_status(target_row["task_status"])
                 if current_status == "done":
                     action = "add_source"
@@ -3218,7 +3218,7 @@ def get_memory_timeline(
             from memory.access import memory_access_allowed
             if access_context is not None and not memory_access_allowed({"scope": scope}, access_context):
                 continue
-            if row['memory_key_version'] == 'task-card-v1':
+            if row['memory_key_version'] in {'task-card-v1', 'task-card-v2'}:
                 from memory.task_cards import evidence
                 result.append({**evidence(_memory_from_row(row), include_history=True), 'versions': [v.__dict__ for v in _load_versions(conn, row['id'])]})
                 continue

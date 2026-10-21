@@ -19,8 +19,8 @@ def check(expected, cards, before, reports, *, pending_for_note=False):
         errors.append(f"卡片数：期望 {expected['cards']}，实际 {len(cards)}")
     if 'statuses' in expected and sorted(c['task_status'] for c in cards) != sorted(expected['statuses']):
         errors.append('状态不符：' + str([c['task_status'] for c in cards]))
-    if 'closures' in expected and sorted(str(c['closure_reason']) for c in cards) != sorted(str(v) for v in expected['closures']):
-        errors.append('结束原因不符：' + str([c['closure_reason'] for c in cards]))
+    if 'closures' in expected and sorted(str(c.get('closure_reason')) for c in cards) != sorted(str(v) for v in expected['closures']):
+        errors.append('结束原因不符：' + str([c.get('closure_reason') for c in cards]))
     if 'same_as' in expected and {c['id'] for c in cards} != set(before[expected['same_as']]):
         errors.append('应更新原卡片，但卡片 ID 改变')
     if 'subjects' in expected and sorted(subject_of(c) for c in cards) != sorted(expected['subjects']):
@@ -29,7 +29,7 @@ def check(expected, cards, before, reports, *, pending_for_note=False):
         selected = [c for c in cards if subject_of(c) == subject]
         if len(selected) != 1 or selected[0]['task_status'] != status:
             errors.append(f'{subject} 的任务状态应为 {status}')
-    details = [d for c in cards for d in c['details']]
+    details = [d for c in cards for d in c.get('details', [])]
     kinds = {d['kind'] for d in details}
     for kind in expected.get('kinds', []):
         if kind not in kinds:
@@ -37,7 +37,7 @@ def check(expected, cards, before, reports, *, pending_for_note=False):
     for kind in expected.get('no_active_kinds', []):
         if kind in kinds:
             errors.append('过期细节仍然有效：' + kind)
-    descriptions = '\n'.join(d['condition'] + d['description'] for d in details)
+    descriptions = '\n'.join(c.get('description', '') for c in cards) + '\n'.join(d['condition'] + d['description'] for d in details)
     for token in expected.get('contains_current', []):
         if token not in descriptions:
             errors.append('当前细节遗漏：' + token)
@@ -153,8 +153,8 @@ def run_case(case, run_dir):
         if cards and not hits:
             errors.append('任务已保存，但主题查询未返回任务')
         for card in cards:
-            if any(not d.get('source_ids') or not d.get('sources') for d in card['details']):
-                errors.append('细节缺少来源')
+            if not card.get('sources'):
+                errors.append('卡片缺少来源')
         row = {'step': index + 1, 'text': step['text'], 'message_time': ts, 'expected': step['expect'],
             'passed': not errors, 'errors': errors, 'report': report, 'cards': cards,
             'query_hits': hits, 'model_calls': calls[start:], 'pending_items': pending_items}

@@ -90,7 +90,7 @@ _HISTORY_QUERY_MARKERS = (
 
 def _coverage_identity(item: dict[str, Any]) -> str:
     """Return a stable business identity for diversity, never an evaluator id."""
-    if item.get("memory_key_version") == "task-card-v1":
+    if item.get("memory_key_version") in {"task-card-v1", "task-card-v2"}:
         return str(item["id"])
     scope = item.get("scope") if isinstance(item.get("scope"), dict) else {}
     return str(

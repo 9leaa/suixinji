@@ -73,7 +73,7 @@ def test_changed_names_require_explicit_identity_decision(monkeypatch):
     incoming=value(subject='若宁',instance='刚才那次')
     with pytest.raises(ValueError,match='主体'):
         task_cards.check_plan(incoming,task_cards.TaskPlan(action='update',target_id='a'),[record])
-    plan=task_cards.TaskPlan(action='update',target_id='a',subject_relation='same',instance_relation='same',reason='前文明确说明李若宁简称若宁，指向同一次')
+    plan=task_cards.TaskPlan(action='update',target_id='a',description='整理材料',subject_relation='same',instance_relation='same',reason='前文明确说明李若宁简称若宁，指向同一次')
     assert task_cards.check_plan(incoming,plan,[record]) is record
     card['instance']='2026-10-21航班'
     with pytest.raises(ValueError,match='日期'):

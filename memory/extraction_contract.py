@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, create_model
 
 from memory.extraction_schema import ExtractedMemoryCandidate
 from memory.preference_schema import PreferenceCandidateInput
-from memory.task_schema import TaskInput, TaskDetailInput, TASK_EXTRACTION_RULES
+from memory.task_schema import TaskInput, TASK_EXTRACTION_RULES
 from memory.prompts import PREFERENCE_DETAIL_PROMPT
 
 
@@ -102,13 +102,16 @@ def extraction_prompt(schema, *, preferences, v3):
     else:
         other_rules += '\npreference 的 polarity=positive/negative/unknown；scope 保留明确适用场景，无场景为 null。咖啡和茶等不同对象分别提取。\n'
     return general + task_rules + other_rules + '\nJSON Schema：\n' + json.dumps(schema, ensure_ascii=False) + '''
-输出前检查：task.details 只描述当前消息新增或改变的信息，不复制 previous_messages 的旧要求、旧时间或旧进展。旧细节由后续存储合并保留。每个 details.evidence_span 必须能在当前 text 中逐字找到；前文证据只能写在 antecedent_evidence_span。
+输出前检查：task.description 只描述当前消息的信息；后续关联阶段负责保留旧卡仍适用的内容。evidence_span 必须逐字来自当前 text，前文证据只写在 antecedent_evidence_span。
 如前文约定某日提交、当前消息只说延期，则只提取当前延期信息，不能把前文约定日期再作为当前细节输出。相对周期 instance 必须使用该周期的起止日期，不使用消息当天代表整个周期。
 '''
 
 
 def repair_task_row(row, *, complete, context):
     """One format-only retry for extra fields. Preserve every valid sibling/value."""
+    if 'details' in row or 'closure_reason' in row:
+        # An old business structure cannot be repaired by silently dropping its content.
+        return row, None
     try:
         TaskInput.model_validate(row)
         return row, None
@@ -125,7 +128,6 @@ def repair_task_row(row, *, complete, context):
         parsed = TaskInput.model_validate(fixed)
         # Check that the repair only removed forbidden fields, not business facts.
         projected = {k:v for k,v in row.items() if k in TaskInput.model_fields}
-        projected['details'] = [{k:v for k,v in d.items() if k in TaskDetailInput.model_fields} for d in row.get('details', [])]
         if parsed.model_dump() != TaskInput.model_validate(projected).model_dump():
             audit['reason'] = 'repair_changed_valid_fields'
             return row, audit
