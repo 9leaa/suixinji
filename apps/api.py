@@ -234,3 +234,5 @@ from apps.console import router as console_router
 app.include_router(console_router)
 from apps.fact_console import router as fact_console_router
 app.include_router(fact_console_router)
+from apps.console_library import router as library_router
+app.include_router(library_router)

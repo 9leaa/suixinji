@@ -74,9 +74,9 @@ def page():
 
 @router.get('/console/assets/{name}', include_in_schema=False)
 def asset(name: str):
-    if name not in {'app.js','style.css','fact-observations.js'}:
+    if name not in {'app.js','style.css','fact-observations.js','console-review.js'}:
         raise HTTPException(404)
-    return FileResponse(STATIC / name)
+    return FileResponse(STATIC / name, headers={'Cache-Control': 'no-store'})
 
 
 @router.get('/api/console/config')
@@ -162,3 +162,23 @@ def trace(trace_id:str,tenant=Depends(authorize)):
 def commands(tenant=Depends(authorize)):
     from apps.console_commands import available_commands
     return available_commands()
+
+
+@router.get('/api/console/history')
+def search_history(space: str = '', q: str = '', status: str = '',
+                   since: str | None = None, until: str | None = None,
+                   offset: int = 0, limit: int = 30, tenant=Depends(authorize)):
+    from datetime import datetime, timezone
+    if offset < 0 or not 1 <= limit <= 100 or status not in {'', 'completed', 'running', 'retry', 'error'}:
+        raise HTTPException(422, 'invalid history filter')
+    try:
+        start = datetime.fromisoformat(since) if since else None
+        end = datetime.fromisoformat(until) if until else None
+    except ValueError as exc:
+        raise HTTPException(422, 'invalid date') from exc
+    start = start.replace(tzinfo=timezone.utc) if start and start.tzinfo is None else start
+    end = end.replace(tzinfo=timezone.utc) if end and end.tzinfo is None else end
+    if start and end and start > end:
+        raise HTTPException(422, 'invalid date range')
+    return store.search_runs(tenant, space=space, query=q, status=status, since=start, until=end,
+                             offset=offset, limit=limit)

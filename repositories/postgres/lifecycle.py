@@ -97,3 +97,39 @@ def project_detail(run, nodes, tasks, attempts):
                    + [t['completed_at'] for t in tasks if t['completed_at']], default=run['created_at'])
     elapsed = ((finished if status in {'completed','error'} else datetime.now(timezone.utc))-run['created_at']).total_seconds()*1000
     return {**run, 'spans':nodes, 'tasks':tasks, 'status':status, 'duration_ms':round(elapsed, 1)}
+
+
+def search_runs(tenant, *, space='', query='', status='', since=None, until=None, offset=0, limit=30):
+    """Filter and page at the database; status follows the linked task's current state."""
+    from sqlalchemy import case, exists, func, and_, or_
+    from infrastructure.schema import Task
+    linked = Task.payload_json['_trace']['trace_id'].astext == runs.c.id
+    def has(states=None):
+        terms = [Task.tenant_id == tenant, linked]
+        if states:
+            terms.append(Task.status.in_(states))
+        return exists(select(Task.id).where(*terms))
+    unfinished = exists(select(Task.id).where(Task.tenant_id == tenant, linked, Task.status != 'completed'))
+    live_span = exists(select(spans.c.id).where(spans.c.trace_id == runs.c.id, spans.c.status == 'running'))
+    projected = case(
+        (or_(runs.c.error.is_not(None), has(['dead_letter', 'cancelled'])), 'error'),
+        (or_(and_(has(), ~unfinished),
+             and_(~has(), runs.c.answer.is_not(None), ~live_span)), 'completed'),
+        (has(['retry']), 'retry'),
+        else_='running').label('status')
+    statement = select(runs, projected).where(runs.c.tenant_id == tenant)
+    if space:
+        statement = statement.where(runs.c.space_id == space)
+    if query:
+        statement = statement.where(runs.c.text.icontains(query, autoescape=True))
+    if since:
+        statement = statement.where(runs.c.created_at >= since)
+    if until:
+        statement = statement.where(runs.c.created_at <= until)
+    if status:
+        statement = statement.where(projected == status)
+    with get_engine('lifecycle').connect() as conn:
+        total = conn.scalar(select(func.count()).select_from(statement.subquery()))
+        items = [dict(r) for r in conn.execute(statement.order_by(runs.c.created_at.desc(), runs.c.id.desc())
+                 .offset(offset).limit(limit)).mappings()]
+    return {'items': items, 'total': total, 'offset': offset, 'limit': limit}
