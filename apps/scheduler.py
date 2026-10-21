@@ -67,11 +67,9 @@ def run_once() -> bool:
                     enqueue_due(space_id)
         today = date.today()
         if settings.PREFERENCE_CARDS_ENABLED:
+            from memory.preference_maintenance import enqueue_due as enqueue_preference_due
             for space_id in list_memory_space_ids():
-                if not is_evaluation_space(space_id):
-                    enqueue_task(task_type='memory', space_id=space_id,
-                                 idempotency_key=f'preference-maintenance:{space_id}:{int(time.time() // 60)}',
-                                 payload={'operation': 'preference_maintenance'})
+                enqueue_preference_due(space_id)
         for cadence in due_cadences(today, {}):
             period_key = consolidation_period_key(cadence, today)
             for space_id in list_memory_space_ids():
