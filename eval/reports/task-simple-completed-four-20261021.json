@@ -1,0 +1,1791 @@
+{
+  "model": "deepseek-flash",
+  "base_run": "eval/results/task-simple-four-20261021",
+  "mode": "copied SQLite snapshots; append one completion per case",
+  "total": 4,
+  "passed": 4,
+  "results": [
+    {
+      "case": "progress_blockers_04",
+      "text": "采购合同已经全部打印完成。",
+      "before": {
+        "id": "mem_dfad019efbe1",
+        "memory_type": "task",
+        "memory_key_version": "task-card-v2",
+        "subject": "用户",
+        "task": "打印采购合同",
+        "instance": null,
+        "task_status": "todo",
+        "description": "用户要打印采购合同，打印机已修好，设备故障阻碍已解除，但合同还没打印。",
+        "sources": [
+          {
+            "id": "task-source:5f10409190b6ac598fb3a996193165b7",
+            "note_id": "progress_blockers_04-0",
+            "original_text": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+            "evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+            "message_time": "2026-10-20T09:00:00+08:00",
+            "antecedent_note_id": null,
+            "antecedent_evidence_span": null
+          },
+          {
+            "id": "task-source:34fbf3a428b1bc8a3aa7690541777ade",
+            "note_id": "progress_blockers_04-1",
+            "original_text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+            "evidence_span": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+            "message_time": "2026-10-20T09:01:00+08:00",
+            "antecedent_note_id": "progress_blockers_04-0",
+            "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。"
+          }
+        ],
+        "content": "用户；打印采购合同；待办；用户要打印采购合同，打印机已修好，设备故障阻碍已解除，但合同还没打印。"
+      },
+      "after": [
+        {
+          "id": "mem_dfad019efbe1",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "打印采购合同",
+          "instance": null,
+          "task_status": "done",
+          "description": "用户要打印采购合同，打印机已修好，设备故障阻碍已解除，采购合同已经全部打印完成。",
+          "sources": [
+            {
+              "id": "task-source:5f10409190b6ac598fb3a996193165b7",
+              "note_id": "progress_blockers_04-0",
+              "original_text": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+              "evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:34fbf3a428b1bc8a3aa7690541777ade",
+              "note_id": "progress_blockers_04-1",
+              "original_text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+              "evidence_span": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_04-0",
+              "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。"
+            },
+            {
+              "id": "task-source:0160df5ab817dc9d410f37688b93d4a5",
+              "note_id": "progress_blockers_04-2-completion",
+              "original_text": "采购合同已经全部打印完成。",
+              "evidence_span": "采购合同已经全部打印完成。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_04-0",
+              "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。"
+            }
+          ],
+          "content": "用户；打印采购合同；已结束；用户要打印采购合同，打印机已修好，设备故障阻碍已解除，采购合同已经全部打印完成。"
+        }
+      ],
+      "report": {
+        "note_id": "progress_blockers_04-2-completion",
+        "space_id": "progress_blockers_04",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "update_task",
+            "relation": "update_task",
+            "decision_id": "task-decision:e038667ff2892d57fa123d8ccc6ffcc7",
+            "candidate_id": "revision:3124ab3c99c3a8e6b78c7a9bbfb3f2db",
+            "confidence": 0.95,
+            "memory_id": "mem_dfad019efbe1",
+            "task_status": "done",
+            "source_added": true,
+            "task_card": {
+              "id": "mem_dfad019efbe1",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "打印采购合同",
+              "instance": null,
+              "task_status": "done",
+              "description": "用户要打印采购合同，打印机已修好，设备故障阻碍已解除，采购合同已经全部打印完成。",
+              "sources": [
+                {
+                  "id": "task-source:5f10409190b6ac598fb3a996193165b7",
+                  "note_id": "progress_blockers_04-0",
+                  "original_text": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+                  "evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                },
+                {
+                  "id": "task-source:34fbf3a428b1bc8a3aa7690541777ade",
+                  "note_id": "progress_blockers_04-1",
+                  "original_text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+                  "evidence_span": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+                  "message_time": "2026-10-20T09:01:00+08:00",
+                  "antecedent_note_id": "progress_blockers_04-0",
+                  "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。"
+                },
+                {
+                  "id": "task-source:0160df5ab817dc9d410f37688b93d4a5",
+                  "note_id": "progress_blockers_04-2-completion",
+                  "original_text": "采购合同已经全部打印完成。",
+                  "evidence_span": "采购合同已经全部打印完成。",
+                  "message_time": "2026-10-20T09:02:00+08:00",
+                  "antecedent_note_id": "progress_blockers_04-0",
+                  "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。"
+                }
+              ],
+              "content": "用户；打印采购合同；已结束；用户要打印采购合同，打印机已修好，设备故障阻碍已解除，采购合同已经全部打印完成。"
+            }
+          }
+        ],
+        "trace_id": "trace_d81cf3b9c23b",
+        "extraction_status": "completed"
+      },
+      "checks": {
+        "one_card": true,
+        "same_id": true,
+        "done": true,
+        "no_pending": true,
+        "query_returns_done": true,
+        "three_sources": true,
+        "three_versions": true
+      },
+      "passed": true,
+      "model_calls": [
+        {
+          "stage": "extraction",
+          "duration_seconds": 1.42,
+          "input": {
+            "note_id": "progress_blockers_04-2-completion",
+            "message_time": "2026-10-20T09:02:00+08:00",
+            "text": "采购合同已经全部打印完成。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "采购合同已经全部打印完成"
+              }
+            ],
+            "previous_messages": [
+              {
+                "note_id": "progress_blockers_04-1",
+                "role": "user",
+                "text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+                "ts": "2026-10-20T09:01:00+08:00",
+                "sequence_no": 2,
+                "offset": -1
+              },
+              {
+                "note_id": "progress_blockers_04-0",
+                "role": "user",
+                "text": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+                "ts": "2026-10-20T09:00:00+08:00",
+                "sequence_no": 1,
+                "offset": -2
+              }
+            ],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "打印采购合同",
+                "instance": null,
+                "task_status": "done",
+                "description": "采购合同已经全部打印完成。",
+                "evidence_span": "采购合同已经全部打印完成。",
+                "intent": "auto",
+                "antecedent_note_id": "progress_blockers_04-0",
+                "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "当前消息明确采购合同打印任务已完成，前文可唯一解析为同一打印任务。"
+              }
+            ]
+          }
+        },
+        {
+          "stage": "association",
+          "duration_seconds": 1.11,
+          "input": {
+            "new": {
+              "memory_type": "task",
+              "subject": "用户",
+              "task": "打印采购合同",
+              "instance": null,
+              "task_status": "done",
+              "description": "采购合同已经全部打印完成。",
+              "evidence_span": "采购合同已经全部打印完成。",
+              "intent": "auto",
+              "antecedent_note_id": "progress_blockers_04-0",
+              "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+              "unresolved_reason": null,
+              "confidence": 0.95,
+              "importance": 0.7,
+              "should_store": true,
+              "extraction_reason": "当前消息明确采购合同打印任务已完成，前文可唯一解析为同一打印任务。"
+            },
+            "cards": [
+              {
+                "id": "mem_dfad019efbe1",
+                "subject": "用户",
+                "task": "打印采购合同",
+                "instance": null,
+                "task_status": "todo",
+                "description": "用户要打印采购合同，打印机已修好，设备故障阻碍已解除，但合同还没打印。",
+                "sources": [
+                  {
+                    "id": "task-source:5f10409190b6ac598fb3a996193165b7",
+                    "note_id": "progress_blockers_04-0",
+                    "original_text": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+                    "evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+                    "message_time": "2026-10-20T09:00:00+08:00",
+                    "antecedent_note_id": null,
+                    "antecedent_evidence_span": null
+                  },
+                  {
+                    "id": "task-source:34fbf3a428b1bc8a3aa7690541777ade",
+                    "note_id": "progress_blockers_04-1",
+                    "original_text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+                    "evidence_span": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+                    "message_time": "2026-10-20T09:01:00+08:00",
+                    "antecedent_note_id": "progress_blockers_04-0",
+                    "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。"
+                  }
+                ]
+              }
+            ]
+          },
+          "output": {
+            "action": "update",
+            "target_id": "mem_dfad019efbe1",
+            "description": "用户要打印采购合同，打印机已修好，设备故障阻碍已解除，采购合同已经全部打印完成。",
+            "reason": "新消息表明同一打印采购合同任务已完成，与候选卡片为同一任务，应更新状态和描述。",
+            "subject_relation": "same",
+            "instance_relation": "same"
+          }
+        }
+      ],
+      "timeline": [
+        {
+          "id": "mem_dfad019efbe1",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "打印采购合同",
+          "instance": null,
+          "task_status": "done",
+          "description": "用户要打印采购合同，打印机已修好，设备故障阻碍已解除，采购合同已经全部打印完成。",
+          "sources": [
+            {
+              "id": "task-source:5f10409190b6ac598fb3a996193165b7",
+              "note_id": "progress_blockers_04-0",
+              "original_text": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+              "evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:34fbf3a428b1bc8a3aa7690541777ade",
+              "note_id": "progress_blockers_04-1",
+              "original_text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+              "evidence_span": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_04-0",
+              "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。"
+            },
+            {
+              "id": "task-source:0160df5ab817dc9d410f37688b93d4a5",
+              "note_id": "progress_blockers_04-2-completion",
+              "original_text": "采购合同已经全部打印完成。",
+              "evidence_span": "采购合同已经全部打印完成。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_04-0",
+              "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。"
+            }
+          ],
+          "content": "用户；打印采购合同；已结束；用户要打印采购合同，打印机已修好，设备故障阻碍已解除，采购合同已经全部打印完成。",
+          "versions": [
+            {
+              "id": "ver_f3c0bffff8c6",
+              "memory_id": "mem_dfad019efbe1",
+              "version": 1,
+              "content": "用户；打印采购合同；待办；用户要打印采购合同，但打印机坏了，暂时无法打印。",
+              "status": "active",
+              "reason": "created",
+              "source_note_id": "progress_blockers_04-0",
+              "created_at": "2026-10-21T10:58:56+08:00",
+              "source_note_ids": [
+                "progress_blockers_04-0"
+              ],
+              "task_status": "todo",
+              "confidence": 0.9,
+              "importance": 0.6,
+              "valid_from": null,
+              "valid_until": null
+            },
+            {
+              "id": "ver_86263e8261d3",
+              "memory_id": "mem_dfad019efbe1",
+              "version": 2,
+              "content": "用户；打印采购合同；待办；用户要打印采购合同，打印机已修好，设备故障阻碍已解除，但合同还没打印。",
+              "status": "active",
+              "reason": "同一用户、同一任务“打印采购合同”，新消息说明打印机已修好、阻碍解除，任务仍未完成，属于对同一任务的进展更新。",
+              "source_note_id": "progress_blockers_04-1",
+              "created_at": "2026-10-21T10:58:59+08:00",
+              "source_note_ids": [
+                "progress_blockers_04-0",
+                "progress_blockers_04-1"
+              ],
+              "task_status": "todo",
+              "confidence": 0.9,
+              "importance": 0.6,
+              "valid_from": null,
+              "valid_until": null
+            },
+            {
+              "id": "ver_a0af6cc3f6e1",
+              "memory_id": "mem_dfad019efbe1",
+              "version": 3,
+              "content": "用户；打印采购合同；已结束；用户要打印采购合同，打印机已修好，设备故障阻碍已解除，采购合同已经全部打印完成。",
+              "status": "active",
+              "reason": "新消息表明同一打印采购合同任务已完成，与候选卡片为同一任务，应更新状态和描述。",
+              "source_note_id": "progress_blockers_04-2-completion",
+              "created_at": "2026-10-21T11:02:39+08:00",
+              "source_note_ids": [
+                "progress_blockers_04-0",
+                "progress_blockers_04-1",
+                "progress_blockers_04-2-completion"
+              ],
+              "task_status": "done",
+              "confidence": 0.95,
+              "importance": 0.6,
+              "valid_from": null,
+              "valid_until": null
+            }
+          ]
+        }
+      ],
+      "query_hits": [
+        {
+          "id": "mem_dfad019efbe1",
+          "space_id": "progress_blockers_04",
+          "memory_type": "task",
+          "content": "用户；打印采购合同；已结束；用户要打印采购合同，打印机已修好，设备故障阻碍已解除，采购合同已经全部打印完成。",
+          "normalized_content": "打印采购合同已结束要打印采购合同打印机已修好设备故障阻碍已解除采购合同已经全部打印完成",
+          "importance": 0.6,
+          "confidence": 0.95,
+          "status": "active",
+          "valid_from": null,
+          "valid_until": null,
+          "created_at": "2026-10-21T10:58:56+08:00",
+          "updated_at": "2026-10-21T11:02:39+08:00",
+          "last_accessed_at": "2026-10-21T10:58:59+08:00",
+          "access_count": 2,
+          "current_version": 3,
+          "task_status": "done",
+          "subject": "用户",
+          "predicate": "task",
+          "object_value": "打印采购合同",
+          "last_confirmed_at": "2026-10-21T11:02:39+08:00",
+          "memory_key": "task-card:cbf66cdd097054385a4d06cc99c0f191",
+          "memory_key_version": "task-card-v2",
+          "polarity": null,
+          "scope": {
+            "owner_id": "owner",
+            "access_scope": "owner",
+            "canonical_topic": "打印采购合同",
+            "task_family_key": "task-family:bbb197e3cde6d90307b88ca00d22ab9f",
+            "subject_id": "user:owner"
+          },
+          "sources": [
+            {
+              "id": "task-source:5f10409190b6ac598fb3a996193165b7",
+              "note_id": "progress_blockers_04-0",
+              "original_text": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+              "evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:34fbf3a428b1bc8a3aa7690541777ade",
+              "note_id": "progress_blockers_04-1",
+              "original_text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+              "evidence_span": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_04-0",
+              "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。"
+            },
+            {
+              "id": "task-source:0160df5ab817dc9d410f37688b93d4a5",
+              "note_id": "progress_blockers_04-2-completion",
+              "original_text": "采购合同已经全部打印完成。",
+              "evidence_span": "采购合同已经全部打印完成。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_04-0",
+              "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。"
+            }
+          ],
+          "versions": [],
+          "task": "打印采购合同",
+          "instance": null,
+          "description": "用户要打印采购合同，打印机已修好，设备故障阻碍已解除，采购合同已经全部打印完成。",
+          "score": 0.3895
+        }
+      ]
+    },
+    {
+      "case": "progress_blockers_05",
+      "text": "麦克风修好了，线上课程已经全部录制完成。",
+      "before": {
+        "id": "mem_53466c573af5",
+        "memory_type": "task",
+        "memory_key_version": "task-card-v2",
+        "subject": "用户",
+        "task": "录制线上课程",
+        "instance": null,
+        "task_status": "todo",
+        "description": "用户要录制线上课程，网络已恢复，麦克风仍然坏着，继续等维修。",
+        "sources": [
+          {
+            "id": "task-source:1c2bf0af608210a59aa938be57c780c3",
+            "note_id": "progress_blockers_05-0",
+            "original_text": "我要录制线上课程，但网络断了而且麦克风坏了。",
+            "evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。",
+            "message_time": "2026-10-20T09:00:00+08:00",
+            "antecedent_note_id": null,
+            "antecedent_evidence_span": null
+          },
+          {
+            "id": "task-source:210105237ae58d4cccbc1dc8173647ca",
+            "note_id": "progress_blockers_05-1",
+            "original_text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+            "evidence_span": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+            "message_time": "2026-10-20T09:01:00+08:00",
+            "antecedent_note_id": "progress_blockers_05-0",
+            "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。"
+          }
+        ],
+        "content": "用户；录制线上课程；待办；用户要录制线上课程，网络已恢复，麦克风仍然坏着，继续等维修。"
+      },
+      "after": [
+        {
+          "id": "mem_53466c573af5",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "录制线上课程",
+          "instance": null,
+          "task_status": "done",
+          "description": "用户要录制线上课程，网络已恢复，麦克风已修好，线上课程已全部录制完成。",
+          "sources": [
+            {
+              "id": "task-source:1c2bf0af608210a59aa938be57c780c3",
+              "note_id": "progress_blockers_05-0",
+              "original_text": "我要录制线上课程，但网络断了而且麦克风坏了。",
+              "evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:210105237ae58d4cccbc1dc8173647ca",
+              "note_id": "progress_blockers_05-1",
+              "original_text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+              "evidence_span": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_05-0",
+              "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。"
+            },
+            {
+              "id": "task-source:1b79d5c48c8b9094889239f99074d135",
+              "note_id": "progress_blockers_05-2-completion",
+              "original_text": "麦克风修好了，线上课程已经全部录制完成。",
+              "evidence_span": "麦克风修好了，线上课程已经全部录制完成。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_05-0",
+              "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。"
+            }
+          ],
+          "content": "用户；录制线上课程；已结束；用户要录制线上课程，网络已恢复，麦克风已修好，线上课程已全部录制完成。"
+        }
+      ],
+      "report": {
+        "note_id": "progress_blockers_05-2-completion",
+        "space_id": "progress_blockers_05",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "update_task",
+            "relation": "update_task",
+            "decision_id": "task-decision:b3a23bce9478f67f00179c984d5fe546",
+            "candidate_id": "revision:e56568b3fd586658320d7876bb966cc4",
+            "confidence": 0.95,
+            "memory_id": "mem_53466c573af5",
+            "task_status": "done",
+            "source_added": true,
+            "task_card": {
+              "id": "mem_53466c573af5",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "录制线上课程",
+              "instance": null,
+              "task_status": "done",
+              "description": "用户要录制线上课程，网络已恢复，麦克风已修好，线上课程已全部录制完成。",
+              "sources": [
+                {
+                  "id": "task-source:1c2bf0af608210a59aa938be57c780c3",
+                  "note_id": "progress_blockers_05-0",
+                  "original_text": "我要录制线上课程，但网络断了而且麦克风坏了。",
+                  "evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                },
+                {
+                  "id": "task-source:210105237ae58d4cccbc1dc8173647ca",
+                  "note_id": "progress_blockers_05-1",
+                  "original_text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+                  "evidence_span": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+                  "message_time": "2026-10-20T09:01:00+08:00",
+                  "antecedent_note_id": "progress_blockers_05-0",
+                  "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。"
+                },
+                {
+                  "id": "task-source:1b79d5c48c8b9094889239f99074d135",
+                  "note_id": "progress_blockers_05-2-completion",
+                  "original_text": "麦克风修好了，线上课程已经全部录制完成。",
+                  "evidence_span": "麦克风修好了，线上课程已经全部录制完成。",
+                  "message_time": "2026-10-20T09:02:00+08:00",
+                  "antecedent_note_id": "progress_blockers_05-0",
+                  "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。"
+                }
+              ],
+              "content": "用户；录制线上课程；已结束；用户要录制线上课程，网络已恢复，麦克风已修好，线上课程已全部录制完成。"
+            }
+          }
+        ],
+        "trace_id": "trace_e909eef5d42d",
+        "extraction_status": "completed"
+      },
+      "checks": {
+        "one_card": true,
+        "same_id": true,
+        "done": true,
+        "no_pending": true,
+        "query_returns_done": true,
+        "three_sources": true,
+        "three_versions": true
+      },
+      "passed": true,
+      "model_calls": [
+        {
+          "stage": "extraction",
+          "duration_seconds": 1.41,
+          "input": {
+            "note_id": "progress_blockers_05-2-completion",
+            "message_time": "2026-10-20T09:02:00+08:00",
+            "text": "麦克风修好了，线上课程已经全部录制完成。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "麦克风修好了"
+              },
+              {
+                "atom_id": "a2",
+                "text": "线上课程已经全部录制完成"
+              }
+            ],
+            "previous_messages": [
+              {
+                "note_id": "progress_blockers_05-1",
+                "role": "user",
+                "text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+                "ts": "2026-10-20T09:01:00+08:00",
+                "sequence_no": 2,
+                "offset": -1
+              },
+              {
+                "note_id": "progress_blockers_05-0",
+                "role": "user",
+                "text": "我要录制线上课程，但网络断了而且麦克风坏了。",
+                "ts": "2026-10-20T09:00:00+08:00",
+                "sequence_no": 1,
+                "offset": -2
+              }
+            ],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "录制线上课程",
+                "instance": null,
+                "task_status": "done",
+                "description": "麦克风已修好，线上课程已全部录制完成。",
+                "evidence_span": "麦克风修好了，线上课程已经全部录制完成。",
+                "intent": "update",
+                "antecedent_note_id": "progress_blockers_05-0",
+                "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。",
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "前文明确用户要录制线上课程，当前消息表明录制已全部完成，任务结束。"
+              }
+            ]
+          }
+        },
+        {
+          "stage": "association",
+          "duration_seconds": 0.94,
+          "input": {
+            "new": {
+              "memory_type": "task",
+              "subject": "用户",
+              "task": "录制线上课程",
+              "instance": null,
+              "task_status": "done",
+              "description": "麦克风已修好，线上课程已全部录制完成。",
+              "evidence_span": "麦克风修好了，线上课程已经全部录制完成。",
+              "intent": "update",
+              "antecedent_note_id": "progress_blockers_05-0",
+              "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。",
+              "unresolved_reason": null,
+              "confidence": 0.95,
+              "importance": 0.7,
+              "should_store": true,
+              "extraction_reason": "前文明确用户要录制线上课程，当前消息表明录制已全部完成，任务结束。"
+            },
+            "cards": [
+              {
+                "id": "mem_53466c573af5",
+                "subject": "用户",
+                "task": "录制线上课程",
+                "instance": null,
+                "task_status": "todo",
+                "description": "用户要录制线上课程，网络已恢复，麦克风仍然坏着，继续等维修。",
+                "sources": [
+                  {
+                    "id": "task-source:1c2bf0af608210a59aa938be57c780c3",
+                    "note_id": "progress_blockers_05-0",
+                    "original_text": "我要录制线上课程，但网络断了而且麦克风坏了。",
+                    "evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。",
+                    "message_time": "2026-10-20T09:00:00+08:00",
+                    "antecedent_note_id": null,
+                    "antecedent_evidence_span": null
+                  },
+                  {
+                    "id": "task-source:210105237ae58d4cccbc1dc8173647ca",
+                    "note_id": "progress_blockers_05-1",
+                    "original_text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+                    "evidence_span": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+                    "message_time": "2026-10-20T09:01:00+08:00",
+                    "antecedent_note_id": "progress_blockers_05-0",
+                    "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。"
+                  }
+                ]
+              }
+            ]
+          },
+          "output": {
+            "action": "update",
+            "target_id": "mem_53466c573af5",
+            "description": "用户要录制线上课程，网络已恢复，麦克风已修好，线上课程已全部录制完成。",
+            "reason": "新消息表明同一任务的麦克风已修好且课程录制完成，应更新原任务状态与描述。",
+            "subject_relation": "same",
+            "instance_relation": "same"
+          }
+        }
+      ],
+      "timeline": [
+        {
+          "id": "mem_53466c573af5",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "录制线上课程",
+          "instance": null,
+          "task_status": "done",
+          "description": "用户要录制线上课程，网络已恢复，麦克风已修好，线上课程已全部录制完成。",
+          "sources": [
+            {
+              "id": "task-source:1c2bf0af608210a59aa938be57c780c3",
+              "note_id": "progress_blockers_05-0",
+              "original_text": "我要录制线上课程，但网络断了而且麦克风坏了。",
+              "evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:210105237ae58d4cccbc1dc8173647ca",
+              "note_id": "progress_blockers_05-1",
+              "original_text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+              "evidence_span": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_05-0",
+              "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。"
+            },
+            {
+              "id": "task-source:1b79d5c48c8b9094889239f99074d135",
+              "note_id": "progress_blockers_05-2-completion",
+              "original_text": "麦克风修好了，线上课程已经全部录制完成。",
+              "evidence_span": "麦克风修好了，线上课程已经全部录制完成。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_05-0",
+              "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。"
+            }
+          ],
+          "content": "用户；录制线上课程；已结束；用户要录制线上课程，网络已恢复，麦克风已修好，线上课程已全部录制完成。",
+          "versions": [
+            {
+              "id": "ver_c49afa57a303",
+              "memory_id": "mem_53466c573af5",
+              "version": 1,
+              "content": "用户；录制线上课程；待办；用户要录制线上课程，但网络断了且麦克风坏了。",
+              "status": "active",
+              "reason": "created",
+              "source_note_id": "progress_blockers_05-0",
+              "created_at": "2026-10-21T10:59:00+08:00",
+              "source_note_ids": [
+                "progress_blockers_05-0"
+              ],
+              "task_status": "todo",
+              "confidence": 0.9,
+              "importance": 0.7,
+              "valid_from": null,
+              "valid_until": null
+            },
+            {
+              "id": "ver_89d3b4c5d0a0",
+              "memory_id": "mem_53466c573af5",
+              "version": 2,
+              "content": "用户；录制线上课程；待办；用户要录制线上课程，网络已恢复，麦克风仍然坏着，继续等维修。",
+              "status": "active",
+              "reason": "新消息承接同一线上课程录制任务，更新网络恢复、麦克风仍坏、继续等维修的进展，主体与任务一致。",
+              "source_note_id": "progress_blockers_05-1",
+              "created_at": "2026-10-21T10:59:04+08:00",
+              "source_note_ids": [
+                "progress_blockers_05-0",
+                "progress_blockers_05-1"
+              ],
+              "task_status": "todo",
+              "confidence": 0.9,
+              "importance": 0.7,
+              "valid_from": null,
+              "valid_until": null
+            },
+            {
+              "id": "ver_f7eb5a5dd414",
+              "memory_id": "mem_53466c573af5",
+              "version": 3,
+              "content": "用户；录制线上课程；已结束；用户要录制线上课程，网络已恢复，麦克风已修好，线上课程已全部录制完成。",
+              "status": "active",
+              "reason": "新消息表明同一任务的麦克风已修好且课程录制完成，应更新原任务状态与描述。",
+              "source_note_id": "progress_blockers_05-2-completion",
+              "created_at": "2026-10-21T11:02:41+08:00",
+              "source_note_ids": [
+                "progress_blockers_05-0",
+                "progress_blockers_05-1",
+                "progress_blockers_05-2-completion"
+              ],
+              "task_status": "done",
+              "confidence": 0.95,
+              "importance": 0.7,
+              "valid_from": null,
+              "valid_until": null
+            }
+          ]
+        }
+      ],
+      "query_hits": [
+        {
+          "id": "mem_53466c573af5",
+          "space_id": "progress_blockers_05",
+          "memory_type": "task",
+          "content": "用户；录制线上课程；已结束；用户要录制线上课程，网络已恢复，麦克风已修好，线上课程已全部录制完成。",
+          "normalized_content": "录制线上课程已结束要录制线上课程网络已恢复麦克风已修好线上课程已全部录制完成",
+          "importance": 0.7,
+          "confidence": 0.95,
+          "status": "active",
+          "valid_from": null,
+          "valid_until": null,
+          "created_at": "2026-10-21T10:59:00+08:00",
+          "updated_at": "2026-10-21T11:02:41+08:00",
+          "last_accessed_at": "2026-10-21T10:59:04+08:00",
+          "access_count": 2,
+          "current_version": 3,
+          "task_status": "done",
+          "subject": "用户",
+          "predicate": "task",
+          "object_value": "录制线上课程",
+          "last_confirmed_at": "2026-10-21T11:02:41+08:00",
+          "memory_key": "task-card:5c074469c99105cae9b28d4ec0d4106e",
+          "memory_key_version": "task-card-v2",
+          "polarity": null,
+          "scope": {
+            "owner_id": "owner",
+            "access_scope": "owner",
+            "canonical_topic": "录制线上课程",
+            "task_family_key": "task-family:343d994185a8216400f9560dcf8469eb",
+            "subject_id": "user:owner"
+          },
+          "sources": [
+            {
+              "id": "task-source:1c2bf0af608210a59aa938be57c780c3",
+              "note_id": "progress_blockers_05-0",
+              "original_text": "我要录制线上课程，但网络断了而且麦克风坏了。",
+              "evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:210105237ae58d4cccbc1dc8173647ca",
+              "note_id": "progress_blockers_05-1",
+              "original_text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+              "evidence_span": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_05-0",
+              "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。"
+            },
+            {
+              "id": "task-source:1b79d5c48c8b9094889239f99074d135",
+              "note_id": "progress_blockers_05-2-completion",
+              "original_text": "麦克风修好了，线上课程已经全部录制完成。",
+              "evidence_span": "麦克风修好了，线上课程已经全部录制完成。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_05-0",
+              "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。"
+            }
+          ],
+          "versions": [],
+          "task": "录制线上课程",
+          "instance": null,
+          "description": "用户要录制线上课程，网络已恢复，麦克风已修好，线上课程已全部录制完成。",
+          "score": 0.8515
+        }
+      ]
+    },
+    {
+      "case": "progress_blockers_06",
+      "text": "英文翻译已经附上，签证材料已全部递交完成。",
+      "before": {
+        "id": "mem_10e6b71760d2",
+        "memory_type": "task",
+        "memory_key_version": "task-card-v2",
+        "subject": "用户",
+        "task": "递交签证材料",
+        "instance": null,
+        "task_status": "todo",
+        "description": "需要递交签证材料，材料必须附英文翻译；工资单已拿到，缺材料的阻碍已解除。",
+        "sources": [
+          {
+            "id": "task-source:25537d315b85d6d7499f59a4f6804817",
+            "note_id": "progress_blockers_06-0",
+            "original_text": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+            "evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+            "message_time": "2026-10-20T09:00:00+08:00",
+            "antecedent_note_id": null,
+            "antecedent_evidence_span": null
+          },
+          {
+            "id": "task-source:925a63dd18e30dd28572bf75373d6a99",
+            "note_id": "progress_blockers_06-1",
+            "original_text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+            "evidence_span": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+            "message_time": "2026-10-20T09:01:00+08:00",
+            "antecedent_note_id": "progress_blockers_06-0",
+            "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。"
+          }
+        ],
+        "content": "用户；递交签证材料；待办；需要递交签证材料，材料必须附英文翻译；工资单已拿到，缺材料的阻碍已解除。"
+      },
+      "after": [
+        {
+          "id": "mem_10e6b71760d2",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "递交签证材料",
+          "instance": null,
+          "task_status": "done",
+          "description": "签证材料已全部递交完成，英文翻译已经附上。",
+          "sources": [
+            {
+              "id": "task-source:25537d315b85d6d7499f59a4f6804817",
+              "note_id": "progress_blockers_06-0",
+              "original_text": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+              "evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:925a63dd18e30dd28572bf75373d6a99",
+              "note_id": "progress_blockers_06-1",
+              "original_text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+              "evidence_span": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_06-0",
+              "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。"
+            },
+            {
+              "id": "task-source:c7b6f7c1707af9d06a3c6e6a8fd1e91b",
+              "note_id": "progress_blockers_06-2-completion",
+              "original_text": "英文翻译已经附上，签证材料已全部递交完成。",
+              "evidence_span": "英文翻译已经附上，签证材料已全部递交完成。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_06-0",
+              "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。"
+            }
+          ],
+          "content": "用户；递交签证材料；已结束；签证材料已全部递交完成，英文翻译已经附上。"
+        }
+      ],
+      "report": {
+        "note_id": "progress_blockers_06-2-completion",
+        "space_id": "progress_blockers_06",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "update_task",
+            "relation": "update_task",
+            "decision_id": "task-decision:723d0c742cef00275946c36736ea06b5",
+            "candidate_id": "revision:c3c1274a9631efd5c2ebc4067d2b96f2",
+            "confidence": 0.92,
+            "memory_id": "mem_10e6b71760d2",
+            "task_status": "done",
+            "source_added": true,
+            "task_card": {
+              "id": "mem_10e6b71760d2",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "递交签证材料",
+              "instance": null,
+              "task_status": "done",
+              "description": "签证材料已全部递交完成，英文翻译已经附上。",
+              "sources": [
+                {
+                  "id": "task-source:25537d315b85d6d7499f59a4f6804817",
+                  "note_id": "progress_blockers_06-0",
+                  "original_text": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+                  "evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                },
+                {
+                  "id": "task-source:925a63dd18e30dd28572bf75373d6a99",
+                  "note_id": "progress_blockers_06-1",
+                  "original_text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+                  "evidence_span": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+                  "message_time": "2026-10-20T09:01:00+08:00",
+                  "antecedent_note_id": "progress_blockers_06-0",
+                  "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。"
+                },
+                {
+                  "id": "task-source:c7b6f7c1707af9d06a3c6e6a8fd1e91b",
+                  "note_id": "progress_blockers_06-2-completion",
+                  "original_text": "英文翻译已经附上，签证材料已全部递交完成。",
+                  "evidence_span": "英文翻译已经附上，签证材料已全部递交完成。",
+                  "message_time": "2026-10-20T09:02:00+08:00",
+                  "antecedent_note_id": "progress_blockers_06-0",
+                  "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。"
+                }
+              ],
+              "content": "用户；递交签证材料；已结束；签证材料已全部递交完成，英文翻译已经附上。"
+            }
+          }
+        ],
+        "trace_id": "trace_bbefd5f781b0",
+        "extraction_status": "completed"
+      },
+      "checks": {
+        "one_card": true,
+        "same_id": true,
+        "done": true,
+        "no_pending": true,
+        "query_returns_done": true,
+        "three_sources": true,
+        "three_versions": true
+      },
+      "passed": true,
+      "model_calls": [
+        {
+          "stage": "extraction",
+          "duration_seconds": 1.51,
+          "input": {
+            "note_id": "progress_blockers_06-2-completion",
+            "message_time": "2026-10-20T09:02:00+08:00",
+            "text": "英文翻译已经附上，签证材料已全部递交完成。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "英文翻译已经附上"
+              },
+              {
+                "atom_id": "a2",
+                "text": "签证材料已全部递交完成"
+              }
+            ],
+            "previous_messages": [
+              {
+                "note_id": "progress_blockers_06-1",
+                "role": "user",
+                "text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+                "ts": "2026-10-20T09:01:00+08:00",
+                "sequence_no": 2,
+                "offset": -1
+              },
+              {
+                "note_id": "progress_blockers_06-0",
+                "role": "user",
+                "text": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+                "ts": "2026-10-20T09:00:00+08:00",
+                "sequence_no": 1,
+                "offset": -2
+              }
+            ],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "递交签证材料",
+                "instance": null,
+                "task_status": "done",
+                "description": "签证材料已全部递交完成，英文翻译已经附上。",
+                "evidence_span": "英文翻译已经附上，签证材料已全部递交完成。",
+                "intent": "auto",
+                "antecedent_note_id": "progress_blockers_06-0",
+                "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+                "unresolved_reason": null,
+                "confidence": 0.92,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "当前消息明确签证材料已全部递交完成，对应前文递交签证材料任务，状态为完成。"
+              }
+            ]
+          }
+        },
+        {
+          "stage": "association",
+          "duration_seconds": 1.19,
+          "input": {
+            "new": {
+              "memory_type": "task",
+              "subject": "用户",
+              "task": "递交签证材料",
+              "instance": null,
+              "task_status": "done",
+              "description": "签证材料已全部递交完成，英文翻译已经附上。",
+              "evidence_span": "英文翻译已经附上，签证材料已全部递交完成。",
+              "intent": "auto",
+              "antecedent_note_id": "progress_blockers_06-0",
+              "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+              "unresolved_reason": null,
+              "confidence": 0.92,
+              "importance": 0.7,
+              "should_store": true,
+              "extraction_reason": "当前消息明确签证材料已全部递交完成，对应前文递交签证材料任务，状态为完成。"
+            },
+            "cards": [
+              {
+                "id": "mem_10e6b71760d2",
+                "subject": "用户",
+                "task": "递交签证材料",
+                "instance": null,
+                "task_status": "todo",
+                "description": "需要递交签证材料，材料必须附英文翻译；工资单已拿到，缺材料的阻碍已解除。",
+                "sources": [
+                  {
+                    "id": "task-source:25537d315b85d6d7499f59a4f6804817",
+                    "note_id": "progress_blockers_06-0",
+                    "original_text": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+                    "evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+                    "message_time": "2026-10-20T09:00:00+08:00",
+                    "antecedent_note_id": null,
+                    "antecedent_evidence_span": null
+                  },
+                  {
+                    "id": "task-source:925a63dd18e30dd28572bf75373d6a99",
+                    "note_id": "progress_blockers_06-1",
+                    "original_text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+                    "evidence_span": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+                    "message_time": "2026-10-20T09:01:00+08:00",
+                    "antecedent_note_id": "progress_blockers_06-0",
+                    "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。"
+                  }
+                ]
+              }
+            ]
+          },
+          "output": {
+            "action": "update",
+            "target_id": "mem_10e6b71760d2",
+            "description": "签证材料已全部递交完成，英文翻译已经附上。",
+            "reason": "新消息表明同一任务“递交签证材料”已完成，需将状态从待办更新为完成并保留英文翻译要求。",
+            "subject_relation": "same",
+            "instance_relation": "same"
+          }
+        }
+      ],
+      "timeline": [
+        {
+          "id": "mem_10e6b71760d2",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "递交签证材料",
+          "instance": null,
+          "task_status": "done",
+          "description": "签证材料已全部递交完成，英文翻译已经附上。",
+          "sources": [
+            {
+              "id": "task-source:25537d315b85d6d7499f59a4f6804817",
+              "note_id": "progress_blockers_06-0",
+              "original_text": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+              "evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:925a63dd18e30dd28572bf75373d6a99",
+              "note_id": "progress_blockers_06-1",
+              "original_text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+              "evidence_span": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_06-0",
+              "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。"
+            },
+            {
+              "id": "task-source:c7b6f7c1707af9d06a3c6e6a8fd1e91b",
+              "note_id": "progress_blockers_06-2-completion",
+              "original_text": "英文翻译已经附上，签证材料已全部递交完成。",
+              "evidence_span": "英文翻译已经附上，签证材料已全部递交完成。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_06-0",
+              "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。"
+            }
+          ],
+          "content": "用户；递交签证材料；已结束；签证材料已全部递交完成，英文翻译已经附上。",
+          "versions": [
+            {
+              "id": "ver_80abfdad3dd1",
+              "memory_id": "mem_10e6b71760d2",
+              "version": 1,
+              "content": "用户；递交签证材料；待办；需要递交签证材料，材料必须附英文翻译，目前缺工资单。",
+              "status": "active",
+              "reason": "created",
+              "source_note_id": "progress_blockers_06-0",
+              "created_at": "2026-10-21T10:59:05+08:00",
+              "source_note_ids": [
+                "progress_blockers_06-0"
+              ],
+              "task_status": "todo",
+              "confidence": 0.9,
+              "importance": 0.7,
+              "valid_from": null,
+              "valid_until": null
+            },
+            {
+              "id": "ver_27001008d183",
+              "memory_id": "mem_10e6b71760d2",
+              "version": 2,
+              "content": "用户；递交签证材料；待办；需要递交签证材料，材料必须附英文翻译；工资单已拿到，缺材料的阻碍已解除。",
+              "status": "active",
+              "reason": "新消息承接同一签证材料递交任务，更新工资单已拿到、阻碍解除，英文翻译要求仍保留。",
+              "source_note_id": "progress_blockers_06-1",
+              "created_at": "2026-10-21T10:59:09+08:00",
+              "source_note_ids": [
+                "progress_blockers_06-0",
+                "progress_blockers_06-1"
+              ],
+              "task_status": "todo",
+              "confidence": 0.9,
+              "importance": 0.7,
+              "valid_from": null,
+              "valid_until": null
+            },
+            {
+              "id": "ver_a37b204da35a",
+              "memory_id": "mem_10e6b71760d2",
+              "version": 3,
+              "content": "用户；递交签证材料；已结束；签证材料已全部递交完成，英文翻译已经附上。",
+              "status": "active",
+              "reason": "新消息表明同一任务“递交签证材料”已完成，需将状态从待办更新为完成并保留英文翻译要求。",
+              "source_note_id": "progress_blockers_06-2-completion",
+              "created_at": "2026-10-21T11:02:45+08:00",
+              "source_note_ids": [
+                "progress_blockers_06-0",
+                "progress_blockers_06-1",
+                "progress_blockers_06-2-completion"
+              ],
+              "task_status": "done",
+              "confidence": 0.92,
+              "importance": 0.7,
+              "valid_from": null,
+              "valid_until": null
+            }
+          ]
+        }
+      ],
+      "query_hits": [
+        {
+          "id": "mem_10e6b71760d2",
+          "space_id": "progress_blockers_06",
+          "memory_type": "task",
+          "content": "用户；递交签证材料；已结束；签证材料已全部递交完成，英文翻译已经附上。",
+          "normalized_content": "递交签证材料已结束签证材料已全部递交完成英文翻译已经附上",
+          "importance": 0.7,
+          "confidence": 0.92,
+          "status": "active",
+          "valid_from": null,
+          "valid_until": null,
+          "created_at": "2026-10-21T10:59:05+08:00",
+          "updated_at": "2026-10-21T11:02:45+08:00",
+          "last_accessed_at": "2026-10-21T10:59:09+08:00",
+          "access_count": 2,
+          "current_version": 3,
+          "task_status": "done",
+          "subject": "用户",
+          "predicate": "task",
+          "object_value": "递交签证材料",
+          "last_confirmed_at": "2026-10-21T11:02:45+08:00",
+          "memory_key": "task-card:9ad500c4bd7a4005fd5020c43b1f67ce",
+          "memory_key_version": "task-card-v2",
+          "polarity": null,
+          "scope": {
+            "owner_id": "owner",
+            "access_scope": "owner",
+            "canonical_topic": "递交签证材料",
+            "task_family_key": "task-family:835472243cd610b127b65afd9485d52e",
+            "subject_id": "user:owner"
+          },
+          "sources": [
+            {
+              "id": "task-source:25537d315b85d6d7499f59a4f6804817",
+              "note_id": "progress_blockers_06-0",
+              "original_text": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+              "evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:925a63dd18e30dd28572bf75373d6a99",
+              "note_id": "progress_blockers_06-1",
+              "original_text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+              "evidence_span": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_06-0",
+              "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。"
+            },
+            {
+              "id": "task-source:c7b6f7c1707af9d06a3c6e6a8fd1e91b",
+              "note_id": "progress_blockers_06-2-completion",
+              "original_text": "英文翻译已经附上，签证材料已全部递交完成。",
+              "evidence_span": "英文翻译已经附上，签证材料已全部递交完成。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_06-0",
+              "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。"
+            }
+          ],
+          "versions": [],
+          "task": "递交签证材料",
+          "instance": null,
+          "description": "签证材料已全部递交完成，英文翻译已经附上。",
+          "score": 0.85
+        }
+      ]
+    },
+    {
+      "case": "progress_blockers_08",
+      "text": "新门禁已经安装完成，并且测试正常。",
+      "before": {
+        "id": "mem_7c8a6568385a",
+        "memory_type": "task",
+        "memory_key_version": "task-card-v2",
+        "subject": "用户",
+        "task": "安装新门禁",
+        "instance": null,
+        "task_status": "todo",
+        "description": "用户要安装新门禁，电源适配器已到货，缺件问题已解决，但尚未安装。",
+        "sources": [
+          {
+            "id": "task-source:711d36c6eefa195afdb689ef1fb122ec",
+            "note_id": "progress_blockers_08-0",
+            "original_text": "我要安装新门禁，但缺少电源适配器。",
+            "evidence_span": "我要安装新门禁，但缺少电源适配器。",
+            "message_time": "2026-10-20T09:00:00+08:00",
+            "antecedent_note_id": null,
+            "antecedent_evidence_span": null
+          },
+          {
+            "id": "task-source:9c23e35db5e16154a557a5b675e6044b",
+            "note_id": "progress_blockers_08-1",
+            "original_text": "门禁适配器到了，缺件问题解决，尚未安装。",
+            "evidence_span": "门禁适配器到了，缺件问题解决，尚未安装。",
+            "message_time": "2026-10-20T09:01:00+08:00",
+            "antecedent_note_id": "progress_blockers_08-0",
+            "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。"
+          }
+        ],
+        "content": "用户；安装新门禁；待办；用户要安装新门禁，电源适配器已到货，缺件问题已解决，但尚未安装。"
+      },
+      "after": [
+        {
+          "id": "mem_7c8a6568385a",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "安装新门禁",
+          "instance": null,
+          "task_status": "done",
+          "description": "用户要安装新门禁，电源适配器已到货，缺件问题已解决；新门禁已经安装完成，并且测试正常。",
+          "sources": [
+            {
+              "id": "task-source:711d36c6eefa195afdb689ef1fb122ec",
+              "note_id": "progress_blockers_08-0",
+              "original_text": "我要安装新门禁，但缺少电源适配器。",
+              "evidence_span": "我要安装新门禁，但缺少电源适配器。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:9c23e35db5e16154a557a5b675e6044b",
+              "note_id": "progress_blockers_08-1",
+              "original_text": "门禁适配器到了，缺件问题解决，尚未安装。",
+              "evidence_span": "门禁适配器到了，缺件问题解决，尚未安装。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_08-0",
+              "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。"
+            },
+            {
+              "id": "task-source:d1bd71aad588893a691cd02def682ce4",
+              "note_id": "progress_blockers_08-2-completion",
+              "original_text": "新门禁已经安装完成，并且测试正常。",
+              "evidence_span": "新门禁已经安装完成，并且测试正常。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_08-0",
+              "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。"
+            }
+          ],
+          "content": "用户；安装新门禁；已结束；用户要安装新门禁，电源适配器已到货，缺件问题已解决；新门禁已经安装完成，并且测试正常。"
+        }
+      ],
+      "report": {
+        "note_id": "progress_blockers_08-2-completion",
+        "space_id": "progress_blockers_08",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "update_task",
+            "relation": "update_task",
+            "decision_id": "task-decision:524d5b066d4c4e7fc98a2c7bd8a01d57",
+            "candidate_id": "revision:8675626c5a34ef5a3dddef632414b7e8",
+            "confidence": 0.92,
+            "memory_id": "mem_7c8a6568385a",
+            "task_status": "done",
+            "source_added": true,
+            "task_card": {
+              "id": "mem_7c8a6568385a",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "安装新门禁",
+              "instance": null,
+              "task_status": "done",
+              "description": "用户要安装新门禁，电源适配器已到货，缺件问题已解决；新门禁已经安装完成，并且测试正常。",
+              "sources": [
+                {
+                  "id": "task-source:711d36c6eefa195afdb689ef1fb122ec",
+                  "note_id": "progress_blockers_08-0",
+                  "original_text": "我要安装新门禁，但缺少电源适配器。",
+                  "evidence_span": "我要安装新门禁，但缺少电源适配器。",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                },
+                {
+                  "id": "task-source:9c23e35db5e16154a557a5b675e6044b",
+                  "note_id": "progress_blockers_08-1",
+                  "original_text": "门禁适配器到了，缺件问题解决，尚未安装。",
+                  "evidence_span": "门禁适配器到了，缺件问题解决，尚未安装。",
+                  "message_time": "2026-10-20T09:01:00+08:00",
+                  "antecedent_note_id": "progress_blockers_08-0",
+                  "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。"
+                },
+                {
+                  "id": "task-source:d1bd71aad588893a691cd02def682ce4",
+                  "note_id": "progress_blockers_08-2-completion",
+                  "original_text": "新门禁已经安装完成，并且测试正常。",
+                  "evidence_span": "新门禁已经安装完成，并且测试正常。",
+                  "message_time": "2026-10-20T09:02:00+08:00",
+                  "antecedent_note_id": "progress_blockers_08-0",
+                  "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。"
+                }
+              ],
+              "content": "用户；安装新门禁；已结束；用户要安装新门禁，电源适配器已到货，缺件问题已解决；新门禁已经安装完成，并且测试正常。"
+            }
+          }
+        ],
+        "trace_id": "trace_0cc802803c4c",
+        "extraction_status": "completed"
+      },
+      "checks": {
+        "one_card": true,
+        "same_id": true,
+        "done": true,
+        "no_pending": true,
+        "query_returns_done": true,
+        "three_sources": true,
+        "three_versions": true
+      },
+      "passed": true,
+      "model_calls": [
+        {
+          "stage": "extraction",
+          "duration_seconds": 1.21,
+          "input": {
+            "note_id": "progress_blockers_08-2-completion",
+            "message_time": "2026-10-20T09:02:00+08:00",
+            "text": "新门禁已经安装完成，并且测试正常。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "新门禁已经安装完成"
+              },
+              {
+                "atom_id": "a2",
+                "text": "测试正常"
+              }
+            ],
+            "previous_messages": [
+              {
+                "note_id": "progress_blockers_08-1",
+                "role": "user",
+                "text": "门禁适配器到了，缺件问题解决，尚未安装。",
+                "ts": "2026-10-20T09:01:00+08:00",
+                "sequence_no": 2,
+                "offset": -1
+              },
+              {
+                "note_id": "progress_blockers_08-0",
+                "role": "user",
+                "text": "我要安装新门禁，但缺少电源适配器。",
+                "ts": "2026-10-20T09:00:00+08:00",
+                "sequence_no": 1,
+                "offset": -2
+              }
+            ],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "安装新门禁",
+                "instance": null,
+                "task_status": "done",
+                "description": "新门禁已经安装完成，并且测试正常。",
+                "evidence_span": "新门禁已经安装完成，并且测试正常。",
+                "intent": "auto",
+                "antecedent_note_id": "progress_blockers_08-0",
+                "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。",
+                "unresolved_reason": null,
+                "confidence": 0.92,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "当前消息明确新门禁安装完成并测试正常，对应前文安装新门禁任务，状态为完成。"
+              }
+            ]
+          }
+        },
+        {
+          "stage": "association",
+          "duration_seconds": 1.03,
+          "input": {
+            "new": {
+              "memory_type": "task",
+              "subject": "用户",
+              "task": "安装新门禁",
+              "instance": null,
+              "task_status": "done",
+              "description": "新门禁已经安装完成，并且测试正常。",
+              "evidence_span": "新门禁已经安装完成，并且测试正常。",
+              "intent": "auto",
+              "antecedent_note_id": "progress_blockers_08-0",
+              "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。",
+              "unresolved_reason": null,
+              "confidence": 0.92,
+              "importance": 0.7,
+              "should_store": true,
+              "extraction_reason": "当前消息明确新门禁安装完成并测试正常，对应前文安装新门禁任务，状态为完成。"
+            },
+            "cards": [
+              {
+                "id": "mem_7c8a6568385a",
+                "subject": "用户",
+                "task": "安装新门禁",
+                "instance": null,
+                "task_status": "todo",
+                "description": "用户要安装新门禁，电源适配器已到货，缺件问题已解决，但尚未安装。",
+                "sources": [
+                  {
+                    "id": "task-source:711d36c6eefa195afdb689ef1fb122ec",
+                    "note_id": "progress_blockers_08-0",
+                    "original_text": "我要安装新门禁，但缺少电源适配器。",
+                    "evidence_span": "我要安装新门禁，但缺少电源适配器。",
+                    "message_time": "2026-10-20T09:00:00+08:00",
+                    "antecedent_note_id": null,
+                    "antecedent_evidence_span": null
+                  },
+                  {
+                    "id": "task-source:9c23e35db5e16154a557a5b675e6044b",
+                    "note_id": "progress_blockers_08-1",
+                    "original_text": "门禁适配器到了，缺件问题解决，尚未安装。",
+                    "evidence_span": "门禁适配器到了，缺件问题解决，尚未安装。",
+                    "message_time": "2026-10-20T09:01:00+08:00",
+                    "antecedent_note_id": "progress_blockers_08-0",
+                    "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。"
+                  }
+                ]
+              }
+            ]
+          },
+          "output": {
+            "action": "update",
+            "target_id": "mem_7c8a6568385a",
+            "description": "用户要安装新门禁，电源适配器已到货，缺件问题已解决；新门禁已经安装完成，并且测试正常。",
+            "reason": "新消息与候选卡片同为用户安装新门禁任务，属于同一任务的最新进展，应更新为完成状态。",
+            "subject_relation": "same",
+            "instance_relation": "same"
+          }
+        }
+      ],
+      "timeline": [
+        {
+          "id": "mem_7c8a6568385a",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "安装新门禁",
+          "instance": null,
+          "task_status": "done",
+          "description": "用户要安装新门禁，电源适配器已到货，缺件问题已解决；新门禁已经安装完成，并且测试正常。",
+          "sources": [
+            {
+              "id": "task-source:711d36c6eefa195afdb689ef1fb122ec",
+              "note_id": "progress_blockers_08-0",
+              "original_text": "我要安装新门禁，但缺少电源适配器。",
+              "evidence_span": "我要安装新门禁，但缺少电源适配器。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:9c23e35db5e16154a557a5b675e6044b",
+              "note_id": "progress_blockers_08-1",
+              "original_text": "门禁适配器到了，缺件问题解决，尚未安装。",
+              "evidence_span": "门禁适配器到了，缺件问题解决，尚未安装。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_08-0",
+              "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。"
+            },
+            {
+              "id": "task-source:d1bd71aad588893a691cd02def682ce4",
+              "note_id": "progress_blockers_08-2-completion",
+              "original_text": "新门禁已经安装完成，并且测试正常。",
+              "evidence_span": "新门禁已经安装完成，并且测试正常。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_08-0",
+              "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。"
+            }
+          ],
+          "content": "用户；安装新门禁；已结束；用户要安装新门禁，电源适配器已到货，缺件问题已解决；新门禁已经安装完成，并且测试正常。",
+          "versions": [
+            {
+              "id": "ver_33fe067c8d5a",
+              "memory_id": "mem_7c8a6568385a",
+              "version": 1,
+              "content": "用户；安装新门禁；待办；用户要安装新门禁，但缺少电源适配器。",
+              "status": "active",
+              "reason": "created",
+              "source_note_id": "progress_blockers_08-0",
+              "created_at": "2026-10-21T10:59:10+08:00",
+              "source_note_ids": [
+                "progress_blockers_08-0"
+              ],
+              "task_status": "todo",
+              "confidence": 0.9,
+              "importance": 0.6,
+              "valid_from": null,
+              "valid_until": null
+            },
+            {
+              "id": "ver_eb7409d89a60",
+              "memory_id": "mem_7c8a6568385a",
+              "version": 2,
+              "content": "用户；安装新门禁；待办；用户要安装新门禁，电源适配器已到货，缺件问题已解决，但尚未安装。",
+              "status": "active",
+              "reason": "新消息承接同一安装新门禁任务，说明缺件已解决、仍未安装，应更新原卡片。",
+              "source_note_id": "progress_blockers_08-1",
+              "created_at": "2026-10-21T10:59:14+08:00",
+              "source_note_ids": [
+                "progress_blockers_08-0",
+                "progress_blockers_08-1"
+              ],
+              "task_status": "todo",
+              "confidence": 0.9,
+              "importance": 0.6,
+              "valid_from": null,
+              "valid_until": null
+            },
+            {
+              "id": "ver_8906d56ffa06",
+              "memory_id": "mem_7c8a6568385a",
+              "version": 3,
+              "content": "用户；安装新门禁；已结束；用户要安装新门禁，电源适配器已到货，缺件问题已解决；新门禁已经安装完成，并且测试正常。",
+              "status": "active",
+              "reason": "新消息与候选卡片同为用户安装新门禁任务，属于同一任务的最新进展，应更新为完成状态。",
+              "source_note_id": "progress_blockers_08-2-completion",
+              "created_at": "2026-10-21T11:02:47+08:00",
+              "source_note_ids": [
+                "progress_blockers_08-0",
+                "progress_blockers_08-1",
+                "progress_blockers_08-2-completion"
+              ],
+              "task_status": "done",
+              "confidence": 0.92,
+              "importance": 0.6,
+              "valid_from": null,
+              "valid_until": null
+            }
+          ]
+        }
+      ],
+      "query_hits": [
+        {
+          "id": "mem_7c8a6568385a",
+          "space_id": "progress_blockers_08",
+          "memory_type": "task",
+          "content": "用户；安装新门禁；已结束；用户要安装新门禁，电源适配器已到货，缺件问题已解决；新门禁已经安装完成，并且测试正常。",
+          "normalized_content": "安装新门禁已结束要安装新门禁电源适配器已到货缺件问题已解决新门禁已经安装完成并且测试正常",
+          "importance": 0.6,
+          "confidence": 0.92,
+          "status": "active",
+          "valid_from": null,
+          "valid_until": null,
+          "created_at": "2026-10-21T10:59:10+08:00",
+          "updated_at": "2026-10-21T11:02:47+08:00",
+          "last_accessed_at": "2026-10-21T10:59:14+08:00",
+          "access_count": 2,
+          "current_version": 3,
+          "task_status": "done",
+          "subject": "用户",
+          "predicate": "task",
+          "object_value": "安装新门禁",
+          "last_confirmed_at": "2026-10-21T11:02:47+08:00",
+          "memory_key": "task-card:2c5a9e11ced9643dc91b559b48d8c7d6",
+          "memory_key_version": "task-card-v2",
+          "polarity": null,
+          "scope": {
+            "owner_id": "owner",
+            "access_scope": "owner",
+            "canonical_topic": "安装新门禁",
+            "task_family_key": "task-family:e84aaaa76185a553c78ade23954e98ef",
+            "subject_id": "user:owner"
+          },
+          "sources": [
+            {
+              "id": "task-source:711d36c6eefa195afdb689ef1fb122ec",
+              "note_id": "progress_blockers_08-0",
+              "original_text": "我要安装新门禁，但缺少电源适配器。",
+              "evidence_span": "我要安装新门禁，但缺少电源适配器。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "id": "task-source:9c23e35db5e16154a557a5b675e6044b",
+              "note_id": "progress_blockers_08-1",
+              "original_text": "门禁适配器到了，缺件问题解决，尚未安装。",
+              "evidence_span": "门禁适配器到了，缺件问题解决，尚未安装。",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "antecedent_note_id": "progress_blockers_08-0",
+              "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。"
+            },
+            {
+              "id": "task-source:d1bd71aad588893a691cd02def682ce4",
+              "note_id": "progress_blockers_08-2-completion",
+              "original_text": "新门禁已经安装完成，并且测试正常。",
+              "evidence_span": "新门禁已经安装完成，并且测试正常。",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "antecedent_note_id": "progress_blockers_08-0",
+              "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。"
+            }
+          ],
+          "versions": [],
+          "task": "安装新门禁",
+          "instance": null,
+          "description": "用户要安装新门禁，电源适配器已到货，缺件问题已解决；新门禁已经安装完成，并且测试正常。",
+          "score": 0.388
+        }
+      ]
+    }
+  ],
+  "run": "eval/results/task-simple-completed-four-20261021-r2",
+  "excluded_attempt": {
+    "run": "eval/results/task-simple-completed-four-20261021",
+    "reason": "Parent process imported settings before task-mode environment was set; zero model calls. Excluded; original snapshot unchanged."
+  },
+  "semantic_review": {
+    "passed": 4,
+    "notes": [
+      "打印完成替换尚未打印",
+      "麦克风已修好替换仍坏和等待维修",
+      "英文翻译已附上，材料递交完成；工资单拿到仍可在前一版本及来源追溯",
+      "门禁已安装且测试正常替换尚未安装"
+    ]
+  }
+}
