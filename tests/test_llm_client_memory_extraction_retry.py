@@ -238,3 +238,16 @@ def test_non_deepseek_structured_json_keeps_existing_request_shape(monkeypatch):
     assert llm_client.complete_json("Return JSON.", "{}", llm_task="memory_extraction") == {"ok": True}
     assert "response_format" not in calls[0]
     assert "extra_body" not in calls[0]
+
+
+def test_response_schema_reaches_provider_request(monkeypatch):
+    _install_fake_config(monkeypatch)
+    calls = []
+    def create(**kwargs):
+        calls.append(kwargs)
+        return _response()
+    client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+    monkeypatch.setattr(llm_client, 'build_openai_client', lambda config: client)
+    schema = {'type':'object','properties':{'ok':{'type':'boolean'}},'required':['ok'],'additionalProperties':False}
+    assert llm_client.complete_json('Return JSON.', '{}', llm_task='memory_extraction', response_schema=schema) == {'ok':True}
+    assert calls[0]['response_format'] == {'type':'json_schema','json_schema':{'name':'structured_output','strict':True,'schema':schema}}

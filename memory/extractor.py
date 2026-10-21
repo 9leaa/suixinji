@@ -760,8 +760,9 @@ def extract_llm_candidates(
     if settings.PREFERENCE_CARDS_ENABLED:
         prompt = MEMORY_CARD_EXTRACTOR_PROMPT
     if settings.TASK_CARDS_ENABLED:
-        from memory.task_schema import TASK_EXTRACTION_PROMPT
-        prompt += TASK_EXTRACTION_PROMPT
+        from memory.extraction_contract import extraction_schema, extraction_prompt, strict_schema
+        schema = extraction_schema(preferences=settings.PREFERENCE_CARDS_ENABLED, v3=settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED)
+        prompt = extraction_prompt(schema, preferences=settings.PREFERENCE_CARDS_ENABLED, v3=settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED)
     from core.subject_identity import SUBJECT_RULES, current_identity
     prompt += SUBJECT_RULES
     payload["current_user"] = current_identity()
@@ -769,6 +770,7 @@ def extract_llm_candidates(
         system_prompt=prompt,
         user_prompt=json.dumps(payload, ensure_ascii=False),
         llm_task="memory_extraction",
+        **({"response_schema": strict_schema(schema)} if settings.TASK_CARDS_ENABLED else {}),
     )
     rows = data.get("candidates") or []
     if not isinstance(rows, list):
@@ -780,7 +782,13 @@ def extract_llm_candidates(
             continue
         if settings.TASK_CARDS_ENABLED and row.get('memory_type') == 'task':
             from memory.task_cards import candidate_from_row
-            candidates.append(candidate_from_row(note_id, raw, row, prompt_hash=hashlib.sha256(prompt.encode()).hexdigest()[:16]))
+            from memory.extraction_contract import repair_task_row
+            row, repair = repair_task_row(row, complete=complete_json, context=payload)
+            candidate = candidate_from_row(note_id, raw, row, prompt_hash=hashlib.sha256(prompt.encode()).hexdigest()[:16])
+            if repair:
+                candidate = replace(candidate, scope={**candidate.scope, 'task_schema_repair': repair})
+                LAST_EXTRACTION_DIAGNOSTICS.setdefault('task_schema_repairs', []).append(repair)
+            candidates.append(candidate)
             LAST_EXTRACTION_DIAGNOSTICS['llm_candidate_count'] += 1
             continue
         if settings.PREFERENCE_CARDS_ENABLED and row.get('memory_type') == 'preference':

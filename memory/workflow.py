@@ -79,9 +79,12 @@ def capture_issue(space_id, *, stage, reason, snapshot, trace_id=None):
                                  'query': 'query', 'user_feedback': 'query'}.get(stage, 'extraction'),
                    group_id=stable_id(space_id))
         if (snapshot.get('candidate') or {}).get('memory_type') == 'task':
-            from memory.task_schema import TASK_EXTRACTION_PROMPT
+            from memory.extraction_contract import extraction_schema, extraction_prompt
+            from core.subject_identity import SUBJECT_RULES
+            schema = extraction_schema(preferences=settings.PREFERENCE_CARDS_ENABLED, v3=settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED)
+            task_prompt = extraction_prompt(schema, preferences=settings.PREFERENCE_CARDS_ENABLED, v3=settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED) + SUBJECT_RULES
             from memory.task_cards import DECISION_PROMPT as TASK_DECISION_PROMPT
-            row.update(schema_version='task-card-v1', prompt_hash=stable_id(TASK_EXTRACTION_PROMPT, TASK_DECISION_PROMPT))
+            row.update(schema_version='task-card-v1', prompt_hash=stable_id(task_prompt, TASK_DECISION_PROMPT))
         state.put('issue', key, row)
         return row
 

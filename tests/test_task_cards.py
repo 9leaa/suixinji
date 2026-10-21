@@ -32,12 +32,12 @@ def row(text='记得提交项目周报', **kw):
             'task_status': 'todo', 'closure_reason': None, 'details': [], 'evidence_span': text, **kw}
 
 
-def write(monkeypatch, text='记得提交项目周报', *, key='n1', data=None, previous=None, owner=None, ts='2026-10-19T12:00:00+08:00'):
+def write(monkeypatch, text='记得提交项目周报', *, key='n1', data=None, previous=None, owner=None, ts='2026-10-19T12:00:00+08:00', expected_calls=1):
     mock = Mock(return_value={'candidates': [data or row(text)]})
     monkeypatch.setattr(extractor, 'complete_json', mock)
     report = process_note_memory({'id': key, 'space_id': 's', 'text': text, 'ts': ts,
         'user_id': owner, 'previous_messages': previous or []})
-    assert mock.call_count == 1
+    assert mock.call_count == expected_calls
     return report
 
 
@@ -134,7 +134,7 @@ def test_done_task_can_receive_new_result(monkeypatch):
 
 @pytest.mark.parametrize('changes', [{'task': ''}, {'task_status': 'blocked'}, {'task_status': 'todo', 'closure_reason': 'completed'}, {'entity': '旧字段'}, {'unresolved_reason': '无法确定他指谁'}, {'details': [detail('原文没有这句话')]}])
 def test_bad_rows_become_pending_instead_of_silent_loss(monkeypatch, changes):
-    saved = result(write(monkeypatch, data=row(**changes)))
+    saved = result(write(monkeypatch, data=row(**changes), expected_calls=2 if "entity" in changes else 1))
     assert saved['action'] == 'pending_review'
     assert not repo.list_memories('s')
     assert workflow_state.list_items('s', 'notification')
@@ -329,3 +329,15 @@ def test_identity_rewrite_reaches_original_card_end_to_end(monkeypatch, old_subj
     assert updated['task_card']['task_status']==new_status
     assert len(repo.list_memories('s',memory_type='task'))==1
     assert any(a['vector_status']=='ready' for a in workflow_state.list_items('s','task_retrieval'))
+
+
+def test_format_repair_audit_is_persisted_before_writing(monkeypatch):
+    original=row(entities=['项目周报'])
+    monkeypatch.setattr(extractor, 'complete_json', Mock(side_effect=[{'candidates':[original]},row()]))
+    report=process_note_memory({'id':'repair','space_id':'s','text':'记得提交项目周报','ts':'2026-10-21T09:00:00+08:00'})
+    saved=result(report)
+    assert saved['action']=='insert'
+    candidate=repo.get_memory_candidate(saved['candidate_id'])
+    assert candidate.scope['task_schema_repair']['original']==original
+    assert candidate.scope['task_schema_repair']['status']=='repaired'
+    assert 'entities' not in candidate.scope['task_input']

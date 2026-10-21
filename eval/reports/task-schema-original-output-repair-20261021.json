@@ -1,0 +1,142 @@
+[
+  {
+    "case": "lifecycle_06",
+    "step": 3,
+    "audit": {
+      "original": {
+        "memory_type": "task",
+        "subject": "用户",
+        "task": "誊写乐谱",
+        "instance": "之前那份乐谱",
+        "task_status": "todo",
+        "closure_reason": null,
+        "details": [
+          {
+            "kind": "progress",
+            "condition": "",
+            "description": "手腕恢复后继续誊写",
+            "evidence_span": "继续誊写之前那份乐谱"
+          }
+        ],
+        "evidence_span": "继续誊写之前那份乐谱",
+        "intent": "update",
+        "antecedent_note_id": "lifecycle_06-1",
+        "antecedent_evidence_span": "誊写乐谱先暂停，等手腕恢复。",
+        "unresolved_reason": null,
+        "confidence": 0.9,
+        "importance": 0.7,
+        "should_store": true,
+        "extraction_reason": "指代前文暂停的誊写乐谱任务，现恢复继续，状态仍为 todo",
+        "entities": [
+          "乐谱"
+        ]
+      },
+      "errors": [
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "entities"
+          ],
+          "msg": "Extra inputs are not permitted"
+        }
+      ],
+      "attempts": 1,
+      "status": "repaired",
+      "corrected": {
+        "memory_type": "task",
+        "subject": "用户",
+        "task": "誊写乐谱",
+        "instance": "之前那份乐谱",
+        "task_status": "todo",
+        "closure_reason": null,
+        "details": [
+          {
+            "kind": "progress",
+            "condition": "",
+            "description": "手腕恢复后继续誊写",
+            "evidence_span": "继续誊写之前那份乐谱"
+          }
+        ],
+        "evidence_span": "继续誊写之前那份乐谱",
+        "intent": "update",
+        "antecedent_note_id": "lifecycle_06-1",
+        "antecedent_evidence_span": "誊写乐谱先暂停，等手腕恢复。",
+        "unresolved_reason": null,
+        "confidence": 0.9,
+        "importance": 0.7,
+        "should_store": true,
+        "extraction_reason": "指代前文暂停的誊写乐谱任务，现恢复继续，状态仍为 todo"
+      }
+    }
+  },
+  {
+    "case": "temporal_10",
+    "step": 2,
+    "audit": {
+      "original": {
+        "memory_type": "task",
+        "subject": "用户",
+        "task": "办理航班值机",
+        "instance": "2026-10-28 的航班",
+        "task_status": "todo",
+        "closure_reason": null,
+        "details": [
+          {
+            "kind": "time",
+            "condition": "",
+            "description": "航班日期为 2026-10-28",
+            "evidence_span": "2026-10-28 的航班",
+            "description_note": null
+          }
+        ],
+        "evidence_span": "另一个任务：为 2026-10-28 的航班办理值机",
+        "intent": "new",
+        "antecedent_note_id": null,
+        "antecedent_evidence_span": null,
+        "unresolved_reason": null,
+        "confidence": 0.9,
+        "importance": 0.6,
+        "should_store": true,
+        "extraction_reason": "用户明确提出另一项待办任务，指定了航班日期作为实例"
+      },
+      "errors": [
+        {
+          "type": "extra_forbidden",
+          "loc": [
+            "details",
+            0,
+            "description_note"
+          ],
+          "msg": "Extra inputs are not permitted"
+        }
+      ],
+      "attempts": 1,
+      "status": "repaired",
+      "corrected": {
+        "memory_type": "task",
+        "subject": "用户",
+        "task": "办理航班值机",
+        "instance": "2026-10-28 的航班",
+        "task_status": "todo",
+        "closure_reason": null,
+        "details": [
+          {
+            "kind": "time",
+            "condition": "",
+            "description": "航班日期为 2026-10-28",
+            "evidence_span": "2026-10-28 的航班"
+          }
+        ],
+        "evidence_span": "另一个任务：为 2026-10-28 的航班办理值机",
+        "intent": "new",
+        "antecedent_note_id": null,
+        "antecedent_evidence_span": null,
+        "unresolved_reason": null,
+        "confidence": 0.9,
+        "importance": 0.6,
+        "should_store": true,
+        "extraction_reason": "用户明确提出另一项待办任务，指定了航班日期作为实例"
+      }
+    }
+  }
+]

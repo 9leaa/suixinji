@@ -103,7 +103,7 @@ def _timeout_retries_for_route(route: Any) -> int:
     return min(1, max(0, int(settings.MEMORY_EXTRACTION_LLM_MAX_RETRIES)))
 
 
-def _structured_json_completion_options(config: ChatConfig) -> dict[str, Any]:
+def _structured_json_completion_options(config: ChatConfig, response_schema: dict[str, Any] | None = None) -> dict[str, Any]:
     """Return safe provider-specific options for object-only completions.
 
     DeepSeek v4 may consume the whole completion budget in reasoning before
@@ -111,12 +111,17 @@ def _structured_json_completion_options(config: ChatConfig) -> dict[str, Any]:
     configurations; other OpenAI-compatible providers keep their old shape.
     """
     provider_hint = f"{config.base_url or ''} {config.model or ''}".casefold()
-    if "deepseek" not in provider_hint or not settings.DEEPSEEK_STRUCTURED_JSON_DISABLE_THINKING:
-        return {}
-    return {
-        "response_format": {"type": "json_object"},
-        "extra_body": {"thinking": {"type": "disabled"}},
-    }
+    deepseek = "deepseek" in provider_hint
+    options = {}
+    if deepseek and settings.DEEPSEEK_STRUCTURED_JSON_DISABLE_THINKING:
+        options['extra_body'] = {'thinking': {'type': 'disabled'}}
+        options['response_format'] = {'type': 'json_object'}
+    if response_schema is not None:
+        # The current DeepSeek endpoint rejects json_schema (HTTP 400).
+        # Keep the same schema in the prompt and validate locally instead.
+        options['response_format'] = {'type': 'json_object'} if deepseek else {
+            'type': 'json_schema', 'json_schema': {'name': 'structured_output', 'strict': True, 'schema': response_schema}}
+    return options
 
 
 def classify_llm_error(exc: BaseException | None = None, *, response: Any = None, phase: str | None = None) -> str:
@@ -245,6 +250,7 @@ def _chat_completion_with_key_pool(
     *,
     timeout_retries: int,
     start: float,
+    response_schema: dict[str, Any] | None = None,
 ) -> tuple[Any, int]:
     pool = get_api_key_pool("chat", config.api_key)
     used_keys: set[str] = set()
@@ -256,7 +262,7 @@ def _chat_completion_with_key_pool(
         try:
             with span("LLM · " + config.model, "llm", {
                 "messages": [{"role":"system", "content":system_prompt}, {"role":"user", "content":user_prompt}],
-                "temperature": 0, **_structured_json_completion_options(config),
+                "temperature": 0, **_structured_json_completion_options(config, response_schema),
             }, model=config.model, role=route.role.value, task=route.task.value, route_reason=route.reason, attempt=attempt) as observation:
                 response = client.chat.completions.create(
                     model=config.model,
@@ -265,7 +271,7 @@ def _chat_completion_with_key_pool(
                         {"role": "user", "content": user_prompt},
                     ],
                     temperature=0,
-                    **_structured_json_completion_options(config),
+                    **_structured_json_completion_options(config, response_schema),
                 )
                 observation["output"] = response
             pool.report_success(current_key)
@@ -336,6 +342,7 @@ def complete_json(
     llm_task: str | None = None,
     route_context: dict[str, Any] | None = None,
     timeout_seconds: float | None = None,
+    response_schema: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """函数功能：`complete_json` 负责完成 json，服务于本文件职责：OpenAI-compatible LLM/embedding 客户端。
     传参：
@@ -365,6 +372,7 @@ def complete_json(
             user_prompt,
             timeout_retries=timeout_retries,
             start=start,
+            response_schema=response_schema,
         )
     except APITimeoutError as exc:
         duration_ms = int((time.perf_counter() - start) * 1000)

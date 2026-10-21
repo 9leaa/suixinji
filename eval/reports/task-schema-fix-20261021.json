@@ -1,0 +1,35 @@
+{
+  "model": "deepseek-flash",
+  "provider_schema_probe": {
+    "json_schema": "HTTP 400: This response_format type is unavailable now",
+    "effective_mode": "json_object + generated schema prompt + local TaskInput validation"
+  },
+  "run": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-schema-fix-20261021-r2",
+  "target_checks": [
+    {
+      "number": 12,
+      "case": "lifecycle_06",
+      "step": 3,
+      "passed": true,
+      "errors": []
+    },
+    {
+      "number": 146,
+      "case": "temporal_10",
+      "step": 2,
+      "passed": true,
+      "errors": []
+    }
+  ],
+  "total_steps": 23,
+  "passed_steps": 23,
+  "cases": 9,
+  "passed_cases": 9,
+  "unit_tests_passed": 187,
+  "historical_bad_outputs_repaired": 2,
+  "prior_run": {
+    "path": "eval/results/task-schema-fix-20261021",
+    "note": "Preserved first attempt with two semantic failures; prompt corrected history copying and premature unresolved reference handling."
+  },
+  "scope": "Local isolated replay, including previous identity regressions; not the full 100-case set and not production deployment."
+}
