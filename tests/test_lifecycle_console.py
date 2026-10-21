@@ -185,3 +185,58 @@ def test_queue_wait_uses_publisher_clock(monkeypatch):
     trace.trace_message(lambda self, msg: None)(SimpleNamespace(task_type='query'), message)
     wait = next(row for row in rows if row['name'] == 'Redis · 队列等待')
     assert 0 <= wait['duration_ms'] < 1000
+
+
+def lifecycle_retry_fixture():
+    from datetime import datetime, timezone, timedelta
+    start = datetime(2026, 10, 21, tzinfo=timezone.utc)
+    end = start + timedelta(seconds=150)
+    run = {'created_at': start, 'error': None, 'answer': None}
+    nodes = [dict(id='old', parent_id=None, kind='worker', input_json={'task_id':'t'},
+                  started_at=start, finished_at=None, status='running', metadata_json={}),
+             dict(id='child', parent_id='old', kind='llm', started_at=start,
+                  finished_at=None, status='running', metadata_json={}),
+             dict(id='new', parent_id=None, kind='worker', input_json={'task_id':'t'},
+                  started_at=end, finished_at=None, status='running', metadata_json={})]
+    tasks = [dict(id='t', status='completed', completed_at=end)]
+    attempts = [dict(task_id='t', attempt_no=1, status='lease_expired',
+                     started_at=start, finished_at=end),
+                dict(task_id='t', attempt_no=2, status='completed',
+                     started_at=end, finished_at=end)]
+    return run, nodes, tasks, attempts
+
+
+def test_completed_retry_reconciles_old_spans_without_rewriting_history():
+    from repositories.postgres.lifecycle import project_detail
+    run, nodes, tasks, attempts = lifecycle_retry_fixture()
+    result = project_detail(run, nodes, tasks, attempts)
+    assert result['status'] == 'completed'
+    assert result['duration_ms'] == 150000
+    old, child, new = result['spans']
+    assert old['status'] == child['status'] == 'interrupted'
+    assert old['metadata_json']['attempt_status'] == 'lease_expired'
+    assert old['finished_at'] is None  # Do not invent the interruption time.
+    assert nodes[0]['status'] == 'running' and nodes[0]['metadata_json'] == {}
+
+
+@pytest.mark.parametrize('state,expected', [('running','running'), ('retry','retry'),
+                                          ('dead_letter','error'), ('cancelled','error')])
+def test_old_expired_attempt_does_not_hide_current_task_state(state, expected):
+    from repositories.postgres.lifecycle import project_detail
+    run, nodes, tasks, attempts = lifecycle_retry_fixture()
+    tasks[0].update(status=state, completed_at=None)
+    attempts[1].update(status='running', finished_at=None)
+    result = project_detail(run, nodes, tasks, attempts)
+    assert result['status'] == expected
+    assert result['spans'][0]['status'] == 'interrupted'
+    assert result['spans'][2]['status'] == 'running'
+
+
+def test_unowned_open_span_is_not_falsely_marked_interrupted():
+    from repositories.postgres.lifecycle import project_detail
+    run, nodes, tasks, attempts = lifecycle_retry_fixture()
+    result = project_detail(run, nodes, [], [])
+    assert result['status'] == 'running'
+    assert all(n['status'] == 'running' for n in result['spans'])
+    # Completed business tasks remain authoritative even with incomplete telemetry.
+    assert project_detail(run, nodes, tasks, [])['status'] == 'completed'
