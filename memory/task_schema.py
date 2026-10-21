@@ -11,6 +11,8 @@ class TaskInput(BaseModel):
     subject: str = Field(default='用户', min_length=1)
     task: str = Field(min_length=1)
     instance: str | None = None
+    period_expression: str | None = None
+    due_expression: str | None = None
     task_status: Literal['todo', 'done']
     description: str = ''
     evidence_span: str = Field(min_length=1)
@@ -34,8 +36,8 @@ class TaskInput(BaseModel):
 
 TASK_EXTRACTION_RULES = '''
 - subject 是执行人，遵循全局主体规则；省略时先解析明确上下文，无指代时为用户。项目名属于 task，不是执行人；明确的第三人保留称谓。
-- task 保留动作和对象，不带状态、截止时间和进展。instance 是哪一次，如明确日期的周报、第一轮、订单号；没有说明则 null。
-- 相对轮次时间（本周、下周）结合 message_time 解析为绝对日期范围；没有消息时间不能猜，保留原始表达并填 unresolved_reason。截止时间不作为 instance，延期不新建任务。“刚才那次/原来这次”只作为指代，不是新轮次；沿用可确定的原轮次，不能确定则 null。
+- task 保留动作和对象，不带状态、截止时间和进展。instance 仅填写非日期轮次，如第一轮、订单号；日期周期使用 period_expression，没有说明则 null。
+- period_expression 提取当前原文中任务所属周期（如本周、下周、2026-10-19到2026-10-25），due_expression 提取当前原文中截止日期/时间（如周五、下周一、明天下午3点）。只复制原文，不计算日期，由系统时间工具计算。时间轮次不要再填入 instance（填 null），非日期轮次如第一轮、订单号仍填 instance。未提及则 null，模糊时间保留原文。截止时间不作为周期或 instance，延期只提供 due_expression、不新建任务。“刚才那次/原来这次”只作为指代，不是新轮次；沿用可确定的原轮次，不能确定则 null。
 - 当前消息中的要求、时间、最新情况统一写入 description 自然语言描述，不分类、不赋予细节状态；不复制历史内容。打印机坏了等背景不是独立任务，除非明确要求修理。
 - task_status 仅 todo/done；进行、等待、阻塞、暂停为 todo，结束为 done。初稿写完不代表提交任务完成。明确完成、取消、放弃均为 done，原因直接写进 description，不增加分类字段。
 - intent：明确另一轮或另建任务用 new；修改已有任务用 update；明确要求重开同一次已结束任务用 reopen；其余 auto。仅补充说明不能重开任务。

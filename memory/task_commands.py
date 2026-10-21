@@ -46,6 +46,10 @@ def parse_command(text):
     text = unicodedata.normalize("NFKC", text).strip()
     if text.startswith("/ask "):
         text = text[5:].strip()
+    from memory.time_query import parse_time_query
+    timed = parse_time_query(text)
+    if timed:
+        return {"action": "time_query", **timed}
     if _LIST.fullmatch(text):
         return {"action": "list"}
     match = _COMPLETE.fullmatch(text) or _FINISHED.fullmatch(text)
@@ -235,6 +239,9 @@ def handle_task_command(space_id, text, *, tenant_id="default", user_id=None, me
         return "还有消息正在处理，暂时无法确认完整任务清单，请稍后重试。"
     # One list/command at a time per user and conversation. Repository CAS still checks each target version.
     with coordinated_lock("task-list:" + stable_id(space_id, session), critical=True):
+        if command["action"] == "time_query":
+            from memory.time_query import answer_time_query
+            return answer_time_query(space_id, command, owner=owner, access_context=access_context, session=session)
         if command["action"] == "list":
             return _list(space_id, session, owner, access_context)
         if command["action"] == "complete_named":

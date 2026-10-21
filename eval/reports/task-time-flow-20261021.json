@@ -1,0 +1,2595 @@
+{
+  "model": "deepseek-flash",
+  "total_messages": 12,
+  "passed_messages": 12,
+  "results": [
+    {
+      "input": {
+        "case": "temporal_01",
+        "text": "我要提交本周运营周报，还要提交下周运营周报，这是两次任务。",
+        "ts": "2026-10-20T09:00:00+08:00",
+        "periods": [
+          [
+            "2026-10-19",
+            "2026-10-25"
+          ],
+          [
+            "2026-10-26",
+            "2026-11-01"
+          ]
+        ],
+        "count": 2
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_577ed47d65f9",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "提交运营周报",
+          "instance": "2026-10-26～2026-11-01",
+          "task_status": "todo",
+          "description": "提交下周运营周报",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2026-10-26",
+                "period_end": "2026-11-01",
+                "due_at": null,
+                "time_expression": {
+                  "period": "下周",
+                  "due": null
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:0d838fff0e776d2d3fb1ef25a80c413d",
+              "note_id": "time-0",
+              "original_text": "我要提交本周运营周报，还要提交下周运营周报，这是两次任务。",
+              "evidence_span": "还要提交下周运营周报",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": "2026-10-26",
+          "period_end": "2026-11-01",
+          "due_at": null,
+          "content": "用户；提交运营周报；2026-10-26～2026-11-01；待办；提交下周运营周报"
+        },
+        {
+          "id": "mem_a6f09f972184",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "提交运营周报",
+          "instance": "2026-10-19～2026-10-25",
+          "task_status": "todo",
+          "description": "提交本周运营周报",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2026-10-19",
+                "period_end": "2026-10-25",
+                "due_at": null,
+                "time_expression": {
+                  "period": "本周",
+                  "due": null
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:7e3b4c92cfcd30f20f97894493642e4e",
+              "note_id": "time-0",
+              "original_text": "我要提交本周运营周报，还要提交下周运营周报，这是两次任务。",
+              "evidence_span": "我要提交本周运营周报",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": "2026-10-19",
+          "period_end": "2026-10-25",
+          "due_at": null,
+          "content": "用户；提交运营周报；2026-10-19～2026-10-25；待办；提交本周运营周报"
+        }
+      ],
+      "report": {
+        "note_id": "time-0",
+        "space_id": "temporal_01",
+        "candidates": 2,
+        "results": [
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:c7cf08a6466e259025410f21dcfe8df9",
+            "candidate_id": "revision:93c2214a82a34379ca29cd049ab16d02",
+            "confidence": 0.95,
+            "memory_id": "mem_a6f09f972184",
+            "task_card": {
+              "id": "mem_a6f09f972184",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "提交运营周报",
+              "instance": "2026-10-19～2026-10-25",
+              "task_status": "todo",
+              "description": "提交本周运营周报",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2026-10-19",
+                    "period_end": "2026-10-25",
+                    "due_at": null,
+                    "time_expression": {
+                      "period": "本周",
+                      "due": null
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:7e3b4c92cfcd30f20f97894493642e4e",
+                  "note_id": "time-0",
+                  "original_text": "我要提交本周运营周报，还要提交下周运营周报，这是两次任务。",
+                  "evidence_span": "我要提交本周运营周报",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": "2026-10-19",
+              "period_end": "2026-10-25",
+              "due_at": null,
+              "content": "用户；提交运营周报；2026-10-19～2026-10-25；待办；提交本周运营周报"
+            }
+          },
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:9a0951871ba26af442271fb73e5836f4",
+            "candidate_id": "revision:0d13df6551fb2f3103dd442cdae13f70",
+            "confidence": 0.95,
+            "memory_id": "mem_577ed47d65f9",
+            "task_card": {
+              "id": "mem_577ed47d65f9",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "提交运营周报",
+              "instance": "2026-10-26～2026-11-01",
+              "task_status": "todo",
+              "description": "提交下周运营周报",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2026-10-26",
+                    "period_end": "2026-11-01",
+                    "due_at": null,
+                    "time_expression": {
+                      "period": "下周",
+                      "due": null
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:0d838fff0e776d2d3fb1ef25a80c413d",
+                  "note_id": "time-0",
+                  "original_text": "我要提交本周运营周报，还要提交下周运营周报，这是两次任务。",
+                  "evidence_span": "还要提交下周运营周报",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": "2026-10-26",
+              "period_end": "2026-11-01",
+              "due_at": null,
+              "content": "用户；提交运营周报；2026-10-26～2026-11-01；待办；提交下周运营周报"
+            }
+          }
+        ],
+        "trace_id": "trace_88a56a67410a",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-0",
+            "message_time": "2026-10-20T09:00:00+08:00",
+            "text": "我要提交本周运营周报，还要提交下周运营周报，这是两次任务。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "我要提交本周运营周报"
+              },
+              {
+                "atom_id": "a2",
+                "text": "要提交下周运营周报"
+              },
+              {
+                "atom_id": "a3",
+                "text": "这是两次任务"
+              }
+            ],
+            "previous_messages": [],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "提交运营周报",
+                "instance": "2026-10-19到2026-10-25",
+                "period_expression": "本周",
+                "due_expression": null,
+                "task_status": "todo",
+                "description": "提交本周运营周报",
+                "evidence_span": "我要提交本周运营周报",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "明确的本周运营周报提交任务"
+              },
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "提交运营周报",
+                "instance": "2026-10-26到2026-11-01",
+                "period_expression": "下周",
+                "due_expression": null,
+                "task_status": "todo",
+                "description": "提交下周运营周报",
+                "evidence_span": "还要提交下周运营周报",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "明确的下周运营周报提交任务，与本周为两次独立任务"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "case": "temporal_02",
+        "text": "我要补交上周排班周表，并且另交本周排班周表，分别记录两次。",
+        "ts": "2026-10-20T09:00:00+08:00",
+        "periods": [
+          [
+            "2026-10-12",
+            "2026-10-18"
+          ],
+          [
+            "2026-10-19",
+            "2026-10-25"
+          ]
+        ],
+        "count": 2
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_1f852c1d9024",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "补交排班周表",
+          "instance": "2026-10-12～2026-10-18",
+          "task_status": "todo",
+          "description": "补交上周排班周表，并单独记录这一次。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2026-10-12",
+                "period_end": "2026-10-18",
+                "due_at": null,
+                "time_expression": {
+                  "period": "上周",
+                  "due": null
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:1f437f2e1c938b6da9d1e6de9b078e1b",
+              "note_id": "time-1",
+              "original_text": "我要补交上周排班周表，并且另交本周排班周表，分别记录两次。",
+              "evidence_span": "我要补交上周排班周表",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": "2026-10-12",
+          "period_end": "2026-10-18",
+          "due_at": null,
+          "content": "用户；补交排班周表；2026-10-12～2026-10-18；待办；补交上周排班周表，并单独记录这一次。"
+        },
+        {
+          "id": "mem_7ae64ea9f03b",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "提交排班周表",
+          "instance": "2026-10-19～2026-10-25",
+          "task_status": "todo",
+          "description": "另交本周排班周表，并单独记录这一次。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2026-10-19",
+                "period_end": "2026-10-25",
+                "due_at": null,
+                "time_expression": {
+                  "period": "本周",
+                  "due": null
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:31a63c289aa8bf67c7ee46ec9c9f62c4",
+              "note_id": "time-1",
+              "original_text": "我要补交上周排班周表，并且另交本周排班周表，分别记录两次。",
+              "evidence_span": "另交本周排班周表",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": "2026-10-19",
+          "period_end": "2026-10-25",
+          "due_at": null,
+          "content": "用户；提交排班周表；2026-10-19～2026-10-25；待办；另交本周排班周表，并单独记录这一次。"
+        }
+      ],
+      "report": {
+        "note_id": "time-1",
+        "space_id": "temporal_02",
+        "candidates": 2,
+        "results": [
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:cc21ef662c36ca8597933a1bf52fe25d",
+            "candidate_id": "revision:a42f8c421e7d86ff8d4406519b74e051",
+            "confidence": 0.95,
+            "memory_id": "mem_1f852c1d9024",
+            "task_card": {
+              "id": "mem_1f852c1d9024",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "补交排班周表",
+              "instance": "2026-10-12～2026-10-18",
+              "task_status": "todo",
+              "description": "补交上周排班周表，并单独记录这一次。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2026-10-12",
+                    "period_end": "2026-10-18",
+                    "due_at": null,
+                    "time_expression": {
+                      "period": "上周",
+                      "due": null
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:1f437f2e1c938b6da9d1e6de9b078e1b",
+                  "note_id": "time-1",
+                  "original_text": "我要补交上周排班周表，并且另交本周排班周表，分别记录两次。",
+                  "evidence_span": "我要补交上周排班周表",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": "2026-10-12",
+              "period_end": "2026-10-18",
+              "due_at": null,
+              "content": "用户；补交排班周表；2026-10-12～2026-10-18；待办；补交上周排班周表，并单独记录这一次。"
+            }
+          },
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:bae0796d42f4961cc3facd5838642eb0",
+            "candidate_id": "revision:12f69416fd88463d8df1da65c3bca734",
+            "confidence": 0.95,
+            "memory_id": "mem_7ae64ea9f03b",
+            "task_card": {
+              "id": "mem_7ae64ea9f03b",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "提交排班周表",
+              "instance": "2026-10-19～2026-10-25",
+              "task_status": "todo",
+              "description": "另交本周排班周表，并单独记录这一次。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2026-10-19",
+                    "period_end": "2026-10-25",
+                    "due_at": null,
+                    "time_expression": {
+                      "period": "本周",
+                      "due": null
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:31a63c289aa8bf67c7ee46ec9c9f62c4",
+                  "note_id": "time-1",
+                  "original_text": "我要补交上周排班周表，并且另交本周排班周表，分别记录两次。",
+                  "evidence_span": "另交本周排班周表",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": "2026-10-19",
+              "period_end": "2026-10-25",
+              "due_at": null,
+              "content": "用户；提交排班周表；2026-10-19～2026-10-25；待办；另交本周排班周表，并单独记录这一次。"
+            }
+          }
+        ],
+        "trace_id": "trace_5ee8f47a8f3f",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-1",
+            "message_time": "2026-10-20T09:00:00+08:00",
+            "text": "我要补交上周排班周表，并且另交本周排班周表，分别记录两次。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "我要补交上周排班周表"
+              },
+              {
+                "atom_id": "a2",
+                "text": "另交本周排班周表"
+              },
+              {
+                "atom_id": "a3",
+                "text": "分别记录两次"
+              }
+            ],
+            "previous_messages": [],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "补交排班周表",
+                "instance": "上周",
+                "period_expression": "上周",
+                "due_expression": null,
+                "task_status": "todo",
+                "description": "补交上周排班周表，并单独记录这一次。",
+                "evidence_span": "我要补交上周排班周表",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "明确要求补交上周排班周表，属于独立任务"
+              },
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "提交排班周表",
+                "instance": "本周",
+                "period_expression": "本周",
+                "due_expression": null,
+                "task_status": "todo",
+                "description": "另交本周排班周表，并单独记录这一次。",
+                "evidence_span": "另交本周排班周表",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "明确要求另交本周排班周表，属于独立任务"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "case": "lifecycle",
+        "text": "本周要交运营周报，周五前交。",
+        "ts": "2026-10-20T09:00:00+08:00",
+        "periods": [
+          [
+            "2026-10-19",
+            "2026-10-25"
+          ]
+        ],
+        "due": "2026-10-23"
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true,
+        "due": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_b499774731d7",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "交运营周报",
+          "instance": "2026-10-19～2026-10-25",
+          "task_status": "todo",
+          "description": "本周要交运营周报，周五前交。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2026-10-19",
+                "period_end": "2026-10-25",
+                "due_at": "2026-10-23",
+                "time_expression": {
+                  "period": "本周",
+                  "due": "周五前"
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:47632d4d85b18aa7605156c77aae2410",
+              "note_id": "time-2",
+              "original_text": "本周要交运营周报，周五前交。",
+              "evidence_span": "本周要交运营周报，周五前交。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": "2026-10-19",
+          "period_end": "2026-10-25",
+          "due_at": "2026-10-23",
+          "content": "用户；交运营周报；2026-10-19～2026-10-25；待办；本周要交运营周报，周五前交。"
+        }
+      ],
+      "report": {
+        "note_id": "time-2",
+        "space_id": "lifecycle",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:6ea062cd1bbc76a9d7a0d2ce1000dcd4",
+            "candidate_id": "revision:ba5d116d5031faaa820d97644c643e7c",
+            "confidence": 0.95,
+            "memory_id": "mem_b499774731d7",
+            "task_card": {
+              "id": "mem_b499774731d7",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "交运营周报",
+              "instance": "2026-10-19～2026-10-25",
+              "task_status": "todo",
+              "description": "本周要交运营周报，周五前交。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2026-10-19",
+                    "period_end": "2026-10-25",
+                    "due_at": "2026-10-23",
+                    "time_expression": {
+                      "period": "本周",
+                      "due": "周五前"
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:47632d4d85b18aa7605156c77aae2410",
+                  "note_id": "time-2",
+                  "original_text": "本周要交运营周报，周五前交。",
+                  "evidence_span": "本周要交运营周报，周五前交。",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": "2026-10-19",
+              "period_end": "2026-10-25",
+              "due_at": "2026-10-23",
+              "content": "用户；交运营周报；2026-10-19～2026-10-25；待办；本周要交运营周报，周五前交。"
+            }
+          }
+        ],
+        "trace_id": "trace_d6015bf249f3",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-2",
+            "message_time": "2026-10-20T09:00:00+08:00",
+            "text": "本周要交运营周报，周五前交。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "本周要交运营周报"
+              },
+              {
+                "atom_id": "a2",
+                "text": "周五前交"
+              }
+            ],
+            "previous_messages": [],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "交运营周报",
+                "instance": null,
+                "period_expression": "本周",
+                "due_expression": "周五前",
+                "task_status": "todo",
+                "description": "本周要交运营周报，周五前交。",
+                "evidence_span": "本周要交运营周报，周五前交。",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "明确的任务要求，含周期与截止时间"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "case": "lifecycle",
+        "text": "这份运营周报推迟到下周一交。",
+        "ts": "2026-10-22T09:00:00+08:00",
+        "periods": [
+          [
+            "2026-10-19",
+            "2026-10-25"
+          ]
+        ],
+        "due": "2026-10-26",
+        "same": true
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true,
+        "due": true,
+        "same_card": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_b499774731d7",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "交运营周报",
+          "instance": "2026-10-19～2026-10-25",
+          "task_status": "todo",
+          "description": "本周要交运营周报，原定周五前交，现推迟到下周一交。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2026-10-19",
+                "period_end": "2026-10-25",
+                "due_at": "2026-10-23",
+                "time_expression": {
+                  "period": "本周",
+                  "due": "周五前"
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:47632d4d85b18aa7605156c77aae2410",
+              "note_id": "time-2",
+              "original_text": "本周要交运营周报，周五前交。",
+              "evidence_span": "本周要交运营周报，周五前交。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "resolved_time": {
+                "period_start": null,
+                "period_end": null,
+                "due_at": "2026-10-26",
+                "time_expression": {
+                  "period": null,
+                  "due": "下周一"
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:5cc6cae22a386d8966ce8a0624936ff6",
+              "note_id": "time-3",
+              "original_text": "这份运营周报推迟到下周一交。",
+              "evidence_span": "这份运营周报推迟到下周一交。",
+              "message_time": "2026-10-22T09:00:00+08:00",
+              "antecedent_note_id": "time-2",
+              "antecedent_evidence_span": "本周要交运营周报，周五前交。"
+            }
+          ],
+          "period_start": "2026-10-19",
+          "period_end": "2026-10-25",
+          "due_at": "2026-10-26",
+          "content": "用户；交运营周报；2026-10-19～2026-10-25；待办；本周要交运营周报，原定周五前交，现推迟到下周一交。"
+        }
+      ],
+      "report": {
+        "note_id": "time-3",
+        "space_id": "lifecycle",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "update_task",
+            "relation": "update_task",
+            "decision_id": "task-decision:8f8e6ed08c604deca6f8e844397eec07",
+            "candidate_id": "revision:11b0c7f802dd0886c93b18345b0c8902",
+            "confidence": 0.9,
+            "memory_id": "mem_b499774731d7",
+            "task_status": "todo",
+            "source_added": true,
+            "task_card": {
+              "id": "mem_b499774731d7",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "交运营周报",
+              "instance": "2026-10-19～2026-10-25",
+              "task_status": "todo",
+              "description": "本周要交运营周报，原定周五前交，现推迟到下周一交。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2026-10-19",
+                    "period_end": "2026-10-25",
+                    "due_at": "2026-10-23",
+                    "time_expression": {
+                      "period": "本周",
+                      "due": "周五前"
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:47632d4d85b18aa7605156c77aae2410",
+                  "note_id": "time-2",
+                  "original_text": "本周要交运营周报，周五前交。",
+                  "evidence_span": "本周要交运营周报，周五前交。",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                },
+                {
+                  "resolved_time": {
+                    "period_start": null,
+                    "period_end": null,
+                    "due_at": "2026-10-26",
+                    "time_expression": {
+                      "period": null,
+                      "due": "下周一"
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:5cc6cae22a386d8966ce8a0624936ff6",
+                  "note_id": "time-3",
+                  "original_text": "这份运营周报推迟到下周一交。",
+                  "evidence_span": "这份运营周报推迟到下周一交。",
+                  "message_time": "2026-10-22T09:00:00+08:00",
+                  "antecedent_note_id": "time-2",
+                  "antecedent_evidence_span": "本周要交运营周报，周五前交。"
+                }
+              ],
+              "period_start": "2026-10-19",
+              "period_end": "2026-10-25",
+              "due_at": "2026-10-26",
+              "content": "用户；交运营周报；2026-10-19～2026-10-25；待办；本周要交运营周报，原定周五前交，现推迟到下周一交。"
+            }
+          }
+        ],
+        "trace_id": "trace_b2597f86eb93",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-3",
+            "message_time": "2026-10-22T09:00:00+08:00",
+            "text": "这份运营周报推迟到下周一交。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "这份运营周报推迟到下周一交"
+              }
+            ],
+            "previous_messages": [
+              {
+                "note_id": "time-2",
+                "text": "本周要交运营周报，周五前交。",
+                "ts": "2026-10-20T09:00:00+08:00",
+                "role": "user",
+                "sequence_no": 3,
+                "offset": -1
+              }
+            ],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "提交运营周报",
+                "instance": null,
+                "period_expression": null,
+                "due_expression": "下周一",
+                "task_status": "todo",
+                "description": "这份运营周报推迟到下周一交。",
+                "evidence_span": "这份运营周报推迟到下周一交。",
+                "intent": "update",
+                "antecedent_note_id": "time-2",
+                "antecedent_evidence_span": "本周要交运营周报，周五前交。",
+                "unresolved_reason": null,
+                "confidence": 0.9,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "当前消息明确将运营周报提交时间推迟到下周一，属于对已有任务的更新。"
+              }
+            ]
+          }
+        },
+        {
+          "stage": "association",
+          "input": {
+            "new": {
+              "memory_type": "task",
+              "subject": "用户",
+              "task": "提交运营周报",
+              "instance": null,
+              "period_expression": null,
+              "due_expression": "下周一",
+              "task_status": "todo",
+              "description": "这份运营周报推迟到下周一交。",
+              "evidence_span": "这份运营周报推迟到下周一交。",
+              "intent": "update",
+              "antecedent_note_id": "time-2",
+              "antecedent_evidence_span": "本周要交运营周报，周五前交。",
+              "unresolved_reason": null,
+              "confidence": 0.9,
+              "importance": 0.7,
+              "should_store": true,
+              "extraction_reason": "当前消息明确将运营周报提交时间推迟到下周一，属于对已有任务的更新。"
+            },
+            "cards": [
+              {
+                "id": "mem_b499774731d7",
+                "subject": "用户",
+                "task": "交运营周报",
+                "instance": "2026-10-19～2026-10-25",
+                "task_status": "todo",
+                "description": "本周要交运营周报，周五前交。",
+                "sources": [
+                  {
+                    "resolved_time": {
+                      "period_start": "2026-10-19",
+                      "period_end": "2026-10-25",
+                      "due_at": "2026-10-23",
+                      "time_expression": {
+                        "period": "本周",
+                        "due": "周五前"
+                      },
+                      "timezone": "Asia/Shanghai",
+                      "unresolved": []
+                    },
+                    "id": "task-source:47632d4d85b18aa7605156c77aae2410",
+                    "note_id": "time-2",
+                    "original_text": "本周要交运营周报，周五前交。",
+                    "evidence_span": "本周要交运营周报，周五前交。",
+                    "message_time": "2026-10-20T09:00:00+08:00",
+                    "antecedent_note_id": null,
+                    "antecedent_evidence_span": null
+                  }
+                ],
+                "period_start": "2026-10-19",
+                "period_end": "2026-10-25",
+                "due_at": "2026-10-23"
+              }
+            ]
+          },
+          "output": {
+            "action": "update",
+            "target_id": "mem_b499774731d7",
+            "description": "本周要交运营周报，原定周五前交，现推迟到下周一交。",
+            "reason": "当前消息明确将同一份运营周报的提交时间从周五前推迟到下周一，属于对已有任务的更新。",
+            "subject_relation": "same",
+            "instance_relation": "same"
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "case": "lifecycle",
+        "text": "上周那份运营周报交了。",
+        "ts": "2026-10-26T09:00:00+08:00",
+        "periods": [
+          [
+            "2026-10-19",
+            "2026-10-25"
+          ]
+        ],
+        "due": "2026-10-26",
+        "status": "done",
+        "same": true
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true,
+        "due": true,
+        "status": true,
+        "same_card": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_b499774731d7",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "交运营周报",
+          "instance": "2026-10-19～2026-10-25",
+          "task_status": "done",
+          "description": "上周那份运营周报已提交（原定周五前交，后推迟到下周一交）。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2026-10-19",
+                "period_end": "2026-10-25",
+                "due_at": "2026-10-23",
+                "time_expression": {
+                  "period": "本周",
+                  "due": "周五前"
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:47632d4d85b18aa7605156c77aae2410",
+              "note_id": "time-2",
+              "original_text": "本周要交运营周报，周五前交。",
+              "evidence_span": "本周要交运营周报，周五前交。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "resolved_time": {
+                "period_start": null,
+                "period_end": null,
+                "due_at": "2026-10-26",
+                "time_expression": {
+                  "period": null,
+                  "due": "下周一"
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:5cc6cae22a386d8966ce8a0624936ff6",
+              "note_id": "time-3",
+              "original_text": "这份运营周报推迟到下周一交。",
+              "evidence_span": "这份运营周报推迟到下周一交。",
+              "message_time": "2026-10-22T09:00:00+08:00",
+              "antecedent_note_id": "time-2",
+              "antecedent_evidence_span": "本周要交运营周报，周五前交。"
+            },
+            {
+              "resolved_time": {
+                "period_start": "2026-10-19",
+                "period_end": "2026-10-25",
+                "due_at": null,
+                "time_expression": {
+                  "period": "上周",
+                  "due": null
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:f9f496739acc5988494b35c5f088e295",
+              "note_id": "time-4",
+              "original_text": "上周那份运营周报交了。",
+              "evidence_span": "上周那份运营周报交了。",
+              "message_time": "2026-10-26T09:00:00+08:00",
+              "antecedent_note_id": "time-3",
+              "antecedent_evidence_span": "这份运营周报推迟到下周一交。"
+            }
+          ],
+          "period_start": "2026-10-19",
+          "period_end": "2026-10-25",
+          "due_at": "2026-10-26",
+          "content": "用户；交运营周报；2026-10-19～2026-10-25；已结束；上周那份运营周报已提交（原定周五前交，后推迟到下周一交）。"
+        }
+      ],
+      "report": {
+        "note_id": "time-4",
+        "space_id": "lifecycle",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "update_task",
+            "relation": "update_task",
+            "decision_id": "task-decision:68fb22ab978e0266bf4389570b84e8ef",
+            "candidate_id": "revision:4413e3cfb5cec55e6c54c724b6cc332f",
+            "confidence": 0.9,
+            "memory_id": "mem_b499774731d7",
+            "task_status": "done",
+            "source_added": true,
+            "task_card": {
+              "id": "mem_b499774731d7",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "交运营周报",
+              "instance": "2026-10-19～2026-10-25",
+              "task_status": "done",
+              "description": "上周那份运营周报已提交（原定周五前交，后推迟到下周一交）。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2026-10-19",
+                    "period_end": "2026-10-25",
+                    "due_at": "2026-10-23",
+                    "time_expression": {
+                      "period": "本周",
+                      "due": "周五前"
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:47632d4d85b18aa7605156c77aae2410",
+                  "note_id": "time-2",
+                  "original_text": "本周要交运营周报，周五前交。",
+                  "evidence_span": "本周要交运营周报，周五前交。",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                },
+                {
+                  "resolved_time": {
+                    "period_start": null,
+                    "period_end": null,
+                    "due_at": "2026-10-26",
+                    "time_expression": {
+                      "period": null,
+                      "due": "下周一"
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:5cc6cae22a386d8966ce8a0624936ff6",
+                  "note_id": "time-3",
+                  "original_text": "这份运营周报推迟到下周一交。",
+                  "evidence_span": "这份运营周报推迟到下周一交。",
+                  "message_time": "2026-10-22T09:00:00+08:00",
+                  "antecedent_note_id": "time-2",
+                  "antecedent_evidence_span": "本周要交运营周报，周五前交。"
+                },
+                {
+                  "resolved_time": {
+                    "period_start": "2026-10-19",
+                    "period_end": "2026-10-25",
+                    "due_at": null,
+                    "time_expression": {
+                      "period": "上周",
+                      "due": null
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:f9f496739acc5988494b35c5f088e295",
+                  "note_id": "time-4",
+                  "original_text": "上周那份运营周报交了。",
+                  "evidence_span": "上周那份运营周报交了。",
+                  "message_time": "2026-10-26T09:00:00+08:00",
+                  "antecedent_note_id": "time-3",
+                  "antecedent_evidence_span": "这份运营周报推迟到下周一交。"
+                }
+              ],
+              "period_start": "2026-10-19",
+              "period_end": "2026-10-25",
+              "due_at": "2026-10-26",
+              "content": "用户；交运营周报；2026-10-19～2026-10-25；已结束；上周那份运营周报已提交（原定周五前交，后推迟到下周一交）。"
+            }
+          }
+        ],
+        "trace_id": "trace_9bbe9c93e116",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-4",
+            "message_time": "2026-10-26T09:00:00+08:00",
+            "text": "上周那份运营周报交了。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "上周那份运营周报交了"
+              }
+            ],
+            "previous_messages": [
+              {
+                "note_id": "time-3",
+                "text": "这份运营周报推迟到下周一交。",
+                "ts": "2026-10-22T09:00:00+08:00",
+                "role": "user",
+                "sequence_no": 4,
+                "offset": -1
+              },
+              {
+                "note_id": "time-2",
+                "text": "本周要交运营周报，周五前交。",
+                "ts": "2026-10-20T09:00:00+08:00",
+                "role": "user",
+                "sequence_no": 3,
+                "offset": -2
+              }
+            ],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "提交运营周报",
+                "instance": null,
+                "period_expression": "上周",
+                "due_expression": null,
+                "task_status": "done",
+                "description": "上周那份运营周报已提交。",
+                "evidence_span": "上周那份运营周报交了。",
+                "intent": "auto",
+                "antecedent_note_id": "time-3",
+                "antecedent_evidence_span": "这份运营周报推迟到下周一交。",
+                "unresolved_reason": null,
+                "confidence": 0.9,
+                "importance": 0.6,
+                "should_store": true,
+                "extraction_reason": "用户明确表示上周的运营周报已提交，属于已完成任务；指代“那份”可唯一解析到前文推迟的运营周报。"
+              }
+            ]
+          }
+        },
+        {
+          "stage": "association",
+          "input": {
+            "new": {
+              "memory_type": "task",
+              "subject": "用户",
+              "task": "提交运营周报",
+              "instance": "2026-10-19～2026-10-25",
+              "period_expression": "上周",
+              "due_expression": null,
+              "task_status": "done",
+              "description": "上周那份运营周报已提交。",
+              "evidence_span": "上周那份运营周报交了。",
+              "intent": "auto",
+              "antecedent_note_id": "time-3",
+              "antecedent_evidence_span": "这份运营周报推迟到下周一交。",
+              "unresolved_reason": null,
+              "confidence": 0.9,
+              "importance": 0.6,
+              "should_store": true,
+              "extraction_reason": "用户明确表示上周的运营周报已提交，属于已完成任务；指代“那份”可唯一解析到前文推迟的运营周报。"
+            },
+            "cards": [
+              {
+                "id": "mem_b499774731d7",
+                "subject": "用户",
+                "task": "交运营周报",
+                "instance": "2026-10-19～2026-10-25",
+                "task_status": "todo",
+                "description": "本周要交运营周报，原定周五前交，现推迟到下周一交。",
+                "sources": [
+                  {
+                    "resolved_time": {
+                      "period_start": "2026-10-19",
+                      "period_end": "2026-10-25",
+                      "due_at": "2026-10-23",
+                      "time_expression": {
+                        "period": "本周",
+                        "due": "周五前"
+                      },
+                      "timezone": "Asia/Shanghai",
+                      "unresolved": []
+                    },
+                    "id": "task-source:47632d4d85b18aa7605156c77aae2410",
+                    "note_id": "time-2",
+                    "original_text": "本周要交运营周报，周五前交。",
+                    "evidence_span": "本周要交运营周报，周五前交。",
+                    "message_time": "2026-10-20T09:00:00+08:00",
+                    "antecedent_note_id": null,
+                    "antecedent_evidence_span": null
+                  },
+                  {
+                    "resolved_time": {
+                      "period_start": null,
+                      "period_end": null,
+                      "due_at": "2026-10-26",
+                      "time_expression": {
+                        "period": null,
+                        "due": "下周一"
+                      },
+                      "timezone": "Asia/Shanghai",
+                      "unresolved": []
+                    },
+                    "id": "task-source:5cc6cae22a386d8966ce8a0624936ff6",
+                    "note_id": "time-3",
+                    "original_text": "这份运营周报推迟到下周一交。",
+                    "evidence_span": "这份运营周报推迟到下周一交。",
+                    "message_time": "2026-10-22T09:00:00+08:00",
+                    "antecedent_note_id": "time-2",
+                    "antecedent_evidence_span": "本周要交运营周报，周五前交。"
+                  }
+                ],
+                "period_start": "2026-10-19",
+                "period_end": "2026-10-25",
+                "due_at": "2026-10-26"
+              }
+            ]
+          },
+          "output": {
+            "action": "update",
+            "target_id": "mem_b499774731d7",
+            "description": "上周那份运营周报已提交（原定周五前交，后推迟到下周一交）。",
+            "reason": "新消息明确表示同一份运营周报已提交，与候选卡片为同一任务，应更新为已完成。",
+            "subject_relation": "same",
+            "instance_relation": "same"
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "case": "lifecycle",
+        "text": "这周也要交一份运营周报，周五前交，这是新一周的任务。",
+        "ts": "2026-10-26T10:00:00+08:00",
+        "periods": [
+          [
+            "2026-10-19",
+            "2026-10-25"
+          ],
+          [
+            "2026-10-26",
+            "2026-11-01"
+          ]
+        ],
+        "count": 2
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_1a836479b900",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "交运营周报",
+          "instance": "2026-10-26～2026-11-01",
+          "task_status": "todo",
+          "description": "这周要交一份运营周报，周五前交，这是新一周的任务。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2026-10-26",
+                "period_end": "2026-11-01",
+                "due_at": "2026-10-30",
+                "time_expression": {
+                  "period": "这周",
+                  "due": "周五前"
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:af4a29b3fb2924c6ff41839e64d0e173",
+              "note_id": "time-5",
+              "original_text": "这周也要交一份运营周报，周五前交，这是新一周的任务。",
+              "evidence_span": "这周也要交一份运营周报，周五前交，这是新一周的任务。",
+              "message_time": "2026-10-26T10:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": "2026-10-26",
+          "period_end": "2026-11-01",
+          "due_at": "2026-10-30",
+          "content": "用户；交运营周报；2026-10-26～2026-11-01；待办；这周要交一份运营周报，周五前交，这是新一周的任务。"
+        },
+        {
+          "id": "mem_b499774731d7",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "交运营周报",
+          "instance": "2026-10-19～2026-10-25",
+          "task_status": "done",
+          "description": "上周那份运营周报已提交（原定周五前交，后推迟到下周一交）。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2026-10-19",
+                "period_end": "2026-10-25",
+                "due_at": "2026-10-23",
+                "time_expression": {
+                  "period": "本周",
+                  "due": "周五前"
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:47632d4d85b18aa7605156c77aae2410",
+              "note_id": "time-2",
+              "original_text": "本周要交运营周报，周五前交。",
+              "evidence_span": "本周要交运营周报，周五前交。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            },
+            {
+              "resolved_time": {
+                "period_start": null,
+                "period_end": null,
+                "due_at": "2026-10-26",
+                "time_expression": {
+                  "period": null,
+                  "due": "下周一"
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:5cc6cae22a386d8966ce8a0624936ff6",
+              "note_id": "time-3",
+              "original_text": "这份运营周报推迟到下周一交。",
+              "evidence_span": "这份运营周报推迟到下周一交。",
+              "message_time": "2026-10-22T09:00:00+08:00",
+              "antecedent_note_id": "time-2",
+              "antecedent_evidence_span": "本周要交运营周报，周五前交。"
+            },
+            {
+              "resolved_time": {
+                "period_start": "2026-10-19",
+                "period_end": "2026-10-25",
+                "due_at": null,
+                "time_expression": {
+                  "period": "上周",
+                  "due": null
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:f9f496739acc5988494b35c5f088e295",
+              "note_id": "time-4",
+              "original_text": "上周那份运营周报交了。",
+              "evidence_span": "上周那份运营周报交了。",
+              "message_time": "2026-10-26T09:00:00+08:00",
+              "antecedent_note_id": "time-3",
+              "antecedent_evidence_span": "这份运营周报推迟到下周一交。"
+            }
+          ],
+          "period_start": "2026-10-19",
+          "period_end": "2026-10-25",
+          "due_at": "2026-10-26",
+          "content": "用户；交运营周报；2026-10-19～2026-10-25；已结束；上周那份运营周报已提交（原定周五前交，后推迟到下周一交）。"
+        }
+      ],
+      "report": {
+        "note_id": "time-5",
+        "space_id": "lifecycle",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:92ef01211fa35f8c78414e7084d484dd",
+            "candidate_id": "revision:d501751e6ec736c511a0eb218bbabdc3",
+            "confidence": 0.95,
+            "memory_id": "mem_1a836479b900",
+            "task_card": {
+              "id": "mem_1a836479b900",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "交运营周报",
+              "instance": "2026-10-26～2026-11-01",
+              "task_status": "todo",
+              "description": "这周要交一份运营周报，周五前交，这是新一周的任务。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2026-10-26",
+                    "period_end": "2026-11-01",
+                    "due_at": "2026-10-30",
+                    "time_expression": {
+                      "period": "这周",
+                      "due": "周五前"
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:af4a29b3fb2924c6ff41839e64d0e173",
+                  "note_id": "time-5",
+                  "original_text": "这周也要交一份运营周报，周五前交，这是新一周的任务。",
+                  "evidence_span": "这周也要交一份运营周报，周五前交，这是新一周的任务。",
+                  "message_time": "2026-10-26T10:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": "2026-10-26",
+              "period_end": "2026-11-01",
+              "due_at": "2026-10-30",
+              "content": "用户；交运营周报；2026-10-26～2026-11-01；待办；这周要交一份运营周报，周五前交，这是新一周的任务。"
+            }
+          }
+        ],
+        "trace_id": "trace_b910a5f7317c",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-5",
+            "message_time": "2026-10-26T10:00:00+08:00",
+            "text": "这周也要交一份运营周报，周五前交，这是新一周的任务。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "这周也要交一份运营周报"
+              },
+              {
+                "atom_id": "a2",
+                "text": "周五前交"
+              },
+              {
+                "atom_id": "a3",
+                "text": "这是新一周的任务"
+              }
+            ],
+            "previous_messages": [
+              {
+                "note_id": "time-4",
+                "text": "上周那份运营周报交了。",
+                "ts": "2026-10-26T09:00:00+08:00",
+                "role": "user",
+                "sequence_no": 5,
+                "offset": -1
+              },
+              {
+                "note_id": "time-3",
+                "text": "这份运营周报推迟到下周一交。",
+                "ts": "2026-10-22T09:00:00+08:00",
+                "role": "user",
+                "sequence_no": 4,
+                "offset": -2
+              },
+              {
+                "note_id": "time-2",
+                "text": "本周要交运营周报，周五前交。",
+                "ts": "2026-10-20T09:00:00+08:00",
+                "role": "user",
+                "sequence_no": 3,
+                "offset": -3
+              }
+            ],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "交运营周报",
+                "instance": "2026-10-26到2026-11-01",
+                "period_expression": "这周",
+                "due_expression": "周五前",
+                "task_status": "todo",
+                "description": "这周要交一份运营周报，周五前交，这是新一周的任务。",
+                "evidence_span": "这周也要交一份运营周报，周五前交，这是新一周的任务。",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "用户明确提出新一周的运营周报提交任务及截止时间"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "case": "sunday",
+        "text": "下周要做一次设备清洁检查。",
+        "ts": "2026-10-25T23:59:00+08:00",
+        "periods": [
+          [
+            "2026-10-26",
+            "2026-11-01"
+          ]
+        ]
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_7c97e9593037",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "做设备清洁检查",
+          "instance": "2026-10-26～2026-11-01",
+          "task_status": "todo",
+          "description": "下周要做一次设备清洁检查。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2026-10-26",
+                "period_end": "2026-11-01",
+                "due_at": null,
+                "time_expression": {
+                  "period": "下周",
+                  "due": null
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:502e0294fd58431a06530fdb44ca8d33",
+              "note_id": "time-6",
+              "original_text": "下周要做一次设备清洁检查。",
+              "evidence_span": "下周要做一次设备清洁检查。",
+              "message_time": "2026-10-25T23:59:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": "2026-10-26",
+          "period_end": "2026-11-01",
+          "due_at": null,
+          "content": "用户；做设备清洁检查；2026-10-26～2026-11-01；待办；下周要做一次设备清洁检查。"
+        }
+      ],
+      "report": {
+        "note_id": "time-6",
+        "space_id": "sunday",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:9eb036349c41ce14dfee214c35aa682a",
+            "candidate_id": "revision:f806ec06cb856f766e011c0514e5ac35",
+            "confidence": 0.9,
+            "memory_id": "mem_7c97e9593037",
+            "task_card": {
+              "id": "mem_7c97e9593037",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "做设备清洁检查",
+              "instance": "2026-10-26～2026-11-01",
+              "task_status": "todo",
+              "description": "下周要做一次设备清洁检查。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2026-10-26",
+                    "period_end": "2026-11-01",
+                    "due_at": null,
+                    "time_expression": {
+                      "period": "下周",
+                      "due": null
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:502e0294fd58431a06530fdb44ca8d33",
+                  "note_id": "time-6",
+                  "original_text": "下周要做一次设备清洁检查。",
+                  "evidence_span": "下周要做一次设备清洁检查。",
+                  "message_time": "2026-10-25T23:59:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": "2026-10-26",
+              "period_end": "2026-11-01",
+              "due_at": null,
+              "content": "用户；做设备清洁检查；2026-10-26～2026-11-01；待办；下周要做一次设备清洁检查。"
+            }
+          }
+        ],
+        "trace_id": "trace_1d6a31e6d178",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-6",
+            "message_time": "2026-10-25T23:59:00+08:00",
+            "text": "下周要做一次设备清洁检查。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "下周要做一次设备清洁检查"
+              }
+            ],
+            "previous_messages": [],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "做设备清洁检查",
+                "instance": null,
+                "period_expression": "下周",
+                "due_expression": null,
+                "task_status": "todo",
+                "description": "下周要做一次设备清洁检查。",
+                "evidence_span": "下周要做一次设备清洁检查。",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.9,
+                "importance": 0.6,
+                "should_store": true,
+                "extraction_reason": "用户明确表述下周需完成设备清洁检查，属于待办任务。"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "case": "monday",
+        "text": "我要补交上周的设备检查报告。",
+        "ts": "2026-10-26T00:01:00+08:00",
+        "periods": [
+          [
+            "2026-10-19",
+            "2026-10-25"
+          ]
+        ]
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_76cc47e91554",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "补交设备检查报告",
+          "instance": "2026-10-19～2026-10-25",
+          "task_status": "todo",
+          "description": "用户要补交上周的设备检查报告。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2026-10-19",
+                "period_end": "2026-10-25",
+                "due_at": null,
+                "time_expression": {
+                  "period": "上周",
+                  "due": null
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:93aa63215d954fbe5c3a1272e1a3fc1b",
+              "note_id": "time-7",
+              "original_text": "我要补交上周的设备检查报告。",
+              "evidence_span": "我要补交上周的设备检查报告。",
+              "message_time": "2026-10-26T00:01:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": "2026-10-19",
+          "period_end": "2026-10-25",
+          "due_at": null,
+          "content": "用户；补交设备检查报告；2026-10-19～2026-10-25；待办；用户要补交上周的设备检查报告。"
+        }
+      ],
+      "report": {
+        "note_id": "time-7",
+        "space_id": "monday",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:3d9c371cf7cd7312278eb50000fd71a9",
+            "candidate_id": "revision:172770661c5ebe3f4f659ca660e262c0",
+            "confidence": 0.95,
+            "memory_id": "mem_76cc47e91554",
+            "task_card": {
+              "id": "mem_76cc47e91554",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "补交设备检查报告",
+              "instance": "2026-10-19～2026-10-25",
+              "task_status": "todo",
+              "description": "用户要补交上周的设备检查报告。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2026-10-19",
+                    "period_end": "2026-10-25",
+                    "due_at": null,
+                    "time_expression": {
+                      "period": "上周",
+                      "due": null
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:93aa63215d954fbe5c3a1272e1a3fc1b",
+                  "note_id": "time-7",
+                  "original_text": "我要补交上周的设备检查报告。",
+                  "evidence_span": "我要补交上周的设备检查报告。",
+                  "message_time": "2026-10-26T00:01:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": "2026-10-19",
+              "period_end": "2026-10-25",
+              "due_at": null,
+              "content": "用户；补交设备检查报告；2026-10-19～2026-10-25；待办；用户要补交上周的设备检查报告。"
+            }
+          }
+        ],
+        "trace_id": "trace_d0d289efd6a4",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-7",
+            "message_time": "2026-10-26T00:01:00+08:00",
+            "text": "我要补交上周的设备检查报告。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "我要补交上周的设备检查报告"
+              }
+            ],
+            "previous_messages": [],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "补交设备检查报告",
+                "instance": null,
+                "period_expression": "上周",
+                "due_expression": null,
+                "task_status": "todo",
+                "description": "用户要补交上周的设备检查报告。",
+                "evidence_span": "我要补交上周的设备检查报告。",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "当前消息明确表达了补交上周设备检查报告的任务。"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "case": "year",
+        "text": "本周要交财务周报。",
+        "ts": "2026-01-01T09:00:00+08:00",
+        "periods": [
+          [
+            "2025-12-29",
+            "2026-01-04"
+          ]
+        ]
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_dfbb5829e083",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "交财务周报",
+          "instance": "2025-12-29～2026-01-04",
+          "task_status": "todo",
+          "description": "本周要交财务周报。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2025-12-29",
+                "period_end": "2026-01-04",
+                "due_at": null,
+                "time_expression": {
+                  "period": "本周",
+                  "due": null
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:c59523142bebb64d20aa2e707c7d20f7",
+              "note_id": "time-8",
+              "original_text": "本周要交财务周报。",
+              "evidence_span": "本周要交财务周报。",
+              "message_time": "2026-01-01T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": "2025-12-29",
+          "period_end": "2026-01-04",
+          "due_at": null,
+          "content": "用户；交财务周报；2025-12-29～2026-01-04；待办；本周要交财务周报。"
+        }
+      ],
+      "report": {
+        "note_id": "time-8",
+        "space_id": "year",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:41df1438657d97fb290d7afc2f9a9fd8",
+            "candidate_id": "revision:aa4f3a140aab2fada46fef1b6a8ebe1f",
+            "confidence": 0.95,
+            "memory_id": "mem_dfbb5829e083",
+            "task_card": {
+              "id": "mem_dfbb5829e083",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "交财务周报",
+              "instance": "2025-12-29～2026-01-04",
+              "task_status": "todo",
+              "description": "本周要交财务周报。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2025-12-29",
+                    "period_end": "2026-01-04",
+                    "due_at": null,
+                    "time_expression": {
+                      "period": "本周",
+                      "due": null
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:c59523142bebb64d20aa2e707c7d20f7",
+                  "note_id": "time-8",
+                  "original_text": "本周要交财务周报。",
+                  "evidence_span": "本周要交财务周报。",
+                  "message_time": "2026-01-01T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": "2025-12-29",
+              "period_end": "2026-01-04",
+              "due_at": null,
+              "content": "用户；交财务周报；2025-12-29～2026-01-04；待办；本周要交财务周报。"
+            }
+          }
+        ],
+        "trace_id": "trace_5fb5f372852c",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-8",
+            "message_time": "2026-01-01T09:00:00+08:00",
+            "text": "本周要交财务周报。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "本周要交财务周报"
+              }
+            ],
+            "previous_messages": [],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "交财务周报",
+                "instance": null,
+                "period_expression": "本周",
+                "due_expression": null,
+                "task_status": "todo",
+                "description": "本周要交财务周报。",
+                "evidence_span": "本周要交财务周报。",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "明确的任务：本周提交财务周报"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "case": "leap",
+        "text": "下个月的设备巡检是一个任务，月底前完成。",
+        "ts": "2028-01-31T09:00:00+08:00",
+        "periods": [
+          [
+            "2028-02-01",
+            "2028-02-29"
+          ]
+        ],
+        "due": "2028-02-29"
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true,
+        "due": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_334c8a7f1580",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "设备巡检",
+          "instance": "2028-02-01～2028-02-29",
+          "task_status": "todo",
+          "description": "下个月的设备巡检是一个任务，月底前完成。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": "2028-02-01",
+                "period_end": "2028-02-29",
+                "due_at": "2028-02-29",
+                "time_expression": {
+                  "period": "下个月",
+                  "due": "月底前"
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:48f843cf1e70eeacfdd0d32df7e72937",
+              "note_id": "time-9",
+              "original_text": "下个月的设备巡检是一个任务，月底前完成。",
+              "evidence_span": "下个月的设备巡检是一个任务，月底前完成。",
+              "message_time": "2028-01-31T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": "2028-02-01",
+          "period_end": "2028-02-29",
+          "due_at": "2028-02-29",
+          "content": "用户；设备巡检；2028-02-01～2028-02-29；待办；下个月的设备巡检是一个任务，月底前完成。"
+        }
+      ],
+      "report": {
+        "note_id": "time-9",
+        "space_id": "leap",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:3e6024fe9b6ddb9f09f0435a672fed83",
+            "candidate_id": "revision:6ea93264f16df4b7f2b73459f008c076",
+            "confidence": 0.9,
+            "memory_id": "mem_334c8a7f1580",
+            "task_card": {
+              "id": "mem_334c8a7f1580",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "设备巡检",
+              "instance": "2028-02-01～2028-02-29",
+              "task_status": "todo",
+              "description": "下个月的设备巡检是一个任务，月底前完成。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": "2028-02-01",
+                    "period_end": "2028-02-29",
+                    "due_at": "2028-02-29",
+                    "time_expression": {
+                      "period": "下个月",
+                      "due": "月底前"
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:48f843cf1e70eeacfdd0d32df7e72937",
+                  "note_id": "time-9",
+                  "original_text": "下个月的设备巡检是一个任务，月底前完成。",
+                  "evidence_span": "下个月的设备巡检是一个任务，月底前完成。",
+                  "message_time": "2028-01-31T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": "2028-02-01",
+              "period_end": "2028-02-29",
+              "due_at": "2028-02-29",
+              "content": "用户；设备巡检；2028-02-01～2028-02-29；待办；下个月的设备巡检是一个任务，月底前完成。"
+            }
+          }
+        ],
+        "trace_id": "trace_fb9a1e60c073",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-9",
+            "message_time": "2028-01-31T09:00:00+08:00",
+            "text": "下个月的设备巡检是一个任务，月底前完成。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "下个月的设备巡检是一个任务"
+              },
+              {
+                "atom_id": "a2",
+                "text": "月底前完成"
+              }
+            ],
+            "previous_messages": [],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "设备巡检",
+                "instance": null,
+                "period_expression": "下个月",
+                "due_expression": "月底前",
+                "task_status": "todo",
+                "description": "下个月的设备巡检是一个任务，月底前完成。",
+                "evidence_span": "下个月的设备巡检是一个任务，月底前完成。",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.9,
+                "importance": 0.6,
+                "should_store": true,
+                "extraction_reason": "用户明确说明下个月设备巡检为任务，并给出月底前完成的截止时间。"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "case": "vague",
+        "text": "我要整理旧照片，过阵子做，具体日期没定。",
+        "ts": "2026-10-20T09:00:00+08:00",
+        "periods": [
+          [
+            null,
+            null
+          ]
+        ],
+        "due": null
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true,
+        "due": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_68c94c126ad9",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "整理旧照片",
+          "instance": null,
+          "task_status": "todo",
+          "description": "用户要整理旧照片，打算过阵子做，具体日期没定。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": null,
+                "period_end": null,
+                "due_at": null,
+                "time_expression": {
+                  "period": "过阵子",
+                  "due": null
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": [
+                  "过阵子"
+                ]
+              },
+              "id": "task-source:056c6b9afbf2617bcc7d928ac0a6b547",
+              "note_id": "time-10",
+              "original_text": "我要整理旧照片，过阵子做，具体日期没定。",
+              "evidence_span": "我要整理旧照片，过阵子做，具体日期没定。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": null,
+          "period_end": null,
+          "due_at": null,
+          "content": "用户；整理旧照片；待办；用户要整理旧照片，打算过阵子做，具体日期没定。"
+        }
+      ],
+      "report": {
+        "note_id": "time-10",
+        "space_id": "vague",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:53221fc5472ec8ae07158d39ca373d61",
+            "candidate_id": "revision:ef0d2e6eb89dd1a705df7f842ece0bfe",
+            "confidence": 0.9,
+            "memory_id": "mem_68c94c126ad9",
+            "task_card": {
+              "id": "mem_68c94c126ad9",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "整理旧照片",
+              "instance": null,
+              "task_status": "todo",
+              "description": "用户要整理旧照片，打算过阵子做，具体日期没定。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": null,
+                    "period_end": null,
+                    "due_at": null,
+                    "time_expression": {
+                      "period": "过阵子",
+                      "due": null
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": [
+                      "过阵子"
+                    ]
+                  },
+                  "id": "task-source:056c6b9afbf2617bcc7d928ac0a6b547",
+                  "note_id": "time-10",
+                  "original_text": "我要整理旧照片，过阵子做，具体日期没定。",
+                  "evidence_span": "我要整理旧照片，过阵子做，具体日期没定。",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": null,
+              "period_end": null,
+              "due_at": null,
+              "content": "用户；整理旧照片；待办；用户要整理旧照片，打算过阵子做，具体日期没定。"
+            }
+          }
+        ],
+        "trace_id": "trace_6f7576676cd3",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-10",
+            "message_time": "2026-10-20T09:00:00+08:00",
+            "text": "我要整理旧照片，过阵子做，具体日期没定。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "我要整理旧照片"
+              },
+              {
+                "atom_id": "a2",
+                "text": "过阵子做"
+              },
+              {
+                "atom_id": "a3",
+                "text": "具体日期没定"
+              }
+            ],
+            "previous_messages": [],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "整理旧照片",
+                "instance": null,
+                "period_expression": "过阵子",
+                "due_expression": null,
+                "task_status": "todo",
+                "description": "用户要整理旧照片，打算过阵子做，具体日期没定。",
+                "evidence_span": "我要整理旧照片，过阵子做，具体日期没定。",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.9,
+                "importance": 0.6,
+                "should_store": true,
+                "extraction_reason": "用户明确表达要整理旧照片，时间模糊未定，属于待办任务。"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "input": {
+        "case": "clock",
+        "text": "我要提交采购申请，截止明天下午3点。",
+        "ts": "2026-10-20T09:00:00+08:00",
+        "periods": [
+          [
+            null,
+            null
+          ]
+        ],
+        "due": "2026-10-21T15:00:00+08:00"
+      },
+      "checks": {
+        "count": true,
+        "periods": true,
+        "no_pending": true,
+        "due": true
+      },
+      "passed": true,
+      "cards": [
+        {
+          "id": "mem_aaa9a7548387",
+          "memory_type": "task",
+          "memory_key_version": "task-card-v2",
+          "subject": "用户",
+          "task": "提交采购申请",
+          "instance": null,
+          "task_status": "todo",
+          "description": "用户要提交采购申请，截止明天下午3点。",
+          "sources": [
+            {
+              "resolved_time": {
+                "period_start": null,
+                "period_end": null,
+                "due_at": "2026-10-21T15:00:00+08:00",
+                "time_expression": {
+                  "period": null,
+                  "due": "明天下午3点"
+                },
+                "timezone": "Asia/Shanghai",
+                "unresolved": []
+              },
+              "id": "task-source:5c396e3ae6a26131b736f960d09d0574",
+              "note_id": "time-11",
+              "original_text": "我要提交采购申请，截止明天下午3点。",
+              "evidence_span": "我要提交采购申请，截止明天下午3点。",
+              "message_time": "2026-10-20T09:00:00+08:00",
+              "antecedent_note_id": null,
+              "antecedent_evidence_span": null
+            }
+          ],
+          "period_start": null,
+          "period_end": null,
+          "due_at": "2026-10-21T15:00:00+08:00",
+          "content": "用户；提交采购申请；待办；用户要提交采购申请，截止明天下午3点。"
+        }
+      ],
+      "report": {
+        "note_id": "time-11",
+        "space_id": "clock",
+        "candidates": 1,
+        "results": [
+          {
+            "action": "insert",
+            "relation": "new",
+            "decision_id": "task-decision:2667670996df3ca83ba645b893ac947c",
+            "candidate_id": "revision:4759c6e1fe29793117a0974c21072aea",
+            "confidence": 0.95,
+            "memory_id": "mem_aaa9a7548387",
+            "task_card": {
+              "id": "mem_aaa9a7548387",
+              "memory_type": "task",
+              "memory_key_version": "task-card-v2",
+              "subject": "用户",
+              "task": "提交采购申请",
+              "instance": null,
+              "task_status": "todo",
+              "description": "用户要提交采购申请，截止明天下午3点。",
+              "sources": [
+                {
+                  "resolved_time": {
+                    "period_start": null,
+                    "period_end": null,
+                    "due_at": "2026-10-21T15:00:00+08:00",
+                    "time_expression": {
+                      "period": null,
+                      "due": "明天下午3点"
+                    },
+                    "timezone": "Asia/Shanghai",
+                    "unresolved": []
+                  },
+                  "id": "task-source:5c396e3ae6a26131b736f960d09d0574",
+                  "note_id": "time-11",
+                  "original_text": "我要提交采购申请，截止明天下午3点。",
+                  "evidence_span": "我要提交采购申请，截止明天下午3点。",
+                  "message_time": "2026-10-20T09:00:00+08:00",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null
+                }
+              ],
+              "period_start": null,
+              "period_end": null,
+              "due_at": "2026-10-21T15:00:00+08:00",
+              "content": "用户；提交采购申请；待办；用户要提交采购申请，截止明天下午3点。"
+            }
+          }
+        ],
+        "trace_id": "trace_b309984dd2b7",
+        "extraction_status": "completed"
+      },
+      "calls": [
+        {
+          "stage": "extraction",
+          "input": {
+            "note_id": "time-11",
+            "message_time": "2026-10-20T09:00:00+08:00",
+            "text": "我要提交采购申请，截止明天下午3点。",
+            "classification": {},
+            "hints": [],
+            "atoms": [
+              {
+                "atom_id": "a1",
+                "text": "我要提交采购申请"
+              },
+              {
+                "atom_id": "a2",
+                "text": "截止明天下午3点"
+              }
+            ],
+            "previous_messages": [],
+            "current_user": {
+              "id": null,
+              "name": null,
+              "name_source": "unknown"
+            }
+          },
+          "output": {
+            "candidates": [
+              {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "提交采购申请",
+                "instance": null,
+                "period_expression": null,
+                "due_expression": "明天下午3点",
+                "task_status": "todo",
+                "description": "用户要提交采购申请，截止明天下午3点。",
+                "evidence_span": "我要提交采购申请，截止明天下午3点。",
+                "intent": "new",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null,
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "当前消息明确要求提交采购申请并给出截止时间"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "queries": [
+    {
+      "text": "列出2026-10-19到2026-10-25的任务",
+      "answer": "按任务所属周期（与范围重叠）查询 2026-10-19～2026-10-25（Asia/Shanghai），共 1 条，全部列出：\n任务 1：交运营周报（2026-10-19～2026-10-25） — done；截止 2026-10-26",
+      "passed": true
+    },
+    {
+      "text": "列出2026-10-26到2026-11-01到期的未完成任务",
+      "answer": "按截止时间查询 2026-10-26～2026-11-01（Asia/Shanghai），共 1 条，全部列出：\n任务 1：交运营周报（2026-10-26～2026-11-01） — todo；截止 2026-10-30",
+      "passed": true
+    }
+  ],
+  "storage": "isolated SQLite",
+  "verification": {
+    "automated_tests_passed": 160,
+    "additional_scoped_tests": "task commands and time tools",
+    "deployed": false,
+    "production_data_changed": false,
+    "legacy_backfill": false
+  }
+}

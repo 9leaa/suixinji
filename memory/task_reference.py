@@ -1,6 +1,7 @@
 """Resolve explicit natural-language completion against existing authorized cards."""
 
 import json
+from datetime import datetime
 import re
 from typing import Literal
 
@@ -44,6 +45,7 @@ ambiguous: 多个对象或轮次都可能，不得选择最新一条猜测。“
 not_found: 没有对应旧任务，不能新建。
 not_completion: 用户说的是问题、条件、计划、引用、否定、局部进展或其他事情完成，而不是目标任务整体完成。
 严格区分审核与发送、初稿与提交、修打印机与打印合同。修好打印机不等于合同打印完成。
+相对日期只能使用 resolved_time_ranges 的程序计算结果匹配卡片周期，不能自己计算日期；无法解析时不能猜轮次。
 同名任务有多轮且本句没有说明哪轮时 ambiguous，不能仅凭 todo/done 状态挑一个。
 明确提到多个独立任务时必须全部解析；有任何不确定，不执行部分完成。
 已 done 的匹配也可以返回，但不能因此转而完成另一张 todo。
@@ -67,7 +69,21 @@ def resolve(space_id, text, records, conversation_ids, *, user_id, tenant_id):
     ]
     if not cards:
         return Resolution(status="not_found", reason="没有可匹配任务"), {"recall": recall_audit, "cards": []}
+    from core.time_tools import resolve_range, timezone_name
+    from memory.time_query import EXPRESSION
+
+    reference = datetime.now().astimezone().isoformat()
+    time_ranges = []
+    for match in re.finditer(EXPRESSION, text):
+        try:
+            resolved = resolve_range(match[0], reference)
+        except ValueError:
+            resolved = None
+        time_ranges.append({"expression": match[0], "range": resolved})
     payload = {
+        "reference_time": reference,
+        "timezone": timezone_name(),
+        "resolved_time_ranges": time_ranges,
         "text": text,
         "current_user": current_user_identity(user_id, tenant_id=tenant_id, space_id=space_id),
         "conversation_ids": [key for key in conversation_ids if any(c["id"] == key for c in cards)],

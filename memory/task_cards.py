@@ -101,6 +101,11 @@ def prepare(candidate, note):
         matches = [n for n in previous if str(n.get('note_id') or n.get('id')) == value.antecedent_note_id]
         if len(matches) != 1 or not value.antecedent_evidence_span or value.antecedent_evidence_span not in matches[0]['text']:
             raise ValueError('任务指代缺少可核验的前文来源')
+    from core.time_tools import task_time_fields
+    timing = task_time_fields(value, note)
+    if timing['period_start']:
+        period_label = timing['period_start'] + '～' + timing['period_end']
+        value.instance = period_label + (' / ' + value.instance if value.instance and not re.search(r'周|月|年|\d{4}-\d{2}-\d{2}', value.instance) else '')
     return value
 
 
@@ -171,7 +176,9 @@ def decide(value, found):
 
 
 def source_for(note, value):
-    return {'id': 'task-source:' + stable_id(note['id'], note['text'], value.evidence_span),
+    from core.time_tools import task_time_fields
+    timing = task_time_fields(value, note)
+    return {'resolved_time': timing, 'id': 'task-source:' + stable_id(note['id'], note['text'], value.evidence_span),
         'note_id': note['id'], 'original_text': note['text'], 'evidence_span': value.evidence_span,
         'message_time': note.get('ts') or note.get('created_at'),
         'antecedent_note_id': value.antecedent_note_id,
@@ -223,6 +230,12 @@ def merge(value, current, plan, source):
     # A missing instance does not erase the known round.
     if value.instance and not card['instance']:
         card['instance'] = value.instance
+    timing = source.get('resolved_time', {})
+    for field in ('period_start', 'period_end', 'due_at'):
+        if timing.get(field) is not None:
+            card[field] = timing[field]
+        else:
+            card.setdefault(field, None)
     card['task_status'] = value.task_status
     return card
 
