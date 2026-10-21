@@ -1,0 +1,303 @@
+{
+  "question": "给客户的演示文稿审核结束了吗？",
+  "answer": "审核已经结束。你记录过“客户演示文稿审核完了，但还未发送”，所以目前的状态是：审核完成，但尚未发送给客户。\n\n来源（最多展示 5 条记忆和 5 条笔记）：\n- note:identity_instances_04-0｜我要审核客户演示文稿。｜2026-10-20\n- note:identity_instances_04-2｜客户演示文稿审核完了，但还未发送。｜2026-10-20\n- note:identity_instances_04-1｜新增独立任务：向客户发送这份演示文稿。｜2026-10-20",
+  "command": "/memory consolidate daily",
+  "command_output": "记忆 consolidation 完成：{'space_id': 'identity_instances_04', 'processed': [], 'failed': [], 'processed_count': 0, 'failed_count': 0, 'skipped_count': 3, 'status': 'completed', 'expired_count': 0, 'cadence': 'daily', 'period_key': '2026-10-21', 'run_id': 'run_799d78fa962d'}",
+  "before": [
+    {
+      "id": "mem_43084af78832",
+      "memory_type": "task",
+      "memory_key_version": "task-card-v2",
+      "subject": "用户",
+      "task": "向客户发送演示文稿",
+      "instance": null,
+      "task_status": "todo",
+      "description": "客户演示文稿已审核完，但还未向客户发送。",
+      "sources": [
+        {
+          "id": "task-source:e48b88beeda87f3d98c40c8fabe5117a",
+          "note_id": "identity_instances_04-1",
+          "original_text": "新增独立任务：向客户发送这份演示文稿。",
+          "evidence_span": "新增独立任务：向客户发送这份演示文稿。",
+          "message_time": "2026-10-20T09:01:00+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null
+        },
+        {
+          "id": "task-source:08d8510a2f890f4f9c75a4e40f3ecfc2",
+          "note_id": "identity_instances_04-2",
+          "original_text": "客户演示文稿审核完了，但还未发送。",
+          "evidence_span": "客户演示文稿审核完了，但还未发送。",
+          "message_time": "2026-10-20T09:02:00+08:00",
+          "antecedent_note_id": "identity_instances_04-1",
+          "antecedent_evidence_span": "新增独立任务：向客户发送这份演示文稿。"
+        }
+      ],
+      "content": "用户；向客户发送演示文稿；待办；客户演示文稿已审核完，但还未向客户发送。"
+    },
+    {
+      "id": "mem_faa740f7f2fb",
+      "memory_type": "task",
+      "memory_key_version": "task-card-v2",
+      "subject": "用户",
+      "task": "审核客户演示文稿",
+      "instance": null,
+      "task_status": "todo",
+      "description": "用户要审核客户演示文稿。",
+      "sources": [
+        {
+          "id": "task-source:420b42817e951d0d60d2d8c52ed67b17",
+          "note_id": "identity_instances_04-0",
+          "original_text": "我要审核客户演示文稿。",
+          "evidence_span": "我要审核客户演示文稿。",
+          "message_time": "2026-10-20T09:00:00+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null
+        }
+      ],
+      "content": "用户；审核客户演示文稿；待办；用户要审核客户演示文稿。"
+    }
+  ],
+  "after": [
+    {
+      "id": "mem_43084af78832",
+      "memory_type": "task",
+      "memory_key_version": "task-card-v2",
+      "subject": "用户",
+      "task": "向客户发送演示文稿",
+      "instance": null,
+      "task_status": "todo",
+      "description": "客户演示文稿已审核完，但还未向客户发送。",
+      "sources": [
+        {
+          "id": "task-source:e48b88beeda87f3d98c40c8fabe5117a",
+          "note_id": "identity_instances_04-1",
+          "original_text": "新增独立任务：向客户发送这份演示文稿。",
+          "evidence_span": "新增独立任务：向客户发送这份演示文稿。",
+          "message_time": "2026-10-20T09:01:00+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null
+        },
+        {
+          "id": "task-source:08d8510a2f890f4f9c75a4e40f3ecfc2",
+          "note_id": "identity_instances_04-2",
+          "original_text": "客户演示文稿审核完了，但还未发送。",
+          "evidence_span": "客户演示文稿审核完了，但还未发送。",
+          "message_time": "2026-10-20T09:02:00+08:00",
+          "antecedent_note_id": "identity_instances_04-1",
+          "antecedent_evidence_span": "新增独立任务：向客户发送这份演示文稿。"
+        }
+      ],
+      "content": "用户；向客户发送演示文稿；待办；客户演示文稿已审核完，但还未向客户发送。"
+    },
+    {
+      "id": "mem_faa740f7f2fb",
+      "memory_type": "task",
+      "memory_key_version": "task-card-v2",
+      "subject": "用户",
+      "task": "审核客户演示文稿",
+      "instance": null,
+      "task_status": "todo",
+      "description": "用户要审核客户演示文稿。",
+      "sources": [
+        {
+          "id": "task-source:420b42817e951d0d60d2d8c52ed67b17",
+          "note_id": "identity_instances_04-0",
+          "original_text": "我要审核客户演示文稿。",
+          "evidence_span": "我要审核客户演示文稿。",
+          "message_time": "2026-10-20T09:00:00+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null
+        }
+      ],
+      "content": "用户；审核客户演示文稿；待办；用户要审核客户演示文稿。"
+    }
+  ],
+  "cards_unchanged": true,
+  "original_messages": [
+    "我要审核客户演示文稿。",
+    "新增独立任务：向客户发送这份演示文稿。",
+    "客户演示文稿审核完了，但还未发送。"
+  ],
+  "configuration": {
+    "ask_v2_enabled": false,
+    "ask_v2_shadow": true,
+    "task_cards": true
+  },
+  "scope": "isolated snapshot, original note texts restored for source lookup; no production writes",
+  "trace": [
+    {
+      "trace_id": "trace_878d6223a507",
+      "trace_type": "memory_query",
+      "space_id": "identity_instances_04",
+      "note_id": null,
+      "query_len": 15,
+      "started_at": "2026-10-21T11:11:50+08:00",
+      "finished_at": "2026-10-21T11:11:52+08:00",
+      "steps": [
+        {
+          "step": "query_received",
+          "status": "success",
+          "duration_ms": 0,
+          "at": "2026-10-21T11:11:50+08:00",
+          "input_summary": {
+            "question_len": 15,
+            "max_steps": 4
+          },
+          "output_summary": {},
+          "reason": null,
+          "error": null
+        },
+        {
+          "step": "ask_plan_generated",
+          "status": "partial",
+          "duration_ms": 0,
+          "at": "2026-10-21T11:11:51+08:00",
+          "input_summary": {},
+          "output_summary": {
+            "shadow": true,
+            "unit_count": 1,
+            "answer_mode": "direct",
+            "intents": [
+              "task_state"
+            ]
+          },
+          "reason": "ask_v2_shadow",
+          "error": null
+        },
+        {
+          "step": "query_plan",
+          "status": "success",
+          "duration_ms": 0,
+          "at": "2026-10-21T11:11:51+08:00",
+          "input_summary": {},
+          "output_summary": {
+            "complexity": "simple",
+            "use_query_rewrite": false,
+            "use_decomposition": false,
+            "use_step_back": false,
+            "variant_count": 0,
+            "routing_state": "simple",
+            "routing_confidence": 0.94,
+            "routing_reasons": [
+              "single_clause_single_intent"
+            ]
+          },
+          "reason": "conditional_complex_query_features",
+          "error": null
+        },
+        {
+          "step": "query_routed",
+          "status": "success",
+          "duration_ms": 0,
+          "at": "2026-10-21T11:11:51+08:00",
+          "input_summary": {},
+          "output_summary": {
+            "tool": "semantic_search",
+            "safe_args": {
+              "tool": "semantic_search",
+              "top_k": 5,
+              "min_score": 0.55,
+              "query_len": 14
+            }
+          },
+          "reason": "fast_path:single_hop_semantic",
+          "error": null
+        },
+        {
+          "step": "note_search",
+          "status": "success",
+          "duration_ms": 0,
+          "at": "2026-10-21T11:11:51+08:00",
+          "input_summary": {
+            "tool": "semantic_search",
+            "top_k": 5,
+            "min_score": 0.55,
+            "query_len": 14
+          },
+          "output_summary": {
+            "result_count": 3,
+            "ids": [
+              "identity_instances_04-0",
+              "identity_instances_04-2",
+              "identity_instances_04-1"
+            ]
+          },
+          "reason": null,
+          "error": null
+        },
+        {
+          "step": "evidence_selected",
+          "status": "success",
+          "duration_ms": 0,
+          "at": "2026-10-21T11:11:51+08:00",
+          "input_summary": {},
+          "output_summary": {
+            "ids": [
+              "identity_instances_04-0",
+              "identity_instances_04-2",
+              "identity_instances_04-1"
+            ]
+          },
+          "reason": null,
+          "error": null
+        },
+        {
+          "step": "rerank",
+          "status": "success",
+          "duration_ms": 0,
+          "at": "2026-10-21T11:11:51+08:00",
+          "input_summary": {},
+          "output_summary": {
+            "strategy": "fast_path_tool_order",
+            "ids": [
+              "identity_instances_04-0",
+              "identity_instances_04-2",
+              "identity_instances_04-1"
+            ]
+          },
+          "reason": null,
+          "error": null
+        },
+        {
+          "step": "answer_generated",
+          "status": "success",
+          "duration_ms": 0,
+          "at": "2026-10-21T11:11:52+08:00",
+          "input_summary": {},
+          "output_summary": {
+            "answer_len": 253
+          },
+          "reason": "fast_path_single_synthesis",
+          "error": null
+        },
+        {
+          "step": "answer_returned",
+          "status": "success",
+          "duration_ms": 0,
+          "at": "2026-10-21T11:11:52+08:00",
+          "input_summary": {},
+          "output_summary": {
+            "answer_len": 253
+          },
+          "reason": null,
+          "error": null
+        },
+        {
+          "step": "trace_finished",
+          "status": "success",
+          "duration_ms": 0,
+          "at": "2026-10-21T11:11:52+08:00",
+          "input_summary": {},
+          "output_summary": {},
+          "reason": null,
+          "error": null
+        }
+      ],
+      "status": "success"
+    }
+  ],
+  "run": "eval/results/task-boundary-ask-organize-20261021-r2",
+  "fixture_setup": "Copied existing task database, restored 3 unchanged original notes and built their real vector indexes using backfill_vector_if_missing.",
+  "excluded_attempt": "Initial isolated fixture had no note vector index; its no-evidence answer is not used as final behavior."
+}
