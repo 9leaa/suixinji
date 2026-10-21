@@ -2,12 +2,14 @@
 from concurrent.futures import ThreadPoolExecutor
 import math
 
+from core.lifecycle import traced, annotate
 from core import settings
 from core.config import get_embedding_config
 from core.llm_client import embed_text
 
 
-def rank(space, query, rows, limit):
+@traced('记忆 · 补充检索与评分', 'retrieval')
+def rank(space, query, rows, limit, *, stage='补充检索'):
     from memory import fact_memory as fm
     ranked = [{**row, "lexical_score": fm.score(query, row["content"] + " " + " ".join(row.get("entities", [])))}
               for row in rows]
@@ -42,7 +44,20 @@ def rank(space, query, rows, limit):
             # Preserve lexical service during a provider outage and expose the degradation.
             degraded = type(error).__name__
     ranked.sort(key=lambda r: (r["score"], str(r.get("mentioned_at") or r.get("updated_at", ""))), reverse=True)
-    result = [r for r in ranked if r["lexical_score"] > 0 or r.get("semantic_score", 0) >= .4][:limit]
+    eligible = [r for r in ranked if r["lexical_score"] > 0 or r.get("semantic_score", 0) >= .4]
+    result = eligible[:limit]
+    decisions = []
+    for index, row in enumerate(ranked):
+        eligible_row = row["lexical_score"] > 0 or row.get("semantic_score", 0) >= .4
+        reason = ("词法命中" if row["lexical_score"] > 0 else "向量相似度达到0.4") if eligible_row else "未满足候选保留条件"
+        if eligible_row and row not in result:
+            reason = "通过候选过滤，因数量限制截断"
+        decisions.append({**{k: row.get(k) for k in ("id", "lexical_score", "semantic_score", "score")},
+                          "rank": index + 1, "retained": row in result, "reason": reason})
+    annotate(stage=stage, input_count=len(rows), eligible_count=len(eligible), output_count=len(result),
+             score_formula="0.65 × 向量相似度（最低0） + 0.35 × 词法分；无向量时使用词法分",
+             filter_rule="词法分 > 0 或向量相似度 ≥ 0.4；不使用旧分支 min_score",
+             decisions=decisions, degraded=degraded)
     fm.store.put(space, "fm_retrieval", fm.key(query, fm.now_iso()), {
         "query": query, "created_at": fm.now_iso(), "result_ids": [r["id"] for r in result],
         "scores": [{k: r.get(k) for k in ("id", "lexical_score", "semantic_score", "score")} for r in result],

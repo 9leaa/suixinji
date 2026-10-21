@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from core.lifecycle import traced
+from core.lifecycle import traced, annotate
 from core import settings
 
 import json
@@ -684,7 +684,7 @@ def build_memory_query_spec(
     )
 
 
-@traced('记忆检索与策略重排', 'retrieval')
+@traced('记忆检索最终结果', 'retrieval')
 def memory_search(
     space_id: str,
     query: str,
@@ -721,6 +721,7 @@ def memory_search(
             "has_family_key": bool(spec.family_key),
         },
     )
+    annotate(min_score_scope="旧多路召回分支", legacy_min_score=min_score, supplemental_enabled=settings.FACT_MEMORY_ENABLED)
     requested_limit = max(1, min(int(limit), 50))
     fetch_limit = max(30, requested_limit * 4)
     ranking_trace: list[dict[str, Any]] = []
@@ -751,14 +752,14 @@ def memory_search(
                     ) and memory_access_allowed(value, access_context) and not _memory_is_non_exportable(record):
                 legacy.append(value)
         merged = {r["id"]: r for r in results}
-        for row in fact_rank(space_id, query, legacy, fetch_limit):
+        for row in fact_rank(space_id, query, legacy, fetch_limit, stage="现有记忆补充检索"):
             merged[row["id"]] = row
-        results = fact_rank(space_id, query, list(merged.values()), requested_limit)
+        results = fact_rank(space_id, query, list(merged.values()), requested_limit, stage="合并候选评分与截断")
     if settings.FACT_MEMORY_ENABLED and effective_memory_type in {None, "semantic", "episodic"}:
         from memory.fact_memory import query_hits
         fact_hits = query_hits(space_id, query, memory_type=memory_type,
                                limit=requested_limit, access_context=access_context)
-        results = fact_rank(space_id, query, results + fact_hits, requested_limit)
+        results = fact_rank(space_id, query, results + fact_hits, requested_limit, stage="事实来源合并评分与截断")
     if settings.PREFERENCE_CARDS_ENABLED and effective_memory_type in {None, 'preference'}:
         from memory.preference_cards import expand_query
         results = expand_query(space_id, query, results, access_context=access_context, limit=requested_limit)

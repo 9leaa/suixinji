@@ -377,6 +377,7 @@ def evidence(record, *, include_history=False):
             'evidence_instruction': '按消息时间和原文判断。pending_review 只是待确认材料，不是已确认偏好；历史不等于当前，相关对象不等于相同对象；无法消解冲突应说明，不自动改写记忆。'}
 
 
+@traced('记忆 · 偏好关联扩展', 'retrieval')
 def expand_query(space_id, query, results, *, access_context=None, limit=8):
     from memory.access import memory_access_allowed
     query = translate_terms(query)
