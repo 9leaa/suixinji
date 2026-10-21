@@ -1,0 +1,57 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>语义与情景记忆 · 整理和审核</title>
+<style>
+[hidden]{display:none!important}*{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#1e2e43;font:15px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+main{max-width:1100px;margin:30px auto;padding:0 20px}h1{font-size:28px;margin-bottom:0}h2{margin-top:32px}
+.muted,small{color:#60728a}.bar{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}input,textarea,select,button{font:inherit;border:1px solid #b9c9da;border-radius:6px;padding:8px 12px}input{min-width:160px}textarea{width:100%;min-height:80px}button{cursor:pointer;background:white;color:#234870}button.primary{background:#264e78;color:white}button:disabled{opacity:.5;cursor:wait}.card{background:white;border:1px solid #dce3ec;border-radius:10px;padding:18px;margin:12px 0}.inferred{border-left:5px solid #c78c32}.badge{font-size:13px;background:#edf2f8;padding:3px 8px;border-radius:4px}.banner{padding:12px 16px;background:#e8eff8;white-space:pre-wrap}.content{white-space:pre-wrap;overflow-wrap:anywhere}details{margin:10px 0}summary{cursor:pointer}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f6fa;padding:10px}label.choice{display:block;padding:10px;border-bottom:1px solid #e3e8ef}label.choice input{min-width:0}#status{white-space:pre-wrap;color:#345f86}dialog{max-width:850px;width:92%;border:1px solid #b9c9da;border-radius:10px}dialog::backdrop{background:#0006}@media(max-width:600px){main{padding:0 12px}.bar input{width:100%}}
+.ob-step{border-left:3px solid #88a6c4;padding:6px 18px;margin:18px 0;background:white;border-radius:0 8px 8px 0}.ob-step h3{font-size:17px;margin:8px 0}.ob-evidence{padding:12px;border-bottom:1px solid #dce3ec;overflow-wrap:anywhere}.ob-evidence p{margin:5px 0}.ob-score{color:#217065}.ob-warning{background:#fff3d9;color:#795318;padding:10px 14px;border-radius:6px}.ob-records{border:1px solid #dce3ec;padding:10px;border-radius:6px}#ob-run{width:100%;min-width:0}#ob-flow pre{max-height:360px;overflow:auto}#ob-search{flex:1;min-width:180px}
+</style>
+<main><h1>语义与情景记忆</h1><p class="muted">原始事实留底 · 对象和事件整理 · 系统归纳单独标识</p>
+<div class="bar" id="connection"><input id="token" type="password" placeholder="控制台令牌" autocomplete="off"><input id="space" value="fact-review" placeholder="空间 ID"><button id="load">读取</button></div>
+<div class="banner">每天北京时间 03:00 或同类累计新增 30 条事实后整理。也可以手动整理，结束后立即查看疑问。系统归纳不等于用户明确陈述，请检查证据与时间。</div>
+<div class="bar"><select id="type"><option value="">两类全部</option><option value="semantic">语义记忆</option><option value="episodic">情景记忆</option></select><button class="primary" id="run">立即整理并查看疑问</button><input id="filter" placeholder="筛选内容、来源或类型"><input id="deleteQuery" placeholder="要删除记忆的主题"><button id="delete">按主题申请删除</button></div>
+<details open id="observations"><summary style="font-size:22px;font-weight:650;margin-top:24px">三阶段召回与工具调用</summary><p class="muted">专业：执行时证据快照。直白：看清找到了什么、模型实际读了什么、随后做了什么。各阶段分别选择运行，不把不同运行拼成一次执行。</p><div class="bar"><button class="primary" data-ob-stage="extraction" aria-pressed="true">① 即时处理</button><button data-ob-stage="consolidation" aria-pressed="false">② 记忆整理</button><button data-ob-stage="query" aria-pressed="false">③ 查询回答</button><button id="ob-refresh">刷新三阶段</button></div><div class="bar"><input id="ob-search" aria-label="筛选三阶段记录" placeholder="筛选消息、工具、记忆 ID"><span id="ob-count"></span></div><select id="ob-run" aria-label="选择阶段运行"></select><div id="ob-flow"></div></details>
+<p id="status" role="status"></p><div id="stats"></div><h2>待确认的问题</h2><div id="questions"></div><h2>整理记忆</h2><div id="cards"></div><h2>待审批删除</h2><div id="requests"></div>
+<details><summary>原始事实（包括尚未整理的信息）</summary><div id="facts"></div></details>
+<details><summary>整理运行记录</summary><div id="runs"></div></details>
+<dialog id="deletion"><h2>逐项或批量审批删除</h2><p>只删除记忆，保留原始笔记。选中整理记忆也会遗忘其支持事实；共用这些证据的其他整理结果将失效并等待重建。未勾选不代表不受共用证据影响，请先核对来源。</p><div id="choices"></div><div class="bar"><button id="all">全选</button><button id="approve">删除勾选项</button><button id="close">关闭</button></div></dialog><dialog id="editing"><h2>修改记忆</h2><textarea id="editContent" aria-label="修改后的记忆内容"></textarea><button id="saveEdit">保存修改</button><button id="cancelEdit">取消修改</button></dialog></main>
+<script>
+const $=id=>document.getElementById(id);let data={},preview=null,editing=null;
+const node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e};
+const statusName={not_required:'无需归纳审核',unreviewed:'待检查',confirmed:'已确认',edited:'用户已修改',rejected:'已否定'};
+const localTime=t=>t?new Date(t).toLocaleString('zh-CN',{hour12:false}):'未注明';
+const details=(title,value)=>{const d=node('details');d.append(node('summary',title),node('pre',typeof value==='string'?value:JSON.stringify(value,null,2)));return d};
+const evidence=ids=>{const d=node('details');d.append(node('summary','查看原文证据'));for(const f of data.facts.filter(f=>ids.includes(f.id))){const e=node('article');e.append(node('p',f.evidence_span||f.original_text,'content'),node('small','记录时间 '+localTime(f.mentioned_at)),details('来源详情',f));d.append(e)}return d};
+async function api(body){const r=await fetch('/api/fact-memory/'+encodeURIComponent($('space').value),{method:body?'POST':'GET',headers:{Authorization:'Bearer '+$('token').value,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});const j=await r.json();if(!r.ok)throw Error(j.detail||r.status);return j}
+async function action(fn){document.querySelectorAll('button').forEach(b=>b.disabled=true);try{await fn()}catch(e){$('status').textContent='操作失败：'+e.message}finally{document.querySelectorAll('button').forEach(b=>b.disabled=false)}}
+async function refresh(){data=await api();render();await refreshObservations()}
+function render(){
+ $('stats').textContent=`有效事实 ${data.facts.length} 条 · 整理记忆 ${data.cards.length} 条 · 待确认 ${data.questions.length} 项`;
+ $('questions').replaceChildren();for(const q of data.questions){const c=node('article',undefined,'card');c.append(node('strong',q.question),node('p','创建于 '+localTime(q.created_at),'muted'));const input=node('textarea');input.placeholder='填写对象、时间或纠正说明';c.append(input);const b=node('button','保存回答');b.onclick=()=>action(async()=>{await api({action:'answer',id:q.id,content:input.value});$('status').textContent='已保存。点击立即整理，可检查问题是否已解决。';await refresh()});c.append(b,evidence(q.source_fact_ids));$('questions').append(c)}
+ if(!data.questions.length)$('questions').append(node('p','当前没有待确认问题。','muted'));
+ $('cards').replaceChildren();const search=$('filter').value.toLowerCase();
+ for(const c of data.cards.filter(c=>JSON.stringify(c).toLowerCase().includes(search)&&(!$('type').value||c.memory_type===$('type').value))){
+  const e=node('article',undefined,'card'+(c.assertion_kind==='inferred'?' inferred':''));e.dataset.memoryId=c.id;
+  e.append(node('span',(c.memory_type==='semantic'?'语义':'情景')+' · '+(c.assertion_kind==='inferred'?'系统归纳':'用户陈述'),'badge'),node('p',c.content,'content'));
+  e.append(node('small',`整理时间 ${localTime(c.consolidated_at)} · ${statusName[c.review_status]||c.review_status} · 版本 ${c.version}`));
+  if(c.inferred_at)e.append(node('p','归纳生成于 '+localTime(c.inferred_at)+'。请检查该结论是否符合实际。','muted'));
+  const bar=node('div',undefined,'bar');
+  for(const [decision,label]of [['confirm','确认'],['edit','修改'],['reject','否定']]){const b=node('button',label);b.onclick=()=>action(async()=>{if(decision==='edit'){editing=c;$('editContent').value=c.content;$('editing').showModal();return}await api({action:'review',id:c.id,decision,expected_version:c.version});await refresh()});bar.append(b)}
+  const history=node('button','修改历史');history.onclick=()=>action(async()=>{const r=await api({action:'history',id:c.id});e.append(details('历史版本',r.versions))});bar.append(history);e.append(bar,evidence(c.source_fact_ids));$('cards').append(e)
+ }
+ $('requests').replaceChildren();for(const request of data.deletions||[]){const e=node('article',undefined,'card');e.append(node('p',request.query+' · 申请于 '+localTime(request.created_at)));const b=node('button','查看这次删除申请');b.onclick=()=>showDeletion(request);e.append(b);$('requests').append(e)}
+ $('facts').replaceChildren();for(const f of data.facts)$('facts').append(details(f.memory_type+' · '+f.content,f));
+ $('runs').replaceChildren();for(const r of data.runs)$('runs').append(details(r.started_at+' · '+r.trigger+' · '+r.status,r));
+}
+$('load').onclick=()=>action(refresh);$('filter').oninput=render;$('type').onchange=render;
+$('run').onclick=()=>action(async()=>{$('status').textContent='整理中，正在核对相关记忆和原文证据…';const r=await api({action:'consolidate',memory_type:$('type').value||null});await refresh();$('status').textContent=r.message||'整理结束';$('questions').scrollIntoView({behavior:'smooth'})});
+function showDeletion(request){preview=request;$('choices').replaceChildren();const active=new Set([...data.facts,...data.cards].map(r=>r.id));const candidates=preview.candidates.filter(c=>!preview.approved_ids.includes(c.id)&&active.has(c.id));for(const c of candidates){const l=node('label',undefined,'choice'),check=node('input');check.type='checkbox';check.value=c.id;l.append(check,node('span',' '+c.content+' ['+({source_fact:'来源事实',stated:'用户陈述',inferred:'系统归纳'}[c.kind]||c.kind)+']'));$('choices').append(l)}if(!candidates.length)$('choices').append(node('p','没有仍有效且未审批的候选；可关闭后重新按主题预览。'));$('deletion').showModal()}
+$('delete').onclick=()=>action(async()=>{const query=$('deleteQuery').value.trim();if(!query)throw Error('请先填写删除主题');showDeletion(await api({action:'preview_delete',content:query}))});
+$('all').onclick=()=>document.querySelectorAll('#choices input').forEach(x=>x.checked=true);$('close').onclick=()=>$('deletion').close();
+$('approve').onclick=()=>action(async()=>{const ids=[...document.querySelectorAll('#choices input:checked')].map(x=>x.value);await api({action:'approve_delete',id:preview.id,selected_ids:ids});$('deletion').close();await refresh();$('status').textContent='已按审批删除记忆，原始笔记保留。'});
+
+$('saveEdit').onclick=()=>action(async()=>{await api({action:'review',id:editing.id,decision:'edit',content:$('editContent').value,expected_version:editing.version});$('editing').close();await refresh()});
+$('cancelEdit').onclick=()=>$('editing').close();
+window.addEventListener('message',event=>{if(event.origin!==location.origin||event.source!==parent||event.data?.type!=='fact-memory-connect')return;$('token').value=event.data.token;$('space').value=event.data.space;$('connection').hidden=true;action(refresh)});
+window.addEventListener('load',()=>{if(parent!==window)parent.postMessage({type:'fact-memory-ready'},location.origin)});
+</script><script src="/console/assets/fact-observations.js"></script></html>

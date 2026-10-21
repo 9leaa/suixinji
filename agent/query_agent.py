@@ -327,7 +327,8 @@ def _deterministic_route(question: str) -> dict[str, Any] | None:
     if any(marker in normalized for marker in _CURRENT_FACT_MARKERS):
         return {
             "action": "memory_search",
-            "args": {"query": normalized, "memory_type": "semantic", "limit": 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
+            "args": {"query": normalized, "memory_type": None if settings.FACT_MEMORY_ENABLED else "semantic",
+                     "limit": 8 if settings.FACT_MEMORY_ENABLED else 5, "min_score": DEFAULT_MEMORY_MIN_SCORE},
             "fallback": {
                 "action": "memory_note_fallback",
                 "args": {"query": normalized, "limit": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE},
@@ -337,6 +338,14 @@ def _deterministic_route(question: str) -> dict[str, Any] | None:
         }
     _, structural_decision = structural_route(normalized)
     if len(normalized) <= 60 and structural_decision.complexity == "simple":
+        if settings.FACT_MEMORY_ENABLED:
+            return {
+                "action": "memory_search",
+                "args": {"query": normalized, "limit": 8, "min_score": DEFAULT_MEMORY_MIN_SCORE},
+                "fallback": {"action": "memory_note_fallback",
+                             "args": {"query": normalized, "limit": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE}},
+                "synthesize": True, "reason": "single_hop_fact_evidence",
+            }
         return {
             "action": "semantic_search",
             "args": {"query": normalized, "top_k": QUERY_TOP_K, "min_score": DEFAULT_QUERY_MIN_SCORE},
@@ -771,6 +780,9 @@ def _note_brief(note: dict[str, Any], *, text_limit: int = 500) -> dict[str, Any
     if settings.PREFERENCE_CARDS_ENABLED and note.get('space_id'):
         from memory.preference_cards import mask_note
         note = mask_note(note['space_id'], note)
+    if settings.FACT_MEMORY_ENABLED and note.get("space_id"):
+        from memory.fact_memory import mask_note
+        note = mask_note(note["space_id"], note)
     return {
         "id": note.get("id"),
         "time": note.get("ts"),
@@ -1880,6 +1892,10 @@ def memory_history(
     # separate timeline-only contract.
     query_terms = _lexical_terms(query)
     hits = _memory_search_compat(space_id, query, memory_type=memory_type, min_score=0.0, limit=limit, access_context=access_context)
+    fact_history = []
+    if settings.FACT_MEMORY_ENABLED:
+        fact_history = [{**hit, "history": True, "fact_history": True}
+                        for hit in hits if str(hit.get("id", "")).startswith(("fact_", "fm_"))]
     timelines: list[dict[str, Any]] = []
     for hit_index, hit in enumerate(hits):
         memory_id = str(hit.get("memory_id") or hit.get("id") or "")
@@ -1928,7 +1944,7 @@ def memory_history(
             item["history"] = True
             item["sources"] = timeline.get("sources") or []
             rows.append(item)
-    return rows
+    return (fact_history + rows)[:limit] if fact_history else rows
 
 
 def list_tasks(
@@ -1962,6 +1978,9 @@ def list_recent_episodes(space_id: str, *, limit: int = 10, access_context: Any 
             or str(ctx.requester or "owner") == str(record.scope.get("owner_id") or ctx.owner_id or "owner")
         ]
     items = [record.to_dict() for record in records]
+    if settings.FACT_MEMORY_ENABLED:
+        from memory.fact_memory import recent_episodes
+        items = recent_episodes(space_id, limit=limit, access_context=access_context) + items
     items.sort(key=lambda item: str(item.get("id") or ""))
     items.sort(
         key=lambda item: (
@@ -2459,12 +2478,28 @@ def _run_tool(
             )
 
     result = get_default_hook_manager().run_tool(hook_context, action, args, execute) if hook_context else execute()
+    if settings.FACT_MEMORY_ENABLED:
+        from memory.fact_memory import mask_note
+        # A Note fallback is still model evidence. Forgetting must cover every
+        # tool path, including complex-query augmentation and cached results.
+        def mask_result(value):
+            if isinstance(value, list):
+                return [mask_result(item) for item in value]
+            if isinstance(value, dict):
+                value = mask_note(space_id, value)
+                return {key: mask_result(item) if isinstance(item, (list, dict)) else item
+                        for key, item in value.items()}
+            return value
+        result = mask_result(result)
+    from core.lifecycle import safe
     step = "memory_search" if action in {"search_memories", "search_tasks", "memory_search", "task_status_search"} else "note_search"
     add_step(
         trace,
         step,
         input_summary=_safe_tool_args(action, args),
-        output_summary={"result_count": len(_result_ids(result)), "ids": _result_ids(result)},
+        output_summary={"result_count": len(_result_ids(result)), "ids": _result_ids(result),
+                        **({"records": safe(result)}
+                           if settings.FACT_MEMORY_ENABLED else {})},
     )
     return result
 
@@ -2682,7 +2717,7 @@ def _complete_json_with_hooks(
 
 
 @traced('根据观察合成回答', 'agent')
-def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hook_context: AgentRunContext | None = None) -> str:
+def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hook_context: AgentRunContext | None = None, trace=None) -> str:
     """函数功能：`_synthesize_answer` 负责处理 synthesize answer，服务于本文件职责：问答主编排。
     传参：
         question: 用户问题文本，类型为 `str`。
@@ -2697,6 +2732,28 @@ def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hoo
         "current_user": identity_for_run(hook_context),
     }
 
+    if settings.FACT_MEMORY_ENABLED and trace is not None:
+        from core.lifecycle import safe
+        add_step(trace, "model_context", input_summary=safe(payload), reason="query_synthesis")
+
+    def fallback(error):
+        rows = [row for observation in observations for row in _evidence_items(observation.get("result"))
+                if isinstance(row, dict)]
+        if settings.FACT_MEMORY_ENABLED and any(
+            str(row.get("id", "")).startswith(("fact_", "fm_")) for row in rows
+        ):
+            log_event("query.fact_synthesis", status="failed", extra={"error_type": type(error).__name__})
+            if hook_context:
+                hook_context.metadata["synthesis_degraded"] = True
+            content = list(dict.fromkeys(
+                re.sub(r"【[^】]*】", "", str(row.get("content") or row.get("text") or "")).strip()
+                for row in rows
+            ))
+            return "暂时未能生成综合回答，以下是已经找到的记录：\n" + "\n".join(
+                "- " + value for value in content if value
+            )
+        return _fallback_answer(observations)
+
     try:
         data = _complete_json_with_hooks(
             hook_context,
@@ -2705,10 +2762,10 @@ def _synthesize_answer(question: str, observations: list[dict[str, Any]], *, hoo
             user_prompt=json.dumps(payload, ensure_ascii=False, indent=2),
             llm_task="query_synthesis",
         )
-    except Exception:
-        return _fallback_answer(observations)
+    except Exception as error:
+        return fallback(error)
 
-    return str(data.get("final_answer") or "").strip() or _fallback_answer(observations)
+    return str(data.get("final_answer") or "").strip() or fallback(ValueError("empty synthesis"))
 
 
 def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_context: AgentRunContext | None) -> str:
@@ -2748,7 +2805,8 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 output_summary={"reason": "sensitive_topic"},
                 reason="sensitive_topic",
             )
-            add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+            add_step(trace, "answer_returned", output_summary={"answer_len": len(answer),
+                         **({"answer": answer} if settings.FACT_MEMORY_ENABLED else {})})
             finish_trace(trace)
             _store_answer_evidence(hook_context, answer_source="sensitive_query_blocked", selected_evidence=[], observations=[])
             return answer
@@ -2765,7 +2823,8 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 output_summary={"answer_len": len(answer), "unit_count": len(outcome.plan.units)},
                 reason=outcome.answer_source,
             )
-            add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+            add_step(trace, "answer_returned", output_summary={"answer_len": len(answer),
+                         **({"answer": answer} if settings.FACT_MEMORY_ENABLED else {})})
             finish_trace(trace)
             _store_answer_evidence(
                 hook_context,
@@ -2877,7 +2936,8 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 answer = _with_sources(_provisional_answer(provisional), provisional)
                 _log_final_answer(space_id, answer, source="provisional_read_after_write", observations=observations)
                 add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="no_llm_wait")
-                add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                add_step(trace, "answer_returned", output_summary={"answer_len": len(answer),
+                         **({"answer": answer} if settings.FACT_MEMORY_ENABLED else {})})
                 finish_trace(trace)
                 _store_answer_evidence(
                     hook_context, answer_source="provisional_read_after_write", selected_evidence=provisional, observations=observations
@@ -2938,7 +2998,8 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     answer = _with_sources(_memory_still_updating_answer(provisional), selected_evidence)
                     _log_final_answer(space_id, answer, source="memory_barrier_timeout", observations=observations)
                     add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="memory_barrier_timeout")
-                    add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                    add_step(trace, "answer_returned", output_summary={"answer_len": len(answer),
+                         **({"answer": answer} if settings.FACT_MEMORY_ENABLED else {})})
                     finish_trace(trace)
                     _store_answer_evidence(
                         hook_context, answer_source="memory_barrier_timeout", selected_evidence=selected_evidence, observations=observations
@@ -2950,22 +3011,28 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     selected_evidence = _merge_evidence(selected_evidence, result)
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
                 add_step(trace, "rerank", output_summary={"strategy": "fast_path_tool_order", "ids": _result_ids(result)})
-                if action == "memory_history" and result:
+                if action == "memory_history" and result and not any(
+                    row.get("fact_history") for row in _evidence_items(result) if isinstance(row, dict)
+                ):
                     answer = _history_fallback_answer(result, question=question)
                     reason = "history_deterministic_timeline"
                 elif action in {"list_tasks", "list_recent_episodes", "profile_summary"} and result and not fallback_used:
                     answer = _inventory_fallback_answer(action, result)
                     reason = "structured_inventory_template"
                 elif fast_route["synthesize"] and result:
-                    answer = _synthesize_answer(question, observations, hook_context=hook_context)
+                    answer = _synthesize_answer(question, observations, hook_context=hook_context, trace=trace)
                     reason = "fast_path_single_synthesis"
                 else:
                     answer = _fallback_answer(observations)
                     reason = "fast_path_deterministic_answer"
+                if hook_context and hook_context.metadata.get("synthesis_degraded"):
+                    reason = "fact_synthesis_degraded"
                 answer = _with_sources(answer, selected_evidence)
                 _log_final_answer(space_id, answer, source=reason, observations=observations)
-                add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason=reason)
-                add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason=reason,
+                         status="partial" if reason == "fact_synthesis_degraded" else "success")
+                add_step(trace, "answer_returned", output_summary={"answer_len": len(answer),
+                         **({"answer": answer} if settings.FACT_MEMORY_ENABLED else {})})
                 finish_trace(trace)
                 _store_answer_evidence(hook_context, answer_source=reason, selected_evidence=selected_evidence, observations=observations)
                 return answer
@@ -3115,6 +3182,9 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     "current_user": identity_for_run(hook_context),
                 }
 
+                if settings.FACT_MEMORY_ENABLED:
+                    from core.lifecycle import safe
+                    add_step(trace, "model_context", input_summary=safe(payload), reason="query_react")
                 try:
                     decision = _complete_json_with_hooks(
                         hook_context,
@@ -3130,7 +3200,8 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     answer = _with_sources(_fallback_answer(observations), selected_evidence)
                     _log_final_answer(space_id, answer, source="react_fallback_after_error", observations=observations)
                     add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="react_fallback_after_error")
-                    add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                    add_step(trace, "answer_returned", output_summary={"answer_len": len(answer),
+                         **({"answer": answer} if settings.FACT_MEMORY_ENABLED else {})})
                     finish_trace(trace)
                     log_event(
                         "query.react_fallback",
@@ -3164,7 +3235,8 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                     answer = _with_sources(final_answer, source_evidence)
                     _log_final_answer(space_id, answer, source="react_final", observations=observations)
                     add_step(trace, "answer_generated", output_summary={"answer_len": len(final_answer)}, reason="react_final")
-                    add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+                    add_step(trace, "answer_returned", output_summary={"answer_len": len(answer),
+                         **({"answer": answer} if settings.FACT_MEMORY_ENABLED else {})})
                     finish_trace(trace)
                     _store_answer_evidence(
                         hook_context, answer_source="react_final", selected_evidence=source_evidence, observations=observations
@@ -3207,10 +3279,11 @@ def _answer_question_impl(space_id: str, question: str, max_steps: int, hook_con
                 add_step(trace, "evidence_selected", output_summary={"ids": _result_ids(result)})
                 add_step(trace, "rerank", output_summary={"strategy": "tool_order", "ids": _result_ids(result)})
 
-            answer = _with_sources(_synthesize_answer(question, observations, hook_context=hook_context), selected_evidence)
+            answer = _with_sources(_synthesize_answer(question, observations, hook_context=hook_context, trace=trace), selected_evidence)
             _log_final_answer(space_id, answer, source="synthesized", observations=observations)
             add_step(trace, "answer_generated", output_summary={"answer_len": len(answer)}, reason="synthesized")
-            add_step(trace, "answer_returned", output_summary={"answer_len": len(answer)})
+            add_step(trace, "answer_returned", output_summary={"answer_len": len(answer),
+                         **({"answer": answer} if settings.FACT_MEMORY_ENABLED else {})})
             finish_trace(trace)
             _store_answer_evidence(
                 hook_context, answer_source="synthesized", selected_evidence=selected_evidence, observations=observations

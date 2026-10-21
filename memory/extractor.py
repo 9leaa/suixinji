@@ -725,6 +725,7 @@ def extract_llm_candidates(
     *,
     hints: list[dict[str, Any]] | None = None,
     previous_messages: list[dict[str, Any]] | None = None,
+    fact_context: list[dict[str, Any]] | None = None,
     message_time: str | None = None,
 ) -> list[MemoryCandidate]:
     """函数功能：`extract_llm_candidates` 负责抽取 llm candidates，服务于本文件职责：Memory 候选抽取。
@@ -775,11 +776,41 @@ def extract_llm_candidates(
     rows = data.get("candidates") or []
     if not isinstance(rows, list):
         raise ValueError("memory extractor candidates must be a list")
+    if settings.FACT_MEMORY_ENABLED:
+        from memory.fact_extraction import INSTRUCTIONS
+        fact_data = complete_json(
+            system_prompt='你提取语义事实和情景事件。只输出JSON {"candidates":[{"memory_type":"semantic或episodic",'
+                          '"content":"完整自然语言","evidence_span":"原文连续片段","entities":[],'
+                          '"reference_status":"not_applicable或resolved或unresolved","context_fact_ids":[],'
+                          '"confidence":0.9,"importance":0.6,"should_store":true}]}。'
+                          '只提取当前消息中值得记住的事实，不能把待办或偏好重复存为事实；没有则返回空列表。' + INSTRUCTIONS,
+            user_prompt=json.dumps({**payload, "fact_context": fact_context or []}, ensure_ascii=False),
+            model_role="balanced", timeout_seconds=90,
+        )
+        # The original extraction call and its task/preference results remain
+        # unchanged. Only the two new types use the context-aware contract.
+        rows = [r for r in rows if r.get("memory_type") not in {"semantic", "episodic"}] + [
+            r for r in fact_data.get("candidates", []) if r.get("memory_type") in {"semantic", "episodic"}]
 
     candidates: list[MemoryCandidate] = []
     for row_index, row in enumerate(rows):
         if not isinstance(row, dict):
             continue
+        if settings.FACT_MEMORY_ENABLED and row.get("memory_type") in {"semantic", "episodic"}:
+            from memory.fact_extraction import candidate as fact_candidate
+            candidates.append(fact_candidate(note_id, raw, row, fact_context or []))
+            LAST_EXTRACTION_DIAGNOSTICS["llm_candidate_count"] += 1
+            continue
+        fact_time_evidence = {}
+        if settings.FACT_MEMORY_ENABLED and row.get("memory_type") in {"semantic", "episodic"}:
+            row = dict(row)
+            for field in ("valid_from", "valid_until"):
+                value = row.get(field)
+                # Pydantic treats a bare year as Unix seconds. Keep imprecise
+                # time as evidence instead of inventing a timestamp or date.
+                if value is not None and not re.match(r"^\d{4}-\d{2}-\d{2}(?:T| |$)", str(value)):
+                    fact_time_evidence[field] = value
+                    row[field] = None
         if settings.TASK_CARDS_ENABLED and row.get('memory_type') == 'task':
             from memory.task_cards import candidate_from_row
             from memory.extraction_contract import repair_task_row
@@ -826,6 +857,8 @@ def extract_llm_candidates(
                 "antecedent_evidence_span": structured.antecedent_evidence_span,
                 "resolution_confidence": structured.resolution_confidence,
             }
+            if fact_time_evidence:
+                scope["time_evidence"] = fact_time_evidence
             candidates.append(
                 _candidate(
                     note_id,
@@ -1494,6 +1527,7 @@ def extract_candidates(
     *,
     previous_messages: list[dict[str, Any]] | None = None,
     allow_llm_failure_fallback: bool = True,
+    fact_context: list[dict[str, Any]] | None = None,
     message_time: str | None = None,
 ) -> list[MemoryCandidate]:
     """函数功能：`extract_candidates` 负责抽取 candidates，服务于本文件职责：Memory 候选抽取。
@@ -1525,6 +1559,7 @@ def extract_candidates(
             classification,
             hints=_rule_hints(note_id, text, classification) if mode == "hybrid" else None,
             previous_messages=previous_messages,
+            **({"fact_context": fact_context} if fact_context is not None else {}),
             **({"message_time": message_time} if settings.TASK_CARDS_ENABLED else {}),
         )
     except Exception as exc:

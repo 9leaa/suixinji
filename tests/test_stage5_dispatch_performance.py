@@ -187,6 +187,7 @@ def test_memory_handler_preserves_note_classification_for_model_extraction(monke
     }
     captured: list[dict] = []
     monkeypatch.setattr(handlers, "find_note_content", lambda *_args: note)
+    monkeypatch.setattr(handlers, "load_inbox_record", lambda *_args: None)
     monkeypatch.setattr(
         handlers,
         "process_note_memory",

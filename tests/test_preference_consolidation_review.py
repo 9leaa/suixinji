@@ -45,7 +45,12 @@ def assessments(root):
 
 def run_one(monkeypatch, root, actions=(), relations=(), now=None):
     monkeypatch.setattr(settings, 'MEMORY_EXTRACTOR_MODE', 'llm')
-    monkeypatch.setattr(review, 'plan_review', lambda payload: review.Review(assessments=assessments(root), relations=list(relations), actions=list(actions)))
+    values = assessments(root)
+    for a in values:
+        if any(v.action == 'unsupported' and a.detail_id in v.detail_ids for v in actions):
+            a.verdict = 'unsupported'
+            a.quote = ''
+    monkeypatch.setattr(review, 'plan_review', lambda payload: review.Review(assessments=values, relations=list(relations), actions=list(actions)))
     return review.consolidate(root, job=state.get('s', 'card_job', root.id), now=now or datetime.now().astimezone())
 
 
@@ -66,19 +71,59 @@ def test_single_direction_and_no_implicit_reverse(notes):
     assert latte.scope['preference_card']['related_ids'] == [coffee.id]
 
 
-def test_unsupported_attitude_is_pending_and_keeps_original(notes, monkeypatch):
-    root = seed(notes, '视频课', '晚上听视频课比较能坚持', condition='晚上')
-    previous_failure = review.create_pending('s', notes['n0'], '旧整理失败', code='consolidation_failed', target_ids=[root.id])
+def test_unsupported_attitude_retracted_without_user_pending(notes, monkeypatch):
+    root = seed(notes, '视频课', '公司强制要求我晚上听视频课，并非我喜欢', condition='晚上')
     run_one(monkeypatch, root, [plan_for(root, 'unsupported')])
-    assert state.get('s', 'pending', previous_failure['id'])['status'] == 'resolved'
-    current = repo.get_memory(root.id).scope['preference_card']
-    assert cards.active_details(current) == []
-    assert current['details'][0]['status'] == 'pending_review'
-    assert current['details'][0]['sources'][0]['original_text'] == '晚上听视频课比较能坚持'
-    assert state.list_items('s', 'pending')
-    assert '晚上听视频课比较能坚持' in state.list_items('s', 'notification')[0]['text']
-    assert state.list_items('s', 'issue')
-    assert 'pending_review' in json.dumps(cards.evidence(repo.get_memory(root.id), include_history=True))
+    current = repo.get_memory(root.id)
+    card = current.scope['preference_card']
+    assert cards.active_details(card) == []
+    assert card['details'][0]['status'] == 'retracted'
+    assert card['details'][0]['sources'][0]['original_text'] == notes['n0']['text']
+    assert not state.list_items('s', 'pending')
+    assert not state.list_items('s', 'notification')
+    issues = state.list_items('s', 'issue')
+    assert len(issues) == 1 and issues[0]['reason'] == 'unsupported_preference_retracted'
+    assert issues[0]['snapshot']['detail_before']['attitude'] == '喜欢'
+    assert cards.evidence(current, include_history=True)['details'] == []
+    assert cards.expand_query('s', '视频课', [current.to_dict()]) == []
+    review.flush_review_outbox('s')
+    assert len(state.list_items('s', 'issue')) == 1
+
+
+def test_old_pending_is_rechecked_and_closed_without_notification(notes, monkeypatch):
+    root = seed(notes, '教材', '我并没有说过不喜欢教材', attitude='不喜欢')
+    original_plan = review.plan_review
+    action = plan_for(root, 'pending')
+    run_one(monkeypatch, root, [action])
+    old = state.list_items('s', 'pending')[0]
+    root = repo.get_memory(root.id)
+    payload, available = review.build_evidence('s', {root.id: root}, root)
+    assert payload['cards'][0]['details'][0]['status'] == 'pending_review'
+    detail = root.scope['preference_card']['details'][0]
+    verdict = review.Assessment(detail_id=detail['id'], verdict='unsupported',
+        source_ids=[detail['sources'][0]['id']], quote='', reason='原文明确否认该态度')
+    # Exercise production planning, including the old pending detail.
+    monkeypatch.setattr(review, 'plan_review', original_plan)
+    monkeypatch.setattr(review, 'complete_json', lambda **kw: {
+        'assessments': [verdict.model_dump()], 'relations': [], 'actions': [action.model_dump()]})
+    review.consolidate(root, job=state.get('s', 'card_job', root.id), now=datetime.now().astimezone())
+    assert repo.get_memory(root.id).scope['preference_card']['details'][0]['status'] == 'retracted'
+    assert state.get('s', 'pending', old['id'])['status'] == 'resolved'
+    assert state.get('s', 'notification', old['id'])['status'] == 'cancelled'
+    assert not state.get('s', 'notification', old['id'] + ':resolved')
+    assert notes['n0']['text'] == '我并没有说过不喜欢教材'
+
+
+def test_uncertain_attitude_still_requires_confirmation(notes, monkeypatch):
+    root = seed(notes, '咖啡', '他喜欢咖啡')
+    a = assessments(root)[0]
+    a.verdict, a.quote, a.reason = 'uncertain', '', '主体不明确'
+    monkeypatch.setattr(review, 'plan_review', lambda payload: review.Review(
+        assessments=[a], relations=[], actions=[]))
+    review.consolidate(root, job=state.get('s', 'card_job', root.id), now=datetime.now().astimezone())
+    assert repo.get_memory(root.id).scope['preference_card']['details'][0]['status'] == 'pending_review'
+    assert len(state.list_items('s', 'pending')) == 1
+    assert len(state.list_items('s', 'notification')) == 1
 
 
 def test_explicit_change_preserves_history_and_other_condition(notes, monkeypatch):
@@ -262,21 +307,23 @@ def test_console_manual_consolidation_uses_traced_preference_path(monkeypatch):
 
 
 def test_independent_evidence_check_overrides_unsupported_attitude(notes, monkeypatch):
-    root = seed(notes, '教材', '晚上看不进教材', attitude='不喜欢', condition='晚上')
+    root = seed(notes, '教材', '晚上读教材是公司要求，并非不喜欢教材', attitude='不喜欢', condition='晚上')
     payload, available = review.build_evidence('s', {root.id: root}, root)
     calls = []
     def model(**kwargs):
         calls.append(kwargs['system_prompt'])
         if len(calls) == 1:
             return {'assessments': [a.model_dump() for a in assessments(root)], 'relations': [], 'actions': []}
+        sent = json.loads(kwargs['user_prompt'])[0]
+        assert (sent['subject'], sent['preference_object'], sent['condition']) == ('用户', '教材', '晚上')
         return {'assessments': [{**assessments(root)[0].model_dump(), 'verdict': 'unsupported',
-                                 'quote': '', 'reason': '能力困难不代表不喜欢'}]}
+                                 'quote': '', 'reason': '原文明确否认该态度'}]}
     monkeypatch.setattr(review, 'complete_json', model)
     plan = review.plan_review(payload)
     changes, pending = review.apply_plan(root, {root.id: root}, plan, available)
     assert len(calls) == 2
-    assert len(pending) == 1
-    assert changes[root.id]['details'][0]['status'] == 'pending_review'
+    assert len(pending) == 1 and pending[0].action == 'unsupported'
+    assert changes[root.id]['details'][0]['status'] == 'retracted'
 
 
 def test_attitude_review_cannot_omit_details(notes):

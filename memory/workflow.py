@@ -29,13 +29,19 @@ def create_pending(space_id, note, reason, *, code='processing_failed', stage='m
     return row
 
 
-def resolve_pending(space_id, key, *, result, cancelled=False):
+def resolve_pending(space_id, key, *, result, cancelled=False, notify=True):
     with store.transaction(space_id) as state:
         row = state.get('pending', key)
         if row is None or row['status'] != 'pending':
             return False
         row.update(status='cancelled' if cancelled else 'resolved', result=result, resolved_at=utc_now_iso())
         state.put('pending', key, row)
+        if not notify:
+            notification = state.get('notification', key)
+            if notification and notification['status'] == 'queued':
+                notification['status'] = 'cancelled'
+                state.put('notification', key, notification)
+            return True
         notification_id = key + ':resolved'
         state.put('notification', notification_id, {'id': notification_id, 'note_id': row['note'].get('id'),
                   'status': 'queued', 'text': f"待处理事项已{'取消' if cancelled else '解决'} [pending:{key}]\n{result}",

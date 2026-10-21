@@ -5,6 +5,9 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from types import SimpleNamespace
+
 from eval.layer3 import run_layer3_eval
 
 
@@ -33,20 +36,22 @@ def test_complete_seed_memory_vectors_promotes_claimed_vectors(monkeypatch):
     返回结果说明：
         无显式返回值；主要通过副作用、状态更新、持久化写入或断言体现结果。
     """
-    claims = {
-        "m1": {"text": "alpha", "content_hash": "hash-1", "model": "mock-model", "dimension": 3, "embedding_version": "v1"},
-        "m2": {"text": "beta", "content_hash": "hash-2", "model": "mock-model", "dimension": 3, "embedding_version": "v1"},
-    }
-    completed = []
+    records = [SimpleNamespace(id=key, memory_type="semantic", subject="user", predicate="fact",
+                               object_value=None, content=content) for key, content in [("m1", "alpha"), ("m2", "beta")]]
+    statements = []
 
-    monkeypatch.setattr(
-        "repositories.postgres.memory.claim_memory_vector",
-        lambda memory_id: claims.get(memory_id),
-    )
-    monkeypatch.setattr(
-        "repositories.postgres.memory.complete_memory_vector",
-        lambda memory_id, **kwargs: completed.append((memory_id, kwargs)) or True,
-    )
+    class Session:
+        def execute(self, statement):
+            statements.append(statement)
+            return SimpleNamespace(scalars=lambda: records)
+
+    @contextmanager
+    def session_scope():
+        yield Session()
+
+    monkeypatch.setattr("repositories.postgres.memory.session_scope", session_scope)
+    monkeypatch.setattr("memory.vector_lifecycle.current_embedding_contract", lambda: ("mock-model", 3, "v1"))
+    monkeypatch.setattr("memory.vector_lifecycle.memory_embedding_text", lambda **kwargs: kwargs["content"])
     monkeypatch.setattr("core.llm_client.embed_text", lambda text: [1.0, 0.0, 0.0] if text == "alpha" else [0.0, 1.0, 0.0])
 
     summary = run_layer3_eval._complete_seed_memory_vectors(["m1", "m2"])
@@ -55,4 +60,7 @@ def test_complete_seed_memory_vectors_promotes_claimed_vectors(monkeypatch):
     assert summary["completed"] == 2
     assert summary["already_ready_or_inactive"] == 0
     assert summary["failed_count"] == 0
-    assert [item[0] for item in completed] == ["m1", "m2"]
+    assert len(statements) == 2
+    values = statements[1].compile().params
+    assert [values[f"memory_id_m{i}"] for i in range(2)] == ["m1", "m2"]
+    assert [values[f"embedding_m{i}"] for i in range(2)] == [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]

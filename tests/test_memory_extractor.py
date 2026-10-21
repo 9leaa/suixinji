@@ -625,7 +625,7 @@ def test_rule_reference_fallback_derives_second_user_message_offset():
     assert rows[0].scope["antecedent_offset"] == -2
 
 
-def test_all_memory_extraction_receives_bounded_subject_context(monkeypatch):
+def test_previous_messages_are_sent_without_reference_signal(monkeypatch):
     monkeypatch.setattr(extractor, "MEMORY_EXTRACTOR_MODE", "llm")
     payloads = []
 
@@ -642,9 +642,11 @@ def test_all_memory_extraction_receives_bounded_subject_context(monkeypatch):
     ]
     extractor.extract_candidates("plain", "记得完成测试报告", previous_messages=previous)
     extractor.extract_candidates("reference", "这个也做完了", previous_messages=previous)
+    extractor.extract_llm_candidates("implicit", "这些框框先不管了，我就按自己顺手的来写。", previous_messages=previous)
 
-    assert [row["offset"] for row in payloads[0]["previous_messages"]] == [-1, -2, -3]
-    assert [row["offset"] for row in payloads[1]["previous_messages"]] == [-1, -2, -3]
+    for payload in payloads:
+        assert [row["note_id"] for row in payload["previous_messages"]] == ["n1", "n2", "n3"]
+        assert [row["offset"] for row in payload["previous_messages"]] == [-1, -2, -3]
 
 
 def test_possessive_reference_passes_previous_person_to_model(monkeypatch):

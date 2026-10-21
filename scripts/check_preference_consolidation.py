@@ -72,8 +72,8 @@ def main():
                         'status': r.status, 'card': deepcopy(r.scope['preference_card'])} for r in cards.all_cards(space)]
         results['live'] = {'space_id': space, 'runs': report, 'cards': cards_after,
                            'pending_count': len(state.list_items(space, 'pending'))}
-        results['live']['all_unsupported_quarantined'] = all(
-            d['status'] == 'pending_review' for c in cards_after for d in c['card']['details'])
+        results['live']['all_behavioral_preferences_retained'] = all(
+            d['status'] == 'active' for c in cards_after for d in c['card']['details'])
         space = 'eval-preference-positive-' + uuid.uuid4().hex[:10]
         settings.MEMORY_EXTRACTOR_MODE = 'rules'
         seed('咖啡', '我喜欢喝咖啡')

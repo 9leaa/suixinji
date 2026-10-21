@@ -47,7 +47,7 @@ def list_runs(tenant, limit=50):
 
 
 def detail(trace_id, tenant):
-    from infrastructure.schema import Task
+    from infrastructure.schema import Task, TaskAttempt
     with get_engine('lifecycle').connect() as conn:
         run = conn.execute(select(runs).where(runs.c.id==trace_id, runs.c.tenant_id==tenant)).mappings().first()
         if not run:
@@ -55,15 +55,45 @@ def detail(trace_id, tenant):
         run = dict(run)
         nodes = [dict(r) for r in conn.execute(select(spans).where(spans.c.trace_id==trace_id).order_by(spans.c.started_at, spans.c.id)).mappings()]
         tasks = [dict(r) for r in conn.execute(select(Task.id, Task.task_type, Task.status, Task.attempt_count, Task.last_error, Task.created_at, Task.completed_at).where(Task.tenant_id==tenant, Task.payload_json['_trace']['trace_id'].as_string()==trace_id)).mappings()]
+        attempts = [dict(r) for r in conn.execute(select(TaskAttempt.task_id, TaskAttempt.attempt_no, TaskAttempt.status, TaskAttempt.started_at, TaskAttempt.finished_at).where(TaskAttempt.task_id.in_([t['id'] for t in tasks]))).mappings()] if tasks else []
+    return project_detail(run, nodes, tasks, attempts)
+
+
+def project_detail(run, nodes, tasks, attempts):
+    # Read-time reconciliation preserves raw telemetry and also fixes old runs.
+    nodes = [dict(n) for n in nodes]
+    by_id = {n['id']: n for n in nodes}
+    owners = {}
+    for attempt in sorted(attempts, key=lambda a: a['started_at']):
+        workers = [n for n in nodes if n.get('kind') == 'worker'
+                   and (n.get('input_json') or {}).get('task_id') == attempt['task_id']
+                   and n['started_at'] <= attempt['started_at']]
+        if workers:
+            owner = max(workers, key=lambda n: n['started_at'])
+            owners.setdefault(owner['id'], attempt)
+    for node in nodes:
+        if node['status'] != 'running':
+            continue
+        owner = node
+        while owner and owner.get('kind') != 'worker':
+            owner = by_id.get(owner.get('parent_id'))
+        attempt = owners.get(owner['id']) if owner else None
+        if attempt and attempt['finished_at'] is not None:
+            node['status'] = 'interrupted'
+            node['metadata_json'] = {**(node.get('metadata_json') or {}),
+                'original_status': 'running', 'attempt_status': attempt['status'],
+                'attempt_no': attempt['attempt_no'], 'reconciled': True,
+                'explanation': '所属任务尝试已结束，但该节点未记录结束；不代表仍在执行。实际中断时间及耗时未知。'}
     states = {t['status'] for t in tasks}
     if run['error'] or states & {'dead_letter', 'cancelled'}:
         status='error'
-    elif (states and states <= {'completed'} or not states and run['answer'] is not None) and not any(n['status']=='running' for n in nodes):
+    elif states and states <= {'completed'} or not states and run['answer'] is not None and not any(n['status']=='running' for n in nodes):
         status='completed'
     elif states & {'retry'}:
         status='retry'
     else:
         status='running'
-    finished = max((n['finished_at'] for n in nodes if n['finished_at']), default=run['created_at'])
+    finished = max([n['finished_at'] for n in nodes if n['finished_at']]
+                   + [t['completed_at'] for t in tasks if t['completed_at']], default=run['created_at'])
     elapsed = ((finished if status in {'completed','error'} else datetime.now(timezone.utc))-run['created_at']).total_seconds()*1000
     return {**run, 'spans':nodes, 'tasks':tasks, 'status':status, 'duration_ms':round(elapsed, 1)}

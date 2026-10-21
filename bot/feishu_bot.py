@@ -549,6 +549,10 @@ def _handle_memory_command(space_id: str, text: str) -> str | None:
         return None
 
     raw = text.removeprefix("/memory").strip()
+    from memory.fact_commands import execute as execute_fact_command
+    fact_reply = execute_fact_command(space_id, text)
+    if fact_reply is not None:
+        return fact_reply
     if not raw:
         return "用法：/memory list｜show <id>｜search <内容>｜profile｜pending｜approve <id>｜reject <id>｜edit <id> <内容>｜resolve <id> keep|merge|archive [内容]｜decisions｜forget <id>｜purge <id>｜correct <id> [--status done] <新内容>｜conflicts｜stats｜consolidate daily|weekly|monthly"
 

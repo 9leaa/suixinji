@@ -128,6 +128,8 @@ def classify_llm_error(exc: BaseException | None = None, *, response: Any = None
     """Return a stable, low-cardinality reason for LLM failures."""
     name = type(exc).__name__.lower() if exc is not None else ""
     text = str(exc or "").lower()
+    if getattr(exc, "status_code", None) == 402 or "insufficient balance" in text:
+        return "insufficient_balance"
     if "timeout" in name or "timeout" in text:
         return "transport_timeout"
     if any(token in name or token in text for token in ("connection", "connecterror", "network", "dns", "ssl")):
@@ -316,7 +318,7 @@ def _chat_completion_with_key_pool(
         except Exception as exc:
             category = classify_llm_error(exc)
             pool.report_failure(current_key, category=category, retry_after=retry_after_seconds(exc))
-            if _builder_accepts_api_key() and category in {"rate_limit", "connection_error", "server_error"} and pool.has_alternative(used_keys):
+            if _builder_accepts_api_key() and category in {"rate_limit", "connection_error", "server_error", "insufficient_balance"} and pool.has_alternative(used_keys):
                 log_event(
                     "llm.complete_json",
                     level="warning",
@@ -502,7 +504,7 @@ def _embedding_request_with_key_pool(config: EmbeddingConfig, normalized_text: s
         except Exception as exc:
             category = classify_llm_error(exc)
             pool.report_failure(current_key, category=category, retry_after=retry_after_seconds(exc))
-            if _builder_accepts_api_key() and category in {"rate_limit", "connection_error", "server_error"} and pool.has_alternative(used_keys):
+            if _builder_accepts_api_key() and category in {"rate_limit", "connection_error", "server_error", "insufficient_balance"} and pool.has_alternative(used_keys):
                 log_event(
                     "llm.embed_text",
                     level="warning",

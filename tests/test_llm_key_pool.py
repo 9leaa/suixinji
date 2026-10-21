@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+import pytest
 
 from core import llm_client, llm_key_pool
 from core.config import ChatConfig
@@ -38,7 +39,9 @@ def test_embedding_pool_does_not_consume_chat_numbered_keys(monkeypatch):
     assert key == "embedding-key"
 
 
-def test_complete_json_fails_over_to_next_key(monkeypatch):
+@pytest.mark.parametrize("provider_error", ["429 too many requests", "Insufficient Balance"])
+def test_complete_json_fails_over_to_next_key(monkeypatch, provider_error):
+    monkeypatch.setattr(llm_key_pool, "_configured_keys", lambda *args: ["key-a", "key-b"])
     monkeypatch.setenv("SUIXINJI_LLM_API_KEYS", "key-a,key-b")
     monkeypatch.delenv("OPENAI_API_KEYS", raising=False)
     llm_key_pool._POOLS.clear()
@@ -62,7 +65,7 @@ def test_complete_json_fails_over_to_next_key(monkeypatch):
         def create(self, **_kwargs):
             calls.append(self.key)
             if self.key == "key-a":
-                raise RuntimeError("429 too many requests")
+                raise RuntimeError(provider_error)
             return _response()
 
     def fake_build(config, *, api_key=None):
@@ -73,3 +76,4 @@ def test_complete_json_fails_over_to_next_key(monkeypatch):
     monkeypatch.setattr(llm_client, "log_event", lambda *_args, **_kwargs: None)
     assert llm_client.complete_json("system", "user") == {"ok": True}
     assert calls == ["key-a", "key-b"]
+    assert not llm_key_pool.get_api_key_pool("chat", "key-a").has_alternative({"key-b"})
