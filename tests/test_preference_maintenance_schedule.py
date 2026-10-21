@@ -32,3 +32,44 @@ def test_evaluation_spaces_excluded():
     assert excluded('task-deploy-smoke-20261021')
     assert excluded('fmeval_test')
     assert not excluded('console')
+
+
+def test_enqueue_maintenance_with_single_connection_pool(monkeypatch):
+    from contextlib import contextmanager
+    from unittest.mock import Mock
+    from memory import preference_maintenance as maintenance
+    from infrastructure import database
+    from repositories.postgres import dispatch
+
+    busy = False
+    result = SimpleNamespace(scalar_one_or_none=lambda: None, first=lambda: None)
+    session = SimpleNamespace(execute=lambda *args, **kwargs: result)
+
+    @contextmanager
+    def one_connection():
+        nonlocal busy
+        assert not busy, 'scheduler exhausted its single connection'
+        busy = True
+        try:
+            yield session
+        finally:
+            busy = False
+
+    def read_cards(space):
+        with one_connection():
+            return [card(changes=30, days=0)]
+
+    def read_state(space, kind):
+        with one_connection():
+            return []
+
+    enqueue = Mock(return_value=('task-maintenance', True))
+    monkeypatch.setattr(database, 'session_scope', one_connection)
+    monkeypatch.setattr(maintenance, 'all_cards', read_cards)
+    monkeypatch.setattr(maintenance.store, 'list_items', read_state)
+    monkeypatch.setattr(dispatch, '_enqueue_task_in_session', enqueue)
+
+    assert maintenance.enqueue_due('console', now=NOW) == ('task-maintenance', True)
+    assert enqueue.call_args.args == (session,)
+    assert enqueue.call_args.kwargs['payload'] == {'operation': 'preference_maintenance'}
+    assert not busy

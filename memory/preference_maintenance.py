@@ -36,6 +36,16 @@ def enqueue_due(space, *, now=None):
     if excluded(space):
         return None
     now = now or datetime.now(timezone.utc)
+    # These helpers borrow their own connections. Finish their reads before
+    # opening the enqueue transaction; the scheduler has a single-slot pool.
+    records = list(all_cards(space))
+    jobs = {j['id']: j for j in store.list_items(space, 'card_job')}
+    due = cards_due(records, jobs, now)
+    has_review_work = (
+        any(x.get('status') == 'pending' for x in store.list_items(space, 'pending'))
+        or any(x.get('status') == 'suspected' for x in store.list_items(space, 'issue')))
+    if not due and not has_review_work:
+        return None
     from sqlalchemy import select, text
     from infrastructure.database import session_scope
     from infrastructure.schema import Task
@@ -54,12 +64,7 @@ def enqueue_due(space, *, now=None):
         # Failed per-card reviews must not turn into a new model call every minute.
         if latest and now - (latest.completed_at or latest.created_at) < timedelta(hours=1):
             return None
-        records = list(all_cards(space))
-        jobs = {j['id']: j for j in store.list_items(space, 'card_job')}
-        due = cards_due(records, jobs, now)
-        digest_due = (not latest or (latest.completed_at or latest.created_at).date() < now.date()) and (
-            any(x.get('status') == 'pending' for x in store.list_items(space, 'pending'))
-            or any(x.get('status') == 'suspected' for x in store.list_items(space, 'issue')))
+        digest_due = has_review_work and (not latest or (latest.completed_at or latest.created_at).date() < now.date())
         if not due and not digest_due:
             return None
         return _enqueue_task_in_session(session, task_type='memory', tenant_id=DEFAULT_TENANT_ID,
