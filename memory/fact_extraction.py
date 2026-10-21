@@ -30,7 +30,10 @@ def context(space, note_id, text):
     result = sorted((fm.model_evidence(space, r) for r in rows.values()),
                     key=lambda r: str(r.get("mentioned_at") or r.get("created_at") or r.get("ingested_at", "")))
     fm.store.put(space, "fm_extraction_context", note_id,
-                 {"id": note_id, "query": text, "result_ids": list(rows), "created_at": fm.now_iso()})
+                 {"id": note_id, "status": "prepared", "query": text, "result_ids": [r["id"] for r in result], "created_at": fm.now_iso(),
+                  "retrieved": candidates, "recent": [fm.model_evidence(space, r) for r in recent],
+                  "model_context": result, "parameters": {"search_limit": 12, "recent_limit": 8},
+                  "selection": "相关召回 + 最近事实，排除当前笔记、按 ID 去重后按消息时间排序"})
     return result
 
 
@@ -58,3 +61,12 @@ def candidate(note_id, raw, row, history):
         extraction_reason=str(row.get("extraction_reason") or "fact_evidence_extraction"),
         extractor_type="llm", extractor_version="fact-evidence-v1",
     )
+
+
+def context_finished(space, note_id, *, error=None):
+    row = fm.get(space, "extraction_context", note_id)
+    if row is not None:
+        row.update(status="failed" if error else "completed", finished_at=fm.now_iso())
+        if error:
+            row["error"] = type(error).__name__
+        fm.store.put(space, "fm_extraction_context", note_id, row)

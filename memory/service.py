@@ -299,7 +299,16 @@ def _process_note_memory_impl(
             from memory.fact_extraction import context as fact_context
             extraction_kwargs["fact_context"] = fact_context(space_id, note_id, text)
             extraction_kwargs["allow_llm_failure_fallback"] = False
-        extracted_candidates = extract_candidates(note_id, text, **extraction_kwargs)
+        try:
+            extracted_candidates = extract_candidates(note_id, text, **extraction_kwargs)
+        except Exception as exc:
+            if settings.FACT_MEMORY_ENABLED:
+                from memory.fact_extraction import context_finished
+                context_finished(space_id, note_id, error=exc)
+            raise
+        if settings.FACT_MEMORY_ENABLED:
+            from memory.fact_extraction import context_finished
+            context_finished(space_id, note_id)
         shadow_report = build_shadow_report(extracted_candidates)
         if shadow_report is not None:
             add_step(

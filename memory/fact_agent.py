@@ -1,5 +1,7 @@
 """Bounded read/inspect/propose tool loop. Database writes belong to fact_memory."""
 import json
+from copy import deepcopy
+from core.lifecycle import safe
 from core.llm_client import complete_json
 from memory import fact_memory as fm
 
@@ -71,7 +73,11 @@ def plan(space, memory_type, batch, snapshot, trace):
     for row in fm.inspect_memory(space, explicit):
         seen[row["id"]] = row
     for fact in batch:
-        for row in fm.search_memory(space, fact["content"], limit=8):
+        retrieved = fm.search_memory(space, fact["content"], limit=8)
+        trace.append(safe({"tool": "search_memory", "phase": "initial_retrieval",
+                           "args": {"query": fact["content"], "limit": 8}, "result": retrieved,
+                           "result_ids": [r["id"] for r in retrieved]}))
+        for row in retrieved:
             seen[row["id"]] = row
     pool = {r["id"]: fm.model_evidence(space, r) for r in snapshot["facts"] + snapshot["memories"]}
     for row in list(seen.values()):
@@ -83,6 +89,8 @@ def plan(space, memory_type, batch, snapshot, trace):
                "questions": snapshot["questions"],
                "instructions": "较粗对象卡，事件区分批次，陈述/归纳分开"}
     for round_number in range(4):
+        trace.append(safe({"tool": "model_context", "round": round_number,
+                           "context": deepcopy(context)}))
         response = complete_json(SYSTEM, json.dumps(context, ensure_ascii=False, default=str),
                                  model_role="balanced", timeout_seconds=90)
         trace.append({"round": round_number, "response": response})
@@ -117,7 +125,10 @@ def plan(space, memory_type, batch, snapshot, trace):
                 context["rejected_proposal"] = payload
                 trace.append({"tool": "validate_proposal", "errors": str(exc)})
                 continue
-            review = complete_json(REVIEW, json.dumps({"proposal": payload, "evidence": list(seen.values())},
+            trace.append(safe({"tool": "validate_proposal", "result": {"valid": True}}))
+            review_input = {"proposal": payload, "evidence": list(seen.values())}
+            trace.append(safe({"tool": "model_context", "phase": "review", "context": deepcopy(review_input)}))
+            review = complete_json(REVIEW, json.dumps(review_input,
                                    ensure_ascii=False, default=str), model_role="balanced", timeout_seconds=90)
             trace.append({"tool": "review_proposal", "result": review})
             if review.get("approved") is not True:
@@ -144,7 +155,8 @@ def plan(space, memory_type, batch, snapshot, trace):
             seen[row["id"]] = row
         context["related"] = list(seen.values())
         context["last_tool_result"] = result
-        trace.append({"tool": tool, "result_ids": [r["id"] for r in result]})
+        trace.append(safe({"tool": tool, "args": response, "result": result,
+                           "result_ids": [r["id"] for r in result]}))
     raise ValueError("no memory proposal")
 
 

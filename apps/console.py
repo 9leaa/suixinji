@@ -74,7 +74,7 @@ def page():
 
 @router.get('/console/assets/{name}', include_in_schema=False)
 def asset(name: str):
-    if name not in {'app.js','style.css'}:
+    if name not in {'app.js','style.css','fact-observations.js'}:
         raise HTTPException(404)
     return FileResponse(STATIC / name)
 

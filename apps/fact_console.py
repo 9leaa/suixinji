@@ -71,3 +71,11 @@ def operate(space_id: str, request: Operation, tenant=Depends(authorize)):
         raise ValueError("unknown action")
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
+
+
+@router.get("/api/fact-memory/{space_id}/observations")
+def observations(space_id: str, tenant=Depends(authorize)):
+    """Three independent stages, scoped before reading any diagnostic evidence."""
+    check_space(space_id, tenant)
+    from apps.fact_observations import read_observations
+    return read_observations(space_id)
