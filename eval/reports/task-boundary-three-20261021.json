@@ -1,0 +1,982 @@
+{
+  "model": "deepseek-flash",
+  "tested_commit": "b783a88",
+  "passed_target_messages": 2,
+  "target_messages": 3,
+  "passed_steps": 5,
+  "total_steps": 6,
+  "results": [
+    {
+      "case": "identity_instances_04",
+      "original_messages": [
+        "我要审核客户演示文稿。",
+        "新增独立任务：向客户发送这份演示文稿。",
+        "客户演示文稿审核完了，但还未发送。"
+      ],
+      "target": {
+        "step": 3,
+        "text": "客户演示文稿审核完了，但还未发送。",
+        "message_time": "2026-10-20T09:02:00+08:00",
+        "expected": {
+          "cards": 2,
+          "statuses": [
+            "done",
+            "todo"
+          ],
+          "same_as": 1
+        },
+        "passed": false,
+        "errors": [
+          "状态不符：['todo', 'todo']"
+        ],
+        "report": {
+          "note_id": "identity_instances_04-2",
+          "space_id": "identity_instances_04",
+          "candidates": 1,
+          "results": [
+            {
+              "action": "update_task",
+              "relation": "update_task",
+              "decision_id": "task-decision:d1b65f6b7080e6dbe663b02a42665886",
+              "candidate_id": "revision:8e6d941756e55bdd79b50ebf15cbdc66",
+              "confidence": 0.9,
+              "memory_id": "mem_43084af78832",
+              "task_status": "todo",
+              "source_added": true,
+              "task_card": {
+                "id": "mem_43084af78832",
+                "memory_type": "task",
+                "memory_key_version": "task-card-v2",
+                "subject": "用户",
+                "task": "向客户发送演示文稿",
+                "instance": null,
+                "task_status": "todo",
+                "description": "客户演示文稿已审核完，但还未向客户发送。",
+                "sources": [
+                  {
+                    "id": "task-source:e48b88beeda87f3d98c40c8fabe5117a",
+                    "note_id": "identity_instances_04-1",
+                    "original_text": "新增独立任务：向客户发送这份演示文稿。",
+                    "evidence_span": "新增独立任务：向客户发送这份演示文稿。",
+                    "message_time": "2026-10-20T09:01:00+08:00",
+                    "antecedent_note_id": null,
+                    "antecedent_evidence_span": null
+                  },
+                  {
+                    "id": "task-source:08d8510a2f890f4f9c75a4e40f3ecfc2",
+                    "note_id": "identity_instances_04-2",
+                    "original_text": "客户演示文稿审核完了，但还未发送。",
+                    "evidence_span": "客户演示文稿审核完了，但还未发送。",
+                    "message_time": "2026-10-20T09:02:00+08:00",
+                    "antecedent_note_id": "identity_instances_04-1",
+                    "antecedent_evidence_span": "新增独立任务：向客户发送这份演示文稿。"
+                  }
+                ],
+                "content": "用户；向客户发送演示文稿；待办；客户演示文稿已审核完，但还未向客户发送。"
+              }
+            }
+          ],
+          "trace_id": "trace_004a9194ca5c",
+          "extraction_status": "completed"
+        },
+        "cards": [
+          {
+            "id": "mem_43084af78832",
+            "memory_type": "task",
+            "memory_key_version": "task-card-v2",
+            "subject": "用户",
+            "task": "向客户发送演示文稿",
+            "instance": null,
+            "task_status": "todo",
+            "description": "客户演示文稿已审核完，但还未向客户发送。",
+            "sources": [
+              {
+                "id": "task-source:e48b88beeda87f3d98c40c8fabe5117a",
+                "note_id": "identity_instances_04-1",
+                "original_text": "新增独立任务：向客户发送这份演示文稿。",
+                "evidence_span": "新增独立任务：向客户发送这份演示文稿。",
+                "message_time": "2026-10-20T09:01:00+08:00",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null
+              },
+              {
+                "id": "task-source:08d8510a2f890f4f9c75a4e40f3ecfc2",
+                "note_id": "identity_instances_04-2",
+                "original_text": "客户演示文稿审核完了，但还未发送。",
+                "evidence_span": "客户演示文稿审核完了，但还未发送。",
+                "message_time": "2026-10-20T09:02:00+08:00",
+                "antecedent_note_id": "identity_instances_04-1",
+                "antecedent_evidence_span": "新增独立任务：向客户发送这份演示文稿。"
+              }
+            ],
+            "content": "用户；向客户发送演示文稿；待办；客户演示文稿已审核完，但还未向客户发送。"
+          },
+          {
+            "id": "mem_faa740f7f2fb",
+            "memory_type": "task",
+            "memory_key_version": "task-card-v2",
+            "subject": "用户",
+            "task": "审核客户演示文稿",
+            "instance": null,
+            "task_status": "todo",
+            "description": "用户要审核客户演示文稿。",
+            "sources": [
+              {
+                "id": "task-source:420b42817e951d0d60d2d8c52ed67b17",
+                "note_id": "identity_instances_04-0",
+                "original_text": "我要审核客户演示文稿。",
+                "evidence_span": "我要审核客户演示文稿。",
+                "message_time": "2026-10-20T09:00:00+08:00",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null
+              }
+            ],
+            "content": "用户；审核客户演示文稿；待办；用户要审核客户演示文稿。"
+          }
+        ],
+        "query_hits": [
+          {
+            "id": "mem_faa740f7f2fb",
+            "space_id": "identity_instances_04",
+            "memory_type": "task",
+            "content": "用户；审核客户演示文稿；待办；用户要审核客户演示文稿。",
+            "normalized_content": "审核客户演示文稿待办要审核客户演示文稿",
+            "importance": 0.6,
+            "confidence": 0.95,
+            "status": "active",
+            "valid_from": null,
+            "valid_until": null,
+            "created_at": "2026-10-21T11:07:45+08:00",
+            "updated_at": "2026-10-21T11:07:45+08:00",
+            "last_accessed_at": "2026-10-21T11:07:47+08:00",
+            "access_count": 2,
+            "current_version": 1,
+            "task_status": "todo",
+            "subject": "用户",
+            "predicate": "task",
+            "object_value": "审核客户演示文稿",
+            "last_confirmed_at": null,
+            "memory_key": "task-card:dc40e53d65e527e5dc31aa6834f0b0c7",
+            "memory_key_version": "task-card-v2",
+            "polarity": null,
+            "scope": {
+              "owner_id": "owner",
+              "access_scope": "owner",
+              "canonical_topic": "审核客户演示文稿",
+              "task_family_key": "task-family:9b843e83557e9ed06d594f495961debc",
+              "subject_id": "user:owner"
+            },
+            "sources": [
+              {
+                "id": "task-source:420b42817e951d0d60d2d8c52ed67b17",
+                "note_id": "identity_instances_04-0",
+                "original_text": "我要审核客户演示文稿。",
+                "evidence_span": "我要审核客户演示文稿。",
+                "message_time": "2026-10-20T09:00:00+08:00",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null
+              }
+            ],
+            "versions": [],
+            "task": "审核客户演示文稿",
+            "instance": null,
+            "description": "用户要审核客户演示文稿。",
+            "score": 0.822
+          },
+          {
+            "id": "mem_43084af78832",
+            "space_id": "identity_instances_04",
+            "memory_type": "task",
+            "content": "用户；向客户发送演示文稿；待办；客户演示文稿已审核完，但还未向客户发送。",
+            "normalized_content": "向客户发送演示文稿待办客户演示文稿已审核完但还未向客户发送",
+            "importance": 0.6,
+            "confidence": 0.9,
+            "status": "active",
+            "valid_from": null,
+            "valid_until": null,
+            "created_at": "2026-10-21T11:07:47+08:00",
+            "updated_at": "2026-10-21T11:07:50+08:00",
+            "last_accessed_at": "2026-10-21T11:07:47+08:00",
+            "access_count": 1,
+            "current_version": 2,
+            "task_status": "todo",
+            "subject": "用户",
+            "predicate": "task",
+            "object_value": "向客户发送演示文稿",
+            "last_confirmed_at": "2026-10-21T11:07:50+08:00",
+            "memory_key": "task-card:64a25f7d25dfc44404fcb7175affc376",
+            "memory_key_version": "task-card-v2",
+            "polarity": null,
+            "scope": {
+              "owner_id": "owner",
+              "access_scope": "owner",
+              "canonical_topic": "向客户发送演示文稿",
+              "task_family_key": "task-family:f43751dd925fa1e1cb4222bc6da62107",
+              "subject_id": "user:owner"
+            },
+            "sources": [
+              {
+                "id": "task-source:e48b88beeda87f3d98c40c8fabe5117a",
+                "note_id": "identity_instances_04-1",
+                "original_text": "新增独立任务：向客户发送这份演示文稿。",
+                "evidence_span": "新增独立任务：向客户发送这份演示文稿。",
+                "message_time": "2026-10-20T09:01:00+08:00",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null
+              },
+              {
+                "id": "task-source:08d8510a2f890f4f9c75a4e40f3ecfc2",
+                "note_id": "identity_instances_04-2",
+                "original_text": "客户演示文稿审核完了，但还未发送。",
+                "evidence_span": "客户演示文稿审核完了，但还未发送。",
+                "message_time": "2026-10-20T09:02:00+08:00",
+                "antecedent_note_id": "identity_instances_04-1",
+                "antecedent_evidence_span": "新增独立任务：向客户发送这份演示文稿。"
+              }
+            ],
+            "versions": [],
+            "task": "向客户发送演示文稿",
+            "instance": null,
+            "description": "客户演示文稿已审核完，但还未向客户发送。",
+            "score": 0.812
+          }
+        ],
+        "model_calls": [
+          {
+            "stage": "extraction",
+            "duration_seconds": 1.28,
+            "input": {
+              "note_id": "identity_instances_04-2",
+              "message_time": "2026-10-20T09:02:00+08:00",
+              "text": "客户演示文稿审核完了，但还未发送。",
+              "classification": {},
+              "hints": [],
+              "atoms": [
+                {
+                  "atom_id": "a1",
+                  "text": "客户演示文稿审核完了"
+                },
+                {
+                  "atom_id": "a2",
+                  "text": "但还未发送"
+                }
+              ],
+              "previous_messages": [
+                {
+                  "note_id": "identity_instances_04-1",
+                  "role": "user",
+                  "text": "新增独立任务：向客户发送这份演示文稿。",
+                  "ts": "2026-10-20T09:01:00+08:00",
+                  "sequence_no": 2,
+                  "offset": -1
+                },
+                {
+                  "note_id": "identity_instances_04-0",
+                  "role": "user",
+                  "text": "我要审核客户演示文稿。",
+                  "ts": "2026-10-20T09:00:00+08:00",
+                  "sequence_no": 1,
+                  "offset": -2
+                }
+              ],
+              "current_user": {
+                "id": null,
+                "name": null,
+                "name_source": "unknown"
+              }
+            },
+            "output": {
+              "candidates": [
+                {
+                  "memory_type": "task",
+                  "subject": "用户",
+                  "task": "向客户发送演示文稿",
+                  "instance": null,
+                  "task_status": "todo",
+                  "description": "客户演示文稿已审核完，但还未发送。",
+                  "evidence_span": "客户演示文稿审核完了，但还未发送。",
+                  "intent": "auto",
+                  "antecedent_note_id": "identity_instances_04-1",
+                  "antecedent_evidence_span": "新增独立任务：向客户发送这份演示文稿。",
+                  "unresolved_reason": null,
+                  "confidence": 0.9,
+                  "importance": 0.7,
+                  "should_store": true,
+                  "extraction_reason": "当前消息说明发送任务尚未完成，承接前文发送任务"
+                }
+              ]
+            }
+          },
+          {
+            "stage": "association",
+            "duration_seconds": 1.09,
+            "input": {
+              "new": {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "向客户发送演示文稿",
+                "instance": null,
+                "task_status": "todo",
+                "description": "客户演示文稿已审核完，但还未发送。",
+                "evidence_span": "客户演示文稿审核完了，但还未发送。",
+                "intent": "auto",
+                "antecedent_note_id": "identity_instances_04-1",
+                "antecedent_evidence_span": "新增独立任务：向客户发送这份演示文稿。",
+                "unresolved_reason": null,
+                "confidence": 0.9,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "当前消息说明发送任务尚未完成，承接前文发送任务"
+              },
+              "cards": [
+                {
+                  "id": "mem_43084af78832",
+                  "subject": "用户",
+                  "task": "向客户发送演示文稿",
+                  "instance": null,
+                  "task_status": "todo",
+                  "description": "新增独立任务：向客户发送这份演示文稿。",
+                  "sources": [
+                    {
+                      "id": "task-source:e48b88beeda87f3d98c40c8fabe5117a",
+                      "note_id": "identity_instances_04-1",
+                      "original_text": "新增独立任务：向客户发送这份演示文稿。",
+                      "evidence_span": "新增独立任务：向客户发送这份演示文稿。",
+                      "message_time": "2026-10-20T09:01:00+08:00",
+                      "antecedent_note_id": null,
+                      "antecedent_evidence_span": null
+                    }
+                  ]
+                },
+                {
+                  "id": "mem_faa740f7f2fb",
+                  "subject": "用户",
+                  "task": "审核客户演示文稿",
+                  "instance": null,
+                  "task_status": "todo",
+                  "description": "用户要审核客户演示文稿。",
+                  "sources": [
+                    {
+                      "id": "task-source:420b42817e951d0d60d2d8c52ed67b17",
+                      "note_id": "identity_instances_04-0",
+                      "original_text": "我要审核客户演示文稿。",
+                      "evidence_span": "我要审核客户演示文稿。",
+                      "message_time": "2026-10-20T09:00:00+08:00",
+                      "antecedent_note_id": null,
+                      "antecedent_evidence_span": null
+                    }
+                  ]
+                }
+              ]
+            },
+            "output": {
+              "action": "update",
+              "target_id": "mem_43084af78832",
+              "description": "客户演示文稿已审核完，但还未向客户发送。",
+              "reason": "新消息承接同一发送任务，说明审核已完成、发送仍未完成，应更新原任务状态描述。",
+              "subject_relation": "same",
+              "instance_relation": "same"
+            }
+          }
+        ],
+        "pending_items": []
+      }
+    },
+    {
+      "case": "temporal_05",
+      "original_messages": [
+        "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。"
+      ],
+      "target": {
+        "step": 1,
+        "text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+        "message_time": "2026-10-25T09:00:00+08:00",
+        "expected": {
+          "cards": 2,
+          "statuses": [
+            "todo",
+            "todo"
+          ],
+          "distinct_instances": true,
+          "instance_date_ranges": [
+            [
+              "2026-10-19",
+              "2026-10-25"
+            ],
+            [
+              "2026-10-26",
+              "2026-11-01"
+            ]
+          ]
+        },
+        "passed": true,
+        "errors": [],
+        "report": {
+          "note_id": "temporal_05-0",
+          "space_id": "temporal_05",
+          "candidates": 2,
+          "results": [
+            {
+              "action": "insert",
+              "relation": "new",
+              "decision_id": "task-decision:5f4881eaa5aa05087776da63e03c477c",
+              "candidate_id": "revision:9cc38e38337a49bb6f05bb8c2e4d45a5",
+              "confidence": 0.9,
+              "memory_id": "mem_2dcb2664baf0",
+              "task_card": {
+                "id": "mem_2dcb2664baf0",
+                "memory_type": "task",
+                "memory_key_version": "task-card-v2",
+                "subject": "用户",
+                "task": "做清洁检查",
+                "instance": "2026-10-19至2026-10-25",
+                "task_status": "todo",
+                "description": "用户要做本周清洁检查，两次分别记录。",
+                "sources": [
+                  {
+                    "id": "task-source:7295fd468d9e329709f625047c8f29d3",
+                    "note_id": "temporal_05-0",
+                    "original_text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+                    "evidence_span": "我要做本周清洁检查",
+                    "message_time": "2026-10-25T09:00:00+08:00",
+                    "antecedent_note_id": null,
+                    "antecedent_evidence_span": null
+                  }
+                ],
+                "content": "用户；做清洁检查；2026-10-19至2026-10-25；待办；用户要做本周清洁检查，两次分别记录。"
+              }
+            },
+            {
+              "action": "insert",
+              "relation": "new",
+              "decision_id": "task-decision:2d301de92ccd59e38d5b72ac41c8f5ec",
+              "candidate_id": "revision:93bac705b2484810d8caae50d21a4af2",
+              "confidence": 0.9,
+              "memory_id": "mem_cd8a03edd195",
+              "task_card": {
+                "id": "mem_cd8a03edd195",
+                "memory_type": "task",
+                "memory_key_version": "task-card-v2",
+                "subject": "用户",
+                "task": "做清洁检查",
+                "instance": "2026-10-26至2026-11-01",
+                "task_status": "todo",
+                "description": "用户要做下周清洁检查，两次分别记录。",
+                "sources": [
+                  {
+                    "id": "task-source:b4020044f2f4c92ca69c0eede3f905fc",
+                    "note_id": "temporal_05-0",
+                    "original_text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+                    "evidence_span": "还要做下周清洁检查",
+                    "message_time": "2026-10-25T09:00:00+08:00",
+                    "antecedent_note_id": null,
+                    "antecedent_evidence_span": null
+                  }
+                ],
+                "content": "用户；做清洁检查；2026-10-26至2026-11-01；待办；用户要做下周清洁检查，两次分别记录。"
+              }
+            }
+          ],
+          "trace_id": "trace_f72cab733367",
+          "extraction_status": "completed"
+        },
+        "cards": [
+          {
+            "id": "mem_2dcb2664baf0",
+            "memory_type": "task",
+            "memory_key_version": "task-card-v2",
+            "subject": "用户",
+            "task": "做清洁检查",
+            "instance": "2026-10-19至2026-10-25",
+            "task_status": "todo",
+            "description": "用户要做本周清洁检查，两次分别记录。",
+            "sources": [
+              {
+                "id": "task-source:7295fd468d9e329709f625047c8f29d3",
+                "note_id": "temporal_05-0",
+                "original_text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+                "evidence_span": "我要做本周清洁检查",
+                "message_time": "2026-10-25T09:00:00+08:00",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null
+              }
+            ],
+            "content": "用户；做清洁检查；2026-10-19至2026-10-25；待办；用户要做本周清洁检查，两次分别记录。"
+          },
+          {
+            "id": "mem_cd8a03edd195",
+            "memory_type": "task",
+            "memory_key_version": "task-card-v2",
+            "subject": "用户",
+            "task": "做清洁检查",
+            "instance": "2026-10-26至2026-11-01",
+            "task_status": "todo",
+            "description": "用户要做下周清洁检查，两次分别记录。",
+            "sources": [
+              {
+                "id": "task-source:b4020044f2f4c92ca69c0eede3f905fc",
+                "note_id": "temporal_05-0",
+                "original_text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+                "evidence_span": "还要做下周清洁检查",
+                "message_time": "2026-10-25T09:00:00+08:00",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null
+              }
+            ],
+            "content": "用户；做清洁检查；2026-10-26至2026-11-01；待办；用户要做下周清洁检查，两次分别记录。"
+          }
+        ],
+        "query_hits": [
+          {
+            "id": "mem_2dcb2664baf0",
+            "space_id": "temporal_05",
+            "memory_type": "task",
+            "content": "用户；做清洁检查；2026-10-19至2026-10-25；待办；用户要做本周清洁检查，两次分别记录。",
+            "normalized_content": "做清洁检查20261019至20261025待办要做本周清洁检查两次分别记录",
+            "importance": 0.6,
+            "confidence": 0.9,
+            "status": "active",
+            "valid_from": null,
+            "valid_until": null,
+            "created_at": "2026-10-21T11:07:52+08:00",
+            "updated_at": "2026-10-21T11:07:52+08:00",
+            "last_accessed_at": null,
+            "access_count": 0,
+            "current_version": 1,
+            "task_status": "todo",
+            "subject": "用户",
+            "predicate": "task",
+            "object_value": "做清洁检查",
+            "last_confirmed_at": null,
+            "memory_key": "task-card:6c3b2459c5f4e3d9f1f66d9bd908ec1e",
+            "memory_key_version": "task-card-v2",
+            "polarity": null,
+            "scope": {
+              "owner_id": "owner",
+              "access_scope": "owner",
+              "canonical_topic": "做清洁检查",
+              "task_family_key": "task-family:7e1c0c1372f890f3111076a54357f158",
+              "subject_id": "user:owner"
+            },
+            "sources": [
+              {
+                "id": "task-source:7295fd468d9e329709f625047c8f29d3",
+                "note_id": "temporal_05-0",
+                "original_text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+                "evidence_span": "我要做本周清洁检查",
+                "message_time": "2026-10-25T09:00:00+08:00",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null
+              }
+            ],
+            "versions": [],
+            "task": "做清洁检查",
+            "instance": "2026-10-19至2026-10-25",
+            "description": "用户要做本周清洁检查，两次分别记录。",
+            "score": 0.3037
+          },
+          {
+            "id": "mem_cd8a03edd195",
+            "space_id": "temporal_05",
+            "memory_type": "task",
+            "content": "用户；做清洁检查；2026-10-26至2026-11-01；待办；用户要做下周清洁检查，两次分别记录。",
+            "normalized_content": "做清洁检查20261026至20261101待办要做下周清洁检查两次分别记录",
+            "importance": 0.6,
+            "confidence": 0.9,
+            "status": "active",
+            "valid_from": null,
+            "valid_until": null,
+            "created_at": "2026-10-21T11:07:52+08:00",
+            "updated_at": "2026-10-21T11:07:52+08:00",
+            "last_accessed_at": null,
+            "access_count": 0,
+            "current_version": 1,
+            "task_status": "todo",
+            "subject": "用户",
+            "predicate": "task",
+            "object_value": "做清洁检查",
+            "last_confirmed_at": null,
+            "memory_key": "task-card:e7266d3e8ecbecc8f3ff454e754dd86b",
+            "memory_key_version": "task-card-v2",
+            "polarity": null,
+            "scope": {
+              "owner_id": "owner",
+              "access_scope": "owner",
+              "canonical_topic": "做清洁检查",
+              "task_family_key": "task-family:7e1c0c1372f890f3111076a54357f158",
+              "subject_id": "user:owner"
+            },
+            "sources": [
+              {
+                "id": "task-source:b4020044f2f4c92ca69c0eede3f905fc",
+                "note_id": "temporal_05-0",
+                "original_text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+                "evidence_span": "还要做下周清洁检查",
+                "message_time": "2026-10-25T09:00:00+08:00",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null
+              }
+            ],
+            "versions": [],
+            "task": "做清洁检查",
+            "instance": "2026-10-26至2026-11-01",
+            "description": "用户要做下周清洁检查，两次分别记录。",
+            "score": 0.3037
+          }
+        ],
+        "model_calls": [
+          {
+            "stage": "extraction",
+            "duration_seconds": 1.2,
+            "input": {
+              "note_id": "temporal_05-0",
+              "message_time": "2026-10-25T09:00:00+08:00",
+              "text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+              "classification": {},
+              "hints": [],
+              "atoms": [
+                {
+                  "atom_id": "a1",
+                  "text": "我要做本周清洁检查"
+                },
+                {
+                  "atom_id": "a2",
+                  "text": "要做下周清洁检查"
+                },
+                {
+                  "atom_id": "a3",
+                  "text": "两次分别记录"
+                }
+              ],
+              "previous_messages": [],
+              "current_user": {
+                "id": null,
+                "name": null,
+                "name_source": "unknown"
+              }
+            },
+            "output": {
+              "candidates": [
+                {
+                  "memory_type": "task",
+                  "subject": "用户",
+                  "task": "做清洁检查",
+                  "instance": "2026-10-19至2026-10-25",
+                  "task_status": "todo",
+                  "description": "用户要做本周清洁检查，两次分别记录。",
+                  "evidence_span": "我要做本周清洁检查",
+                  "intent": "new",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null,
+                  "unresolved_reason": null,
+                  "confidence": 0.9,
+                  "importance": 0.6,
+                  "should_store": true,
+                  "extraction_reason": "当前消息明确要求做本周清洁检查，按消息时间解析为本周日期范围。"
+                },
+                {
+                  "memory_type": "task",
+                  "subject": "用户",
+                  "task": "做清洁检查",
+                  "instance": "2026-10-26至2026-11-01",
+                  "task_status": "todo",
+                  "description": "用户要做下周清洁检查，两次分别记录。",
+                  "evidence_span": "还要做下周清洁检查",
+                  "intent": "new",
+                  "antecedent_note_id": null,
+                  "antecedent_evidence_span": null,
+                  "unresolved_reason": null,
+                  "confidence": 0.9,
+                  "importance": 0.6,
+                  "should_store": true,
+                  "extraction_reason": "当前消息明确要求做下周清洁检查，按消息时间解析为下周日期范围。"
+                }
+              ]
+            }
+          }
+        ],
+        "pending_items": []
+      }
+    },
+    {
+      "case": "nonfacts_corrections_10",
+      "original_messages": [
+        "我决定提交实习申请；我没有租车计划；“我要预约体检”只是表格里的示例文字。",
+        "实习申请提交完成，租车仍没有计划，体检仍只是引用。"
+      ],
+      "target": {
+        "step": 2,
+        "text": "实习申请提交完成，租车仍没有计划，体检仍只是引用。",
+        "message_time": "2026-10-20T09:01:00+08:00",
+        "expected": {
+          "cards": 1,
+          "statuses": [
+            "done"
+          ],
+          "same_as": 0
+        },
+        "passed": true,
+        "errors": [],
+        "report": {
+          "note_id": "nonfacts_corrections_10-1",
+          "space_id": "nonfacts_corrections_10",
+          "candidates": 1,
+          "results": [
+            {
+              "action": "update_task",
+              "relation": "update_task",
+              "decision_id": "task-decision:d9e7fb82279479e48a00dc94c693d901",
+              "candidate_id": "revision:c9a71bc574d60f04cb6c6b50b7c0c1a3",
+              "confidence": 0.95,
+              "memory_id": "mem_63b45cec6332",
+              "task_status": "done",
+              "source_added": true,
+              "task_card": {
+                "id": "mem_63b45cec6332",
+                "memory_type": "task",
+                "memory_key_version": "task-card-v2",
+                "subject": "用户",
+                "task": "提交实习申请",
+                "instance": null,
+                "task_status": "done",
+                "description": "实习申请已提交完成。",
+                "sources": [
+                  {
+                    "id": "task-source:c5299b4f21d9cc285708af7904d1be6e",
+                    "note_id": "nonfacts_corrections_10-0",
+                    "original_text": "我决定提交实习申请；我没有租车计划；“我要预约体检”只是表格里的示例文字。",
+                    "evidence_span": "我决定提交实习申请",
+                    "message_time": "2026-10-20T09:00:00+08:00",
+                    "antecedent_note_id": null,
+                    "antecedent_evidence_span": null
+                  },
+                  {
+                    "id": "task-source:cd0e0e8ff8b163a1948e15d283442429",
+                    "note_id": "nonfacts_corrections_10-1",
+                    "original_text": "实习申请提交完成，租车仍没有计划，体检仍只是引用。",
+                    "evidence_span": "实习申请提交完成",
+                    "message_time": "2026-10-20T09:01:00+08:00",
+                    "antecedent_note_id": "nonfacts_corrections_10-0",
+                    "antecedent_evidence_span": "我决定提交实习申请"
+                  }
+                ],
+                "content": "用户；提交实习申请；已结束；实习申请已提交完成。"
+              }
+            }
+          ],
+          "trace_id": "trace_025c660a9947",
+          "extraction_status": "completed"
+        },
+        "cards": [
+          {
+            "id": "mem_63b45cec6332",
+            "memory_type": "task",
+            "memory_key_version": "task-card-v2",
+            "subject": "用户",
+            "task": "提交实习申请",
+            "instance": null,
+            "task_status": "done",
+            "description": "实习申请已提交完成。",
+            "sources": [
+              {
+                "id": "task-source:c5299b4f21d9cc285708af7904d1be6e",
+                "note_id": "nonfacts_corrections_10-0",
+                "original_text": "我决定提交实习申请；我没有租车计划；“我要预约体检”只是表格里的示例文字。",
+                "evidence_span": "我决定提交实习申请",
+                "message_time": "2026-10-20T09:00:00+08:00",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null
+              },
+              {
+                "id": "task-source:cd0e0e8ff8b163a1948e15d283442429",
+                "note_id": "nonfacts_corrections_10-1",
+                "original_text": "实习申请提交完成，租车仍没有计划，体检仍只是引用。",
+                "evidence_span": "实习申请提交完成",
+                "message_time": "2026-10-20T09:01:00+08:00",
+                "antecedent_note_id": "nonfacts_corrections_10-0",
+                "antecedent_evidence_span": "我决定提交实习申请"
+              }
+            ],
+            "content": "用户；提交实习申请；已结束；实习申请已提交完成。"
+          }
+        ],
+        "query_hits": [
+          {
+            "id": "mem_63b45cec6332",
+            "space_id": "nonfacts_corrections_10",
+            "memory_type": "task",
+            "content": "用户；提交实习申请；已结束；实习申请已提交完成。",
+            "normalized_content": "提交实习申请已结束实习申请已提交完成",
+            "importance": 0.7,
+            "confidence": 0.95,
+            "status": "active",
+            "valid_from": null,
+            "valid_until": null,
+            "created_at": "2026-10-21T11:07:54+08:00",
+            "updated_at": "2026-10-21T11:07:56+08:00",
+            "last_accessed_at": "2026-10-21T11:07:54+08:00",
+            "access_count": 1,
+            "current_version": 2,
+            "task_status": "done",
+            "subject": "用户",
+            "predicate": "task",
+            "object_value": "提交实习申请",
+            "last_confirmed_at": "2026-10-21T11:07:56+08:00",
+            "memory_key": "task-card:5ebe70b66ed4c94bd154f758dd8e1e78",
+            "memory_key_version": "task-card-v2",
+            "polarity": null,
+            "scope": {
+              "owner_id": "owner",
+              "access_scope": "owner",
+              "canonical_topic": "提交实习申请",
+              "task_family_key": "task-family:c91f33739a6c5aa6a50da94649c209a0",
+              "subject_id": "user:owner"
+            },
+            "sources": [
+              {
+                "id": "task-source:c5299b4f21d9cc285708af7904d1be6e",
+                "note_id": "nonfacts_corrections_10-0",
+                "original_text": "我决定提交实习申请；我没有租车计划；“我要预约体检”只是表格里的示例文字。",
+                "evidence_span": "我决定提交实习申请",
+                "message_time": "2026-10-20T09:00:00+08:00",
+                "antecedent_note_id": null,
+                "antecedent_evidence_span": null
+              },
+              {
+                "id": "task-source:cd0e0e8ff8b163a1948e15d283442429",
+                "note_id": "nonfacts_corrections_10-1",
+                "original_text": "实习申请提交完成，租车仍没有计划，体检仍只是引用。",
+                "evidence_span": "实习申请提交完成",
+                "message_time": "2026-10-20T09:01:00+08:00",
+                "antecedent_note_id": "nonfacts_corrections_10-0",
+                "antecedent_evidence_span": "我决定提交实习申请"
+              }
+            ],
+            "versions": [],
+            "task": "提交实习申请",
+            "instance": null,
+            "description": "实习申请已提交完成。",
+            "score": 0.8515
+          }
+        ],
+        "model_calls": [
+          {
+            "stage": "extraction",
+            "duration_seconds": 1.25,
+            "input": {
+              "note_id": "nonfacts_corrections_10-1",
+              "message_time": "2026-10-20T09:01:00+08:00",
+              "text": "实习申请提交完成，租车仍没有计划，体检仍只是引用。",
+              "classification": {},
+              "hints": [],
+              "atoms": [
+                {
+                  "atom_id": "a1",
+                  "text": "实习申请提交完成"
+                },
+                {
+                  "atom_id": "a2",
+                  "text": "租车仍没有计划"
+                },
+                {
+                  "atom_id": "a3",
+                  "text": "体检仍只是引用"
+                }
+              ],
+              "previous_messages": [
+                {
+                  "note_id": "nonfacts_corrections_10-0",
+                  "role": "user",
+                  "text": "我决定提交实习申请；我没有租车计划；“我要预约体检”只是表格里的示例文字。",
+                  "ts": "2026-10-20T09:00:00+08:00",
+                  "sequence_no": 1,
+                  "offset": -1
+                }
+              ],
+              "current_user": {
+                "id": null,
+                "name": null,
+                "name_source": "unknown"
+              }
+            },
+            "output": {
+              "candidates": [
+                {
+                  "memory_type": "task",
+                  "subject": "用户",
+                  "task": "提交实习申请",
+                  "instance": null,
+                  "task_status": "done",
+                  "description": "实习申请已提交完成。",
+                  "evidence_span": "实习申请提交完成",
+                  "intent": "auto",
+                  "antecedent_note_id": "nonfacts_corrections_10-0",
+                  "antecedent_evidence_span": "我决定提交实习申请",
+                  "unresolved_reason": null,
+                  "confidence": 0.95,
+                  "importance": 0.7,
+                  "should_store": true,
+                  "extraction_reason": "当前消息明确实习申请提交完成，为已完成任务。"
+                }
+              ]
+            }
+          },
+          {
+            "stage": "association",
+            "duration_seconds": 0.83,
+            "input": {
+              "new": {
+                "memory_type": "task",
+                "subject": "用户",
+                "task": "提交实习申请",
+                "instance": null,
+                "task_status": "done",
+                "description": "实习申请已提交完成。",
+                "evidence_span": "实习申请提交完成",
+                "intent": "auto",
+                "antecedent_note_id": "nonfacts_corrections_10-0",
+                "antecedent_evidence_span": "我决定提交实习申请",
+                "unresolved_reason": null,
+                "confidence": 0.95,
+                "importance": 0.7,
+                "should_store": true,
+                "extraction_reason": "当前消息明确实习申请提交完成，为已完成任务。"
+              },
+              "cards": [
+                {
+                  "id": "mem_63b45cec6332",
+                  "subject": "用户",
+                  "task": "提交实习申请",
+                  "instance": null,
+                  "task_status": "todo",
+                  "description": "用户决定提交实习申请。",
+                  "sources": [
+                    {
+                      "id": "task-source:c5299b4f21d9cc285708af7904d1be6e",
+                      "note_id": "nonfacts_corrections_10-0",
+                      "original_text": "我决定提交实习申请；我没有租车计划；“我要预约体检”只是表格里的示例文字。",
+                      "evidence_span": "我决定提交实习申请",
+                      "message_time": "2026-10-20T09:00:00+08:00",
+                      "antecedent_note_id": null,
+                      "antecedent_evidence_span": null
+                    }
+                  ]
+                }
+              ]
+            },
+            "output": {
+              "action": "update",
+              "target_id": "mem_63b45cec6332",
+              "description": "实习申请已提交完成。",
+              "reason": "新消息表明同一任务“提交实习申请”已从决定阶段推进到提交完成，属于同一任务的更新。",
+              "subject_relation": "same",
+              "instance_relation": "same"
+            }
+          }
+        ],
+        "pending_items": []
+      }
+    }
+  ],
+  "finding": "审核完成仍漏抽；发送卡描述含审核已完成，但独立审核卡仍为 todo。其余两例本次通过。清洁检查描述仍包含“两次分别记录”，没有额外建卡。"
+}

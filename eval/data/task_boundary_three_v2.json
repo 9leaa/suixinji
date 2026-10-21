@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "description": "T4 三个原始案例及前置消息；适配 task-card-v2，不检查已删除的细节类型和 closure_reason。",
+  "cases": [
+    {
+      "id": "identity_instances_04",
+      "category": "identity_instances",
+      "name": "同对象审核和发送",
+      "query": "演示文稿",
+      "oracle": "审核不等于发送。 最终审核客户演示文稿为 done/completed，向客户发送演示文稿为 todo。",
+      "steps": [
+        {
+          "text": "我要审核客户演示文稿。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "新增独立任务：向客户发送这份演示文稿。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "客户演示文稿审核完了，但还未发送。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "done",
+              "todo"
+            ],
+            "same_as": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporal_05",
+      "category": "temporal",
+      "name": "星期日边界",
+      "query": "清洁周检查",
+      "oracle": "2026-10-25 是周日；下周从 26 日起。",
+      "steps": [
+        {
+          "text": "我要做本周清洁检查，还要做下周清洁检查，两次分别记录。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "distinct_instances": true,
+            "instance_date_ranges": [
+              [
+                "2026-10-19",
+                "2026-10-25"
+              ],
+              [
+                "2026-10-26",
+                "2026-11-01"
+              ]
+            ]
+          },
+          "ts": "2026-10-25T09:00:00+08:00"
+        }
+      ]
+    },
+    {
+      "id": "nonfacts_corrections_10",
+      "category": "nonfacts_corrections",
+      "name": "正反事实混合拆分",
+      "query": "实习申请",
+      "oracle": "只建真实提交申请，否定租车与引用体检均不建。",
+      "steps": [
+        {
+          "text": "我决定提交实习申请；我没有租车计划；“我要预约体检”只是表格里的示例文字。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ]
+          }
+        },
+        {
+          "text": "实习申请提交完成，租车仍没有计划，体检仍只是引用。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    }
+  ]
+}
