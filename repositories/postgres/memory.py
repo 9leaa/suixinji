@@ -558,6 +558,7 @@ def _versioned_update(
     importance: float | None = None,
     last_confirmed_at: str | None = None,
     object_value: str | None = None,
+    subject: str | None = None,
     scope: dict[str, Any] | None = None,
     memory_key: str | None = None,
     memory_key_version: str | None = None,
@@ -588,6 +589,8 @@ def _versioned_update(
     """
     if status is not None and status not in MEMORY_STATUSES:
         raise ValueError(f"invalid memory status: {status}")
+    if subject is not None:
+        row.subject = subject
     content_changed = content is not None
     if content_changed:
         row.content = content
@@ -2367,6 +2370,7 @@ def apply_memory_decision(
                     target,
                     content=candidate.content if action != "merge" else (merged_content or candidate.content),
                     task_status=normalize_task_status(candidate.task_status) if is_task_update else None,
+                    subject=candidate.subject if is_task_update else None,
                     object_value=candidate.object_value,
                     scope=dict(candidate.scope),
                     memory_key=candidate.effective_memory_key,

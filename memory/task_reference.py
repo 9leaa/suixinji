@@ -16,7 +16,7 @@ from memory.extraction_contract import strict_schema
 def completion_utterance(text):
     # This only routes potential completion statements. The resolver still verifies semantics.
     if re.search(
-        r'[?？“”"「」]|(?:不要|别把|没有|尚未|还没|未完成|没完成|如果|假如|打算|准备|希望|计划|示例|引用|怎么|如何|是否|了吗)', text
+        r'[?？“”"「」]|(?:纠正|更正|口误|说错|写错|记错|转交|改由|不要|别把|没有|尚未|还没|未完成|没完成|如果|假如|打算|准备|希望|计划|示例|引用|怎么|如何|是否|了吗)', text
     ):
         return False
     if re.search(r"(?:任务\s*\d|第\s*\d+\s*(?:项|个))", text):

@@ -1523,6 +1523,7 @@ def _versioned_update_row(
     importance: float | None = None,
     last_confirmed_at: str | None = None,
     object_value: str | None = None,
+    subject: str | None = None,
     scope: dict[str, Any] | None = None,
     memory_key: str | None = None,
     memory_key_version: str | None = None,
@@ -1573,7 +1574,7 @@ def _versioned_update_row(
         """
         UPDATE memories
         SET content = ?, normalized_content = ?, status = ?, task_status = ?, valid_until = ?,
-            object_value = ?, memory_key = ?, memory_key_version = ?, polarity = ?, scope_json = ?,
+            subject = ?, object_value = ?, memory_key = ?, memory_key_version = ?, polarity = ?, scope_json = ?,
             confidence = ?, importance = ?, last_confirmed_at = ?, updated_at = ?, current_version = ?
         WHERE id = ?
         """,
@@ -1583,6 +1584,7 @@ def _versioned_update_row(
             next_status,
             next_task_status,
             next_valid_until,
+            subject if subject is not None else row["subject"],
             next_object_value,
             next_memory_key,
             next_memory_key_version,
@@ -1866,6 +1868,7 @@ def apply_memory_decision(
                     content=candidate.content,
                     task_status=normalize_task_status(candidate.task_status),
                     object_value=candidate.object_value,
+                    subject=candidate.subject,
                     scope=dict(candidate.scope),
                     memory_key=candidate.effective_memory_key,
                     memory_key_version=candidate.memory_key_version,

@@ -1,0 +1,318 @@
+{
+  "cases": [
+    {
+      "id": "temporary_01",
+      "name": "转交姐姐",
+      "query": "采购耗材",
+      "steps": [
+        {
+          "text": "我要采购办公耗材。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false
+          }
+        },
+        {
+          "text": "办公耗材采购这同一项任务转交姐姐负责，任务继续。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false,
+            "subjects": [
+              "姐姐"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporary_02",
+      "name": "纠正误报完成",
+      "query": "上传合同",
+      "steps": [
+        {
+          "text": "扫描合同已经上传完成。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "done"
+            ],
+            "pending": false
+          }
+        },
+        {
+          "text": "纠正上一条，上传完成是口误，扫描合同其实还没上传，原任务继续。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false,
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporary_03",
+      "name": "纠正房间保留时间",
+      "query": "402",
+      "steps": [
+        {
+          "text": "我要预约401会议室，截止周五下午3点完成预约。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false
+          }
+        },
+        {
+          "text": "纠正房间号，是预约402会议室，不是401，仍是原任务，截止时间不变。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false,
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporary_04",
+      "name": "纠正执行人",
+      "query": "领取样品",
+      "steps": [
+        {
+          "text": "小王要领取实验样品。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false,
+            "subjects": [
+              "小王"
+            ]
+          }
+        },
+        {
+          "text": "纠正执行人，领取实验样品的其实是小李，不是小王，还是同一项任务。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false,
+            "subjects": [
+              "小李"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporary_05",
+      "name": "转交后转回本人",
+      "query": "打印资料",
+      "steps": [
+        {
+          "text": "我要打印会议资料。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false
+          }
+        },
+        {
+          "text": "这项打印会议资料任务改由哥哥负责，任务继续。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false,
+            "subjects": [
+              "哥哥"
+            ],
+            "same_as": 0
+          }
+        },
+        {
+          "text": "打印会议资料这同一项任务改由我负责，哥哥不再负责，任务继续。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false,
+            "subjects": [
+              "用户"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporary_06",
+      "name": "条件句不转交",
+      "query": "采购车票",
+      "steps": [
+        {
+          "text": "我要采购团队车票。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false
+          }
+        },
+        {
+          "text": "如果把采购团队车票的任务转交哥哥负责就好了，目前还没决定，仍由我负责。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false,
+            "subjects": [
+              "用户"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporary_07",
+      "name": "否定转交",
+      "query": "购买礼品",
+      "steps": [
+        {
+          "text": "我要购买客户礼品。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false
+          }
+        },
+        {
+          "text": "不要把购买客户礼品的任务转交哥哥，这个任务仍由我负责。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false,
+            "subjects": [
+              "用户"
+            ],
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporary_08",
+      "name": "询问不改状态",
+      "query": "审核报价",
+      "steps": [
+        {
+          "text": "我要审核供应商报价。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false
+          }
+        },
+        {
+          "text": "供应商报价审核完成了吗？",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false,
+            "same_as": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporary_09",
+      "name": "独立新任务不覆盖",
+      "query": "会议室",
+      "steps": [
+        {
+          "text": "我要预约501会议室。",
+          "expect": {
+            "cards": 1,
+            "statuses": [
+              "todo"
+            ],
+            "pending": false
+          }
+        },
+        {
+          "text": "另建一个独立任务：预约502会议室，原501预约任务继续。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "pending": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "temporary_10",
+      "name": "轮次不明不猜测",
+      "query": "设备检查",
+      "steps": [
+        {
+          "text": "我要做本周设备检查，还要做下周设备检查，这是两次任务。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "pending": false
+          }
+        },
+        {
+          "text": "设备检查这项任务转交哥哥，但我还没确定转交的是本周还是下周的那次。",
+          "expect": {
+            "cards": 2,
+            "statuses": [
+              "todo",
+              "todo"
+            ],
+            "pending": true,
+            "same_as": 0
+          }
+        }
+      ]
+    }
+  ]
+}

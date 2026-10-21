@@ -103,7 +103,7 @@ def extraction_prompt(schema, *, preferences, v3):
         other_rules += '\npreference 的 polarity=positive/negative/unknown；scope 保留明确适用场景，无场景为 null。咖啡和茶等不同对象分别提取。\n'
     return general + task_rules + other_rules + '\nJSON Schema：\n' + json.dumps(schema, ensure_ascii=False) + '''
 输出前检查：task.description 只描述当前消息的信息；后续关联阶段负责保留旧卡仍适用的内容。evidence_span 必须逐字来自当前 text，前文证据只写在 antecedent_evidence_span。
-如前文约定某日提交、当前消息只说延期，则只提取当前延期信息，不能把前文约定日期再作为当前细节输出。相对周期 instance 必须使用该周期的起止日期，不使用消息当天代表整个周期。
+如前文约定某日提交、当前消息只说延期，则只提取当前延期信息，不能把前文约定日期再作为当前细节输出。相对周期只提取 period_expression 原文，日期由程序计算，不要在 instance 中自行计算日期。
 '''
 
 
