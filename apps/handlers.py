@@ -175,6 +175,7 @@ def handle_query(task: dict[str, Any]) -> TaskOutcome:
             user_id=str(payload.get("user_id") or "") or None,
             message_id=task.get("source_message_id"),
             task_id=str(task["id"]),
+            conversation_id=None if payload.get("reply_channel") == "console" else payload.get("chat_id"),
         )
     if settings.PREFERENCE_CARDS_ENABLED:
         from memory.workflow_state import put

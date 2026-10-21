@@ -1,0 +1,305 @@
+{
+  "storage": "isolated SQLite",
+  "fixture": "six cards copied from previous real-model evaluation outputs, unchanged descriptions/statuses",
+  "model_calls": 0,
+  "imported": [
+    {
+      "memory_id": "mem_38b33395629d",
+      "original_memory_id": "mem_dfad019efbe1",
+      "source_file": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-simple-four-20261021/progress_blockers_04/steps.jsonl"
+    },
+    {
+      "memory_id": "mem_3e6847e390a7",
+      "original_memory_id": "mem_53466c573af5",
+      "source_file": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-simple-four-20261021/progress_blockers_05/steps.jsonl"
+    },
+    {
+      "memory_id": "mem_a012c077ad91",
+      "original_memory_id": "mem_10e6b71760d2",
+      "source_file": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-simple-four-20261021/progress_blockers_06/steps.jsonl"
+    },
+    {
+      "memory_id": "mem_0ea13603ca3a",
+      "original_memory_id": "mem_7c8a6568385a",
+      "source_file": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-simple-four-20261021/progress_blockers_08/steps.jsonl"
+    },
+    {
+      "memory_id": "mem_0415efd24830",
+      "original_memory_id": "mem_43084af78832",
+      "source_file": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-boundary-three-20261021/identity_instances_04/steps.jsonl"
+    },
+    {
+      "memory_id": "mem_eb4472d41960",
+      "original_memory_id": "mem_faa740f7f2fb",
+      "source_file": "/Users/zhangchengjie/Projects/suixinji/task-memory-cards/eval/results/task-boundary-three-20261021/identity_instances_04/steps.jsonl"
+    }
+  ],
+  "snapshot": {
+    "id": "95a5831cbb014817959f3faea1ff719e",
+    "created_at": "2026-10-21T11:23:12+08:00",
+    "items": [
+      {
+        "number": 1,
+        "id": "mem_0415efd24830",
+        "version": 1,
+        "label": "向客户发送演示文稿"
+      },
+      {
+        "number": 2,
+        "id": "mem_0ea13603ca3a",
+        "version": 1,
+        "label": "安装新门禁"
+      },
+      {
+        "number": 3,
+        "id": "mem_38b33395629d",
+        "version": 1,
+        "label": "打印采购合同"
+      },
+      {
+        "number": 4,
+        "id": "mem_3e6847e390a7",
+        "version": 1,
+        "label": "录制线上课程"
+      },
+      {
+        "number": 5,
+        "id": "mem_a012c077ad91",
+        "version": 1,
+        "label": "递交签证材料"
+      },
+      {
+        "number": 6,
+        "id": "mem_eb4472d41960",
+        "version": 1,
+        "label": "审核客户演示文稿"
+      }
+    ]
+  },
+  "list_answer": "当前已保存的未完成任务共 6 项，以下全部列出：\n\n任务 1：向客户发送演示文稿\n  客户演示文稿已审核完，但还未向客户发送。\n\n任务 2：安装新门禁\n  用户要安装新门禁，电源适配器已到货，缺件问题已解决，但尚未安装。\n\n任务 3：打印采购合同\n  用户要打印采购合同，打印机已修好，设备故障阻碍已解除，但合同还没打印。\n\n任务 4：录制线上课程\n  用户要录制线上课程，网络已恢复，麦克风仍然坏着，继续等维修。\n\n任务 5：递交签证材料\n  需要递交签证材料，材料必须附英文翻译；工资单已拿到，缺材料的阻碍已解除。\n\n任务 6：审核客户演示文稿\n  用户要审核客户演示文稿。\n\n可以回复“任务1、任务5请标记完成”。编号对应本次清单；重新列出后以新清单为准。",
+  "completion_answer": "任务 1：向客户发送演示文稿 — 已标记完成（done）。\n任务 5：递交签证材料 — 已标记完成（done）。",
+  "after_answer": "当前已保存的未完成任务共 4 项，以下全部列出：\n\n任务 1：安装新门禁\n  用户要安装新门禁，电源适配器已到货，缺件问题已解决，但尚未安装。\n\n任务 2：打印采购合同\n  用户要打印采购合同，打印机已修好，设备故障阻碍已解除，但合同还没打印。\n\n任务 3：录制线上课程\n  用户要录制线上课程，网络已恢复，麦克风仍然坏着，继续等维修。\n\n任务 4：审核客户演示文稿\n  用户要审核客户演示文稿。\n\n可以回复“任务1、任务5请标记完成”。编号对应本次清单；重新列出后以新清单为准。",
+  "cards_after": [
+    {
+      "id": "mem_38b33395629d",
+      "memory_type": "task",
+      "memory_key_version": "task-card-v2",
+      "subject": "用户",
+      "task": "打印采购合同",
+      "instance": null,
+      "task_status": "todo",
+      "description": "用户要打印采购合同，打印机已修好，设备故障阻碍已解除，但合同还没打印。",
+      "sources": [
+        {
+          "id": "task-source:5f10409190b6ac598fb3a996193165b7",
+          "note_id": "progress_blockers_04-0",
+          "original_text": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+          "evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。",
+          "message_time": "2026-10-20T09:00:00+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null
+        },
+        {
+          "id": "task-source:34fbf3a428b1bc8a3aa7690541777ade",
+          "note_id": "progress_blockers_04-1",
+          "original_text": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+          "evidence_span": "采购合同打印所用的打印机修好了，之前设备故障的阻碍已解除，但合同还没打印。",
+          "message_time": "2026-10-20T09:01:00+08:00",
+          "antecedent_note_id": "progress_blockers_04-0",
+          "antecedent_evidence_span": "我要打印采购合同，但打印机坏了，暂时无法打印。"
+        }
+      ],
+      "content": "用户；打印采购合同；待办；用户要打印采购合同，打印机已修好，设备故障阻碍已解除，但合同还没打印。"
+    },
+    {
+      "id": "mem_3e6847e390a7",
+      "memory_type": "task",
+      "memory_key_version": "task-card-v2",
+      "subject": "用户",
+      "task": "录制线上课程",
+      "instance": null,
+      "task_status": "todo",
+      "description": "用户要录制线上课程，网络已恢复，麦克风仍然坏着，继续等维修。",
+      "sources": [
+        {
+          "id": "task-source:1c2bf0af608210a59aa938be57c780c3",
+          "note_id": "progress_blockers_05-0",
+          "original_text": "我要录制线上课程，但网络断了而且麦克风坏了。",
+          "evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。",
+          "message_time": "2026-10-20T09:00:00+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null
+        },
+        {
+          "id": "task-source:210105237ae58d4cccbc1dc8173647ca",
+          "note_id": "progress_blockers_05-1",
+          "original_text": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+          "evidence_span": "线上课程录制的网络恢复了，麦克风仍然坏着，继续等维修。",
+          "message_time": "2026-10-20T09:01:00+08:00",
+          "antecedent_note_id": "progress_blockers_05-0",
+          "antecedent_evidence_span": "我要录制线上课程，但网络断了而且麦克风坏了。"
+        }
+      ],
+      "content": "用户；录制线上课程；待办；用户要录制线上课程，网络已恢复，麦克风仍然坏着，继续等维修。"
+    },
+    {
+      "id": "mem_a012c077ad91",
+      "memory_type": "task",
+      "memory_key_version": "task-card-v2",
+      "subject": "用户",
+      "task": "递交签证材料",
+      "instance": null,
+      "task_status": "done",
+      "description": "用户确认：递交签证材料已完成。",
+      "sources": [
+        {
+          "id": "task-source:25537d315b85d6d7499f59a4f6804817",
+          "note_id": "progress_blockers_06-0",
+          "original_text": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+          "evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。",
+          "message_time": "2026-10-20T09:00:00+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null
+        },
+        {
+          "id": "task-source:925a63dd18e30dd28572bf75373d6a99",
+          "note_id": "progress_blockers_06-1",
+          "original_text": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+          "evidence_span": "签证材料的工资单拿到了，缺材料的阻碍解除了，英文翻译要求保留。",
+          "message_time": "2026-10-20T09:01:00+08:00",
+          "antecedent_note_id": "progress_blockers_06-0",
+          "antecedent_evidence_span": "我要递交签证材料，必须附英文翻译，目前缺工资单。"
+        },
+        {
+          "id": "task-source:328e05f239e0b4f8467d73c1a2009645",
+          "note_id": "task-command:8e27e20ffab596ad2fc96ec3d0d39b82",
+          "original_text": "任务1，任务5请标记完成",
+          "evidence_span": "任务1，任务5请标记完成",
+          "message_time": "2026-10-21T11:23:12+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null,
+          "task_list_snapshot_id": "95a5831cbb014817959f3faea1ff719e",
+          "task_number": 5
+        }
+      ],
+      "content": "用户；递交签证材料；已结束；用户确认：递交签证材料已完成。"
+    },
+    {
+      "id": "mem_0ea13603ca3a",
+      "memory_type": "task",
+      "memory_key_version": "task-card-v2",
+      "subject": "用户",
+      "task": "安装新门禁",
+      "instance": null,
+      "task_status": "todo",
+      "description": "用户要安装新门禁，电源适配器已到货，缺件问题已解决，但尚未安装。",
+      "sources": [
+        {
+          "id": "task-source:711d36c6eefa195afdb689ef1fb122ec",
+          "note_id": "progress_blockers_08-0",
+          "original_text": "我要安装新门禁，但缺少电源适配器。",
+          "evidence_span": "我要安装新门禁，但缺少电源适配器。",
+          "message_time": "2026-10-20T09:00:00+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null
+        },
+        {
+          "id": "task-source:9c23e35db5e16154a557a5b675e6044b",
+          "note_id": "progress_blockers_08-1",
+          "original_text": "门禁适配器到了，缺件问题解决，尚未安装。",
+          "evidence_span": "门禁适配器到了，缺件问题解决，尚未安装。",
+          "message_time": "2026-10-20T09:01:00+08:00",
+          "antecedent_note_id": "progress_blockers_08-0",
+          "antecedent_evidence_span": "我要安装新门禁，但缺少电源适配器。"
+        }
+      ],
+      "content": "用户；安装新门禁；待办；用户要安装新门禁，电源适配器已到货，缺件问题已解决，但尚未安装。"
+    },
+    {
+      "id": "mem_0415efd24830",
+      "memory_type": "task",
+      "memory_key_version": "task-card-v2",
+      "subject": "用户",
+      "task": "向客户发送演示文稿",
+      "instance": null,
+      "task_status": "done",
+      "description": "用户确认：向客户发送演示文稿已完成。",
+      "sources": [
+        {
+          "id": "task-source:e48b88beeda87f3d98c40c8fabe5117a",
+          "note_id": "identity_instances_04-1",
+          "original_text": "新增独立任务：向客户发送这份演示文稿。",
+          "evidence_span": "新增独立任务：向客户发送这份演示文稿。",
+          "message_time": "2026-10-20T09:01:00+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null
+        },
+        {
+          "id": "task-source:08d8510a2f890f4f9c75a4e40f3ecfc2",
+          "note_id": "identity_instances_04-2",
+          "original_text": "客户演示文稿审核完了，但还未发送。",
+          "evidence_span": "客户演示文稿审核完了，但还未发送。",
+          "message_time": "2026-10-20T09:02:00+08:00",
+          "antecedent_note_id": "identity_instances_04-1",
+          "antecedent_evidence_span": "新增独立任务：向客户发送这份演示文稿。"
+        },
+        {
+          "id": "task-source:328e05f239e0b4f8467d73c1a2009645",
+          "note_id": "task-command:8e27e20ffab596ad2fc96ec3d0d39b82",
+          "original_text": "任务1，任务5请标记完成",
+          "evidence_span": "任务1，任务5请标记完成",
+          "message_time": "2026-10-21T11:23:12+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null,
+          "task_list_snapshot_id": "95a5831cbb014817959f3faea1ff719e",
+          "task_number": 1
+        }
+      ],
+      "content": "用户；向客户发送演示文稿；已结束；用户确认：向客户发送演示文稿已完成。"
+    },
+    {
+      "id": "mem_eb4472d41960",
+      "memory_type": "task",
+      "memory_key_version": "task-card-v2",
+      "subject": "用户",
+      "task": "审核客户演示文稿",
+      "instance": null,
+      "task_status": "todo",
+      "description": "用户要审核客户演示文稿。",
+      "sources": [
+        {
+          "id": "task-source:420b42817e951d0d60d2d8c52ed67b17",
+          "note_id": "identity_instances_04-0",
+          "original_text": "我要审核客户演示文稿。",
+          "evidence_span": "我要审核客户演示文稿。",
+          "message_time": "2026-10-20T09:00:00+08:00",
+          "antecedent_note_id": null,
+          "antecedent_evidence_span": null
+        }
+      ],
+      "content": "用户；审核客户演示文稿；待办；用户要审核客户演示文稿。"
+    }
+  ],
+  "checks": {
+    "listed_all_six": true,
+    "only_original_1_5_done": true,
+    "remaining_four": true,
+    "retry_after_new_list_does_not_rebind": true
+  },
+  "validation": {
+    "pytest_passed": 90,
+    "large_inventory": {
+      "seeded_todo": 125,
+      "returned": 125,
+      "excluded": [
+        "done",
+        "other owner",
+        "sensitive",
+        "expired"
+      ]
+    },
+    "live_delivery": false,
+    "postgres_integration_run": false,
+    "full_dataset_replayed": false
+  }
+}

@@ -129,7 +129,7 @@ class BoundedTaskExecutor:
             self._release_inflight_ingest(inflight_key)
         return submitted
 
-    def submit_query(self, space_id: str, question: str, chat_id: str, message_id: str | None = None) -> Task:
+    def submit_query(self, space_id: str, question: str, chat_id: str, message_id: str | None = None, *, user_id: str | None = None, tenant_id: str = 'default') -> Task:
         """函数功能：`BoundedTaskExecutor.submit_query` 在类 `BoundedTaskExecutor` 中负责查询 submit，服务于本文件职责：本地有界异步执行器。
         传参：
             space_id: 业务空间标识，用于隔离不同会话或租户下的数据，类型为 `str`。
@@ -145,6 +145,8 @@ class BoundedTaskExecutor:
             space_id,
             {
                 "question": question,
+                "user_id": user_id,
+                "tenant_id": tenant_id,
                 "chat_id": chat_id,
                 "delivery_key": delivery_key,
                 "delivery_type": "query",
@@ -424,7 +426,12 @@ class BoundedTaskExecutor:
             # 查询可能与前一个 ingest 任务竞争；读取 Note 前先把同一 space 快速推进到本地归档阶段。
             with get_space_lock(task.space_id):
                 process_pending(task.space_id)
-            answer = answer_question(task.space_id, question)
+            if task.payload.get('user_id'):
+                answer = answer_question(task.space_id, question, user_id=task.payload['user_id'],
+                    tenant_id=task.payload.get('tenant_id', 'default'), message_id=task.message_id,
+                    conversation_id=chat_id)
+            else:
+                answer = answer_question(task.space_id, question)
         except Exception:
             self._deliver_query_failure_notice(chat_id, task)
             raise

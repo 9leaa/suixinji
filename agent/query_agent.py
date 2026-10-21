@@ -3264,6 +3264,7 @@ def answer_question(
     message_id: str | None = None,
     task_id: str | None = None,
     access_context: dict[str, Any] | AccessContext | None = None,
+    conversation_id: str | None = None,
 ) -> str:
     """函数功能：`answer_question` 负责处理 answer question，服务于本文件职责：问答主编排。
     传参：
@@ -3277,6 +3278,11 @@ def answer_question(
     返回结果说明：
         返回 `str`，通常是格式化后的文本、标识或路径。
     """
+    from memory.task_commands import handle_task_command
+    task_answer = handle_task_command(space_id, question, tenant_id=tenant_id, user_id=user_id,
+        message_id=message_id, conversation_id=conversation_id, access_context=access_context)
+    if task_answer is not None:
+        return task_answer
     answer, _ = _run_answer_question_with_context(
         space_id,
         question,
@@ -3322,6 +3328,12 @@ def answer_question_result(
 ) -> "AnswerResult":
     """Structured contract; the legacy answer_question API remains string-returning."""
     from agent.answer_models import AnswerResult, AnswerDecision, EvidenceBundle, RetrievalEvidence
+
+    from memory.task_commands import handle_task_command
+    task_answer = handle_task_command(space_id, question, tenant_id=tenant_id, user_id=user_id,
+        message_id=message_id, access_context=access_context)
+    if task_answer is not None:
+        return AnswerResult('answered', task_answer, 'task_command', executed_tools=['task_command'])
 
     context = _memory_access_context(access_context, requester=user_id or "owner")
     try:

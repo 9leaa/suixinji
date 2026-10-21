@@ -4,6 +4,8 @@ from core.lifecycle import traced, span
 
 COMMANDS = [
     {'command':'普通消息','example':'我喜欢喝无糖咖啡。','description':'保存笔记、提取与更新记忆'},
+    {'command':'任务清单','example':'当前还有哪些未完成任务？列举出来。','description':'完整列出当前用户已保存的未完成任务'},
+    {'command':'完成任务','example':'任务1、任务5请标记完成','description':'按最近一次清单编号更新原任务'},
     {'command':'/ask','example':'/ask 我喜欢喝什么？','description':'自然语言查询与多路召回'},
     {'command':'/memory consolidate preferences','example':'/memory consolidate preferences','description':'审核偏好原文、整理细节与单向关联'},
     {'command':'/type','example':'/type 生活 10','description':'按类型查询笔记'},
@@ -32,6 +34,9 @@ def route_message(text: str, mode='auto'):
     from core import settings
     if settings.PREFERENCE_CARDS_ENABLED and text.startswith('/pending '):
         return {'task_type': 'ingest', 'mode': 'ingest', 'payload': {}}
+    from memory.task_commands import parse_command
+    if settings.TASK_CARDS_ENABLED and parse_command(text):
+        return {'task_type': 'query', 'mode': 'task', 'payload': {'question': text, 'consistency': 'memory'}}
     if mode=='ask' and not text.startswith('/'):
         text='/ask '+text
     if not text.startswith('/'):

@@ -44,7 +44,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _process_memory_with_route(note, record, classification=None):
-    if not settings.PREFERENCE_CARDS_ENABLED:
+    if not (settings.PREFERENCE_CARDS_ENABLED or settings.TASK_CARDS_ENABLED):
         return process_note_memory(note, classification=classification) if classification is not None else process_note_memory(note)
     data = asdict(note) if is_dataclass(note) else dict(note)
     data.update(chat_id=record.get('chat_id'), tenant_id=record.get('tenant_id') or 'default')

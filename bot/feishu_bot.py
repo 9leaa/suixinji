@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from core import settings
+
 import json
 import logging
 import os
@@ -147,6 +149,12 @@ def get_lark_client() -> Any:
 
 
 def send_text(chat_id: str, text: str) -> None:
+    from core.text_chunks import text_chunks
+    for part in text_chunks(text):
+        _send_text_part(chat_id, part)
+
+
+def _send_text_part(chat_id: str, text: str) -> None:
     """函数功能：`send_text` 负责发送 text，服务于本文件职责：飞书事件入口、命令 UI、文本发送。
     传参：
         chat_id: chat id 参数，由调用方传入，类型为 `str`。
@@ -883,8 +891,11 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
             safe_send_text(chat_id, "当前任务较多，请稍后重试。")
         return
 
-    if text.startswith("/ask"):
-        question = text.removeprefix("/ask").strip()
+    from memory.task_commands import parse_command
+    task_command_question = text if settings.TASK_CARDS_ENABLED and not text.startswith('/') and parse_command(text) else None
+
+    if text.startswith("/ask") or task_command_question:
+        question = task_command_question or text.removeprefix("/ask").strip()
         log_event(
             "feishu.command.ask",
             status="start",
@@ -919,6 +930,8 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
                     task_type="query",
                     task_payload={
                         "question": question,
+                        **({"consistency": "memory"} if settings.TASK_CARDS_ENABLED and parse_command(question) else {}),
+                        "user_id": next((str(sender[k]) for k in ("user_id", "open_id", "union_id", "source_user_id", "id") if sender.get(k)), "owner"),
                         "chat_id": chat_id,
                         "delivery_key": query_key(space_id, message_id),
                         "delivery_type": "query",
@@ -942,6 +955,8 @@ def handle_text_message(data: P2ImMessageReceiveV1) -> None:
             question,
             chat_id,
             message_id,
+            user_id=next((str(sender[k]) for k in ("user_id", "open_id", "union_id", "source_user_id", "id") if sender.get(k)), "owner"),
+            tenant_id=str(sender.get("tenant_key") or "default"),
         )
         if task.status == TASK_REJECTED:
             safe_send_text(chat_id, "当前任务较多，请稍后重试。")
