@@ -296,6 +296,8 @@ def due(space, *, now=None):
 
 
 def enqueue_due(space, *, now=None):
+    if not settings.MEMORY_AUTO_CONSOLIDATION_ENABLED:
+        return []
     scheduled = due(space, now=now)
     from memory.scheduler import is_evaluation_space
 
@@ -334,6 +336,8 @@ def _snapshot(space, kind):
 
 
 def consolidate(space, memory_type, *, trigger="manual", planner=None, now=None):
+    if trigger != "manual" and not settings.MEMORY_AUTO_CONSOLIDATION_ENABLED:
+        return {"status": "skipped", "reason": "automatic_consolidation_disabled"}
     if memory_type not in TYPES:
         raise ValueError("unknown memory type")
     clock = now or datetime.now(timezone.utc)

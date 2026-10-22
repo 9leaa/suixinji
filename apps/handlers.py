@@ -222,6 +222,11 @@ def handle_memory(task: dict[str, Any]) -> TaskOutcome | None:
     """
     payload = _payload(task)
     operation = str(payload.get("operation") or "extract")
+    from core import settings
+    if (operation in {"consolidate", "fact_consolidate", "preference_maintenance"}
+            and payload.get("trigger") != "manual"
+            and not settings.MEMORY_AUTO_CONSOLIDATION_ENABLED):
+        return None  # Drain old automatic jobs without changing memories.
     note_id = str(payload.get("note_id") or "")
     if operation == "fact_consolidate":
         from core import settings

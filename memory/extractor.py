@@ -757,40 +757,31 @@ def extract_llm_candidates(
         ],
         "previous_messages": [item for item, _offset in reference_messages],
     }
-    prompt = MEMORY_EXTRACTOR_V3_PROMPT if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED else MEMORY_EXTRACTOR_PROMPT
-    if settings.PREFERENCE_CARDS_ENABLED:
-        prompt = MEMORY_CARD_EXTRACTOR_PROMPT
-    if settings.TASK_CARDS_ENABLED:
-        from memory.extraction_contract import extraction_schema, extraction_prompt, strict_schema
-        schema = extraction_schema(preferences=settings.PREFERENCE_CARDS_ENABLED, v3=settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED)
-        prompt = extraction_prompt(schema, preferences=settings.PREFERENCE_CARDS_ENABLED, v3=settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED)
+    prompt = ""
+    if not settings.FACT_MEMORY_ENABLED:
+        prompt = MEMORY_EXTRACTOR_V3_PROMPT if settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED else MEMORY_EXTRACTOR_PROMPT
+        if settings.PREFERENCE_CARDS_ENABLED:
+            prompt = MEMORY_CARD_EXTRACTOR_PROMPT
+        if settings.TASK_CARDS_ENABLED:
+            from memory.extraction_contract import extraction_schema, extraction_prompt, strict_schema
+            schema = extraction_schema(preferences=settings.PREFERENCE_CARDS_ENABLED, v3=settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED)
+            prompt = extraction_prompt(schema, preferences=settings.PREFERENCE_CARDS_ENABLED, v3=settings.MEMORY_EXTRACTOR_SCHEMA_V3_ENABLED)
     from core.subject_identity import SUBJECT_RULES, current_identity
     prompt += SUBJECT_RULES
     payload["current_user"] = current_identity()
-    data = complete_json(
-        system_prompt=prompt,
-        user_prompt=json.dumps(payload, ensure_ascii=False),
-        llm_task="memory_extraction",
-        **({"response_schema": strict_schema(schema)} if settings.TASK_CARDS_ENABLED else {}),
-    )
-    rows = data.get("candidates") or []
-    if not isinstance(rows, list):
-        raise ValueError("memory extractor candidates must be a list")
     if settings.FACT_MEMORY_ENABLED:
-        from memory.fact_extraction import INSTRUCTIONS
-        fact_data = complete_json(
-            system_prompt='你提取语义事实和情景事件。只输出JSON {"candidates":[{"memory_type":"semantic或episodic",'
-                          '"content":"完整自然语言","evidence_span":"原文连续片段","entities":[],'
-                          '"reference_status":"not_applicable或resolved或unresolved","context_fact_ids":[],'
-                          '"confidence":0.9,"importance":0.6,"should_store":true}]}。'
-                          '只提取当前消息中值得记住的事实，不能把待办或偏好重复存为事实；没有则返回空列表。' + INSTRUCTIONS,
-            user_prompt=json.dumps({**payload, "fact_context": fact_context or []}, ensure_ascii=False),
-            model_role="balanced", timeout_seconds=90,
+        from memory.parallel_extraction import extract_parallel
+        rows, prompt = extract_parallel(complete_json, payload, fact_context, SUBJECT_RULES)
+    else:
+        data = complete_json(
+            system_prompt=prompt,
+            user_prompt=json.dumps(payload, ensure_ascii=False),
+            llm_task="memory_extraction",
+            **({"response_schema": strict_schema(schema)} if settings.TASK_CARDS_ENABLED else {}),
         )
-        # The original extraction call and its task/preference results remain
-        # unchanged. Only the two new types use the context-aware contract.
-        rows = [r for r in rows if r.get("memory_type") not in {"semantic", "episodic"}] + [
-            r for r in fact_data.get("candidates", []) if r.get("memory_type") in {"semantic", "episodic"}]
+        rows = data.get("candidates") or []
+        if not isinstance(rows, list):
+            raise ValueError("memory extractor candidates must be a list")
 
     candidates: list[MemoryCandidate] = []
     for row_index, row in enumerate(rows):
@@ -802,16 +793,7 @@ def extract_llm_candidates(
             LAST_EXTRACTION_DIAGNOSTICS["llm_candidate_count"] += 1
             continue
         fact_time_evidence = {}
-        if settings.FACT_MEMORY_ENABLED and row.get("memory_type") in {"semantic", "episodic"}:
-            row = dict(row)
-            for field in ("valid_from", "valid_until"):
-                value = row.get(field)
-                # Pydantic treats a bare year as Unix seconds. Keep imprecise
-                # time as evidence instead of inventing a timestamp or date.
-                if value is not None and not re.match(r"^\d{4}-\d{2}-\d{2}(?:T| |$)", str(value)):
-                    fact_time_evidence[field] = value
-                    row[field] = None
-        if settings.TASK_CARDS_ENABLED and row.get('memory_type') == 'task':
+        if (settings.TASK_CARDS_ENABLED or settings.FACT_MEMORY_ENABLED) and row.get('memory_type') == 'task':
             from memory.task_cards import candidate_from_row
             from memory.extraction_contract import repair_task_row
             row, repair = repair_task_row(row, complete=complete_json, context=payload)
@@ -822,7 +804,7 @@ def extract_llm_candidates(
             candidates.append(candidate)
             LAST_EXTRACTION_DIAGNOSTICS['llm_candidate_count'] += 1
             continue
-        if settings.PREFERENCE_CARDS_ENABLED and row.get('memory_type') == 'preference':
+        if (settings.PREFERENCE_CARDS_ENABLED or settings.FACT_MEMORY_ENABLED) and row.get('memory_type') == 'preference':
             candidates.append(_preference_card_candidate(note_id, raw, row, prompt))
             LAST_EXTRACTION_DIAGNOSTICS['llm_candidate_count'] += 1
             continue
@@ -1581,7 +1563,7 @@ def extract_candidates(
         ]
         return _assign_evidence_atom_ids(_dedupe(_resolve_reference_fallback(note_id, rule_text, rows, previous_messages)), rule_text)
 
-    if mode == "llm":
+    if mode == "llm" or settings.FACT_MEMORY_ENABLED:
         return _assign_evidence_atom_ids(
             _dedupe(_resolve_reference_fallback(note_id, rule_text, model_candidates, previous_messages)),
             rule_text,

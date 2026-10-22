@@ -33,7 +33,7 @@ def cards_due(records, jobs, now):
 
 
 def enqueue_due(space, *, now=None):
-    if excluded(space):
+    if not settings.MEMORY_AUTO_CONSOLIDATION_ENABLED or excluded(space):
         return None
     now = now or datetime.now(timezone.utc)
     # These helpers borrow their own connections. Finish their reads before

@@ -60,30 +60,31 @@ def run_once() -> bool:
             log_event("runtime.scheduler_leader", status="completed", extra={"stage4_mode": True})
             return True
         run_scheduler_tick_safely(lambda _chat_id, _text: False, executor=StreamTaskDispatcher())
-        if settings.FACT_MEMORY_ENABLED:
-            from memory.fact_memory import enqueue_due
-            for space_id in list_memory_space_ids():
-                if not is_evaluation_space(space_id):
-                    enqueue_due(space_id)
-        today = date.today()
-        if settings.PREFERENCE_CARDS_ENABLED:
-            from memory.preference_maintenance import enqueue_due as enqueue_preference_due
-            for space_id in list_memory_space_ids():
-                enqueue_preference_due(space_id)
-        for cadence in due_cadences(today, {}):
-            period_key = consolidation_period_key(cadence, today)
-            for space_id in list_memory_space_ids():
-                # Layer evaluation spaces contain real-looking seed Notes, but
-                # are test fixtures and must never enter the distributed
-                # consolidation stream.
-                if is_evaluation_space(space_id):
-                    continue
-                enqueue_task(
-                    task_type="memory",
-                    space_id=space_id,
-                    idempotency_key=f"memory:consolidate:{space_id}:{cadence}:{period_key}",
-                    payload={"operation": "consolidate", "cadence": cadence, "period_key": period_key},
-                )
+        if settings.MEMORY_AUTO_CONSOLIDATION_ENABLED:
+            if settings.FACT_MEMORY_ENABLED:
+                from memory.fact_memory import enqueue_due
+                for space_id in list_memory_space_ids():
+                    if not is_evaluation_space(space_id):
+                        enqueue_due(space_id)
+            today = date.today()
+            if settings.PREFERENCE_CARDS_ENABLED:
+                from memory.preference_maintenance import enqueue_due as enqueue_preference_due
+                for space_id in list_memory_space_ids():
+                    enqueue_preference_due(space_id)
+            for cadence in due_cadences(today, {}):
+                period_key = consolidation_period_key(cadence, today)
+                for space_id in list_memory_space_ids():
+                    # Layer evaluation spaces contain real-looking seed Notes, but
+                    # are test fixtures and must never enter the distributed
+                    # consolidation stream.
+                    if is_evaluation_space(space_id):
+                        continue
+                    enqueue_task(
+                        task_type="memory",
+                        space_id=space_id,
+                        idempotency_key=f"memory:consolidate:{space_id}:{cadence}:{period_key}",
+                        payload={"operation": "consolidate", "cadence": cadence, "period_key": period_key},
+                    )
         retry_count = enqueue_due_retries()
         if retry_count:
             log_event(

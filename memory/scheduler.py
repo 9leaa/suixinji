@@ -230,6 +230,9 @@ def run_memory_scheduler_tick(last_run_dates: dict[str, str] | None = None, *, t
     返回结果说明：
         返回 `dict[str, Any]`，表示结构化结果、载荷或状态映射。
     """
+    if not settings.MEMORY_AUTO_CONSOLIDATION_ENABLED:
+        return {"date": (today or date.today()).isoformat(), "ran": [], "reports": [],
+                "flushed_access_counts": flush_access_counts(), "reason": "automatic_consolidation_disabled"}
     state = last_run_dates if last_run_dates is not None else {}
     current_day = today or date.today()
     reports = []

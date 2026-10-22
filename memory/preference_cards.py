@@ -412,6 +412,8 @@ def expand_query(space_id, query, results, *, access_context=None, limit=8):
 @traced('偏好卡片 · 定期整理', 'memory')
 def run_consolidation(space_id, *, now=None, force=False):
     """Incremental, restart-safe; model sees evidence outside the DB write lock."""
+    if not force and not settings.MEMORY_AUTO_CONSOLIDATION_ENABLED:
+        return {"status": "skipped", "reason": "automatic_consolidation_disabled"}
     now = now or datetime.now().astimezone()
     records = {r.id: r for r in all_cards(space_id)}
     from memory.preference_consolidation import flush_review_outbox
