@@ -1,142 +1,56 @@
 # 随心记 Agent
 
-一个运行在飞书中的个人记忆助手。它把聊天中的原始记录保存为可追溯 Note，再将值得长期保留的信息抽取为可演化的 Memory，用于回答历史问题、维护任务进展和展示当前画像。
+运行在飞书和 Web 控制台中的个人记忆助手：保存原始记录，从中提取任务、偏好、事实和经历，并结合原文回答历史问题。记忆的来源、修改版本和模型调用可以追溯。
 
-> 记录不等于记忆。Note 保留用户说过什么；Memory 经过候选校验、关系审理和版本化演化后，才会影响后续回答。
+## 能做什么
 
-## 项目能力
+| 功能 | 技术实现 | 直白解释 |
+| --- | --- | --- |
+| 记录 | Note 原文持久化，Inbox / WAL 与后台任务处理 | 先保存你说的话，再整理 |
+| 四类记忆 | task、preference、semantic、episodic | 分别记住要做的事、偏好、事实和经历 |
+| 并行抽取 | 启用事实记忆后，任务/偏好与事实/经历使用两路独立结构化调用 | 同时处理不同类型的信息，分别校验结果 |
+| 记忆整理 | 来源校验、版本化修改、整理工具与审批 | 合并重复、更新变化，也能查看修改依据 |
+| 历史问答 | Memory 与 Note 混合检索、证据选择、来源引用 | 结合记忆和原话回答 |
+| Web 控制台 | 消息运行、召回候选、工具参数/返回、模型上下文与记忆历史 | 能看到每一步实际做了什么 |
 
-本分支新增可选的[偏好卡片、定期整理和问题数据集](docs/preference-cards-implementation.md)，设计见[技术方案](docs/preference-cards-design.md)。默认关闭，迁移后设置 `SUIXINJI_PREFERENCE_CARDS_ENABLED=true` 启用；不会自动改动线上数据。
+功能受配置开关控制。默认配置保留规则抽取；卡片与事实记忆需显式启用，不能把“代码已支持”理解成“所有部署均已开启”。
 
-| 能力 | 说明 |
-| --- | --- |
-| 可靠记录 | 消息先进入 Inbox/WAL，再异步完成分类、向量、关联和记忆处理。 |
-| 长期记忆 | 支持偏好、任务、稳定事实和带时间背景的经历四类 Memory。 |
-| 混合检索 | `/ask` 结合 Note 与 active Memory；复杂问题按子句做有界检索并组织来源。 |
-| 记忆演化 | 新信息可被审理为 `new`、`same`、`merge`、`update_task`、`supersede` 或 `conflict`。 |
-| 可审计 | Trace 展示完整处理步骤与候选，来源、版本、决策和关系都可回看。 |
-| 安全控制 | 密码、密钥、令牌和高风险证件信息在入口本地拦截，不写入、不嵌入、不发送给模型。 |
-
-## 飞书演示
-
-以下均为真实飞书交互截图。
-
-### 1. 像聊天一样记录
-
-发送自然语言消息后，系统先确认接收，再异步整理为 Note 和长期记忆。
-
-<p align="center">
-  <img src="docs/images/feishu/01-record-note.png" width="760" alt="在飞书中记录植物园经历和 Agent 简历修改">
-</p>
-
-### 2. 简单问题：从历史中直接回答
-
-单一问题优先查询长期记忆，并在答案末尾标明实际引用的来源。
-
-<p align="center">
-  <img src="docs/images/feishu/02-ask-simple.png" width="760" alt="在飞书中查询上次提到 Agent 简历时的活动">
-</p>
-
-### 3. 复杂问题：拆解并混合检索
-
-多问题消息会按子句拆解，分别检索 Memory 和相关 Note。答案中的来源最多展示 5 条 Memory 与 5 条 Note，不会为了凑数量加入无关记录。
-
-<p align="center">
-  <img src="docs/images/feishu/03-ask-complex.png" width="760" alt="在飞书中回答饮料偏好、求职方向和植物园经历的复杂问题">
-</p>
-
-### 4. 普通输入生成的记忆候选
-
-`/trace latest` 显示全部处理步骤，以及本条消息生成的候选、关系和最终动作。
-
-<p align="center">
-  <img src="docs/images/feishu/04-memory-candidates.png" width="640" alt="在飞书中查看植物园经历和 Agent 简历任务的记忆候选">
-</p>
-
-### 5. 任务状态演化
-
-同一任务可从待办演化为阻塞、完成或取消；“正在做”作为待办的进展描述，只增加来源，不会创建重复任务。
-
-旧版四状态之前的演示截图已下线，待下一次真实飞书验收后补充新版截图。
-
-### 6. 记忆审计与追溯
-
-候选、关系决策、写入动作和来源均可追溯；不确定的破坏性变更会进入人工审阅。
-
-<p align="center">
-  <img src="docs/images/feishu/06-memory-audit-trace.png" width="640" alt="在飞书中查看记忆审计与 Trace">
-</p>
-
-### 7. 动态用户画像
-
-`/memory profile` 汇总当前有效的偏好、当前未完成任务和稳定事实，方便用户校验系统目前记住了什么。
-
-旧版画像截图已下线，避免展示已移除的状态值。
-
-## 工作方式
+## 记忆如何工作
 
 ```text
-Feishu message
-  -> Inbox / WAL
-  -> Note (原始证据)
-  -> Memory candidate
-  -> Validation + relation adjudication
-  -> Versioned memory
+消息 → 保存 Note 原文 → 抽取候选 → 校验和写入 → 带来源的记忆
+                         ├─ 任务 / 偏好
+                         └─ 语义事实 / 情景经历（启用事实记忆时并行）
 
-/ask
-  -> Query planning
-  -> Memory + Note retrieval
-  -> Evidence selection
-  -> Answer with sources
+整理 → 读取相关记忆与原文 → 提出修改 → 校验 / 审批 → 保存版本
+查询 → 检索 Memory + Note → 选择证据 → 回答并附来源
 ```
 
-长期记忆包含四类：
+- **任务卡片**只使用 `todo`（未结束）和 `done`（已结束）；完成、取消、放弃由结束原因区分，阻碍和进展保存为细节。
+- **偏好卡片**保存偏好对象、适用条件、细节和证据，支持后续维护与整理。
+- **语义与情景记忆**保留原始事实及派生整理卡，区分陈述和推断，并保存来源版本、指代依据和待确认问题。
+- 自动整理可以关闭；关闭后继续正常抽取和查询，只在明确手动请求时整理。
 
-| 类型 | 用途 | 示例 |
-| --- | --- | --- |
-| `preference` | 喜欢、讨厌、习惯和约束 | 不喜欢喝牛奶 |
-| `task` | 待办、阻塞、完成、取消 | 修改 Agent 简历 |
-| `semantic` | 稳定事实、项目和学习重点 | 正在投递 Agent 简历 |
-| `episodic` | 有时间背景的重要经历 | 今天逛了植物园并拍花 |
+实现说明：[任务卡片](docs/task-cards-design.md)、[偏好卡片](docs/preference-cards-implementation.md)、[事实与情景记忆](docs/fact-memory-consolidation.md)。
 
-原始 Note 不会被覆盖。Memory 的变更写入决策、版本和来源；低置信度的破坏性变更进入 `pending_review`，等待人工确认。
+## 快速开始
 
-## 常用命令
-
-| 目的 | 命令 |
-| --- | --- |
-| 随手记录 | 直接发送文本 |
-| 询问历史 | `/ask 上次我提到 Agent 简历时在做什么？` |
-| 查看候选与步骤 | `/trace latest` |
-| 查看某次 Trace | `/trace <trace_id>` |
-| 查看画像 | `/memory profile` |
-| 搜索记忆 | `/memory search <关键词>` |
-| 审阅待确认变更 | `/memory pending`、`/memory approve <id>` |
-| 查看决策 | `/memory decisions` |
-| 修正或删除记忆 | `/memory correct <id> <内容>`、`/memory forget <id>` |
-| 周期回顾 | `/summary 今天|一周|一个月` |
-
-## 快速启动
+需要 Python 环境；CI 配置使用 Python 3.10 / 3.11。先安装依赖并配置 `.env`：
 
 ```bash
+git clone https://github.com/9leaa/suixinji.git
+cd suixinji
 python3 -m venv .venv
 source .venv/bin/activate
 make install-dev
 cp .env.example .env
-python scripts/check_config.py
-make test
-make start
 ```
 
-`.env` 至少需要飞书应用配置。真实 LLM 与 embedding 调用还需要 OpenAI 或 OpenAI-compatible 服务配置；测试和 dry-run 评测不调用真实 API。
+按 `.env.example` 填写飞书应用、模型和 Embedding 配置。启动前的 `check_config.py` 会检查这些必填项以及所选存储后端。
 
-## 后端架构可视化
+### 本地模式
 
-打开 [后端交互画布](docs/backend-explorer/canvas.html) 拖拽、缩放和逐步播放；[完整说明页](docs/backend-explorer/index.html) 可阅读详细解释，交互查看 PostgreSQL 表结构、Redis Streams、消息生命周期、分布式可靠性与本机运行快照。使用说明见 [页面 README](docs/backend-explorer/README.md)。
-
-## 存储与部署
-
-本地学习或单实例使用：
+适合单机开发与基础功能调试：
 
 ```dotenv
 STORAGE_BACKEND=local
@@ -144,35 +58,81 @@ COORDINATION_BACKEND=local
 TASK_QUEUE_BACKEND=local
 ```
 
-多实例部署使用 PostgreSQL 与 Redis：
+```bash
+python scripts/check_config.py
+make start
+make status
+```
+
+### PostgreSQL / Redis 与 Web 控制台
+
+控制台依赖 PostgreSQL 和后台分布式处理角色。先准备 PostgreSQL（含 pgvector）及 Redis，并填写实际连接信息：
 
 ```dotenv
 STORAGE_BACKEND=postgres
 COORDINATION_BACKEND=redis
 TASK_QUEUE_BACKEND=redis_streams
-REDIS_URL=redis://...
+DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DATABASE
+REDIS_URL=redis://HOST:6379/0
 ```
 
 ```bash
 make db-upgrade
+python scripts/check_config.py
 make distributed-start
 make distributed-status
+python scripts/run_console.py
 ```
 
-完整切换步骤见 [分布式切换手册](docs/distributed_cutover_runbook.md)。本地临时 PostgreSQL 可显式启动：
+打开 `http://127.0.0.1:18080/console`，在连接框填写本机 `data/console.token` 中的令牌。控制台启动脚本不会代替 Outbox relay 和 Worker；完整操作见[控制台说明](docs/message-console/README.md)与[分布式部署手册](docs/distributed_cutover_runbook.md)。
 
-```bash
-docker compose --profile local-infra up -d postgres
+### 启用卡片和事实记忆
+
+完成数据库迁移并配置模型后，在 `.env` 中启用：
+
+```dotenv
+SUIXINJI_TASK_CARDS_ENABLED=true
+SUIXINJI_PREFERENCE_CARDS_ENABLED=true
+SUIXINJI_FACT_MEMORY_ENABLED=true
+SUIXINJI_MEMORY_EXTRACTOR_MODE=llm
+# 只允许手动整理；不影响新消息抽取和查询。
+SUIXINJI_MEMORY_AUTO_CONSOLIDATION_ENABLED=false
 ```
 
-## 可靠性、Trace 与评测
+前三个功能开关代码默认值为 `false`，自动整理开关默认值为 `true`。启用事实记忆后使用两路模型抽取，即使抽取模式配置为 `rules` 也会调用模型；任一路失败不会当作成功的空结果。修改配置后需重启对应进程。
 
-- `message_id`、Delivery Key 和持久化状态避免常规重试导致的重复写入或重复发送。
-- Memory 抽取支持 `rules`、`llm` 与 `hybrid` 模式。专用抽取请求默认 30 秒超时，只对 `APITimeoutError` 受控重试一次；失败会安全降级到规则候选。
-- `/trace latest` 完整展示步骤名称、状态、耗时和本条消息的候选摘要；敏感内容会脱敏。
-- 评测覆盖分类、检索、总结、ReAct 查询、候选提取、关系审理、任务生命周期和端到端场景。详细 dry-run 指标见 [docs/metrics/latest.json](docs/metrics/latest.json)。
+旧任务卡数据迁移工具为 `scripts/migrate_task_cards_v2.py`，要求指定目标数据库和备份路径；仅显式传入 `--apply` 才修改数据。不要把数据迁移当成普通启动步骤。
 
-运行验证：
+## 常用操作
+
+| 目的 | 命令 |
+| --- | --- |
+| 记录 | 直接发送文本 |
+| 历史问答 | `/ask 上次我提到这个项目时有什么进展？` |
+| 查看处理过程 | `/trace latest`、`/trace <trace_id>` |
+| 查看 / 搜索记忆 | `/memory profile`、`/memory search <关键词>` |
+| 审阅变更 | `/memory pending`、`/memory approve <id>` |
+| 修正 / 遗忘 | `/memory correct <id> <内容>`、`/memory forget <id>` |
+| 查看事实与经历 | `/memory facts list`（需启用事实记忆） |
+| 手动整理事实 | `/memory facts consolidate`（需启用事实记忆） |
+| 回顾 | `/summary 今天`、`/summary 一周` |
+
+控制台还提供记忆整理、审批和历史查看入口。不同记忆类型的管理协议见相应功能文档。
+
+## 飞书交互示例
+
+以下为历史版本的真实交互截图，用于展示记录和问答方式；当前字段、状态和页面以代码及上述说明为准。
+
+<details>
+<summary>展开截图</summary>
+
+![记录消息](docs/images/feishu/01-record-note.png)
+![历史问答](docs/images/feishu/02-ask-simple.png)
+![混合检索问答](docs/images/feishu/03-ask-complex.png)
+
+</details>
+
+## 开发与验证
 
 ```bash
 make lint
@@ -180,20 +140,24 @@ make test
 make eval-dry-run
 ```
 
-`make eval-dry-run` 会运行五个离线评测脚本，不产生真实 LLM 调用。真实线上质量和延迟需要基于生产流量或独立基准单独测量，项目不会把未测延迟写成性能结论。
+离线 dry-run 验证固定样例与流程，不代表真实模型质量或线上性能。CI 还执行数据库迁移及覆盖率检查。手动诊断脚本位于 `scripts/`：`P1_test.py` 会写入本地测试消息并触发处理；`connect_test.py` 会调用配置的模型服务，均不属于自动单元测试。
+
+## 目录与文档
+
+| 路径 | 内容 |
+| --- | --- |
+| `agent/`、`memory/` | 查询 Agent、记忆抽取、检索与整理 |
+| `apps/`、`bot/` | API、控制台、后台进程与飞书接入 |
+| `core/`、`runtime/` | 配置、模型客户端、任务调度与可靠投递 |
+| `repositories/`、`storage/`、`infrastructure/` | 数据访问、Note 存储、数据库与 Redis |
+| `summary/` | 总结与周期回顾 |
+| `alembic/` | 数据库迁移 |
+| `tests/`、`eval/` | 自动测试与评测 |
+| `scripts/` | 启停、迁移、验证和手动诊断 |
+| `docs/` | 功能说明与部署手册，入口见[文档索引](docs/README.md) |
+| `docs/design/` | 设计资料，历史约束不代表当前实现 |
+| `docs/archive/` | 历史计划、验证和其他参考材料 |
 
 ## 当前边界
 
-- 目前只处理文本消息，语音、图片和文件尚未接入。
-- `local` 后端适合学习和小规模使用；多实例部署应使用 PostgreSQL。
-- LLM 候选质量仍受模型与 prompt 影响，复杂消息应持续通过真实样例和评测集校准。
-- 飞书接口无法在本地提供严格 exactly-once 语义；系统通过幂等键、状态机和有限重试降低重复发送风险。
-
-## Roadmap
-
-- 扩充真实反馈集，持续评测复杂查询和多子句记忆抽取。
-- 为语音、图片和文件提供可审计的多模态记录路径。
-
-### 消息实验室（本地链路可视化）
-
-当前分支新增 FastAPI 消息入口和可视化页面，支持普通消息及现有全部命令族，展示实际 PostgreSQL/Redis/Worker、记忆处理、召回/RRF/重排、模型输入输出和耗时。启动：`.venv/bin/python scripts/run_console.py`，访问 `http://127.0.0.1:18080/console`；使用当前分支后台 Worker。详见 [使用与架构说明](docs/message-console/README.md)。
+目前主要处理文本。记忆抽取与整理仍依赖模型质量，需要结合真实样例校准；历史 Trace 无法补造未记录的上下文。本地文件存储适合单机开发，多进程使用应配置 PostgreSQL。飞书外部发送通过幂等和重试降低重复风险，不承诺严格 exactly-once。

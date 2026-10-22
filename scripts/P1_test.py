@@ -4,6 +4,12 @@
 """
 
 
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
 from core.wal import create_pending_record, append_message_once
 from core.worker import process_pending
 

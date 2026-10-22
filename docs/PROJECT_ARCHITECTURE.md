@@ -2,7 +2,7 @@
 
 > 本文依据当前仓库受 Git 管理的文件编写，目标是帮助维护者快速定位功能边界、调用链和实现位置。它描述的是代码与受控文档，不把 `data/` 中的用户运行数据、缓存、日志、备份和未跟踪评测草稿当作源码。
 >
-> 入口说明见 [README](../README.md)，详细设计决策见根目录的 `DESIGN.md` 与 `SUIXINJI_*_DESIGN.md`。本文不包含环境变量的实际值、飞书凭据或用户数据。
+> 入口说明见 [README](../README.md)，详细设计决策见[设计文档目录](design/) 与 [历史归档](archive/)。本文不包含环境变量的实际值、飞书凭据或用户数据。
 
 ## 阅读约定
 
@@ -108,14 +108,13 @@
 | --- | --- | --- |
 | `main.py` | 本地命令行记录入口 | 用时间戳生成本地消息 ID，写 WAL 后调用 `process_pending`；不依赖飞书。 |
 | `README.md` | 产品说明、飞书展示、启动与能力边界 | 面向使用者的主文档，引用 `docs/images/feishu/` 截图。 |
-| `README_SUIXINJI_CLEAN.md` | 精简版/历史 README 文案 | 保留早期的项目介绍，主入口以 `README.md` 为准。 |
-| `DESIGN.md` | 初始产品与工程设计 | 记录原始需求、阶段目标及本地实现约束。 |
-| `SUIXINJI_COMPLEX_QUERY_ROUTING_AND_DECOMPOSITION_DESIGN.md` | 复杂查询设计 | 定义路由特征、子问题分解、改写和预算约束。 |
-| `SUIXINJI_MEMORY_V3_REDESIGN_PLAN.md` | Memory V3 设计/迁移计划 | 说明候选 schema、canonical key、relation guard 与 shadow rollout。 |
-| `SUIXINJI_NOTE_AND_LONG_TERM_MEMORY_RETRIEVAL_DESIGN.md` | Note/Memory 联合检索设计 | 规定双证据源、混合检索、RRF 和来源展示策略。 |
-| `SUIXINJI_TASK_STATE_RECONCILIATION_DESIGN.md` | 任务状态对账设计 | 规定任务抽取、状态变更与冲突解决原则。 |
-| `P1_test.py` | 早期 P1 手工/冒烟脚本 | 直接调用本地核心能力，属于开发辅助而非 pytest 主套件。 |
-| `connect_test.py` | 外部连接连通性辅助脚本 | 用于检查模型/服务配置，不是运行时入口。 |
+| `docs/design/DESIGN.md` | 初始产品与工程设计 | 记录原始需求、阶段目标及本地实现约束。 |
+| `docs/design/SUIXINJI_COMPLEX_QUERY_ROUTING_AND_DECOMPOSITION_DESIGN.md` | 复杂查询设计 | 定义路由特征、子问题分解、改写和预算约束。 |
+| `docs/archive/plans/SUIXINJI_MEMORY_V3_REDESIGN_PLAN.md` | Memory V3 设计/迁移计划 | 说明候选 schema、canonical key、relation guard 与 shadow rollout。 |
+| `docs/design/SUIXINJI_NOTE_AND_LONG_TERM_MEMORY_RETRIEVAL_DESIGN.md` | Note/Memory 联合检索设计 | 规定双证据源、混合检索、RRF 和来源展示策略。 |
+| `docs/design/SUIXINJI_TASK_STATE_RECONCILIATION_DESIGN.md` | 任务状态对账设计 | 规定任务抽取、状态变更与冲突解决原则。 |
+| `scripts/P1_test.py` | 早期 P1 手工/冒烟脚本 | 直接调用本地核心能力，属于开发辅助而非 pytest 主套件。 |
+| `scripts/connect_test.py` | 外部连接连通性辅助脚本 | 用于检查模型/服务配置，不是运行时入口。 |
 | `requirements.txt` | 生产 Python 依赖 | 固定飞书 SDK、OpenAI 兼容客户端、SQLAlchemy、Redis、FastAPI 等版本。 |
 | `requirements-dev.txt` | 开发与 CI 依赖 | 在生产依赖上追加 pytest、coverage、ruff、mypy。 |
 | `pyproject.toml` | 工具配置 | 设置 Ruff 规则、pytest 搜索范围、coverage 覆盖源码包。 |

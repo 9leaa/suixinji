@@ -1,6 +1,6 @@
 # 任务记忆卡片
 
-分支：`codex/task-memory-cards`。任务改为专属结构，复用记忆主表、来源和版本机制。功能通过 `SUIXINJI_TASK_CARDS_ENABLED` 独立启用，默认关闭。
+已合入 `main`（原开发分支 `codex/task-memory-cards`）。任务改为专属结构，复用记忆主表、来源和版本机制。功能通过 `SUIXINJI_TASK_CARDS_ENABLED` 独立启用，默认关闭。
 
 | 业务字段 | 含义 |
 |---|---|

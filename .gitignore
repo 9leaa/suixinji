@@ -25,3 +25,6 @@ backups/
 
 # Local message console credential
 /data/console.token
+
+# Delivery bundles belong in release assets, not source control.
+*.zip
