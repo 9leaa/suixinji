@@ -1,5 +1,7 @@
 # 随心记 Agent
 
+本机只维护这一套代码；正式/测试环境配置与数据位于 `environments/production` 和 `environments/test`。启动方式见 [本机双环境](docs/local-environments.md)。
+
 运行在飞书和 Web 控制台中的个人记忆助手：保存原始记录，从中提取任务、偏好、事实和经历，并结合原文回答历史问题。记忆的来源、修改版本和模型调用可以追溯。
 
 ## 能做什么
@@ -84,7 +86,7 @@ make distributed-status
 python scripts/run_console.py
 ```
 
-打开 `http://127.0.0.1:18080/console`，在连接框填写本机 `data/console.token` 中的令牌。控制台启动脚本不会代替 Outbox relay 和 Worker；完整操作见[控制台说明](docs/message-console/README.md)与[分布式部署手册](docs/distributed_cutover_runbook.md)。
+打开 `http://127.0.0.1:18080/console`，使用独立账号登录。默认关闭公开注册；管理员创建、本地 HTTP Cookie 配置和手工验收见[多用户控制台](docs/console-multiuser.md)。旧共享令牌仅在显式设置 `SUIXINJI_CONSOLE_AUTH_MODE=token` 时启用。控制台启动脚本不会代替 Outbox relay 和 Worker；完整操作见[控制台说明](docs/message-console/README.md)与[分布式部署手册](docs/distributed_cutover_runbook.md)。
 
 ### 启用卡片和事实记忆
 

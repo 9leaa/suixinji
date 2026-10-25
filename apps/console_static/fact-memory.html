@@ -22,7 +22,7 @@ const statusName={not_required:'无需归纳审核',unreviewed:'待检查',confi
 const localTime=t=>t?new Date(t).toLocaleString('zh-CN',{hour12:false}):'未注明';
 const details=(title,value)=>{const d=node('details');d.append(node('summary',title),node('pre',typeof value==='string'?value:JSON.stringify(value,null,2)));return d};
 const evidence=ids=>{const d=node('details');d.append(node('summary','查看原文证据'));for(const f of data.facts.filter(f=>ids.includes(f.id))){const e=node('article');e.append(node('p',f.evidence_span||f.original_text,'content'),node('small','记录时间 '+localTime(f.mentioned_at)),details('来源详情',f));d.append(e)}return d};
-async function api(body){const r=await fetch('/api/fact-memory/'+encodeURIComponent($('space').value),{method:body?'POST':'GET',headers:{Authorization:'Bearer '+$('token').value,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined});const j=await r.json();if(!r.ok)throw Error(j.detail||r.status);return j}
+async function api(body){const r=await fetch('/api/fact-memory/'+encodeURIComponent($('space').value),{method:body?'POST':'GET',headers:{Authorization:'Bearer '+$('token').value,'Content-Type':'application/json','X-Suixinji-Request':'console'},body:body?JSON.stringify(body):undefined});const j=await r.json();if(!r.ok)throw Error(j.detail||r.status);return j}
 async function action(fn){document.querySelectorAll('button').forEach(b=>b.disabled=true);try{await fn()}catch(e){$('status').textContent='操作失败：'+e.message}finally{document.querySelectorAll('button').forEach(b=>b.disabled=false)}}
 async function refresh(){data=await api();render();await refreshObservations()}
 function render(){

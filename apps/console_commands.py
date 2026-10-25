@@ -125,7 +125,7 @@ def execute_command(space_id, text, *, tenant_id="default", message_id=None):
 
             return json.dumps(run_consolidation(space_id, force=True), ensure_ascii=False, indent=2)
         parts = tail.split(maxsplit=2)
-        if parts and parts[0] in {"show", "forget", "purge", "correct", "reject", "edit", "resolve", "approve"} and len(parts) > 1:
+        if parts and parts[0].lower() in {"show", "forget", "purge", "correct", "reject", "edit", "resolve", "approve"} and len(parts) > 1:
             _check_memory_scope(space_id, parts[1])
         return existing._handle_memory_command(space_id, text)
     if head == "/trace":

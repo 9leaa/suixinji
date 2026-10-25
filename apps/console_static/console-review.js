@@ -31,14 +31,14 @@ function changeHTML(change){return `<div class="version-diff"><section><h4>修�
 
 state.historyOffset=0;
 async function history(){
- if(!state.token)return;
+ if(!isConnected())return;
  const params=new URLSearchParams({space:$('#historySpace').value.trim(),q:$('#historyQuery').value.trim(),status:$('#historyStatus').value,offset:state.historyOffset,limit:30});
  for(const [key,id] of [['since','historySince'],['until','historyUntil']])if($('#'+id).value)params.set(key,new Date($('#'+id).value).toISOString());
  const request=state.historyRequest=(state.historyRequest||0)+1;
  const data=await api('/history?'+params);if(request!==state.historyRequest)return;
  $('#historyCount').textContent=`${data.total?data.offset+1:0}–${Math.min(data.offset+data.items.length,data.total)} / ${data.total}`;
  $('#historyPrev').disabled=data.offset===0;$('#historyNext').disabled=data.offset+data.limit>=data.total;
- $('#history').innerHTML=data.items.length?data.items.map(r=>`<button class="history-item ${state.run?.id===r.id?'active':''}" data-id="${esc(r.id)}"><small>${esc(r.space_id)} · ${esc(labels[r.status]||r.status)}</small><p>${esc(r.text)}</p><small>${esc(fullStamp(r.created_at))} · ${esc(r.mode)}</small></button>`).join(''):'<p class="empty-small">没有符合条件的运行。</p>';
+ $('#history').innerHTML=data.items.length?data.items.map(r=>`<button class="history-item ${state.run?.id===r.id?'active':''}" data-id="${esc(r.id)}"><small>${state.account&&!state.account.is_admin?'我的记录':esc(r.space_id)} · ${esc(labels[r.status]||r.status)}</small><p>${esc(r.text)}</p><small>${esc(fullStamp(r.created_at))} · ${esc(r.mode)}</small></button>`).join(''):'<p class="empty-small">没有符合条件的运行。</p>';
  $$('.history-item').forEach(b=>b.onclick=()=>load(b.dataset.id).catch(e=>toast(e.message)));
 }
 $('#historyFilters').onsubmit=e=>{e.preventDefault();state.historyOffset=0;history().catch(e=>toast(e.message))};
@@ -46,7 +46,7 @@ $('#historyPrev').onclick=()=>{state.historyOffset=Math.max(0,state.historyOffse
 $('#historyNext').onclick=()=>{state.historyOffset+=30;history().catch(e=>toast(e.message))};
 
 const typeLabels={preference:'偏好',task:'任务',semantic:'语义',episodic:'情景'};
-$('#libraryBtn').onclick=()=>{if(!state.token){$('#settings').showModal();return}state.librarySpace=currentSpace();state.libraryOffset=0;$('#libraryPanel').showModal();loadLibrary()};
+$('#libraryBtn').onclick=()=>{if(!isConnected()){openAccountSettings();return}state.librarySpace=currentSpace();state.libraryOffset=0;$('#libraryPanel').showModal();loadLibrary()};
 $('#closeLibrary').onclick=()=>$('#libraryPanel').close();
 $('#libraryFilters').onsubmit=e=>{e.preventDefault();state.libraryOffset=0;loadLibrary()};
 $('#libraryPrev').onclick=()=>{state.libraryOffset=Math.max(0,state.libraryOffset-30);loadLibrary()};
@@ -57,7 +57,7 @@ async function loadLibrary(){
  try{
  const data=await api('/memories?'+new URLSearchParams({space:state.librarySpace,kind:$('#libraryKind').value,q:$('#libraryQuery').value,offset:state.libraryOffset||0}));
  if(request!==state.libraryRequest)return;
- $('#libraryScope').textContent='当前查看空间：'+data.space_id+' · '+data.scope;
+ $('#libraryScope').textContent=(state.account&&!state.account.is_admin?'我的记忆':'当前查看空间：'+data.space_id)+' · '+data.scope;
  $('#libraryCounts').textContent=Object.entries(data.counts).map(([k,v])=>typeLabels[k]+' '+v+' 条').join(' · ');
  $('#libraryPage').textContent=`${data.total?data.offset+1:0}–${Math.min(data.offset+data.items.length,data.total)} / ${data.total}`;
  $('#libraryPrev').disabled=data.offset===0;$('#libraryNext').disabled=data.offset+data.limit>=data.total;

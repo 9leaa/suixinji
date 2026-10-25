@@ -28,3 +28,7 @@ backups/
 
 # Delivery bundles belong in release assets, not source control.
 *.zip
+
+# Local environment configuration and runtime data
+/environments/
+.DS_Store

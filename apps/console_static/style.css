@@ -33,3 +33,19 @@ header{height:56px;padding:0 20px}.brandmark{width:32px;height:32px;font-size:17
 .business-summary{margin:16px 0;padding:18px;background:#fff;border:1px solid var(--border);border-radius:12px}
 .business-summary h2{font-size:17px;margin:0 0 10px}.result-card{border-top:1px solid #dce5dd;padding:14px 0;overflow-wrap:anywhere}.result-card p{white-space:pre-wrap;line-height:1.7}.result-card button{margin:8px 0}.result-card pre{max-height:320px;overflow:auto;white-space:pre-wrap}.version-diff{display:grid;grid-template-columns:1fr 1fr;gap:12px}.version-diff section{padding:12px;background:#f2f6f1;border-radius:8px;min-width:0}.version-diff h4{margin:0 0 8px}.version-diff p{white-space:pre-wrap;overflow-wrap:anywhere}.history-filters{display:grid;gap:7px;margin:12px 0}.history-filters input,.history-filters select{width:100%;box-sizing:border-box}.history-filters label{font-size:11px}.pager{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0;font-size:12px}.pager button{padding:7px}.answer-box{margin:16px 0}#libraryPanel{width:min(1000px,94vw);max-height:90vh;overflow:auto}#libraryFilters{display:flex;gap:10px;flex-wrap:wrap}#libraryScope{overflow-wrap:anywhere}#libraryCounts{padding:12px 0}#libraryRows blockquote{margin:10px 0;padding:12px;border-left:3px solid #6b8c76;white-space:pre-wrap}#libraryRows small{display:block;color:#64766a;overflow-wrap:anywhere}.graph-controls select{max-width:155px;font-size:12px}.result-card details{margin-top:10px} @media(max-width:700px){.version-diff{grid-template-columns:1fr}.business-summary{padding:12px}.toolbar{flex-wrap:wrap}#libraryPanel{box-sizing:border-box}}
 .toolbar,.graph-controls{flex-wrap:wrap}.toolbar button,.graph-controls .check,.graph-controls select{white-space:nowrap;flex-shrink:0}.history-filters button,#libraryPanel button{border:1px solid var(--border);border-radius:6px;background:#f2f6ef;padding:8px 12px}#factScope{margin-left:16px}
+
+/* Public accounts keep technical identifiers and admin diagnostics out of the user flow. */
+.auth-pending > header,.auth-pending > .workspace{visibility:hidden}
+#loginDialog,#accountDialog{width:min(440px,92vw)}
+#loginDialog label,#accountDialog label{margin:16px 0 8px}
+#loginDialog input,#accountDialog input{display:block;width:100%;margin-top:8px}
+#loginError,#passwordError{color:#a04a3e;min-height:20px}
+.account-mode #compose .formrow,.account-mode #historySpace{display:none}
+body[data-account-role="user"] .workspace{grid-template-columns:320px minmax(0,1fr)}
+body[data-account-role="user"] .inspector,body[data-account-role="user"] #canvasShell,
+body[data-account-role="user"] #export,body[data-account-role="user"] #businessSummary,
+body[data-account-role="user"] .stats>div:nth-child(n+3),body[data-account-role="user"] .sidebar footer{display:none!important}
+body[data-account-role="user"] .stats{grid-template-columns:repeat(2,1fr)}
+body[data-account-role="user"] .answer-box{min-height:240px}
+@media(max-width:760px){body[data-account-role="user"] .workspace{grid-template-columns:1fr}body[data-account-role="user"] header{height:auto;flex-wrap:wrap;padding:16px;gap:10px}}
+@media(min-width:761px){body[data-account-role="user"]{overflow:hidden}body[data-account-role="user"] .workspace{height:calc(100dvh - 80px);min-height:0;overflow:hidden}body[data-account-role="user"] .sidebar,body[data-account-role="user"] main{min-height:0;overflow:auto}}

@@ -7,20 +7,23 @@ from pathlib import Path
 from typing import Literal
 import uuid
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 
 from core.lifecycle import resume, span, safe
 from repositories.postgres import lifecycle as store
+from apps.console_auth import accounts_enabled, authenticated, current_account, require_admin
 
 router = APIRouter()
 STATIC = Path(__file__).parent / 'console_static'
 
 
-def authorize(authorization: str | None = Header(default=None)):
+def authorize(request: Request, authorization: str | None = Header(default=None)):
     if os.getenv('SUIXINJI_CONSOLE_ENABLED') != '1':
         raise HTTPException(404, 'console disabled')
+    if accounts_enabled():
+        return authenticated(request)['tenant_id']
     token = os.getenv('SUIXINJI_CONSOLE_TOKEN', '')
     if not token:
         raise HTTPException(503, 'console token not configured')
@@ -50,13 +53,19 @@ class AliasInput(BaseModel):
 
 
 @router.get('/api/console/profile')
-def profile(user_id: str, tenant=Depends(authorize)):
+def profile(user_id: str = '', tenant=Depends(authorize), http_request: Request = None):
+    account = current_account(http_request)
+    if account:
+        user_id = account['user_id']
     from repositories.postgres.user_profile import get_alias
     return {'user_id': user_id, 'alias': get_alias(user_id, tenant_id=tenant)}
 
 
 @router.put('/api/console/profile')
-def update_profile(request: AliasInput, tenant=Depends(authorize)):
+def update_profile(request: AliasInput, tenant=Depends(authorize), http_request: Request = None):
+    account = current_account(http_request)
+    if account:
+        request = request.model_copy(update={'user_id': account['user_id']})
     from repositories.postgres.user_profile import save_alias
     try:
         save_alias(request.user_id, request.alias, tenant_id=tenant)
@@ -74,14 +83,17 @@ def page():
 
 @router.get('/console/assets/{name}', include_in_schema=False)
 def asset(name: str):
-    if name not in {'app.js','style.css','fact-observations.js','console-review.js'}:
+    if name not in {'app.js','style.css','fact-observations.js','console-review.js','console-auth.js'}:
         raise HTTPException(404)
     return FileResponse(STATIC / name, headers={'Cache-Control': 'no-store'})
 
 
 @router.get('/api/console/config')
-def config(tenant=Depends(authorize)):
+def config(tenant=Depends(authorize), http_request: Request = None):
     from core import settings as s
+    account = current_account(http_request)
+    if account and not account['is_admin']:
+        return {'fact_memory': s.FACT_MEMORY_ENABLED, 'preference_cards': s.PREFERENCE_CARDS_ENABLED, 'diagnostics': False}
     from infrastructure.database import get_engine
     from infrastructure.redis_client import get_redis
     from sqlalchemy import text
@@ -95,13 +107,20 @@ def config(tenant=Depends(authorize)):
             dependencies[name]='connected'
         except Exception as exc:
             dependencies[name]=type(exc).__name__
-    return {'tenant_id':tenant, 'dependencies':dependencies, 'fake_externals':s.FAKE_EXTERNALS,
+    return {'diagnostics': True, 'tenant_id':tenant, 'dependencies':dependencies, 'fake_externals':s.FAKE_EXTERNALS,
             'ask_v2':s.ASK_V2_ENABLED, 'ask_v2_shadow':s.ASK_V2_SHADOW, 'extractor':s.MEMORY_EXTRACTOR_MODE, 'storage':s.STORAGE_BACKEND,
             'queue':s.TASK_QUEUE_BACKEND, 'preference_cards':s.PREFERENCE_CARDS_ENABLED, 'fact_memory':s.FACT_MEMORY_ENABLED}
 
 
 @router.post('/api/console/messages', status_code=202)
-def send(request: Message, tenant=Depends(authorize)):
+def send(request: Message, tenant=Depends(authorize), http_request: Request = None):
+    account = current_account(http_request)
+    if account:
+        request = request.model_copy(update={'user_id': account['user_id'], 'space_id': account['space_id']})
+        if not account['is_admin'] and request.text.strip().startswith('/'):
+            head = request.text.strip().split()[0]
+            if head not in {'/ask', '/summary', '/memory', '/type', '/tag', '/filter', '/feedback'}:
+                raise HTTPException(403, '此命令未向普通用户开放')
     from apps.receiver import InboxCommand, receive
     from apps.api import ReceiveRequest, TestApiContext, _check_rate_limit
     from core import settings as s
@@ -146,28 +165,32 @@ def send(request: Message, tenant=Depends(authorize)):
 
 
 @router.get('/api/console/traces')
-def history(tenant=Depends(authorize)):
-    return store.list_runs(tenant)
+def history(tenant=Depends(authorize), http_request: Request = None):
+    return [visible_run(row, http_request) for row in store.list_runs(tenant)]
 
 
 @router.get('/api/console/traces/{trace_id}')
-def trace(trace_id:str,tenant=Depends(authorize)):
+def trace(trace_id:str,tenant=Depends(authorize), http_request: Request = None):
     result=store.detail(trace_id,tenant)
     if result is None:
         raise HTTPException(404,'trace not found')
-    return result
+    return visible_run(result, http_request)
 
 
 @router.get('/api/console/commands')
-def commands(tenant=Depends(authorize)):
+def commands(tenant=Depends(authorize), http_request: Request = None):
     from apps.console_commands import available_commands
-    return available_commands()
+    rows = available_commands()
+    account = current_account(http_request)
+    if account and not account['is_admin']:
+        rows = [r for r in rows if r['command'].split()[0] not in {'/status', '/trace', '/summary_auto', '/help'}]
+    return rows
 
 
 @router.get('/api/console/history')
 def search_history(space: str = '', q: str = '', status: str = '',
                    since: str | None = None, until: str | None = None,
-                   offset: int = 0, limit: int = 30, tenant=Depends(authorize)):
+                   offset: int = 0, limit: int = 30, tenant=Depends(authorize), http_request: Request = None):
     from datetime import datetime, timezone
     if offset < 0 or not 1 <= limit <= 100 or status not in {'', 'completed', 'running', 'retry', 'error'}:
         raise HTTPException(422, 'invalid history filter')
@@ -180,5 +203,21 @@ def search_history(space: str = '', q: str = '', status: str = '',
     end = end.replace(tzinfo=timezone.utc) if end and end.tzinfo is None else end
     if start and end and start > end:
         raise HTTPException(422, 'invalid date range')
-    return store.search_runs(tenant, space=space, query=q, status=status, since=start, until=end,
-                             offset=offset, limit=limit)
+    result = store.search_runs(tenant, space=space, query=q, status=status, since=start, until=end,
+                               offset=offset, limit=limit)
+    result['items'] = [visible_run(row, http_request) for row in result['items']]
+    return result
+
+
+def visible_run(row, request):
+    account = current_account(request)
+    if not account or account['is_admin']:
+        return row
+    visible = {k: row.get(k) for k in ('id', 'space_id', 'mode', 'text', 'created_at', 'answer', 'status', 'duration_ms')}
+    visible.update(spans=[], tasks=[], config_json={}, error='处理失败，请稍后重试' if row.get('error') else None)
+    return visible
+
+
+def authorize_admin(request: Request, tenant=Depends(authorize)):
+    require_admin(request)
+    return tenant

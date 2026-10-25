@@ -19,7 +19,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = [Base.metadata, lifecycle_metadata, memory_workflow_metadata]
+from repositories.postgres.console_auth import metadata as console_auth_metadata
+
+target_metadata = [Base.metadata, lifecycle_metadata, memory_workflow_metadata, console_auth_metadata]
 
 
 def run_migrations_offline() -> None:

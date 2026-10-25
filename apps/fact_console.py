@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from apps.console import authorize
+from apps.console import authorize_admin
 from core import settings
 from memory import fact_memory as fm
 
@@ -41,7 +41,7 @@ def page():
 
 
 @router.get("/api/fact-memory/{space_id}")
-def state(space_id: str, tenant=Depends(authorize)):
+def state(space_id: str, tenant=Depends(authorize_admin)):
     check_space(space_id, tenant)
     return {"cards": fm.cards(space_id), "facts": fm.active_facts(space_id),
             "questions": [q for q in fm.items(space_id, "question") if q["status"] == "open"],
@@ -52,7 +52,7 @@ def state(space_id: str, tenant=Depends(authorize)):
 
 
 @router.post("/api/fact-memory/{space_id}")
-def operate(space_id: str, request: Operation, tenant=Depends(authorize)):
+def operate(space_id: str, request: Operation, tenant=Depends(authorize_admin)):
     check_space(space_id, tenant)
     try:
         if request.action == "consolidate":
@@ -74,7 +74,7 @@ def operate(space_id: str, request: Operation, tenant=Depends(authorize)):
 
 
 @router.get("/api/fact-memory/{space_id}/observations")
-def observations(space_id: str, tenant=Depends(authorize)):
+def observations(space_id: str, tenant=Depends(authorize_admin)):
     """Three independent stages, scoped before reading any diagnostic evidence."""
     check_space(space_id, tenant)
     from apps.fact_observations import read_observations

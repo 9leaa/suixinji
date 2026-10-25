@@ -12,7 +12,7 @@ import os
 from dotenv import load_dotenv
 
 
-load_dotenv()
+load_dotenv(os.getenv("SUIXINJI_ENV_FILE"))
 
 
 def _int_env(name: str, default: int) -> int:

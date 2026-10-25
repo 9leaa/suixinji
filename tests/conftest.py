@@ -6,6 +6,7 @@
 
 import os
 
+os.environ["SUIXINJI_CONSOLE_AUTH_MODE"] = "token"
 os.environ["STORAGE_BACKEND"] = "local"
 os.environ["COORDINATION_BACKEND"] = "local"
 os.environ["TASK_QUEUE_BACKEND"] = "local"

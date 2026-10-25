@@ -96,6 +96,9 @@ def _authorize_test_api(
     authorization = authorization if isinstance(authorization, str) else None
     tenant_id = tenant_id if isinstance(tenant_id, str) else None
     user_id = user_id if isinstance(user_id, str) else None
+    from apps.console_auth import accounts_enabled
+    if accounts_enabled():
+        raise HTTPException(status_code=404, detail="not found")
     if not TEST_API_ENABLED:
         raise HTTPException(status_code=404, detail="not found")
     if SUIXINJI_ENV not in {"dev", "stage4", "test"} and not STAGE4_MODE:
@@ -236,3 +239,18 @@ from apps.fact_console import router as fact_console_router
 app.include_router(fact_console_router)
 from apps.console_library import router as library_router
 app.include_router(library_router)
+
+from apps.console_auth import router as console_auth_router
+app.include_router(console_auth_router)
+
+
+@app.middleware("http")
+async def console_no_store(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith(('/api/console/', '/api/fact-memory/')):
+        response.headers['Cache-Control'] = 'no-store'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+    if request.url.path in {'/console', '/fact-memory'}:
+        response.headers['Content-Security-Policy'] = "frame-ancestors 'self'"
+        response.headers['Referrer-Policy'] = 'same-origin'
+    return response

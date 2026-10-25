@@ -2,6 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ -f "$ROOT/environments/production/.env" ]]; then
+  exec "$ROOT/.venv/bin/python" "$ROOT/scripts/local_services.py" start production
+fi
 PYTHON="${PYTHON:-python3}"
 # On the documented remote host the system Anaconda interpreter does not
 # carry the PostgreSQL driver, while the project environment does.  Keep

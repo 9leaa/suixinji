@@ -6,6 +6,7 @@
 | --- | --- |
 | 架构与代码导航 | [项目架构](PROJECT_ARCHITECTURE.md) |
 | 控制台 | [启动与追踪说明](message-console/README.md) |
+| 多用户登录与隔离 | [账号配置与本地验收](console-multiuser.md) |
 | 任务卡片 | [字段与写入机制](task-cards-design.md) |
 | 偏好卡片 | [实现说明](preference-cards-implementation.md) |
 | 语义 / 情景记忆 | [抽取与整理](fact-memory-consolidation.md) |

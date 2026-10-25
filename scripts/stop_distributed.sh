@@ -2,6 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ -f "$ROOT/environments/production/.env" ]]; then
+  exec "$ROOT/.venv/bin/python" "$ROOT/scripts/local_services.py" stop production
+fi
 PID_DIR="$ROOT/data/pids"
 
 if [[ ! -d "$PID_DIR" ]]; then

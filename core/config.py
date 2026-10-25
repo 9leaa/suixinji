@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 from core.settings import EMBEDDING_TIMEOUT_SECONDS, LLM_MAX_RETRIES, LLM_TIMEOUT_SECONDS
 
-load_dotenv()
+load_dotenv(os.getenv("SUIXINJI_ENV_FILE"))
 
 
 @dataclass(frozen=True)

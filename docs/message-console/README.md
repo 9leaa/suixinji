@@ -1,6 +1,6 @@
 # 消息实验室
 
-入口：http://127.0.0.1:18080/console 。已合入 `main`。
+入口：http://127.0.0.1:18080/console 。本页说明管理员可观测界面；独立账号登录、用户隔离及本地验收见[多用户控制台](../console-multiuser.md)。
 
 顶部采用紧凑状态栏，画布占据主要屏幕空间。Agent 节点按父子关系缩进并标记层级和所属父节点；展开/收起保持当前节点的屏幕位置，新出现的子节点短暂高亮。
 
@@ -31,7 +31,7 @@
 
 现有 `.env` 中的 PostgreSQL、Redis、模型配置继续使用。还需要运行当前分支的 `apps.outbox_relay` 和对应 `apps.worker`；现有 `scripts/start_distributed.sh` 维护这些后台角色，**已运行的旧进程需要重启才能加载埋点**。自动总结使用 `apps.scheduler`。
 
-启动脚本默认只监听 `127.0.0.1:18080`。令牌保存在权限 0600 的 `data/console.token`，在页面连接框粘贴；也可以设置 `SUIXINJI_CONSOLE_TOKEN`。可用 `SUIXINJI_CONSOLE_PORT` 改端口，`SUIXINJI_CONSOLE_TENANT` 改当前租户。浏览器仅在内存中保存令牌，空间和用户 ID 保存在 localStorage。
+启动脚本默认只监听 `127.0.0.1:18080`，默认使用账号登录。仅在显式设置 `SUIXINJI_CONSOLE_AUTH_MODE=token` 的旧管理员模式下，令牌保存在权限 0600 的 `data/console.token`，也可设置 `SUIXINJI_CONSOLE_TOKEN`；该模式中 `SUIXINJI_CONSOLE_TENANT` 指定租户。账号模式使用 HttpOnly 会话 Cookie，空间和用户身份由后端确定。可用 `SUIXINJI_CONSOLE_PORT` 改端口。
 
 新建表：`lifecycle_runs` / `lifecycle_spans`，迁移 `20261018_0015`。仍在同一个数据库；追踪使用独立的 `lifecycle` 连接池，避免业务事务占满单连接 Worker 时阻塞追踪。
 
